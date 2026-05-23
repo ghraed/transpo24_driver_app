@@ -1,6 +1,7 @@
 import { Link, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import {

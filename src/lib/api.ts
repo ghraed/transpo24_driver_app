@@ -54,6 +54,48 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   }
 }
 
+interface XhrResponsePayload {
+  status: number;
+  responseText: string;
+}
+
+function uploadFormDataWithXhr(
+  endpoint: string,
+  formData: FormData,
+  token?: string,
+): Promise<XhrResponsePayload> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', endpoint);
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    xhr.onload = () => {
+      resolve({
+        status: xhr.status,
+        responseText: xhr.responseText ?? '',
+      });
+    };
+
+    xhr.onerror = () => {
+      reject(
+        new Error(
+          `Cannot reach backend at ${endpoint}. Verify EXPO_PUBLIC_API_URL and backend network access. ` +
+            'Android emulator: use http://10.0.2.2:3000, iOS simulator: http://localhost:3000, physical device: use your computer LAN IP.',
+        ),
+      );
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error(`Request timed out while uploading to ${endpoint}.`));
+    };
+
+    xhr.timeout = REQUEST_TIMEOUT_MS;
+    xhr.send(formData);
+  });
+}
+
 function toNetworkError(endpoint: string, error: unknown): Error {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
@@ -77,16 +119,57 @@ type ReactNativeFormDataFile = {
   type: string;
 };
 
+type ReactNativeFormDataPart = string | ReactNativeFormDataFile;
+
+function ensureFileUri(uri: string): string {
+  if (uri.startsWith('file://') || uri.startsWith('content://')) {
+    return uri;
+  }
+  return `file://${uri}`;
+}
+
 function toFormDataFile(
   asset: LocalDocumentAsset,
   fallbackName: string,
   fallbackMimeType: string,
 ): ReactNativeFormDataFile {
   return {
-    uri: asset.uri,
-    name: asset.fileName ?? fallbackName,
-    type: asset.mimeType ?? fallbackMimeType,
+    uri: ensureFileUri(asset.uri),
+    name: asset.fileName?.trim() || fallbackName,
+    type: asset.mimeType?.trim() || fallbackMimeType,
   };
+}
+
+function appendFormDataFile(
+  formData: FormData,
+  fieldName: string,
+  file: ReactNativeFormDataFile,
+): void {
+  formData.append(fieldName, file as unknown as ReactNativeFormDataPart);
+}
+
+async function appendFormDataAsset(
+  formData: FormData,
+  fieldName: string,
+  asset: LocalDocumentAsset,
+  fallbackName: string,
+  fallbackMimeType: string,
+): Promise<void> {
+  const file = toFormDataFile(asset, fallbackName, fallbackMimeType);
+
+  try {
+    const fileResponse = await fetchWithTimeout(file.uri, { method: 'GET' });
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to read local file URI: ${file.uri}`);
+    }
+
+    const rawBlob = await fileResponse.blob();
+    const typedBlob = rawBlob.type ? rawBlob : rawBlob.slice(0, rawBlob.size, file.type);
+    formData.append(fieldName, typedBlob, file.name);
+  } catch {
+    // Fallback for platforms where local URI -> Blob conversion is unavailable.
+    appendFormDataFile(formData, fieldName, file);
+  }
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -247,54 +330,73 @@ export async function uploadDriverVehicleDocuments(
   const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/documents`;
   const formData = new FormData();
 
-  formData.append(
+  await appendFormDataAsset(
+    formData,
     'driverLicenseFront',
-    toFormDataFile(payload.driverLicenseFront, 'driver-license-front.jpg', 'image/jpeg') as unknown as Blob,
+    payload.driverLicenseFront,
+    'driver-license-front.jpg',
+    'image/jpeg',
   );
-  formData.append(
+  await appendFormDataAsset(
+    formData,
     'driverLicenseBack',
-    toFormDataFile(payload.driverLicenseBack, 'driver-license-back.jpg', 'image/jpeg') as unknown as Blob,
+    payload.driverLicenseBack,
+    'driver-license-back.jpg',
+    'image/jpeg',
   );
-  formData.append(
+  await appendFormDataAsset(
+    formData,
     'identityDocument',
-    toFormDataFile(payload.identityDocument, 'identity-document.jpg', 'image/jpeg') as unknown as Blob,
+    payload.identityDocument,
+    'identity-document.jpg',
+    'image/jpeg',
   );
-  formData.append(
+  await appendFormDataAsset(
+    formData,
     'vehicleRegistration',
-    toFormDataFile(payload.vehicleRegistration, 'vehicle-registration.jpg', 'image/jpeg') as unknown as Blob,
+    payload.vehicleRegistration,
+    'vehicle-registration.jpg',
+    'image/jpeg',
   );
-  formData.append(
+  await appendFormDataAsset(
+    formData,
     'vehicleInsurance',
-    toFormDataFile(payload.vehicleInsurance, 'vehicle-insurance.jpg', 'image/jpeg') as unknown as Blob,
+    payload.vehicleInsurance,
+    'vehicle-insurance.jpg',
+    'image/jpeg',
   );
 
-  payload.vehiclePhotos.forEach((photo, index) => {
-    formData.append(
+  for (const [index, photo] of payload.vehiclePhotos.entries()) {
+    await appendFormDataAsset(
+      formData,
       'vehiclePhotos',
-      toFormDataFile(photo, `vehicle-photo-${index + 1}.jpg`, 'image/jpeg') as unknown as Blob,
+      photo,
+      `vehicle-photo-${index + 1}.jpg`,
+      'image/jpeg',
     );
-  });
-
-  const token = await readAccessToken();
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
   }
 
-  let response: Response;
+  const token = await readAccessToken();
+
+  let xhrResponse: XhrResponsePayload;
   try {
-    response = await fetchWithTimeout(endpoint, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
+    xhrResponse = await uploadFormDataWithXhr(endpoint, formData, token);
   } catch (error) {
     throw toNetworkError(endpoint, error);
   }
 
-  if (!response.ok) {
-    throw await parseError(response, 'Failed to upload driver vehicle documents.');
+  if (xhrResponse.status < 200 || xhrResponse.status >= 300) {
+    try {
+      const errorData = JSON.parse(xhrResponse.responseText) as ApiErrorResponse;
+      throw new Error(normalizeErrorMessage(errorData, 'Failed to upload driver vehicle documents.'));
+    } catch {
+      throw new Error('Failed to upload driver vehicle documents.');
+    }
   }
 
-  return (await response.json()) as DriverVehicleDocumentsResponse;
+  try {
+    return JSON.parse(xhrResponse.responseText) as DriverVehicleDocumentsResponse;
+  } catch {
+    throw new Error('Invalid upload response from server.');
+  }
 }
