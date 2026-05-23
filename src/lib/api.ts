@@ -1,6 +1,7 @@
 import { readAccessToken } from './auth-storage';
 import type {
   CreateDriverVehiclePayload,
+  DriverAvailabilityResponse,
   DriverAuthResponse,
   DriverMeResponse,
   DriverVehicle,
@@ -10,6 +11,8 @@ import type {
   LoginPayload,
   LoginResponse,
   RegisterDriverPayload,
+  UpdateDriverAvailabilityPayload,
+  UpdateDriverOnlineStatusPayload,
   UpdateDriverProfilePayload,
 } from '@/types/auth';
 
@@ -36,10 +39,31 @@ function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): s
 
 async function parseError(response: Response, fallback: string): Promise<Error> {
   try {
-    const errorData = (await response.json()) as ApiErrorResponse;
-    return new Error(normalizeErrorMessage(errorData, fallback));
+    const rawText = await response.text();
+    if (!rawText) {
+      return new Error(fallback);
+    }
+    try {
+      const errorData = JSON.parse(rawText) as ApiErrorResponse;
+      return new Error(normalizeErrorMessage(errorData, fallback));
+    } catch {
+      return new Error(rawText);
+    }
   } catch {
     return new Error(fallback);
+  }
+}
+
+async function parseJsonResponse<T>(response: Response, fallback: string): Promise<T> {
+  const rawText = await response.text();
+  if (!rawText) {
+    throw new Error(fallback);
+  }
+
+  try {
+    return JSON.parse(rawText) as T;
+  } catch {
+    throw new Error(`${fallback} (received non-JSON response)`);
   }
 }
 
@@ -119,8 +143,6 @@ type ReactNativeFormDataFile = {
   type: string;
 };
 
-type ReactNativeFormDataPart = string | ReactNativeFormDataFile;
-
 function ensureFileUri(uri: string): string {
   if (uri.startsWith('file://') || uri.startsWith('content://')) {
     return uri;
@@ -145,7 +167,7 @@ function appendFormDataFile(
   fieldName: string,
   file: ReactNativeFormDataFile,
 ): void {
-  formData.append(fieldName, file as unknown as ReactNativeFormDataPart);
+  formData.append(fieldName, file as unknown as Blob);
 }
 
 async function appendFormDataAsset(
@@ -204,7 +226,10 @@ export async function registerDriver(payload: RegisterDriverPayload): Promise<Dr
     throw await parseError(response, 'Driver registration failed.');
   }
 
-  return (await response.json()) as DriverAuthResponse;
+  return parseJsonResponse<DriverAuthResponse>(
+    response,
+    'Failed to parse driver registration response.',
+  );
 }
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
@@ -226,7 +251,7 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
     throw await parseError(response, 'Login failed.');
   }
 
-  return (await response.json()) as LoginResponse;
+  return parseJsonResponse<LoginResponse>(response, 'Failed to parse login response.');
 }
 
 export async function getDriverMe(): Promise<DriverMeResponse> {
@@ -245,7 +270,7 @@ export async function getDriverMe(): Promise<DriverMeResponse> {
     throw await parseError(response, 'Failed to load driver profile.');
   }
 
-  return (await response.json()) as DriverMeResponse;
+  return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse driver profile response.');
 }
 
 export async function updateDriverProfile(
@@ -267,7 +292,7 @@ export async function updateDriverProfile(
     throw await parseError(response, 'Failed to update driver profile.');
   }
 
-  return (await response.json()) as DriverMeResponse;
+  return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse profile update response.');
 }
 
 export async function getDriverVehicles(): Promise<DriverVehicle[]> {
@@ -286,7 +311,10 @@ export async function getDriverVehicles(): Promise<DriverVehicle[]> {
     throw await parseError(response, 'Failed to load driver vehicles.');
   }
 
-  const data = (await response.json()) as DriverVehiclesListResponse;
+  const data = await parseJsonResponse<DriverVehiclesListResponse>(
+    response,
+    'Failed to parse vehicles response.',
+  );
   return (data.vehicles ?? []).map((item) => ({
     ...item.vehicle,
     documents: item.documents,
@@ -312,7 +340,10 @@ export async function createDriverVehicle(
     throw await parseError(response, 'Failed to create driver vehicle.');
   }
 
-  const data = (await response.json()) as DriverVehicleDocumentsResponse;
+  const data = await parseJsonResponse<DriverVehicleDocumentsResponse>(
+    response,
+    'Failed to parse create vehicle response.',
+  );
   return data.vehicle;
 }
 
@@ -380,23 +411,163 @@ export async function uploadDriverVehicleDocuments(
 
   let xhrResponse: XhrResponsePayload;
   try {
-    xhrResponse = await uploadFormDataWithXhr(endpoint, formData, token);
+    xhrResponse = await uploadFormDataWithXhr(endpoint, formData, token ?? undefined);
   } catch (error) {
     throw toNetworkError(endpoint, error);
   }
 
   if (xhrResponse.status < 200 || xhrResponse.status >= 300) {
-    try {
-      const errorData = JSON.parse(xhrResponse.responseText) as ApiErrorResponse;
-      throw new Error(normalizeErrorMessage(errorData, 'Failed to upload driver vehicle documents.'));
-    } catch {
+    const raw = xhrResponse.responseText?.trim();
+    if (!raw) {
       throw new Error('Failed to upload driver vehicle documents.');
+    }
+    try {
+      const errorData = JSON.parse(raw) as ApiErrorResponse;
+      throw new Error(
+        normalizeErrorMessage(errorData, 'Failed to upload driver vehicle documents.'),
+      );
+    } catch {
+      throw new Error(raw);
     }
   }
 
-  try {
-    return JSON.parse(xhrResponse.responseText) as DriverVehicleDocumentsResponse;
-  } catch {
+  const successRaw = xhrResponse.responseText?.trim();
+  if (!successRaw) {
     throw new Error('Invalid upload response from server.');
   }
+  try {
+    return JSON.parse(successRaw) as DriverVehicleDocumentsResponse;
+  } catch {
+    throw new Error(`Invalid upload response from server: ${successRaw}`);
+  }
+}
+
+export async function getDriverAvailability(): Promise<DriverAvailabilityResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/availability`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load driver availability.');
+  }
+
+  return parseJsonResponse<DriverAvailabilityResponse>(
+    response,
+    'Failed to parse availability response.',
+  );
+}
+
+export async function updateDriverAvailability(
+  payload: UpdateDriverAvailabilityPayload,
+): Promise<DriverAvailabilityResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/availability`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PUT',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to save driver availability.');
+  }
+
+  return parseJsonResponse<DriverAvailabilityResponse>(
+    response,
+    'Failed to parse availability update response.',
+  );
+}
+
+export async function updateDriverOnlineStatus(
+  payload: UpdateDriverOnlineStatusPayload,
+): Promise<DriverAvailabilityResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/availability/online-status`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to update online status.');
+  }
+
+  return parseJsonResponse<DriverAvailabilityResponse>(
+    response,
+    'Failed to parse online status response.',
+  );
+}
+
+export async function approveDriverForTesting(): Promise<DriverMeResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/testing/approve`;
+  const token = await readAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers,
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to approve driver in testing mode.');
+  }
+
+  return parseJsonResponse<DriverMeResponse>(
+    response,
+    'Failed to parse testing approval response.',
+  );
+}
+
+export interface ApproveDriverDebugResponse {
+  ok: boolean;
+  status: number;
+  rawBody: string;
+}
+
+export async function approveDriverForTestingDebug(): Promise<ApproveDriverDebugResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/testing/approve`;
+  const token = await readAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers,
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  const rawBody = await response.text();
+  return {
+    ok: response.ok,
+    status: response.status,
+    rawBody,
+  };
 }

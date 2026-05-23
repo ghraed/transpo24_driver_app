@@ -1,15 +1,25 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { getDriverMe, login, registerDriver, updateDriverProfile } from '@/lib/api';
+import {
+  approveDriverForTesting as approveDriverForTestingApi,
+  getDriverAvailability,
+  getDriverMe,
+  login,
+  registerDriver,
+  updateDriverAvailability,
+  updateDriverProfile,
+} from '@/lib/api';
 import { clearAccessToken, persistAccessToken, readAccessToken } from '@/lib/auth-storage';
 import type {
   AuthUser,
+  DriverAvailabilityResponse,
   DriverAuthResponse,
   DriverMeResponse,
   DriverNextStep,
   DriverProfile,
   LoginPayload,
   RegisterDriverPayload,
+  UpdateDriverAvailabilityPayload,
   UpdateDriverProfilePayload,
 } from '@/types/auth';
 
@@ -25,6 +35,11 @@ interface AuthContextValue {
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
   saveDriverProfile: (payload: UpdateDriverProfilePayload) => Promise<DriverMeResponse>;
+  refreshDriverAvailability: () => Promise<DriverAvailabilityResponse>;
+  saveDriverAvailability: (
+    payload: UpdateDriverAvailabilityPayload,
+  ) => Promise<DriverAvailabilityResponse>;
+  approveDriverForTesting: () => Promise<DriverMeResponse>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -102,6 +117,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return updated;
   }, [applyDriverMeResponse]);
 
+  const refreshDriverAvailability = useCallback(async (): Promise<DriverAvailabilityResponse> => {
+    return getDriverAvailability();
+  }, []);
+
+  const saveDriverAvailability = useCallback(
+    async (payload: UpdateDriverAvailabilityPayload): Promise<DriverAvailabilityResponse> => {
+      return updateDriverAvailability(payload);
+    },
+    [],
+  );
+
+  const approveDriverForTesting = useCallback(async (): Promise<DriverMeResponse> => {
+    const response = await approveDriverForTestingApi();
+    applyDriverMeResponse(response);
+    return response;
+  }, [applyDriverMeResponse]);
+
   const signOut = useCallback(async (): Promise<void> => {
     await clearAccessToken();
     setAccessToken(null);
@@ -122,15 +154,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       restoreSession,
       refreshDriverMe,
       saveDriverProfile,
+      refreshDriverAvailability,
+      saveDriverAvailability,
+      approveDriverForTesting,
     }),
     [
       accessToken,
       driver,
       isRestoringSession,
       refreshDriverMe,
+      refreshDriverAvailability,
       registerNewDriver,
       restoreSession,
       saveDriverProfile,
+      saveDriverAvailability,
+      approveDriverForTesting,
       signIn,
       signOut,
       user,

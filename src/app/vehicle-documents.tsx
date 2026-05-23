@@ -24,6 +24,8 @@ import {
 import { useAuth } from '@/context/auth-context';
 import type {
   CreateDriverVehiclePayload,
+  DriverDocument,
+  DriverDocumentType,
   DriverDocumentsForm,
   DriverNextStep,
   DriverVehicle,
@@ -42,6 +44,13 @@ const DOCUMENT_ALLOWED_TYPES = new Set([
   'application/pdf',
 ]);
 const PHOTO_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const REQUIRED_SINGLE_DOCUMENT_TYPES: DriverDocumentType[] = [
+  'DRIVER_LICENSE_FRONT',
+  'DRIVER_LICENSE_BACK',
+  'IDENTITY_DOCUMENT',
+  'VEHICLE_REGISTRATION',
+  'VEHICLE_INSURANCE',
+];
 
 const VEHICLE_TYPE_OPTIONS: Array<{ label: string; value: VehicleType }> = [
   { label: 'Car carrier', value: 'CAR_CARRIER' },
@@ -99,6 +108,25 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
     width: asset.width,
     height: asset.height,
   };
+}
+
+function isRejectedDocument(document: DriverDocument): boolean {
+  return document.status === 'REJECTED';
+}
+
+function hasExistingDocument(
+  documents: DriverDocument[] | undefined,
+  type: DriverDocumentType,
+): boolean {
+  return Boolean(documents?.some((doc) => doc.type === type && !isRejectedDocument(doc)));
+}
+
+function countExistingVehiclePhotos(documents: DriverDocument[] | undefined): number {
+  return (
+    documents?.filter(
+      (doc) => doc.type === 'VEHICLE_PHOTO' && !isRejectedDocument(doc),
+    ).length ?? 0
+  );
 }
 
 export default function VehicleDocumentsScreen() {
@@ -205,15 +233,37 @@ export default function VehicleDocumentsScreen() {
       }
     });
 
-    if (!documentsForm.driverLicenseFront) errors.driverLicenseFront = 'Driver license front is required.';
-    if (!documentsForm.driverLicenseBack) errors.driverLicenseBack = 'Driver license back is required.';
-    if (!documentsForm.identityDocument) errors.identityDocument = 'Identity document is required.';
-    if (!documentsForm.vehicleRegistration) errors.vehicleRegistration = 'Vehicle registration is required.';
-    if (!documentsForm.vehicleInsurance) errors.vehicleInsurance = 'Vehicle insurance is required.';
+    const existingDocs = existingVehicle?.documents;
+    const hasAllRequiredExistingDocuments = REQUIRED_SINGLE_DOCUMENT_TYPES.every((type) =>
+      hasExistingDocument(existingDocs, type),
+    );
+    const existingVehiclePhotos = countExistingVehiclePhotos(existingDocs);
+    const existingStepAlreadyComplete =
+      hasAllRequiredExistingDocuments && existingVehiclePhotos >= 1;
 
-    if (documentsForm.vehiclePhotos.length === 0) {
+    if (!existingStepAlreadyComplete && !documentsForm.driverLicenseFront) {
+      errors.driverLicenseFront = 'Driver license front is required.';
+    }
+    if (!existingStepAlreadyComplete && !documentsForm.driverLicenseBack) {
+      errors.driverLicenseBack = 'Driver license back is required.';
+    }
+    if (!existingStepAlreadyComplete && !documentsForm.identityDocument) {
+      errors.identityDocument = 'Identity document is required.';
+    }
+    if (!existingStepAlreadyComplete && !documentsForm.vehicleRegistration) {
+      errors.vehicleRegistration = 'Vehicle registration is required.';
+    }
+    if (!existingStepAlreadyComplete && !documentsForm.vehicleInsurance) {
+      errors.vehicleInsurance = 'Vehicle insurance is required.';
+    }
+
+    const totalVehiclePhotos = existingStepAlreadyComplete
+      ? existingVehiclePhotos + documentsForm.vehiclePhotos.length
+      : documentsForm.vehiclePhotos.length;
+
+    if (!existingStepAlreadyComplete && totalVehiclePhotos === 0) {
       errors.vehiclePhotos = 'At least one vehicle photo is required.';
-    } else if (documentsForm.vehiclePhotos.length > MAX_VEHICLE_PHOTOS) {
+    } else if (totalVehiclePhotos > MAX_VEHICLE_PHOTOS) {
       errors.vehiclePhotos = `Maximum ${MAX_VEHICLE_PHOTOS} vehicle photos allowed.`;
     }
 
@@ -255,7 +305,7 @@ export default function VehicleDocumentsScreen() {
     });
 
     return errors;
-  }, [documentsForm, vehicleForm]);
+  }, [documentsForm, existingVehicle, vehicleForm]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -379,6 +429,25 @@ export default function VehicleDocumentsScreen() {
 
     if (!targetVehicleId) {
       setSubmitError('Failed to determine vehicle for document upload. Please retry.');
+      return;
+    }
+
+    const existingDocs = existingVehicle?.documents ?? [];
+    const hasAllRequiredExistingDocuments = REQUIRED_SINGLE_DOCUMENT_TYPES.every((type) =>
+      hasExistingDocument(existingDocs, type),
+    );
+    const existingVehiclePhotos = countExistingVehiclePhotos(existingDocs);
+    const totalVehiclePhotos = existingVehiclePhotos + documentsForm.vehiclePhotos.length;
+    const hasAnyNewUploads =
+      Boolean(documentsForm.driverLicenseFront) ||
+      Boolean(documentsForm.driverLicenseBack) ||
+      Boolean(documentsForm.identityDocument) ||
+      Boolean(documentsForm.vehicleRegistration) ||
+      Boolean(documentsForm.vehicleInsurance) ||
+      documentsForm.vehiclePhotos.length > 0;
+
+    if (hasAllRequiredExistingDocuments && totalVehiclePhotos >= 1 && !hasAnyNewUploads) {
+      router.replace('/set-availability');
       return;
     }
 

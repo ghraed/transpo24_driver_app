@@ -15,6 +15,15 @@ export type DriverNextStep =
   | 'WAITING_APPROVAL'
   | 'HOME';
 
+export type DayOfWeek =
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY';
+
 export type PreferredLanguage = 'en' | 'ar' | 'de' | 'fr' | 'it';
 
 export interface RegisterDriverPayload {
@@ -204,6 +213,72 @@ export interface DriverVehicleDocumentsResponse {
   vehicle: DriverVehicle;
   documents: DriverDocument[];
   nextStep: DriverNextStep;
+}
+
+export interface DriverAvailabilityDay {
+  dayOfWeek: DayOfWeek;
+  isAvailable: boolean;
+  startTime: string | null;
+  endTime: string | null;
+}
+
+export interface DriverAvailabilityFormDay {
+  dayOfWeek: DayOfWeek;
+  label: string;
+  isAvailable: boolean;
+  startTime: string;
+  endTime: string;
+}
+
+export interface UpdateDriverAvailabilityPayload {
+  timezone: string;
+  isOnline: boolean;
+  serviceRadiusKm: number;
+  baseLatitude?: number;
+  baseLongitude?: number;
+  baseAddress?: string;
+  acceptsImmediateRequests: boolean;
+  acceptsScheduledRequests: boolean;
+  weeklySchedule: Array<{
+    dayOfWeek: DayOfWeek;
+    isAvailable: boolean;
+    startTime?: string;
+    endTime?: string;
+  }>;
+}
+
+export interface UpdateDriverOnlineStatusPayload {
+  isOnline: boolean;
+}
+
+export interface DriverAvailabilityResponse {
+  id: string | null;
+  driverId: string;
+  timezone: string;
+  isOnline: boolean;
+  serviceRadiusKm: number;
+  baseLatitude: number | null;
+  baseLongitude: number | null;
+  baseAddress: string | null;
+  acceptsImmediateRequests: boolean;
+  acceptsScheduledRequests: boolean;
+  weeklySchedule: DriverAvailabilityDay[];
+  nextStep: DriverNextStep;
+  driverStatus: DriverStatus;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DriverAvailabilityForm {
+  timezone: string;
+  isOnline: boolean;
+  serviceRadiusKm: string;
+  baseLatitude: string;
+  baseLongitude: string;
+  baseAddress: string;
+  acceptsImmediateRequests: boolean;
+  acceptsScheduledRequests: boolean;
+  weeklySchedule: DriverAvailabilityFormDay[];
 }
 
 export interface DriverVehiclesListResponse {
