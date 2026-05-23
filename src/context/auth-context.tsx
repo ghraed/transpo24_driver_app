@@ -1,14 +1,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { login, registerDriver } from '@/lib/api';
+import { getDriverMe, login, registerDriver, updateDriverProfile } from '@/lib/api';
 import { clearAccessToken, persistAccessToken, readAccessToken } from '@/lib/auth-storage';
 import type {
   AuthUser,
   DriverAuthResponse,
+  DriverMeResponse,
   DriverNextStep,
   DriverProfile,
   LoginPayload,
   RegisterDriverPayload,
+  UpdateDriverProfilePayload,
 } from '@/types/auth';
 
 interface AuthContextValue {
@@ -21,6 +23,8 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
   registerNewDriver: (payload: RegisterDriverPayload) => Promise<DriverAuthResponse>;
   restoreSession: () => Promise<void>;
+  refreshDriverMe: () => Promise<DriverMeResponse>;
+  saveDriverProfile: (payload: UpdateDriverProfilePayload) => Promise<DriverMeResponse>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,15 +35,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(true);
 
+  const applyDriverMeResponse = useCallback((response: DriverMeResponse): void => {
+    setUser(response.user);
+    setDriver(response.driver);
+  }, []);
+
   const restoreSession = useCallback(async (): Promise<void> => {
     setIsRestoringSession(true);
     try {
       const token = await readAccessToken();
       setAccessToken(token);
+
+      if (token) {
+        try {
+          const me = await getDriverMe();
+          applyDriverMeResponse(me);
+        } catch {
+          await clearAccessToken();
+          setAccessToken(null);
+          setUser(null);
+          setDriver(null);
+        }
+      }
     } finally {
       setIsRestoringSession(false);
     }
-  }, []);
+  }, [applyDriverMeResponse]);
 
   useEffect(() => {
     void restoreSession();
@@ -69,6 +90,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
   }, []);
 
+  const refreshDriverMe = useCallback(async (): Promise<DriverMeResponse> => {
+    const me = await getDriverMe();
+    applyDriverMeResponse(me);
+    return me;
+  }, [applyDriverMeResponse]);
+
+  const saveDriverProfile = useCallback(async (payload: UpdateDriverProfilePayload): Promise<DriverMeResponse> => {
+    const updated = await updateDriverProfile(payload);
+    applyDriverMeResponse(updated);
+    return updated;
+  }, [applyDriverMeResponse]);
+
   const signOut = useCallback(async (): Promise<void> => {
     await clearAccessToken();
     setAccessToken(null);
@@ -87,8 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       registerNewDriver,
       restoreSession,
+      refreshDriverMe,
+      saveDriverProfile,
     }),
-    [accessToken, driver, isRestoringSession, registerNewDriver, restoreSession, signIn, signOut, user],
+    [
+      accessToken,
+      driver,
+      isRestoringSession,
+      refreshDriverMe,
+      registerNewDriver,
+      restoreSession,
+      saveDriverProfile,
+      signIn,
+      signOut,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
