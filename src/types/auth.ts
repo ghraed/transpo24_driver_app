@@ -98,6 +98,123 @@ export interface DriverMeResponse {
   nextStep: DriverNextStep;
 }
 
+export type VehicleType =
+  | 'CAR_CARRIER'
+  | 'FLATBED_TRUCK'
+  | 'TOW_TRUCK'
+  | 'VAN'
+  | 'BOX_TRUCK'
+  | 'PICKUP_TRUCK'
+  | 'MOTORCYCLE_TRAILER'
+  | 'FURNITURE_TRUCK'
+  | 'OTHER';
+
+export type DriverDocumentType =
+  | 'DRIVER_LICENSE_FRONT'
+  | 'DRIVER_LICENSE_BACK'
+  | 'IDENTITY_DOCUMENT'
+  | 'PASSPORT'
+  | 'VEHICLE_REGISTRATION'
+  | 'VEHICLE_INSURANCE'
+  | 'VEHICLE_PHOTO'
+  | 'TECHNICAL_INSPECTION'
+  | 'PROFILE_PHOTO';
+
+export type DocumentStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+export interface CreateDriverVehiclePayload {
+  vehicleType: VehicleType;
+  make: string;
+  model: string;
+  year: number;
+  plateNumber: string;
+  color?: string;
+  capacityKg?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  hasTrailer: boolean;
+}
+
+export interface DriverVehicleForm {
+  vehicleType: VehicleType | '';
+  make: string;
+  model: string;
+  year: string;
+  plateNumber: string;
+  color: string;
+  capacityKg: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
+  hasTrailer: boolean;
+}
+
+export interface LocalDocumentAsset {
+  uri: string;
+  fileName?: string;
+  mimeType?: string;
+  fileSize?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface DriverDocumentsForm {
+  driverLicenseFront?: LocalDocumentAsset;
+  driverLicenseBack?: LocalDocumentAsset;
+  identityDocument?: LocalDocumentAsset;
+  vehicleRegistration?: LocalDocumentAsset;
+  vehicleInsurance?: LocalDocumentAsset;
+  vehiclePhotos: LocalDocumentAsset[];
+}
+
+export interface DriverDocument {
+  id: string;
+  vehicleId: string | null;
+  type: DriverDocumentType;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  status: DocumentStatus;
+  rejectionReason: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface DriverVehicle {
+  id: string;
+  vehicleType: VehicleType;
+  make: string;
+  model: string;
+  year: number;
+  plateNumber: string;
+  color: string | null;
+  capacityKg: number | null;
+  lengthCm: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+  hasTrailer: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  documents?: DriverDocument[];
+}
+
+export interface DriverVehicleDocumentsResponse {
+  vehicle: DriverVehicle;
+  documents: DriverDocument[];
+  nextStep: DriverNextStep;
+}
+
+export interface DriverVehiclesListResponse {
+  driverStatus: DriverStatus;
+  nextStep: DriverNextStep;
+  vehicles: Array<{
+    vehicle: DriverVehicle;
+    documents: DriverDocument[];
+  }>;
+}
+
 export interface DriverAuthResponse {
   accessToken: string;
   user: AuthUser;

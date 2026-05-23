@@ -1,7 +1,12 @@
 import { readAccessToken } from './auth-storage';
 import type {
+  CreateDriverVehiclePayload,
   DriverAuthResponse,
   DriverMeResponse,
+  DriverVehicle,
+  DriverVehicleDocumentsResponse,
+  DriverVehiclesListResponse,
+  LocalDocumentAsset,
   LoginPayload,
   LoginResponse,
   RegisterDriverPayload,
@@ -64,6 +69,24 @@ function toNetworkError(endpoint: string, error: unknown): Error {
     }
   }
   return error instanceof Error ? error : new Error('Unexpected network error.');
+}
+
+type ReactNativeFormDataFile = {
+  uri: string;
+  name: string;
+  type: string;
+};
+
+function toFormDataFile(
+  asset: LocalDocumentAsset,
+  fallbackName: string,
+  fallbackMimeType: string,
+): ReactNativeFormDataFile {
+  return {
+    uri: asset.uri,
+    name: asset.fileName ?? fallbackName,
+    type: asset.mimeType ?? fallbackMimeType,
+  };
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
@@ -162,4 +185,116 @@ export async function updateDriverProfile(
   }
 
   return (await response.json()) as DriverMeResponse;
+}
+
+export async function getDriverVehicles(): Promise<DriverVehicle[]> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load driver vehicles.');
+  }
+
+  const data = (await response.json()) as DriverVehiclesListResponse;
+  return (data.vehicles ?? []).map((item) => ({
+    ...item.vehicle,
+    documents: item.documents,
+  }));
+}
+
+export async function createDriverVehicle(
+  payload: CreateDriverVehiclePayload,
+): Promise<DriverVehicle> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to create driver vehicle.');
+  }
+
+  const data = (await response.json()) as DriverVehicleDocumentsResponse;
+  return data.vehicle;
+}
+
+export async function uploadDriverVehicleDocuments(
+  vehicleId: string,
+  payload: {
+    driverLicenseFront: LocalDocumentAsset;
+    driverLicenseBack: LocalDocumentAsset;
+    identityDocument: LocalDocumentAsset;
+    vehicleRegistration: LocalDocumentAsset;
+    vehicleInsurance: LocalDocumentAsset;
+    vehiclePhotos: LocalDocumentAsset[];
+  },
+): Promise<DriverVehicleDocumentsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/documents`;
+  const formData = new FormData();
+
+  formData.append(
+    'driverLicenseFront',
+    toFormDataFile(payload.driverLicenseFront, 'driver-license-front.jpg', 'image/jpeg') as unknown as Blob,
+  );
+  formData.append(
+    'driverLicenseBack',
+    toFormDataFile(payload.driverLicenseBack, 'driver-license-back.jpg', 'image/jpeg') as unknown as Blob,
+  );
+  formData.append(
+    'identityDocument',
+    toFormDataFile(payload.identityDocument, 'identity-document.jpg', 'image/jpeg') as unknown as Blob,
+  );
+  formData.append(
+    'vehicleRegistration',
+    toFormDataFile(payload.vehicleRegistration, 'vehicle-registration.jpg', 'image/jpeg') as unknown as Blob,
+  );
+  formData.append(
+    'vehicleInsurance',
+    toFormDataFile(payload.vehicleInsurance, 'vehicle-insurance.jpg', 'image/jpeg') as unknown as Blob,
+  );
+
+  payload.vehiclePhotos.forEach((photo, index) => {
+    formData.append(
+      'vehiclePhotos',
+      toFormDataFile(photo, `vehicle-photo-${index + 1}.jpg`, 'image/jpeg') as unknown as Blob,
+    );
+  });
+
+  const token = await readAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to upload driver vehicle documents.');
+  }
+
+  return (await response.json()) as DriverVehicleDocumentsResponse;
 }
