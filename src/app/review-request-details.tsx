@@ -133,6 +133,10 @@ export default function ReviewRequestDetailsScreen() {
         params: {
           requestId: response.requestId,
           alertId: response.alertId,
+          serviceName: details?.service?.nameEn || details?.service?.key || '',
+          pickupAddress: details?.pickup?.address || '',
+          dropoffAddress: details?.dropoff?.address || '',
+          scheduledPickupAt: details?.schedule?.scheduledPickupAt || '',
         },
       });
     } catch (requestError) {

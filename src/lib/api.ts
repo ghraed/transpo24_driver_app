@@ -15,6 +15,8 @@ import type {
   LoginPayload,
   LoginResponse,
   RegisterDriverPayload,
+  SendDriverPriceOfferPayload,
+  SendDriverPriceOfferResponse,
   UpdateDriverAvailabilityPayload,
   UpdateDriverOnlineStatusPayload,
   UpdateDriverProfilePayload,
@@ -669,5 +671,31 @@ export async function ignoreDriverRequestAlert(
   return parseJsonResponse<IgnoreDriverRequestAlertResponse>(
     response,
     'Failed to parse ignore alert response.',
+  );
+}
+
+export async function sendDriverPriceOffer(
+  requestId: string,
+  payload: SendDriverPriceOfferPayload,
+): Promise<SendDriverPriceOfferResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/requests/${requestId}/offers`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to send price offer.');
+  }
+
+  return parseJsonResponse<SendDriverPriceOfferResponse>(
+    response,
+    'Failed to parse send price offer response.',
   );
 }

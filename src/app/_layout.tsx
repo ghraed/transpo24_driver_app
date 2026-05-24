@@ -28,6 +28,10 @@ function AppNavigator() {
       <Stack.Screen name="receive-requests" options={{ title: 'Available Requests' }} />
       <Stack.Screen name="review-request-details" options={{ title: 'Request Details' }} />
       <Stack.Screen name="send-price-offer" options={{ title: 'Send Price Offer' }} />
+      <Stack.Screen
+        name="offer-waiting-response"
+        options={{ title: 'Waiting for Customer Response' }}
+      />
       <Stack.Screen name="explore" options={{ title: 'Explore' }} />
     </Stack>
   );

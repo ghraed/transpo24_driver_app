@@ -413,3 +413,48 @@ export interface IgnoreDriverRequestAlertResponse {
   requestId: string;
   alertStatus: 'IGNORED';
 }
+
+export type DriverOfferStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+export type SendOfferNextStep = 'WAIT_FOR_CUSTOMER_RESPONSE';
+
+export type SupportedOfferCurrency = 'CHF' | 'EUR' | 'AED' | 'SAR' | 'QAR' | 'USD';
+
+export interface SendDriverPriceOfferPayload {
+  price: number;
+  currency: SupportedOfferCurrency;
+  estimatedPickupAt?: string;
+  estimatedDeliveryAt?: string;
+  estimatedDurationMinutes?: number;
+  message?: string;
+}
+
+export interface DriverOffer {
+  id: string;
+  requestId: string;
+  driverId: string;
+  alertId?: string | null;
+  price: number;
+  currency: string;
+  estimatedPickupAt: string | null;
+  estimatedDeliveryAt: string | null;
+  estimatedDurationMinutes: number | null;
+  message: string | null;
+  status: DriverOfferStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendDriverPriceOfferResponse {
+  offer: DriverOffer;
+  request: {
+    id: string;
+    status: string;
+  };
+  nextStep: SendOfferNextStep;
+}
