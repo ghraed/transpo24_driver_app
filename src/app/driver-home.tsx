@@ -19,6 +19,11 @@ export default function DriverHomeScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Driver Home</Text>
         <Text style={styles.subtitle}>Welcome {driver?.firstName || user?.email || 'Driver'}.</Text>
+
+        <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
+          <Text style={styles.requestsButtonText}>Available Requests</Text>
+        </Pressable>
+
         <Pressable style={styles.button} onPress={() => void onSignOut()}>
           <Text style={styles.buttonText}>Logout</Text>
         </Pressable>
@@ -32,6 +37,15 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
   subtitle: { color: '#475569' },
+  requestsButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requestsButtonText: { color: '#FFFFFF', fontWeight: '700' },
   button: {
     marginTop: 8,
     minHeight: 44,
