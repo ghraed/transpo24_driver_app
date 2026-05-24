@@ -126,7 +126,9 @@ export default function SetAvailabilityScreen() {
   const [isApprovingForTesting, setIsApprovingForTesting] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
+  const [submitSuccess, setSubmitSuccess] = useState<string>('');
   const [approveDebugMessage, setApproveDebugMessage] = useState<string>('');
+  const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') || '(EXPO_PUBLIC_API_URL not set)';
 
   const applyAvailability = useCallback((response: Awaited<ReturnType<typeof refreshDriverAvailability>>): void => {
     setForm({
@@ -272,6 +274,7 @@ export default function SetAvailabilityScreen() {
 
   const onUseCurrentLocation = async (): Promise<void> => {
     setSubmitError('');
+    setSubmitSuccess('');
     setIsGettingLocation(true);
 
     try {
@@ -319,6 +322,7 @@ export default function SetAvailabilityScreen() {
     }
 
     setSubmitError('');
+    setSubmitSuccess('');
     setIsSaving(true);
 
     const radiusValue = Number(form.serviceRadiusKm.trim());
@@ -344,6 +348,9 @@ export default function SetAvailabilityScreen() {
 
     try {
       const response = await saveDriverAvailability(payload);
+      setSubmitSuccess(
+        `Availability saved. Online: ${response.isOnline ? 'YES' : 'NO'} | Radius: ${response.serviceRadiusKm} km`,
+      );
 
       if (response.nextStep === 'SET_AVAILABILITY') {
         setSubmitError('Please complete all required availability fields.');
@@ -390,10 +397,42 @@ export default function SetAvailabilityScreen() {
   const onApproveForTesting = async (): Promise<void> => {
     if (isApprovingForTesting) return;
     setSubmitError('');
+    setSubmitSuccess('');
     setApproveDebugMessage('');
     setIsApprovingForTesting(true);
 
     try {
+      if (!isFormValid) {
+        setSubmitError('Fix availability form errors before approving for testing.');
+        return;
+      }
+
+      const radiusValue = Number(form.serviceRadiusKm.trim());
+      const latitude = parseNumber(form.baseLatitude);
+      const longitude = parseNumber(form.baseLongitude);
+
+      const availabilityPayload: UpdateDriverAvailabilityPayload = {
+        timezone: form.timezone.trim(),
+        isOnline: form.isOnline,
+        serviceRadiusKm: radiusValue,
+        baseLatitude: latitude,
+        baseLongitude: longitude,
+        baseAddress: form.baseAddress.trim() || undefined,
+        acceptsImmediateRequests: form.acceptsImmediateRequests,
+        acceptsScheduledRequests: form.acceptsScheduledRequests,
+        weeklySchedule: form.weeklySchedule.map((day) => ({
+          dayOfWeek: day.dayOfWeek,
+          isAvailable: day.isAvailable,
+          startTime: day.isAvailable ? day.startTime.trim() : undefined,
+          endTime: day.isAvailable ? day.endTime.trim() : undefined,
+        })),
+      };
+
+      const availabilityResponse = await saveDriverAvailability(availabilityPayload);
+      setSubmitSuccess(
+        `Availability saved. Online: ${availabilityResponse.isOnline ? 'YES' : 'NO'} | Radius: ${availabilityResponse.serviceRadiusKm} km`,
+      );
+
       const debug = await approveDriverForTestingDebug();
       const normalizedRaw = debug.rawBody?.trim() || '<empty response body>';
       setApproveDebugMessage(`HTTP ${debug.status}\n${normalizedRaw}`);
@@ -454,6 +493,7 @@ export default function SetAvailabilityScreen() {
           <Text style={styles.helper}>
             Your availability helps us match you with transport requests at the right time and place.
           </Text>
+          <Text style={styles.endpointText}>Backend: {apiBaseUrl}</Text>
         </View>
 
         <View style={styles.section}>
@@ -646,6 +686,7 @@ export default function SetAvailabilityScreen() {
         </View>
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
+        {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
         <Pressable
           style={[styles.primaryButton, (!isFormValid || isSaving) && styles.primaryButtonDisabled]}
@@ -709,6 +750,11 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 13,
   },
+  endpointText: {
+    color: '#0369A1',
+    fontSize: 12,
+    marginTop: 2,
+  },
   section: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -736,6 +782,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#DC2626',
+    fontSize: 12,
+  },
+  successText: {
+    color: '#15803D',
     fontSize: 12,
   },
   row: {
