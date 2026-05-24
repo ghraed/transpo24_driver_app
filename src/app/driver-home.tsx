@@ -24,6 +24,10 @@ export default function DriverHomeScreen() {
           <Text style={styles.requestsButtonText}>Available Requests</Text>
         </Pressable>
 
+        <Pressable style={styles.acceptedJobsButton} onPress={() => router.push('/accepted-jobs')}>
+          <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
+        </Pressable>
+
         <Pressable style={styles.button} onPress={() => void onSignOut()}>
           <Text style={styles.buttonText}>Logout</Text>
         </Pressable>
@@ -46,6 +50,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   requestsButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  acceptedJobsButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  acceptedJobsButtonText: { color: '#FFFFFF', fontWeight: '700' },
   button: {
     marginTop: 8,
     minHeight: 44,

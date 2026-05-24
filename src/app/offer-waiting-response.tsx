@@ -21,6 +21,9 @@ export default function OfferWaitingResponseScreen() {
         <Pressable style={styles.primaryButton} onPress={() => router.replace('/receive-requests')}>
           <Text style={styles.primaryButtonText}>Back to Available Requests</Text>
         </Pressable>
+        <Pressable style={styles.primaryButton} onPress={() => router.replace('/accepted-jobs')}>
+          <Text style={styles.primaryButtonText}>Check Accepted Jobs</Text>
+        </Pressable>
         <Pressable style={styles.secondaryButton} onPress={() => router.replace('/driver-home')}>
           <Text style={styles.secondaryButtonText}>Go to Driver Home</Text>
         </Pressable>
