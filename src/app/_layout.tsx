@@ -25,6 +25,9 @@ function AppNavigator() {
       <Stack.Screen name="set-availability" options={{ title: 'Set Availability' }} />
       <Stack.Screen name="waiting-approval" options={{ title: 'Waiting Approval' }} />
       <Stack.Screen name="driver-home" options={{ title: 'Driver Home' }} />
+      <Stack.Screen name="receive-requests" options={{ title: 'Available Requests' }} />
+      <Stack.Screen name="review-request-details" options={{ title: 'Request Details' }} />
+      <Stack.Screen name="send-price-offer" options={{ title: 'Send Price Offer' }} />
       <Stack.Screen name="explore" options={{ title: 'Explore' }} />
     </Stack>
   );

@@ -303,3 +303,229 @@ export interface LoginResponse {
   driver?: DriverProfile;
   nextStep?: DriverNextStep;
 }
+
+export type DriverRequestAlertStatus =
+  | 'NEW'
+  | 'SEEN'
+  | 'ACCEPTED'
+  | 'IGNORED'
+  | 'EXPIRED';
+
+export type RequestStatus =
+  | 'DRAFT'
+  | 'PENDING_QUOTES'
+  | 'QUOTED'
+  | 'ACCEPTED'
+  | 'DRIVER_ASSIGNED'
+  | 'DRIVER_GOING_TO_PICKUP'
+  | 'DRIVER_ARRIVED_PICKUP'
+  | 'PICKUP_IN_PROGRESS'
+  | 'IN_TRANSIT'
+  | 'DRIVER_GOING_TO_DROPOFF'
+  | 'DELIVERED'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export interface RequestLocationSummary {
+  latitude: number | null;
+  longitude: number | null;
+  address: string | null;
+}
+
+export interface RequestServiceSummary {
+  id: string;
+  key: string;
+  nameEn: string;
+  nameAr: string;
+  icon: string | null;
+}
+
+export type VehicleCondition =
+  | 'RUNNING'
+  | 'NEEDS_JUMP_START'
+  | 'NEEDS_WINCH'
+  | 'NEEDS_CRANE'
+  | 'MISSING_WHEELS';
+
+export interface RequestVehicleDetailsSummary {
+  condition: VehicleCondition | null;
+  conditionNotes: string | null;
+}
+
+export interface RequestScheduleSummary {
+  isImmediate: boolean;
+  scheduledPickupAt: string | null;
+}
+
+export interface RequestItemSummary {
+  title: string | null;
+  type: string | null;
+  description: string | null;
+}
+
+export interface DriverRequestAlertSummary {
+  alertId: string;
+  requestId: string;
+  alertStatus: DriverRequestAlertStatus;
+  requestStatus: RequestStatus;
+  service: RequestServiceSummary | null;
+  pickup: RequestLocationSummary;
+  dropoff: RequestLocationSummary;
+  schedule: RequestScheduleSummary;
+  item: RequestItemSummary;
+  vehicleDetails: RequestVehicleDetailsSummary | null;
+  distanceKm: number | null;
+  createdAt: string;
+  submittedAt: string | null;
+}
+
+export interface DriverRequestAlertsResponse {
+  alerts: DriverRequestAlertSummary[];
+}
+
+export interface RequestPhoto {
+  id: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  customer: {
+    firstName: string | null;
+    rating: number | null;
+  } | null;
+  itemDetails: {
+    title: string | null;
+    description: string | null;
+    type: string | null;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    condition: string | null;
+    weightKg: number | null;
+    dimensions: {
+      lengthCm: number | null;
+      widthCm: number | null;
+      heightCm: number | null;
+    };
+    requiresLoadingHelp: boolean;
+    loadingWorkersCount: number | null;
+    specialInstructions: string | null;
+  };
+  photos: RequestPhoto[];
+}
+
+export interface AcceptDriverRequestAlertResponse {
+  alertId: string;
+  requestId: string;
+  alertStatus: 'ACCEPTED';
+  nextStep: 'SEND_PRICE_OFFER';
+}
+
+export interface IgnoreDriverRequestAlertResponse {
+  alertId: string;
+  requestId: string;
+  alertStatus: 'IGNORED';
+}
+
+export type DriverOfferStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'EXPIRED';
+
+export type SendOfferNextStep = 'WAIT_FOR_CUSTOMER_RESPONSE';
+
+export type SupportedOfferCurrency = 'CHF' | 'EUR' | 'AED' | 'SAR' | 'QAR' | 'USD';
+
+export interface SendDriverPriceOfferPayload {
+  price: number;
+  currency: SupportedOfferCurrency;
+  estimatedPickupAt?: string;
+  estimatedDeliveryAt?: string;
+  estimatedDurationMinutes?: number;
+  message?: string;
+}
+
+export interface DriverOffer {
+  id: string;
+  requestId: string;
+  driverId: string;
+  alertId?: string | null;
+  price: number;
+  currency: string;
+  estimatedPickupAt: string | null;
+  estimatedDeliveryAt: string | null;
+  estimatedDurationMinutes: number | null;
+  message: string | null;
+  status: DriverOfferStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendDriverPriceOfferResponse {
+  offer: DriverOffer;
+  request: {
+    id: string;
+    status: string;
+  };
+  nextStep: SendOfferNextStep;
+}
+
+export interface AcceptedOffer extends DriverOffer {
+  status: 'ACCEPTED';
+  acceptedAt: string | null;
+}
+
+export interface DriverAcceptedJobSummary {
+  requestId: string;
+  requestStatus: RequestStatus;
+  acceptedAt: string | null;
+  service: RequestServiceSummary | null;
+  pickup: RequestLocationSummary;
+  dropoff: RequestLocationSummary;
+  schedule: RequestScheduleSummary;
+  item: {
+    title: string | null;
+    type: string | null;
+    description: string | null;
+  };
+  vehicleDetails: RequestVehicleDetailsSummary | null;
+  acceptedOffer: AcceptedOffer;
+  nextStep: 'GO_TO_PICKUP';
+}
+
+export interface DriverAcceptedJobDetailsResponse extends DriverAcceptedJobSummary {
+  customer: {
+    firstName: string | null;
+    phone: string | null;
+    rating: number | null;
+  } | null;
+  itemDetails: {
+    title: string | null;
+    description: string | null;
+    type: string | null;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    condition: string | null;
+    weightKg: number | null;
+    dimensions: {
+      lengthCm: number | null;
+      widthCm: number | null;
+      heightCm: number | null;
+    };
+    requiresLoadingHelp: boolean;
+    loadingWorkersCount: number | null;
+    specialInstructions: string | null;
+  };
+  photos: RequestPhoto[];
+}
+
+export interface DriverAcceptedJobsResponse {
+  jobs: DriverAcceptedJobSummary[];
+}

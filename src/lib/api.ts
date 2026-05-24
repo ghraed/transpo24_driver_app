@@ -1,10 +1,14 @@
 import { readAccessToken } from './auth-storage';
 import type {
+  AcceptDriverRequestAlertResponse,
   CreateDriverVehiclePayload,
   DriverAvailabilityResponse,
+  DriverRequestAlertsResponse,
+  DriverRequestDetailsResponse,
   DriverAuthResponse,
   DriverMeResponse,
   DriverVehicle,
+  IgnoreDriverRequestAlertResponse,
   DriverVehicleDocumentsResponse,
   DriverVehiclesListResponse,
   LocalDocumentAsset,
@@ -570,4 +574,100 @@ export async function approveDriverForTestingDebug(): Promise<ApproveDriverDebug
     status: response.status,
     rawBody,
   };
+}
+
+export async function getDriverRequestAlerts(): Promise<DriverRequestAlertsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/requests/alerts`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load request alerts.');
+  }
+
+  return parseJsonResponse<DriverRequestAlertsResponse>(
+    response,
+    'Failed to parse request alerts response.',
+  );
+}
+
+export async function getDriverRequestDetails(
+  requestId: string,
+): Promise<DriverRequestDetailsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/requests/${requestId}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load request details.');
+  }
+
+  return parseJsonResponse<DriverRequestDetailsResponse>(
+    response,
+    'Failed to parse request details response.',
+  );
+}
+
+export async function acceptDriverRequestAlert(
+  requestId: string,
+): Promise<AcceptDriverRequestAlertResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/requests/${requestId}/accept-alert`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to accept request alert.');
+  }
+
+  return parseJsonResponse<AcceptDriverRequestAlertResponse>(
+    response,
+    'Failed to parse accept alert response.',
+  );
+}
+
+export async function ignoreDriverRequestAlert(
+  requestId: string,
+): Promise<IgnoreDriverRequestAlertResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/requests/${requestId}/ignore-alert`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to ignore request alert.');
+  }
+
+  return parseJsonResponse<IgnoreDriverRequestAlertResponse>(
+    response,
+    'Failed to parse ignore alert response.',
+  );
 }
