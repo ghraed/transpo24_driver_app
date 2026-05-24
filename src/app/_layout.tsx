@@ -26,6 +26,12 @@ function AppNavigator() {
       <Stack.Screen name="waiting-approval" options={{ title: 'Waiting Approval' }} />
       <Stack.Screen name="driver-home" options={{ title: 'Driver Home' }} />
       <Stack.Screen name="receive-requests" options={{ title: 'Available Requests' }} />
+      <Stack.Screen name="accepted-jobs" options={{ title: 'Accepted Jobs' }} />
+      <Stack.Screen
+        name="accepted-job-details"
+        options={{ title: 'Accepted Job Details' }}
+      />
+      <Stack.Screen name="go-to-pickup" options={{ title: 'Go to Pickup Location' }} />
       <Stack.Screen name="review-request-details" options={{ title: 'Request Details' }} />
       <Stack.Screen name="send-price-offer" options={{ title: 'Send Price Offer' }} />
       <Stack.Screen

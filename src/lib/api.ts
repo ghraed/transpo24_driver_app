@@ -2,6 +2,8 @@ import { readAccessToken } from './auth-storage';
 import type {
   AcceptDriverRequestAlertResponse,
   CreateDriverVehiclePayload,
+  DriverAcceptedJobDetailsResponse,
+  DriverAcceptedJobsResponse,
   DriverAvailabilityResponse,
   DriverRequestAlertsResponse,
   DriverRequestDetailsResponse,
@@ -697,5 +699,52 @@ export async function sendDriverPriceOffer(
   return parseJsonResponse<SendDriverPriceOfferResponse>(
     response,
     'Failed to parse send price offer response.',
+  );
+}
+
+export async function getDriverAcceptedJobs(): Promise<DriverAcceptedJobsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/jobs/accepted`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load accepted jobs.');
+  }
+
+  const jobs = await parseJsonResponse<DriverAcceptedJobsResponse['jobs']>(
+    response,
+    'Failed to parse accepted jobs response.',
+  );
+  return { jobs };
+}
+
+export async function getDriverAcceptedJobDetails(
+  requestId: string,
+): Promise<DriverAcceptedJobDetailsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/jobs/${requestId}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load accepted job details.');
+  }
+
+  return parseJsonResponse<DriverAcceptedJobDetailsResponse>(
+    response,
+    'Failed to parse accepted job details response.',
   );
 }

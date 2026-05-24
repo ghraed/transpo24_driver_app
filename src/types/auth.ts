@@ -458,3 +458,56 @@ export interface SendDriverPriceOfferResponse {
   };
   nextStep: SendOfferNextStep;
 }
+
+export interface AcceptedOffer extends DriverOffer {
+  status: 'ACCEPTED';
+  acceptedAt: string | null;
+}
+
+export interface DriverAcceptedJobSummary {
+  requestId: string;
+  requestStatus: RequestStatus;
+  acceptedAt: string | null;
+  service: RequestServiceSummary | null;
+  pickup: RequestLocationSummary;
+  dropoff: RequestLocationSummary;
+  schedule: RequestScheduleSummary;
+  item: {
+    title: string | null;
+    type: string | null;
+    description: string | null;
+  };
+  acceptedOffer: AcceptedOffer;
+  nextStep: 'GO_TO_PICKUP';
+}
+
+export interface DriverAcceptedJobDetailsResponse extends DriverAcceptedJobSummary {
+  customer: {
+    firstName: string | null;
+    phone: string | null;
+    rating: number | null;
+  } | null;
+  itemDetails: {
+    title: string | null;
+    description: string | null;
+    type: string | null;
+    brand: string | null;
+    model: string | null;
+    year: number | null;
+    condition: string | null;
+    weightKg: number | null;
+    dimensions: {
+      lengthCm: number | null;
+      widthCm: number | null;
+      heightCm: number | null;
+    };
+    requiresLoadingHelp: boolean;
+    loadingWorkersCount: number | null;
+    specialInstructions: string | null;
+  };
+  photos: RequestPhoto[];
+}
+
+export interface DriverAcceptedJobsResponse {
+  jobs: DriverAcceptedJobSummary[];
+}
