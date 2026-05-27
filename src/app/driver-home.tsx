@@ -1,13 +1,44 @@
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useRouter, type Href } from 'expo-router';
+import React, { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
+import { validateOfferAcceptedPayload } from '@/utils/locationValidation';
 
 export default function DriverHomeScreen() {
   const router = useRouter();
-  const { user, driver, signOut } = useAuth();
+  const { user, driver, signOut, accessToken } = useAuth();
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    connectSocket(accessToken);
+
+    const unsubscribeOfferAccepted = onOfferAccepted((payload) => {
+      const validated = validateOfferAcceptedPayload(payload);
+      if (!validated) return;
+
+      router.push({
+        pathname: '/go-to-pickup',
+        params: {
+          tripId: validated.tripId,
+          pickupLatitude: String(validated.pickupLocation.latitude),
+          pickupLongitude: String(validated.pickupLocation.longitude),
+          pickupAddress: validated.pickupLocation.address ?? '',
+          dropoffLatitude: String(validated.dropoffLocation.latitude),
+          dropoffLongitude: String(validated.dropoffLocation.longitude),
+          dropoffAddress: validated.dropoffLocation.address ?? '',
+        },
+      });
+    });
+
+    return () => {
+      unsubscribeOfferAccepted();
+      disconnectSocket();
+    };
+  }, [accessToken, router]);
 
   const onSignOut = async (): Promise<void> => {
     await signOut();
@@ -26,6 +57,10 @@ export default function DriverHomeScreen() {
 
         <Pressable style={styles.acceptedJobsButton} onPress={() => router.push('/accepted-jobs')}>
           <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
+        </Pressable>
+
+        <Pressable style={styles.debugButton} onPress={() => router.push('/socket-debug' as Href)}>
+          <Text style={styles.acceptedJobsButtonText}>Socket Debug</Text>
         </Pressable>
 
         <Pressable style={styles.button} onPress={() => void onSignOut()}>
@@ -55,6 +90,14 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 10,
     backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  debugButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#7C3AED',
     alignItems: 'center',
     justifyContent: 'center',
   },
