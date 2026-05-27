@@ -273,7 +273,20 @@ export default function AcceptedJobDetailsScreen() {
       <View style={styles.footer}>
         <Pressable
           style={[styles.primaryActionButton, !canGoToPickup && styles.disabledButton]}
-          onPress={() => router.push({ pathname: '/go-to-pickup', params: { requestId: details.requestId } })}
+          onPress={() =>
+            router.push({
+              pathname: '/go-to-pickup',
+              params: {
+                tripId: details.requestId,
+                pickupLatitude: String(details.pickup.latitude ?? ''),
+                pickupLongitude: String(details.pickup.longitude ?? ''),
+                pickupAddress: details.pickup.address ?? '',
+                dropoffLatitude: String(details.dropoff.latitude ?? ''),
+                dropoffLongitude: String(details.dropoff.longitude ?? ''),
+                dropoffAddress: details.dropoff.address ?? '',
+              },
+            })
+          }
           disabled={!canGoToPickup}
         >
           <Text style={styles.primaryActionButtonText}>Go to Pickup Location</Text>
