@@ -35,7 +35,7 @@ const TEST_FAKE_LOCATIONS: GeoLocation[] = [
   { latitude: 33.9808, longitude: 35.6178 }, // Jounieh area
   { latitude: 33.8938, longitude: 35.5018 }, // Beirut area
   { latitude: 33.5571, longitude: 35.3715 }, // Sidon area
-  { latitude: 33.2704, longitude: 35.2038 }, // South: Tyre area
+  { latitude: 33.399353, longitude: 35.686924 }, // Final test point: pickup location
 ];
 
 function parseNumber(value: string | string[] | undefined): number | null {
