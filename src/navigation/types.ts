@@ -16,6 +16,10 @@ export type DriverStackParamList = {
     pickupLocation: AddressedLocation;
     dropoffLocation: AddressedLocation;
   };
+  DriverTripCompletedScreen: {
+    tripId: string;
+    deliveredAt: string;
+  };
 };
 
 export type CustomerStackParamList = {

@@ -6,12 +6,13 @@ import {
   connectSocket,
   disconnectSocket,
   emitSocketDebugPing,
-  joinTripRoom,
+  joinTripRoomWithAck,
   leaveTripRoom,
   onSocketConnected,
   onSocketDebugPong,
   onSocketDisconnect,
   onSocketError,
+  waitForSocketConnection,
 } from '@/services/socketService';
 
 export default function SocketDebugScreen() {
@@ -40,7 +41,14 @@ export default function SocketDebugScreen() {
     try {
       connectSocket(accessToken);
       setupListeners();
-      appendLog('Connect requested.');
+      appendLog('Connect requested. Waiting for ack...');
+      void waitForSocketConnection(5000)
+        .then((socketId) => {
+          appendLog(`Connect success (ack): ${socketId}`);
+        })
+        .catch((error) => {
+          appendLog(error instanceof Error ? `Connect failed: ${error.message}` : 'Connect failed.');
+        });
     } catch (error) {
       appendLog(error instanceof Error ? error.message : 'Connect failed.');
     }
@@ -52,8 +60,14 @@ export default function SocketDebugScreen() {
       return;
     }
     try {
-      joinTripRoom(tripId.trim());
-      appendLog(`joinTripRoom sent: ${tripId.trim()}`);
+      appendLog(`joinTripRoom sent: ${tripId.trim()} (waiting ack...)`);
+      void joinTripRoomWithAck(tripId.trim(), 5000)
+        .then((response) => {
+          appendLog(`joinTripRoom success: room=${response.room}`);
+        })
+        .catch((error) => {
+          appendLog(error instanceof Error ? `joinTripRoom failed: ${error.message}` : 'joinTripRoom failed.');
+        });
     } catch (error) {
       appendLog(error instanceof Error ? error.message : 'joinTripRoom failed.');
     }

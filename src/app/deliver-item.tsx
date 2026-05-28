@@ -1,25 +1,458 @@
-import { useLocalSearchParams } from 'expo-router';
-import React from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import MapViewDirections from 'react-native-maps-directions';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { deliverItem, startDelivery } from '@/services/tripService';
+import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
+import type { AddressedLocation, DeliverItemRequest, GeoLocation } from '@/types/trip.types';
+import {
+  DELIVER_CONFIRM_RADIUS_METERS,
+  calculateDistanceMeters,
+  canConfirmDelivery,
+  isValidGeoLocation,
+  isValidTripId,
+  validateDeliverItemRequest,
+  validateTripStatusUpdatedPayload,
+} from '@/utils/deliveryValidation';
+
+const EMIT_DISTANCE_THRESHOLD_METERS = 20;
+const EMIT_TIME_THRESHOLD_MS = 5000;
 
 type DeliverItemParams = {
   tripId?: string;
+  pickupLatitude?: string;
+  pickupLongitude?: string;
   pickupAddress?: string;
+  dropoffLatitude?: string;
+  dropoffLongitude?: string;
   dropoffAddress?: string;
 };
 
+function parseNumber(value: string | string[] | undefined): number | null {
+  if (typeof value !== 'string') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildCompletedRoute(tripId: string, deliveredAt: string): Href {
+  return {
+    pathname: '/driver-trip-completed',
+    params: { tripId, deliveredAt },
+  };
+}
+
 export default function DeliverItemScreen() {
+  const router = useRouter();
   const params = useLocalSearchParams<DeliverItemParams>();
-  const tripId = typeof params.tripId === 'string' ? params.tripId : 'N/A';
+  const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
+  const mapsApiKey =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
+    (Platform.OS === 'ios'
+      ? process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim()
+      : process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim()) ||
+    '';
+
+  const pickupLocation = useMemo<AddressedLocation | null>(() => {
+    const latitude = parseNumber(params.pickupLatitude);
+    const longitude = parseNumber(params.pickupLongitude);
+    if (latitude === null || longitude === null) return null;
+    return {
+      latitude,
+      longitude,
+      address: typeof params.pickupAddress === 'string' ? params.pickupAddress : null,
+    };
+  }, [params.pickupAddress, params.pickupLatitude, params.pickupLongitude]);
+
+  const dropoffLocation = useMemo<AddressedLocation | null>(() => {
+    const latitude = parseNumber(params.dropoffLatitude);
+    const longitude = parseNumber(params.dropoffLongitude);
+    if (latitude === null || longitude === null) return null;
+    return {
+      latitude,
+      longitude,
+      address: typeof params.dropoffAddress === 'string' ? params.dropoffAddress : null,
+    };
+  }, [params.dropoffAddress, params.dropoffLatitude, params.dropoffLongitude]);
+
+  const [driverLocation, setDriverLocation] = useState<GeoLocation | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
+  const [isStartingDelivery, setIsStartingDelivery] = useState<boolean>(true);
+  const [notes, setNotes] = useState<string>('');
+  const [proofImageUrl, setProofImageUrl] = useState<string>('');
+  const [locationMessage, setLocationMessage] = useState<string>('');
+  const [submitError, setSubmitError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const lastEmitLocationRef = useRef<GeoLocation | null>(null);
+  const lastEmitAtRef = useRef<number>(0);
+  const isTripValid = isValidTripId(tripId);
+  const hasValidPickup = Boolean(pickupLocation && isValidGeoLocation(pickupLocation));
+  const hasValidDropoff = Boolean(dropoffLocation && isValidGeoLocation(dropoffLocation));
+  const isInvalidRoute = !isTripValid || !hasValidPickup || !hasValidDropoff;
+
+  const distanceMeters = useMemo(() => {
+    if (!driverLocation || !dropoffLocation || !isValidGeoLocation(dropoffLocation)) {
+      return null;
+    }
+    return calculateDistanceMeters(driverLocation, dropoffLocation);
+  }, [driverLocation, dropoffLocation]);
+
+  const tooFarFromDropoff = useMemo(() => {
+    if (!driverLocation || !dropoffLocation) return false;
+    return !canConfirmDelivery(driverLocation, dropoffLocation);
+  }, [driverLocation, dropoffLocation]);
+
+  const payloadValidationMessage = useMemo(() => {
+    const payload: DeliverItemRequest = {
+      notes: notes.trim() || undefined,
+      proofImageUrl: proofImageUrl.trim() || undefined,
+      latitude: driverLocation?.latitude,
+      longitude: driverLocation?.longitude,
+    };
+    return validateDeliverItemRequest(payload);
+  }, [driverLocation, notes, proofImageUrl]);
+
+  useEffect(() => {
+    let active = true;
+
+    const setup = async (): Promise<(() => void) | void> => {
+      if (isInvalidRoute) {
+        setIsLoadingLocation(false);
+        setIsStartingDelivery(false);
+        return;
+      }
+
+      try {
+        await startDelivery(tripId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to start delivery.';
+        if (
+          !message.toLowerCase().includes('already') &&
+          !message.toLowerCase().includes('driver_going_to_dropoff')
+        ) {
+          setSubmitError(message);
+          setIsStartingDelivery(false);
+          setIsLoadingLocation(false);
+          return;
+        }
+      } finally {
+        if (active) setIsStartingDelivery(false);
+      }
+
+      let offTripStatus: (() => void) | null = null;
+      let offItemDelivered: (() => void) | null = null;
+      try {
+        offTripStatus = onTripStatusUpdated((rawPayload) => {
+          const payload = validateTripStatusUpdatedPayload(rawPayload);
+          if (!payload || payload.tripId !== tripId) return;
+          if (payload.status === 'DELIVERED') {
+            router.replace(buildCompletedRoute(tripId, payload.updatedAt));
+          }
+        });
+        offItemDelivered = onItemDelivered((payload) => {
+          if (payload.tripId !== tripId) return;
+          router.replace(buildCompletedRoute(tripId, payload.deliveredAt));
+        });
+      } catch {
+        // Socket listeners are best-effort on this screen.
+      }
+
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!active) return;
+
+      if (permission.status !== 'granted') {
+        setLocationMessage('Location permission denied. Enable location to continue delivery confirmation.');
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!active) return;
+      if (!servicesEnabled) {
+        setLocationMessage('GPS unavailable. Please enable location services.');
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      try {
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        });
+        if (!active) return;
+
+        const currentLocation: GeoLocation = {
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+        };
+        if (isValidGeoLocation(currentLocation)) {
+          setDriverLocation(currentLocation);
+          emitDriverLocationUpdate({
+            tripId,
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            heading: typeof current.coords.heading === 'number' ? current.coords.heading : undefined,
+            speed: typeof current.coords.speed === 'number' ? current.coords.speed : undefined,
+            accuracy: typeof current.coords.accuracy === 'number' ? current.coords.accuracy : undefined,
+          });
+          lastEmitLocationRef.current = currentLocation;
+          lastEmitAtRef.current = Date.now();
+        }
+
+        const subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Highest,
+            distanceInterval: 10,
+            timeInterval: 3000,
+          },
+          (position) => {
+            const liveLocation: GeoLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
+            if (!isValidGeoLocation(liveLocation)) return;
+            setDriverLocation(liveLocation);
+
+            const now = Date.now();
+            const lastLocation = lastEmitLocationRef.current;
+            const timeElapsed = now - lastEmitAtRef.current;
+            const distanceMoved = lastLocation
+              ? calculateDistanceMeters(lastLocation, liveLocation)
+              : Number.POSITIVE_INFINITY;
+
+            if (distanceMoved < EMIT_DISTANCE_THRESHOLD_METERS && timeElapsed < EMIT_TIME_THRESHOLD_MS) {
+              return;
+            }
+
+            emitDriverLocationUpdate({
+              tripId,
+              latitude: liveLocation.latitude,
+              longitude: liveLocation.longitude,
+              heading: typeof position.coords.heading === 'number' ? position.coords.heading : undefined,
+              speed: typeof position.coords.speed === 'number' ? position.coords.speed : undefined,
+              accuracy: typeof position.coords.accuracy === 'number' ? position.coords.accuracy : undefined,
+            });
+            lastEmitLocationRef.current = liveLocation;
+            lastEmitAtRef.current = now;
+          },
+        );
+
+        if (!active) {
+          subscription.remove();
+          return;
+        }
+        locationSubscriptionRef.current = subscription;
+      } catch (error) {
+        setLocationMessage(
+          error instanceof Error
+            ? error.message
+            : 'Unable to get current location. Please verify GPS availability.',
+        );
+      } finally {
+        if (active) {
+          setIsLoadingLocation(false);
+        }
+      }
+
+      return () => {
+        offTripStatus?.();
+        offItemDelivered?.();
+      };
+    };
+
+    let teardown: (() => void) | void;
+    void setup().then((cleanup) => {
+      teardown = cleanup;
+    });
+
+    return () => {
+      active = false;
+      if (teardown) teardown();
+      if (locationSubscriptionRef.current) {
+        locationSubscriptionRef.current.remove();
+        locationSubscriptionRef.current = null;
+      }
+    };
+  }, [isInvalidRoute, router, tripId]);
+
+  const onConfirmDelivery = async (): Promise<void> => {
+    setSubmitError('');
+    if (isInvalidRoute || !dropoffLocation) {
+      setSubmitError('Invalid trip data. Please reopen this trip from Accepted Jobs.');
+      return;
+    }
+    if (!driverLocation || !isValidGeoLocation(driverLocation)) {
+      setSubmitError('Current location is required to confirm delivery.');
+      return;
+    }
+
+    let latestLocation = driverLocation;
+    try {
+      const permission = await Location.getForegroundPermissionsAsync();
+      if (permission.status === 'granted') {
+        const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const normalizedLocation: GeoLocation = {
+          latitude: fresh.coords.latitude,
+          longitude: fresh.coords.longitude,
+        };
+        if (isValidGeoLocation(normalizedLocation)) {
+          latestLocation = normalizedLocation;
+          setDriverLocation(normalizedLocation);
+        }
+      }
+    } catch {
+      // use latest known location
+    }
+
+    if (!canConfirmDelivery(latestLocation, dropoffLocation)) {
+      setSubmitError('You are too far from dropoff location. Move closer to continue.');
+      return;
+    }
+
+    const payload: DeliverItemRequest = {
+      notes: notes.trim() || undefined,
+      proofImageUrl: proofImageUrl.trim() || undefined,
+      latitude: latestLocation.latitude,
+      longitude: latestLocation.longitude,
+    };
+
+    const validationError = validateDeliverItemRequest(payload);
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await deliverItem(tripId, payload);
+      router.replace(buildCompletedRoute(tripId, response.deliveredAt));
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to confirm delivery.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
+    return (
+      <SafeAreaView style={styles.centeredContainer}>
+        <Text style={styles.errorText}>Invalid trip data. Please reopen this trip from Accepted Jobs.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const actionDisabled =
+    isSubmitting ||
+    isLoadingLocation ||
+    isStartingDelivery ||
+    !driverLocation ||
+    tooFarFromDropoff ||
+    Boolean(payloadValidationMessage);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
+      <View style={styles.mapContainer}>
+        {mapsApiKey ? (
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: driverLocation?.latitude ?? dropoffLocation.latitude,
+              longitude: driverLocation?.longitude ?? dropoffLocation.longitude,
+              latitudeDelta: 0.03,
+              longitudeDelta: 0.03,
+            }}
+          >
+            {driverLocation ? (
+              <Marker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+                <Text style={styles.driverMarkerIcon}>🚗</Text>
+              </Marker>
+            ) : null}
+            <Marker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
+              <View style={styles.destinationXMarker}>
+                <Text style={styles.destinationXText}>X</Text>
+              </View>
+            </Marker>
+            {driverLocation ? (
+              <MapViewDirections
+                origin={driverLocation}
+                destination={dropoffLocation}
+                apikey={mapsApiKey}
+                strokeWidth={4}
+                strokeColor="#0EA5E9"
+              />
+            ) : null}
+          </MapView>
+        ) : (
+          <View style={styles.centeredMapState}>
+            <Text style={styles.warningText}>
+              Google Maps key missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to enable map preview.
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.bottomCard}>
         <Text style={styles.title}>Deliver Item</Text>
-        <Text style={styles.subtitle}>Pickup confirmed. Continue to dropoff workflow.</Text>
-        <Text style={styles.meta}>Trip ID: {tripId}</Text>
-        <Text style={styles.meta}>Pickup: {params.pickupAddress || 'N/A'}</Text>
-        <Text style={styles.meta}>Dropoff: {params.dropoffAddress || 'N/A'}</Text>
+        <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
+        <Text style={styles.subText}>Trip ID: {tripId}</Text>
+        <Text style={styles.subText}>Pickup: {pickupLocation.address || 'Pickup address unavailable'}</Text>
+        <Text style={styles.distanceText}>
+          Distance remaining:{' '}
+          {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Delivery notes (optional)"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          maxLength={500}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Proof image URL (optional)"
+          value={proofImageUrl}
+          onChangeText={setProofImageUrl}
+          autoCapitalize="none"
+          keyboardType="url"
+        />
+
+        {isStartingDelivery ? (
+          <View style={styles.row}>
+            <ActivityIndicator size="small" color="#2563EB" />
+            <Text style={styles.helperText}>Starting delivery...</Text>
+          </View>
+        ) : null}
+        {isLoadingLocation ? <Text style={styles.helperText}>Getting location...</Text> : null}
+        {locationMessage ? <Text style={styles.warningText}>{locationMessage}</Text> : null}
+        {tooFarFromDropoff && distanceMeters !== null ? (
+          <Text style={styles.warningText}>
+            Too far from dropoff. Move within {DELIVER_CONFIRM_RADIUS_METERS}m. Current: {distanceMeters.toFixed(0)}m
+          </Text>
+        ) : null}
+        {payloadValidationMessage ? <Text style={styles.errorText}>{payloadValidationMessage}</Text> : null}
+        {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
+
+        <Pressable
+          style={[styles.actionButton, actionDisabled && styles.disabledButton]}
+          disabled={actionDisabled}
+          onPress={onConfirmDelivery}
+        >
+          <Text style={styles.actionButtonText}>
+            {isLoadingLocation
+              ? 'Getting location...'
+              : tooFarFromDropoff
+              ? 'Too far from dropoff'
+              : isSubmitting
+              ? 'Confirming delivery...'
+              : 'Confirm Delivery'}
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -29,25 +462,111 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    padding: 20,
   },
-  card: {
+  mapContainer: {
+    flex: 1,
+  },
+  map: {
+    flex: 1,
+  },
+  centeredMapState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  centeredContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#F8FAFC',
+  },
+  bottomCard: {
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
     padding: 16,
     gap: 8,
   },
+  row: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#0F172A',
   },
-  subtitle: {
+  addressText: {
     color: '#334155',
+    fontSize: 14,
   },
-  meta: {
+  subText: {
     color: '#475569',
+    fontSize: 13,
+  },
+  distanceText: {
+    color: '#0F172A',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  input: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    color: '#0F172A',
+  },
+  helperText: {
+    color: '#475569',
+  },
+  warningText: {
+    color: '#B45309',
+    fontSize: 13,
+  },
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 13,
+  },
+  actionButton: {
+    marginTop: 6,
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#94A3B8',
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  driverMarkerIcon: {
+    fontSize: 28,
+  },
+  destinationXMarker: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#B91C1C',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  destinationXText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

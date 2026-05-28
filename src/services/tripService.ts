@@ -1,5 +1,16 @@
 import { readAccessToken } from '@/lib/auth-storage';
-import type { PickupItemRequest, PickupItemResponse } from '@/types/trip.types';
+import type {
+  DeliverItemRequest,
+  DeliverItemResponse,
+  PickupItemRequest,
+  PickupItemResponse,
+  StartDeliveryResponse,
+} from '@/types/trip.types';
+import {
+  validateDeliverItemRequest,
+  validateDeliverItemResponse,
+  validateStartDeliveryResponse,
+} from '@/utils/deliveryValidation';
 import {
   isValidTripId,
   validatePickupItemRequest,
@@ -122,6 +133,78 @@ export async function pickupItem(
 
   if (!validated) {
     throw new Error('Invalid pickup item response received from backend.');
+  }
+
+  return validated;
+}
+
+export async function startDelivery(tripId: string): Promise<StartDeliveryResponse> {
+  if (!isValidTripId(tripId)) {
+    throw new Error('Invalid trip id.');
+  }
+
+  const endpoint = `${getApiBaseUrl()}/driver/trips/${encodeURIComponent(tripId.trim())}/start-delivery`;
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to start delivery.');
+  }
+
+  const rawResponse = (await response.json()) as unknown;
+  const validated = validateStartDeliveryResponse(rawResponse);
+
+  if (!validated) {
+    throw new Error('Invalid start delivery response received from backend.');
+  }
+
+  return validated;
+}
+
+export async function deliverItem(
+  tripId: string,
+  payload: DeliverItemRequest,
+): Promise<DeliverItemResponse> {
+  if (!isValidTripId(tripId)) {
+    throw new Error('Invalid trip id.');
+  }
+
+  const validationError = validateDeliverItemRequest(payload);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const endpoint = `${getApiBaseUrl()}/driver/trips/${encodeURIComponent(tripId.trim())}/deliver-item`;
+
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to confirm item delivery.');
+  }
+
+  const rawResponse = (await response.json()) as unknown;
+  const validated = validateDeliverItemResponse(rawResponse);
+
+  if (!validated) {
+    throw new Error('Invalid deliver item response received from backend.');
   }
 
   return validated;
