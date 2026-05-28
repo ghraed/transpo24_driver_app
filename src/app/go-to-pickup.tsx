@@ -383,8 +383,14 @@ export default function GoToPickupScreen() {
               longitudeDelta: 0.03,
             }}
           >
-            <Marker coordinate={driverLocation} title="Driver" pinColor="#2563EB" />
-            <Marker coordinate={pickupLocation} title="Pickup" pinColor="#16A34A" />
+            <Marker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+              <Text style={styles.driverMarkerIcon}>🚗</Text>
+            </Marker>
+            <Marker coordinate={pickupLocation} title="Pickup" anchor={{ x: 0.5, y: 0.5 }}>
+              <View style={styles.pickupMarker}>
+                <Text style={styles.pickupMarkerText}>P</Text>
+              </View>
+            </Marker>
             <MapViewDirections
               origin={driverLocation}
               destination={pickupLocation}
@@ -527,5 +533,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 20,
     backgroundColor: '#F8FAFC',
+  },
+  pickupMarker: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#16A34A',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+  },
+  pickupMarkerText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  driverMarkerIcon: {
+    fontSize: 20,
   },
 });
