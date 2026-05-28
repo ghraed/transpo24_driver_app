@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 
 import type {
   DriverArrivedPickupConfirmedPayload,
+  ItemPickedUpPayload,
   DriverArrivedPickupPayload,
   DriverLocationUpdatePayload,
   DriverLocationUpdatedPayload,
@@ -22,6 +23,12 @@ export type SocketDebugPongPayload = {
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
 let socket: Socket | null = null;
 let currentToken: string | null = null;
+
+type SocketAckResponse = {
+  tripId?: string;
+  room?: string;
+  message?: string;
+};
 
 function ensureSocketUrl(): string {
   if (!SOCKET_URL) {
@@ -78,6 +85,32 @@ export function joinTripRoom(tripId: string): void {
   getSocket().emit('joinTripRoom', { tripId });
 }
 
+export function joinTripRoomWithAck(
+  tripId: string,
+  timeoutMs = 5000,
+): Promise<{ tripId: string; room: string }> {
+  const instance = getSocket();
+  return new Promise((resolve, reject) => {
+    instance.timeout(timeoutMs).emit(
+      'joinTripRoom',
+      { tripId },
+      (error: Error | null, response?: SocketAckResponse) => {
+        if (error) {
+          reject(new Error(error.message || 'joinTripRoom timed out.'));
+          return;
+        }
+
+        if (!response || typeof response.tripId !== 'string' || typeof response.room !== 'string') {
+          reject(new Error('joinTripRoom ack payload is invalid.'));
+          return;
+        }
+
+        resolve({ tripId: response.tripId, room: response.room });
+      },
+    );
+  });
+}
+
 export function leaveTripRoom(tripId: string): void {
   if (!socket) return;
   socket.emit('leaveTripRoom', { tripId });
@@ -132,6 +165,15 @@ export function onTripStatusUpdated(
   return () => instance.off('tripStatusUpdated', callback);
 }
 
+export function onItemPickedUp(
+  callback: (payload: ItemPickedUpPayload) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('itemPickedUp', callback);
+  instance.on('itemPickedUp', callback);
+  return () => instance.off('itemPickedUp', callback);
+}
+
 export function onSocketDisconnect(callback: (reason: string) => void): () => void {
   const instance = getSocket();
   instance.off('disconnect', callback);
@@ -145,6 +187,40 @@ export function onSocketConnected(callback: (socketId: string) => void): () => v
   instance.off('connect', handler);
   instance.on('connect', handler);
   return () => instance.off('connect', handler);
+}
+
+export function waitForSocketConnection(timeoutMs = 5000): Promise<string> {
+  const instance = getSocket();
+
+  if (instance.connected) {
+    return Promise.resolve(instance.id ?? 'unknown');
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Socket connection timeout.'));
+    }, timeoutMs);
+
+    const handleConnect = (): void => {
+      cleanup();
+      resolve(instance.id ?? 'unknown');
+    };
+
+    const handleError = (error: Error): void => {
+      cleanup();
+      reject(new Error(error.message || 'Socket connect error.'));
+    };
+
+    const cleanup = (): void => {
+      clearTimeout(timer);
+      instance.off('connect', handleConnect);
+      instance.off('connect_error', handleError);
+    };
+
+    instance.on('connect', handleConnect);
+    instance.on('connect_error', handleError);
+  });
 }
 
 export function onSocketError(callback: (message: string) => void): () => void {

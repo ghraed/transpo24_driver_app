@@ -94,7 +94,23 @@ export default function AcceptedJobDetailsScreen() {
 
   const canGoToPickup = useMemo(() => {
     if (!details) return false;
-    return details.requestStatus === 'ACCEPTED' || details.requestStatus === 'DRIVER_ASSIGNED';
+    return (
+      details.requestStatus === 'ACCEPTED' ||
+      details.requestStatus === 'DRIVER_ASSIGNED' ||
+      details.requestStatus === 'DRIVER_GOING_TO_PICKUP' ||
+      details.requestStatus === 'DRIVER_ARRIVED_PICKUP'
+    );
+  }, [details]);
+
+  const canGoToDropoff = useMemo(() => {
+    if (!details) return false;
+    const requestStatus = String(details.requestStatus);
+    return (
+      requestStatus === 'ITEM_PICKED_UP' ||
+      requestStatus === 'PICKUP_IN_PROGRESS' ||
+      requestStatus === 'IN_TRANSIT' ||
+      requestStatus === 'DRIVER_GOING_TO_DROPOFF'
+    );
   }, [details]);
 
   const openMap = async (latitude: number | null, longitude: number | null): Promise<void> => {
@@ -272,10 +288,13 @@ export default function AcceptedJobDetailsScreen() {
 
       <View style={styles.footer}>
         <Pressable
-          style={[styles.primaryActionButton, !canGoToPickup && styles.disabledButton]}
+          style={[
+            styles.primaryActionButton,
+            !canGoToPickup && !canGoToDropoff && styles.disabledButton,
+          ]}
           onPress={() =>
             router.push({
-              pathname: '/go-to-pickup',
+              pathname: canGoToDropoff ? '/deliver-item' : '/go-to-pickup',
               params: {
                 tripId: details.requestId,
                 pickupLatitude: String(details.pickup.latitude ?? ''),
@@ -287,9 +306,11 @@ export default function AcceptedJobDetailsScreen() {
               },
             })
           }
-          disabled={!canGoToPickup}
+          disabled={!canGoToPickup && !canGoToDropoff}
         >
-          <Text style={styles.primaryActionButtonText}>Go to Pickup Location</Text>
+          <Text style={styles.primaryActionButtonText}>
+            {canGoToDropoff ? 'Go to Dropoff Location' : 'Go to Pickup Location'}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
