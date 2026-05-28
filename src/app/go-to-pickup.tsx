@@ -35,7 +35,8 @@ const TEST_FAKE_LOCATIONS: GeoLocation[] = [
   { latitude: 33.9808, longitude: 35.6178 }, // Jounieh area
   { latitude: 33.8938, longitude: 35.5018 }, // Beirut area
   { latitude: 33.5571, longitude: 35.3715 }, // Sidon area
-  { latitude: 33.399353, longitude: 35.686924 }, // Final test point: pickup location
+  { latitude: 33.397834, longitude: 35.684763 },
+  { latitude: 33.398171, longitude: 35.687181 }, // Final test point: pickup location
 ];
 
 function parseNumber(value: string | string[] | undefined): number | null {
@@ -152,7 +153,22 @@ export default function GoToPickupScreen() {
         if (!validated) return;
         if (validated.tripId !== validTripId) return;
 
-        router.replace(('/pickup-item?tripId=' + encodeURIComponent(validTripId)) as Href);
+        router.replace((
+          '/pickup-item?tripId=' +
+          encodeURIComponent(validTripId) +
+          '&pickupLatitude=' +
+          encodeURIComponent(String(pickupLocation.latitude)) +
+          '&pickupLongitude=' +
+          encodeURIComponent(String(pickupLocation.longitude)) +
+          '&pickupAddress=' +
+          encodeURIComponent(pickupLocation.address ?? '') +
+          '&dropoffLatitude=' +
+          encodeURIComponent(String(dropoffLocation?.latitude ?? '')) +
+          '&dropoffLongitude=' +
+          encodeURIComponent(String(dropoffLocation?.longitude ?? '')) +
+          '&dropoffAddress=' +
+          encodeURIComponent(dropoffLocation?.address ?? '')
+        ) as Href);
       });
 
       const { status } = await Location.requestForegroundPermissionsAsync();

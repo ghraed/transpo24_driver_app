@@ -68,3 +68,31 @@ export type TripStatusUpdatedPayload = {
   status: TripStatus;
   updatedAt: string;
 };
+
+export type PickupItemRequest = {
+  latitude?: number;
+  longitude?: number;
+  notes?: string;
+  proofImageUrl?: string;
+};
+
+export type PickupItemResponse = {
+  tripId: string;
+  driverId: string;
+  customerId: string;
+  status: TripStatus;
+  pickedUpAt: string;
+  pickupNotes: string | null;
+  pickupProofImageUrl: string | null;
+  nextStep: "DELIVER_ITEM";
+};
+
+export type ItemPickedUpPayload = {
+  tripId: string;
+  driverId: string;
+  customerId: string;
+  status: "ITEM_PICKED_UP";
+  pickedUpAt: string;
+  pickupNotes: string | null;
+  pickupProofImageUrl: string | null;
+};
