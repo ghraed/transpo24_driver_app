@@ -317,9 +317,13 @@ export type RequestStatus =
   | 'QUOTED'
   | 'ACCEPTED'
   | 'DRIVER_ASSIGNED'
+  | 'DRIVER_GOING_TO_PICKUP'
+  | 'DRIVER_ARRIVED_PICKUP'
   | 'PICKUP_IN_PROGRESS'
   | 'IN_TRANSIT'
+  | 'DRIVER_GOING_TO_DROPOFF'
   | 'DELIVERED'
+  | 'COMPLETED'
   | 'CANCELLED';
 
 export interface RequestLocationSummary {

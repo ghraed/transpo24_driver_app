@@ -1,0 +1,235 @@
+import type {
+  DeliverItemRequest,
+  DeliverItemResponse,
+  GeoLocation,
+  StartDeliveryResponse,
+  TripStatus,
+} from '@/types/trip.types';
+
+const DELIVER_CONFIRM_RADIUS_METERS = 150;
+const TRIP_ID_MIN_LENGTH = 8;
+const TRIP_ID_MAX_LENGTH = 64;
+
+const TRIP_STATUSES: readonly TripStatus[] = [
+  'PENDING_REQUEST',
+  'DRIVER_OFFER_SENT',
+  'OFFER_ACCEPTED',
+  'DRIVER_GOING_TO_PICKUP',
+  'DRIVER_ARRIVED_PICKUP',
+  'ITEM_PICKED_UP',
+  'DRIVER_GOING_TO_DROPOFF',
+  'DELIVERED',
+  'COMPLETED',
+  'CANCELLED',
+] as const;
+
+function isRecord(payload: unknown): payload is Record<string, unknown> {
+  return typeof payload === 'object' && payload !== null;
+}
+
+export function isValidTripId(value: string): boolean {
+  const normalized = value.trim();
+  return normalized.length >= TRIP_ID_MIN_LENGTH && normalized.length <= TRIP_ID_MAX_LENGTH;
+}
+
+export function isValidLatitude(value: number): boolean {
+  return Number.isFinite(value) && value >= -90 && value <= 90;
+}
+
+export function isValidLongitude(value: number): boolean {
+  return Number.isFinite(value) && value >= -180 && value <= 180;
+}
+
+export function isValidGeoLocation(location: GeoLocation): boolean {
+  return isValidLatitude(location.latitude) && isValidLongitude(location.longitude);
+}
+
+export function isValidDeliveryNotes(value: string): boolean {
+  return value.trim().length <= 500;
+}
+
+export function isValidUrl(value: string): boolean {
+  try {
+    const normalized = value.trim();
+    if (!normalized) return false;
+    const parsed = new URL(normalized);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export function validateDeliverItemRequest(payload: DeliverItemRequest): string | null {
+  const hasLatitude = typeof payload.latitude === 'number';
+  const hasLongitude = typeof payload.longitude === 'number';
+
+  if (hasLatitude !== hasLongitude) {
+    return 'Latitude and longitude must be provided together.';
+  }
+
+  if (hasLatitude && !isValidLatitude(payload.latitude as number)) {
+    return 'Latitude must be between -90 and 90.';
+  }
+
+  if (hasLongitude && !isValidLongitude(payload.longitude as number)) {
+    return 'Longitude must be between -180 and 180.';
+  }
+
+  if (typeof payload.notes === 'string' && !isValidDeliveryNotes(payload.notes)) {
+    return 'Delivery notes must be 500 characters or less.';
+  }
+
+  if (
+    typeof payload.proofImageUrl === 'string' &&
+    payload.proofImageUrl.trim().length > 0 &&
+    !isValidUrl(payload.proofImageUrl)
+  ) {
+    return 'Proof image URL must be a valid URL.';
+  }
+
+  return null;
+}
+
+export function validateStartDeliveryResponse(payload: unknown): StartDeliveryResponse | null {
+  if (!isRecord(payload)) return null;
+  if (!isRecord(payload.dropoffLocation)) return null;
+
+  const {
+    tripId,
+    driverId,
+    customerId,
+    status,
+    startedAt,
+    nextStep,
+    dropoffLocation,
+  } = payload;
+
+  if (
+    typeof tripId !== 'string' ||
+    typeof driverId !== 'string' ||
+    typeof customerId !== 'string' ||
+    status !== 'DRIVER_GOING_TO_DROPOFF' ||
+    typeof startedAt !== 'string' ||
+    nextStep !== 'GO_TO_DROPOFF'
+  ) {
+    return null;
+  }
+
+  const latitude = dropoffLocation.latitude;
+  const longitude = dropoffLocation.longitude;
+  const address = dropoffLocation.address;
+
+  if (
+    typeof latitude !== 'number' ||
+    typeof longitude !== 'number' ||
+    (address !== undefined && address !== null && typeof address !== 'string')
+  ) {
+    return null;
+  }
+
+  if (!isValidGeoLocation({ latitude, longitude })) {
+    return null;
+  }
+
+  return {
+    tripId,
+    driverId,
+    customerId,
+    status: 'DRIVER_GOING_TO_DROPOFF',
+    dropoffLocation: {
+      latitude,
+      longitude,
+      address: typeof address === 'string' ? address : null,
+    },
+    startedAt,
+    nextStep: 'GO_TO_DROPOFF',
+  };
+}
+
+export function validateDeliverItemResponse(payload: unknown): DeliverItemResponse | null {
+  if (!isRecord(payload)) return null;
+
+  const {
+    tripId,
+    driverId,
+    customerId,
+    status,
+    deliveredAt,
+    deliveryNotes,
+    deliveryProofImageUrl,
+    nextStep,
+  } = payload;
+
+  if (
+    typeof tripId !== 'string' ||
+    typeof driverId !== 'string' ||
+    typeof customerId !== 'string' ||
+    status !== 'DELIVERED' ||
+    typeof deliveredAt !== 'string' ||
+    nextStep !== 'VIEW_EARNINGS_AND_RATINGS'
+  ) {
+    return null;
+  }
+
+  if (deliveryNotes !== null && typeof deliveryNotes !== 'string') {
+    return null;
+  }
+  if (deliveryProofImageUrl !== null && typeof deliveryProofImageUrl !== 'string') {
+    return null;
+  }
+
+  return {
+    tripId,
+    driverId,
+    customerId,
+    status: 'DELIVERED',
+    deliveredAt,
+    deliveryNotes: deliveryNotes ?? null,
+    deliveryProofImageUrl: deliveryProofImageUrl ?? null,
+    nextStep: 'VIEW_EARNINGS_AND_RATINGS',
+  };
+}
+
+export function validateTripStatusUpdatedPayload(payload: unknown): {
+  tripId: string;
+  status: TripStatus;
+  updatedAt: string;
+} | null {
+  if (!isRecord(payload)) return null;
+  const { tripId, status, updatedAt } = payload;
+  if (
+    typeof tripId !== 'string' ||
+    typeof status !== 'string' ||
+    typeof updatedAt !== 'string' ||
+    !TRIP_STATUSES.includes(status as TripStatus)
+  ) {
+    return null;
+  }
+  return { tripId, status: status as TripStatus, updatedAt };
+}
+
+export function calculateDistanceMeters(origin: GeoLocation, destination: GeoLocation): number {
+  const earthRadiusMeters = 6371000;
+  const toRadians = (degrees: number): number => (degrees * Math.PI) / 180;
+
+  const lat1 = toRadians(origin.latitude);
+  const lat2 = toRadians(destination.latitude);
+  const deltaLat = toRadians(destination.latitude - origin.latitude);
+  const deltaLon = toRadians(destination.longitude - origin.longitude);
+
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return earthRadiusMeters * c;
+}
+
+export function canConfirmDelivery(driverLocation: GeoLocation, dropoffLocation: GeoLocation): boolean {
+  if (!isValidGeoLocation(driverLocation) || !isValidGeoLocation(dropoffLocation)) {
+    return false;
+  }
+  return calculateDistanceMeters(driverLocation, dropoffLocation) <= DELIVER_CONFIRM_RADIUS_METERS;
+}
+
+export { DELIVER_CONFIRM_RADIUS_METERS };

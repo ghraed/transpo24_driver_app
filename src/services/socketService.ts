@@ -3,6 +3,7 @@ import { io, type Socket } from 'socket.io-client';
 import type {
   DriverArrivedPickupConfirmedPayload,
   ItemPickedUpPayload,
+  ItemDeliveredPayload,
   DriverArrivedPickupPayload,
   DriverLocationUpdatePayload,
   DriverLocationUpdatedPayload,
@@ -172,6 +173,15 @@ export function onItemPickedUp(
   instance.off('itemPickedUp', callback);
   instance.on('itemPickedUp', callback);
   return () => instance.off('itemPickedUp', callback);
+}
+
+export function onItemDelivered(
+  callback: (payload: ItemDeliveredPayload) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('itemDelivered', callback);
+  instance.on('itemDelivered', callback);
+  return () => instance.off('itemDelivered', callback);
 }
 
 export function onSocketDisconnect(callback: (reason: string) => void): () => void {
