@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,6 +29,14 @@ import {
 const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
 const ARRIVAL_RADIUS_METERS = 100;
+const TEST_FAKE_LOCATIONS: GeoLocation[] = [
+  { latitude: 34.4367, longitude: 35.8497 }, // North: Tripoli area
+  { latitude: 34.3640, longitude: 35.9208 }, // Batroun area
+  { latitude: 33.9808, longitude: 35.6178 }, // Jounieh area
+  { latitude: 33.8938, longitude: 35.5018 }, // Beirut area
+  { latitude: 33.5571, longitude: 35.3715 }, // Sidon area
+  { latitude: 33.2704, longitude: 35.2038 }, // South: Tyre area
+];
 
 function parseNumber(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string') return null;
@@ -50,7 +58,12 @@ export default function GoToPickupScreen() {
   }>();
 
   const tripId = typeof params.tripId === 'string' ? params.tripId : '';
-  const mapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
+  const mapsApiKey =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
+    (Platform.OS === 'ios'
+      ? process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim()
+      : process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim()) ||
+    '';
 
   const pickupLocation = useMemo<AddressedLocation | null>(() => {
     const latitude = parseNumber(params.pickupLatitude);
@@ -84,6 +97,7 @@ export default function GoToPickupScreen() {
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
+  const fakeLocationIndexRef = useRef<number>(0);
 
   const distanceMeters = useMemo(() => {
     if (!driverLocation || !pickupLocation || !isValidGeoLocation(pickupLocation)) return null;
@@ -314,11 +328,35 @@ export default function GoToPickupScreen() {
     }
   };
 
+  // TESTING ONLY: Simulates movement without physical GPS changes.
+  const onSendFakeLocationPress = (): void => {
+    setArrivalError('');
+    const validTripId = validateTripId(tripId);
+    if (!validTripId) {
+      setArrivalError('Invalid trip id.');
+      return;
+    }
+
+    const nextLocation = TEST_FAKE_LOCATIONS[fakeLocationIndexRef.current];
+    if (!nextLocation) return;
+
+    setDriverLocation(nextLocation);
+    emitDriverLocationUpdate({
+      tripId: validTripId,
+      latitude: nextLocation.latitude,
+      longitude: nextLocation.longitude,
+    });
+    lastEmitLocationRef.current = nextLocation;
+    lastEmitAtRef.current = Date.now();
+    fakeLocationIndexRef.current = (fakeLocationIndexRef.current + 1) % TEST_FAKE_LOCATIONS.length;
+  };
+
   if (!mapsApiKey) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
         <Text style={styles.errorText}>
-          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY is missing. Add it to run route rendering.
+          Google Maps API key is missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY or platform key
+          (EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY / EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY).
         </Text>
       </SafeAreaView>
     );
@@ -391,6 +429,9 @@ export default function GoToPickupScreen() {
               ? 'Confirming arrival...'
               : 'Arrived at Pickup'}
           </Text>
+        </Pressable>
+        <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
+          <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
         </Pressable>
 
         <Text style={styles.radiusText}>Arrival allowed within {ARRIVAL_RADIUS_METERS} meters of pickup.</Text>
@@ -465,6 +506,20 @@ const styles = StyleSheet.create({
   radiusText: {
     color: '#64748B',
     fontSize: 12,
+  },
+  testButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testButtonText: {
+    color: '#92400E',
+    fontWeight: '700',
+    fontSize: 13,
   },
   centeredContainer: {
     flex: 1,
