@@ -383,7 +383,7 @@ export default function SetAvailabilityScreen() {
       if (normalized.includes('vehicle') || normalized.includes('documents')) {
         setSubmitError('Vehicle/documents are incomplete. Redirecting...');
         setTimeout(() => {
-          router.replace('/vehicle-documents');
+          router.replace('/vehicle-information');
         }, 700);
         return;
       }
