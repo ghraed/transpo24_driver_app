@@ -4,18 +4,22 @@ import {
   approveDriverForTesting as approveDriverForTestingApi,
   getDriverAvailability,
   getDriverMe,
-  login,
+  getDriverOnboardingStatus,
+  loginDriver,
   registerDriver,
   updateDriverAvailability,
+  updateDriverPersonalInfo,
   updateDriverProfile,
 } from '@/lib/api';
+import { normalizeDriverNextStep } from '@/lib/driver-onboarding';
 import { clearAccessToken, persistAccessToken, readAccessToken } from '@/lib/auth-storage';
 import type {
   AuthUser,
   DriverAvailabilityResponse,
-  DriverAuthResponse,
   DriverMeResponse,
   DriverNextStep,
+  DriverOnboardingResponse,
+  DriverPersonalInfoPayload,
   DriverProfile,
   LoginPayload,
   RegisterDriverPayload,
@@ -31,10 +35,14 @@ interface AuthContextValue {
   isRestoringSession: boolean;
   signIn: (payload: LoginPayload) => Promise<DriverNextStep>;
   signOut: () => Promise<void>;
-  registerNewDriver: (payload: RegisterDriverPayload) => Promise<DriverAuthResponse>;
+  registerNewDriver: (payload: RegisterDriverPayload) => Promise<DriverNextStep>;
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
+  refreshDriverOnboarding: () => Promise<DriverOnboardingResponse>;
   saveDriverProfile: (payload: UpdateDriverProfilePayload) => Promise<DriverMeResponse>;
+  saveDriverPersonalInfo: (
+    payload: DriverPersonalInfoPayload,
+  ) => Promise<DriverOnboardingResponse>;
   refreshDriverAvailability: () => Promise<DriverAvailabilityResponse>;
   saveDriverAvailability: (
     payload: UpdateDriverAvailabilityPayload,
@@ -78,38 +86,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [applyDriverMeResponse]);
 
   useEffect(() => {
-    void restoreSession();
+    const timeoutId = setTimeout(() => {
+      void restoreSession();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [restoreSession]);
+
+  const refreshDriverOnboarding = useCallback(async (): Promise<DriverOnboardingResponse> => {
+    return getDriverOnboardingStatus();
+  }, []);
+
+  const resolvePostAuthNextStep = useCallback(
+    async (fallbackStep?: string): Promise<DriverNextStep> => {
+      try {
+        const onboarding = await getDriverOnboardingStatus();
+        const normalizedOnboardingStep = normalizeDriverNextStep(
+          onboarding.nextStep,
+        );
+
+        if (
+          normalizedOnboardingStep === 'COMPLETE_PROFILE' ||
+          normalizedOnboardingStep === 'UPLOAD_DOCUMENTS'
+        ) {
+          return normalizedOnboardingStep;
+        }
+      } catch {
+        if (fallbackStep) {
+          return normalizeDriverNextStep(fallbackStep);
+        }
+      }
+
+      try {
+        const me = await getDriverMe();
+        applyDriverMeResponse(me);
+        return me.nextStep;
+      } catch {
+        return normalizeDriverNextStep(fallbackStep);
+      }
+    },
+    [applyDriverMeResponse],
+  );
 
   const registerNewDriver = useCallback(async (payload: RegisterDriverPayload) => {
     const response = await registerDriver(payload);
     await persistAccessToken(response.accessToken);
     setAccessToken(response.accessToken);
     setUser(response.user);
-    setDriver(response.driver);
-    return response;
-  }, []);
+    setDriver(null);
+    return resolvePostAuthNextStep(response.nextStep);
+  }, [resolvePostAuthNextStep]);
 
   const signIn = useCallback(async (payload: LoginPayload): Promise<DriverNextStep> => {
-    const response = await login(payload);
+    const response = await loginDriver(payload);
 
     await persistAccessToken(response.accessToken);
     setAccessToken(response.accessToken);
     setUser(response.user);
-    setDriver(response.driver ?? null);
+    setDriver(null);
 
-    if (response.nextStep) {
-      return response.nextStep;
-    }
-
-    return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
-  }, []);
+    return resolvePostAuthNextStep(response.nextStep);
+  }, [resolvePostAuthNextStep]);
 
   const refreshDriverMe = useCallback(async (): Promise<DriverMeResponse> => {
     const me = await getDriverMe();
     applyDriverMeResponse(me);
     return me;
   }, [applyDriverMeResponse]);
+
+  const saveDriverPersonalInfo = useCallback(
+    async (payload: DriverPersonalInfoPayload): Promise<DriverOnboardingResponse> => {
+      const updated = await updateDriverPersonalInfo(payload);
+      try {
+        const me = await getDriverMe();
+        applyDriverMeResponse(me);
+      } catch {
+        // Keep the onboarding response even if the broader profile refresh fails.
+      }
+      return updated;
+    },
+    [applyDriverMeResponse],
+  );
 
   const saveDriverProfile = useCallback(async (payload: UpdateDriverProfilePayload): Promise<DriverMeResponse> => {
     const updated = await updateDriverProfile(payload);
@@ -153,6 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       registerNewDriver,
       restoreSession,
       refreshDriverMe,
+      refreshDriverOnboarding,
+      saveDriverPersonalInfo,
       saveDriverProfile,
       refreshDriverAvailability,
       saveDriverAvailability,
@@ -167,6 +226,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       registerNewDriver,
       restoreSession,
       saveDriverProfile,
+      refreshDriverOnboarding,
+      saveDriverPersonalInfo,
       saveDriverAvailability,
       approveDriverForTesting,
       signIn,

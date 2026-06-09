@@ -4,27 +4,12 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
 import {
   clearRememberedCredentials,
   persistRememberedCredentials,
   readRememberedCredentials,
 } from '@/lib/auth-storage';
-import type { DriverNextStep } from '@/types/auth';
-
-function nextStepToRoute(nextStep: DriverNextStep): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
-}
 
 export default function DriverLoginScreen() {
   const router = useRouter();
@@ -68,7 +53,7 @@ export default function DriverLoginScreen() {
         await clearRememberedCredentials();
       }
 
-      router.replace(nextStepToRoute(nextStep));
+      router.replace(getDriverRouteForNextStep(nextStep));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Login failed.');
     } finally {

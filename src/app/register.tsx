@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
-import type { DriverNextStep, RegisterDriverPayload } from '@/types/auth';
+import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
+import type { RegisterDriverPayload } from '@/types/auth';
 
 interface RegisterFormState {
   firstName: string;
@@ -28,21 +29,6 @@ interface RegisterFormState {
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function nextStepToRoute(nextStep: DriverNextStep): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
 }
 
 export default function DriverRegisterScreen() {
@@ -101,8 +87,8 @@ export default function DriverRegisterScreen() {
     };
 
     try {
-      const response = await registerNewDriver(payload);
-      router.replace(nextStepToRoute(response.nextStep));
+      const nextStep = await registerNewDriver(payload);
+      router.replace(getDriverRouteForNextStep(nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed.';
       if (message.toLowerCase().includes('email')) {

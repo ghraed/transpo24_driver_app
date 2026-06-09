@@ -10,6 +10,7 @@ export type DriverStatus =
 
 export type DriverNextStep =
   | 'COMPLETE_PROFILE'
+  | 'UPLOAD_DOCUMENTS'
   | 'ADD_VEHICLE_DOCUMENTS'
   | 'SET_AVAILABILITY'
   | 'WAITING_APPROVAL'
@@ -52,19 +53,25 @@ export interface UpdateDriverProfilePayload {
   profilePhotoUrl?: string | null;
 }
 
-export interface CompleteDriverProfileForm {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  countryCode: string;
-  city: string;
+export interface DriverCoverageAreaSelection {
+  coverageCity?: string;
+  coverageAreas?: string[];
+}
+
+export interface DriverPersonalInfoForm {
+  fullNameOnId: string;
   dateOfBirth: string;
-  addressLine1: string;
-  addressLine2: string;
-  postalCode: string;
-  preferredLanguage: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
+  idOrResidencyNumber: string;
+  coverageCity: string;
+  coverageAreasInput: string;
+}
+
+export interface DriverPersonalInfoPayload {
+  fullNameOnId: string;
+  dateOfBirth: string;
+  idOrResidencyNumber: string;
+  coverageCity?: string;
+  coverageAreas?: string[];
 }
 
 export interface LoginPayload {
@@ -87,7 +94,10 @@ export interface DriverProfile {
   phone: string;
   countryCode: string | null;
   city: string | null;
+  coverageAreas: string[];
+  fullNameOnId: string | null;
   dateOfBirth: string | null;
+  idOrResidencyNumberMasked: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
   postalCode: string | null;
@@ -104,6 +114,18 @@ export interface DriverProfile {
 export interface DriverMeResponse {
   user: AuthUser;
   driver: DriverProfile;
+  nextStep: DriverNextStep;
+}
+
+export interface DriverOnboardingResponse {
+  driverId: string;
+  fullNameOnId: string | null;
+  dateOfBirth: string | null;
+  coverageCity: string | null;
+  coverageAreas: string[];
+  idOrResidencyNumberMasked: string | null;
+  onboardingStatus: DriverStatus;
+  isPersonalInfoCompleted: boolean;
   nextStep: DriverNextStep;
 }
 
@@ -239,12 +261,12 @@ export interface UpdateDriverAvailabilityPayload {
   baseAddress?: string;
   acceptsImmediateRequests: boolean;
   acceptsScheduledRequests: boolean;
-  weeklySchedule: Array<{
+  weeklySchedule: {
     dayOfWeek: DayOfWeek;
     isAvailable: boolean;
     startTime?: string;
     endTime?: string;
-  }>;
+  }[];
 }
 
 export interface UpdateDriverOnlineStatusPayload {
@@ -284,23 +306,41 @@ export interface DriverAvailabilityForm {
 export interface DriverVehiclesListResponse {
   driverStatus: DriverStatus;
   nextStep: DriverNextStep;
-  vehicles: Array<{
+  vehicles: {
     vehicle: DriverVehicle;
     documents: DriverDocument[];
-  }>;
+  }[];
 }
 
 export interface DriverAuthResponse {
   accessToken: string;
   user: AuthUser;
-  driver: DriverProfile;
+  driver: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    countryCode: string | null;
+    city: string | null;
+    status: DriverStatus;
+    isProfileCompleted: boolean;
+  };
   nextStep: DriverNextStep;
 }
 
 export interface LoginResponse {
   accessToken: string;
   user: AuthUser;
-  driver?: DriverProfile;
+  driver?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    countryCode: string | null;
+    city: string | null;
+    status: DriverStatus;
+    isProfileCompleted: boolean;
+  };
   nextStep?: DriverNextStep;
 }
 

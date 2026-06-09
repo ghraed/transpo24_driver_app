@@ -22,12 +22,12 @@ import {
   uploadDriverVehicleDocuments,
 } from '@/lib/api';
 import { useAuth } from '@/context/auth-context';
+import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
 import type {
   CreateDriverVehiclePayload,
   DriverDocument,
   DriverDocumentType,
   DriverDocumentsForm,
-  DriverNextStep,
   DriverVehicle,
   DriverVehicleForm,
   LocalDocumentAsset,
@@ -52,7 +52,7 @@ const REQUIRED_SINGLE_DOCUMENT_TYPES: DriverDocumentType[] = [
   'VEHICLE_INSURANCE',
 ];
 
-const VEHICLE_TYPE_OPTIONS: Array<{ label: string; value: VehicleType }> = [
+const VEHICLE_TYPE_OPTIONS: { label: string; value: VehicleType }[] = [
   { label: 'Car carrier', value: 'CAR_CARRIER' },
   { label: 'Flatbed truck', value: 'FLATBED_TRUCK' },
   { label: 'Tow truck', value: 'TOW_TRUCK' },
@@ -63,23 +63,6 @@ const VEHICLE_TYPE_OPTIONS: Array<{ label: string; value: VehicleType }> = [
   { label: 'Furniture truck', value: 'FURNITURE_TRUCK' },
   { label: 'Other', value: 'OTHER' },
 ];
-
-function nextStepToRoute(
-  nextStep: DriverNextStep,
-): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
-}
 
 function parsePositiveNumber(value: string): number | undefined {
   if (!value.trim()) return undefined;
@@ -193,7 +176,11 @@ export default function VehicleDocumentsScreen() {
   }, []);
 
   useEffect(() => {
-    void loadExistingVehicles();
+    const timeoutId = setTimeout(() => {
+      void loadExistingVehicles();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [loadExistingVehicles]);
 
   const fieldErrors = useMemo(() => {
@@ -217,7 +204,7 @@ export default function VehicleDocumentsScreen() {
 
     if (!vehicleForm.plateNumber.trim()) errors.plateNumber = 'Plate number is required.';
 
-    const numericOptionalFields: Array<{ key: keyof DriverVehicleForm; label: string }> = [
+    const numericOptionalFields: { key: keyof DriverVehicleForm; label: string }[] = [
       { key: 'capacityKg', label: 'Capacity (kg)' },
       { key: 'lengthCm', label: 'Length (cm)' },
       { key: 'widthCm', label: 'Width (cm)' },
@@ -463,12 +450,15 @@ export default function VehicleDocumentsScreen() {
         vehiclePhotos: documentsForm.vehiclePhotos,
       });
 
-      if (response.nextStep === 'ADD_VEHICLE_DOCUMENTS') {
+      if (
+        response.nextStep === 'ADD_VEHICLE_DOCUMENTS' ||
+        response.nextStep === 'UPLOAD_DOCUMENTS'
+      ) {
         setSubmitError('Some required documents are still missing. Please review uploads.');
         return;
       }
 
-      router.replace(nextStepToRoute(response.nextStep));
+      router.replace(getDriverRouteForNextStep(response.nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to upload documents.';
       const normalized = message.toLowerCase();

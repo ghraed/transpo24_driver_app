@@ -9,6 +9,8 @@ import type {
   DriverRequestDetailsResponse,
   DriverAuthResponse,
   DriverMeResponse,
+  DriverOnboardingResponse,
+  DriverPersonalInfoPayload,
   DriverVehicle,
   IgnoreDriverRequestAlertResponse,
   DriverVehicleDocumentsResponse,
@@ -262,6 +264,31 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return parseJsonResponse<LoginResponse>(response, 'Failed to parse login response.');
 }
 
+export async function loginDriver(payload: LoginPayload): Promise<LoginResponse> {
+  const endpoint = `${getApiBaseUrl()}/auth/driver/login`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Driver login failed.');
+  }
+
+  return parseJsonResponse<LoginResponse>(
+    response,
+    'Failed to parse driver login response.',
+  );
+}
+
 export async function getDriverMe(): Promise<DriverMeResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me`;
   let response: Response;
@@ -279,6 +306,53 @@ export async function getDriverMe(): Promise<DriverMeResponse> {
   }
 
   return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse driver profile response.');
+}
+
+export async function getDriverOnboardingStatus(): Promise<DriverOnboardingResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/profile/onboarding`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load driver onboarding status.');
+  }
+
+  return parseJsonResponse<DriverOnboardingResponse>(
+    response,
+    'Failed to parse driver onboarding status response.',
+  );
+}
+
+export async function updateDriverPersonalInfo(
+  payload: DriverPersonalInfoPayload,
+): Promise<DriverOnboardingResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/profile/onboarding/personal-info`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to update driver personal info.');
+  }
+
+  return parseJsonResponse<DriverOnboardingResponse>(
+    response,
+    'Failed to parse driver personal info response.',
+  );
 }
 
 export async function updateDriverProfile(

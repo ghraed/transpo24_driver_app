@@ -13,29 +13,14 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
-import type { CompleteDriverProfileForm, DriverNextStep, UpdateDriverProfilePayload } from '@/types/auth';
+import { getDriverRouteForNextStep, normalizeDriverNextStep } from '@/lib/driver-onboarding';
+import type {
+  DriverOnboardingResponse,
+  DriverPersonalInfoForm,
+  DriverPersonalInfoPayload,
+} from '@/types/auth';
 
-const PHONE_PATTERN = /^[+0-9()\-\s]{7,20}$/;
-const PREFERRED_LANGUAGES = new Set(['en', 'ar', 'de', 'fr', 'it']);
-
-function nextStepToRoute(
-  nextStep: DriverNextStep,
-): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
-}
-
-function toDateOnly(isoDate: string | null): string {
+function toDateOnly(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
   return isoDate.slice(0, 10);
 }
@@ -52,64 +37,52 @@ function isAtLeast18(dateValue: string): boolean {
 
 export default function CompleteProfileScreen() {
   const router = useRouter();
-  const { driver, refreshDriverMe, saveDriverProfile, signOut } = useAuth();
+  const { driver, refreshDriverOnboarding, saveDriverPersonalInfo, signOut } = useAuth();
 
-  const [form, setForm] = useState<CompleteDriverProfileForm>({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    countryCode: '',
-    city: '',
+  const [form, setForm] = useState<DriverPersonalInfoForm>({
+    fullNameOnId: '',
     dateOfBirth: '',
-    addressLine1: '',
-    addressLine2: '',
-    postalCode: '',
-    preferredLanguage: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
+    idOrResidencyNumber: '',
+    coverageCity: '',
+    coverageAreasInput: '',
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
+  const [currentTimeMs] = useState<number>(() => Date.now());
   const hasUserEditedRef = useRef<boolean>(false);
 
-  const applyFormFromProfile = useCallback((profile: typeof driver): void => {
-    if (!profile) return;
+  const applyFormFromSources = useCallback((
+    onboarding?: DriverOnboardingResponse | null,
+  ): void => {
     if (hasUserEditedRef.current) return;
 
+    const derivedFullName =
+      onboarding?.fullNameOnId?.trim() ||
+      `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim();
+    const coverageAreas = onboarding?.coverageAreas?.join(', ') ?? driver?.coverageAreas?.join(', ') ?? '';
+
     setForm({
-      firstName: profile.firstName ?? '',
-      lastName: profile.lastName ?? '',
-      phone: profile.phone ?? '',
-      countryCode: profile.countryCode ?? '',
-      city: profile.city ?? '',
-      dateOfBirth: toDateOnly(profile.dateOfBirth),
-      addressLine1: profile.addressLine1 ?? '',
-      addressLine2: profile.addressLine2 ?? '',
-      postalCode: profile.postalCode ?? '',
-      preferredLanguage: profile.preferredLanguage ?? '',
-      emergencyContactName: profile.emergencyContactName ?? '',
-      emergencyContactPhone: profile.emergencyContactPhone ?? '',
+      fullNameOnId: derivedFullName,
+      dateOfBirth: toDateOnly(onboarding?.dateOfBirth ?? driver?.dateOfBirth),
+      idOrResidencyNumber: '',
+      coverageCity: onboarding?.coverageCity ?? driver?.city ?? '',
+      coverageAreasInput: coverageAreas,
     });
-  }, []);
+  }, [driver?.city, driver?.coverageAreas, driver?.dateOfBirth, driver?.firstName, driver?.lastName]);
 
   const loadProfile = useCallback(async (): Promise<void> => {
-    if (driver) {
-      applyFormFromProfile(driver);
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
+    setIsLoading(true);
     setLoadError('');
 
     try {
-      const response = await refreshDriverMe();
-      applyFormFromProfile(response.driver);
+      const response = await refreshDriverOnboarding();
+      applyFormFromSources(response);
     } catch (error) {
       if (driver) {
-        applyFormFromProfile(driver);
+        applyFormFromSources();
       } else {
         const message = error instanceof Error ? error.message : 'Failed to load profile.';
         setLoadError(message);
@@ -117,51 +90,61 @@ export default function CompleteProfileScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [applyFormFromProfile, driver, refreshDriverMe]);
+  }, [applyFormFromSources, driver, refreshDriverOnboarding]);
 
   useEffect(() => {
-    void loadProfile();
+    const timeoutId = setTimeout(() => {
+      void loadProfile();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [loadProfile]);
 
+  const normalizedCoverageAreas = useMemo(
+    () =>
+      form.coverageAreasInput
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    [form.coverageAreasInput],
+  );
+
   const fieldErrors = useMemo(() => {
-    const errors: Partial<Record<keyof CompleteDriverProfileForm, string>> = {};
+    const errors: Partial<Record<keyof DriverPersonalInfoForm, string>> = {};
 
-    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
-    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
-    if (!form.phone.trim()) errors.phone = 'Phone is required.';
-    else if (!PHONE_PATTERN.test(form.phone.trim())) errors.phone = 'Enter a valid phone number.';
+    if (!form.fullNameOnId.trim()) {
+      errors.fullNameOnId = 'Full name as shown on ID is required.';
+    }
 
-    if (!form.countryCode.trim()) errors.countryCode = 'Country code is required.';
-    if (!form.city.trim()) errors.city = 'City is required.';
-
-    if (form.dateOfBirth.trim()) {
+    if (!form.dateOfBirth.trim()) {
+      errors.dateOfBirth = 'Date of birth is required.';
+    } else {
       const parsed = new Date(form.dateOfBirth.trim());
       if (Number.isNaN(parsed.getTime())) {
         errors.dateOfBirth = 'Date of birth must be a valid date (YYYY-MM-DD).';
+      } else if (parsed.getTime() > currentTimeMs) {
+        errors.dateOfBirth = 'Date of birth cannot be in the future.';
       } else if (!isAtLeast18(form.dateOfBirth.trim())) {
         errors.dateOfBirth = 'Driver must be at least 18 years old.';
       }
     }
 
-    if (form.emergencyContactPhone.trim() && !PHONE_PATTERN.test(form.emergencyContactPhone.trim())) {
-      errors.emergencyContactPhone = 'Enter a valid emergency contact phone.';
+    if (!form.idOrResidencyNumber.trim()) {
+      errors.idOrResidencyNumber = 'ID or residency number is required.';
     }
 
-    if (
-      form.preferredLanguage.trim() &&
-      !PREFERRED_LANGUAGES.has(form.preferredLanguage.trim().toLowerCase())
-    ) {
-      errors.preferredLanguage = 'Preferred language must be one of: en, ar, de, fr, it.';
+    if (!form.coverageCity.trim() && normalizedCoverageAreas.length === 0) {
+      errors.coverageAreasInput = 'Select at least one coverage city or area.';
     }
 
     return errors;
-  }, [form]);
+  }, [currentTimeMs, form, normalizedCoverageAreas]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
-  const onChange = <K extends keyof CompleteDriverProfileForm>(
+  const onChange = <K extends keyof DriverPersonalInfoForm>(
     key: K,
-    value: CompleteDriverProfileForm[K],
+    value: DriverPersonalInfoForm[K],
   ): void => {
     hasUserEditedRef.current = true;
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -173,33 +156,25 @@ export default function CompleteProfileScreen() {
     setIsSaving(true);
     setSubmitError('');
 
-    const payload: UpdateDriverProfilePayload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      phone: form.phone.trim(),
-      countryCode: form.countryCode.trim() || undefined,
-      city: form.city.trim() || undefined,
-      dateOfBirth: form.dateOfBirth.trim() || undefined,
-      addressLine1: form.addressLine1.trim() || undefined,
-      addressLine2: form.addressLine2.trim() || undefined,
-      postalCode: form.postalCode.trim() || undefined,
-      preferredLanguage: form.preferredLanguage.trim()
-        ? (form.preferredLanguage.trim().toLowerCase() as UpdateDriverProfilePayload['preferredLanguage'])
-        : undefined,
-      emergencyContactName: form.emergencyContactName.trim() || undefined,
-      emergencyContactPhone: form.emergencyContactPhone.trim() || undefined,
-      profilePhotoUrl: undefined,
+    const payload: DriverPersonalInfoPayload = {
+      fullNameOnId: form.fullNameOnId.trim(),
+      dateOfBirth: form.dateOfBirth.trim(),
+      idOrResidencyNumber: form.idOrResidencyNumber.trim(),
+      coverageCity: form.coverageCity.trim() || undefined,
+      coverageAreas:
+        normalizedCoverageAreas.length > 0 ? normalizedCoverageAreas : undefined,
     };
 
     try {
-      const response = await saveDriverProfile(payload);
+      const response = await saveDriverPersonalInfo(payload);
+      const nextStep = normalizeDriverNextStep(response.nextStep);
 
-      if (response.nextStep === 'COMPLETE_PROFILE') {
+      if (nextStep === 'COMPLETE_PROFILE') {
         setSubmitError('Some required fields are still missing. Please complete your profile.');
         return;
       }
 
-      router.replace(nextStepToRoute(response.nextStep));
+      router.replace(getDriverRouteForNextStep(nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save profile.';
       const normalized = message.toLowerCase();
@@ -214,10 +189,12 @@ export default function CompleteProfileScreen() {
         return;
       }
 
-      if (normalized.includes('phone')) {
-        setSubmitError('This phone number is already in use.');
+      if (normalized.includes('id or residency')) {
+        setSubmitError('This ID or residency number is already in use.');
       } else if (normalized.includes('18')) {
         setSubmitError('Driver must be at least 18 years old.');
+      } else if (normalized.includes('coverage')) {
+        setSubmitError('Select at least one city or coverage area.');
       } else {
         setSubmitError(message);
       }
@@ -253,43 +230,65 @@ export default function CompleteProfileScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.progress}>Step 1 of 3: Profile</Text>
-          <Text style={styles.title}>Complete Your Profile</Text>
+          <Text style={styles.progress}>Step 1 of 2: Personal Info</Text>
+          <Text style={styles.title}>Complete Your Driver Profile</Text>
           <Text style={styles.subtitle}>
-            Add your details so we can verify and prepare your driver account.
+            Add the ID details and coverage areas needed before document upload.
           </Text>
           <Text style={styles.helper}>
-            Your profile information helps us verify your account and assign suitable transport requests.
+            This step saves the personal information used for verification and onboarding.
           </Text>
         </View>
 
-        <TextInput style={styles.input} placeholder="First name" value={form.firstName} onChangeText={(value) => onChange('firstName', value)} />
-        {fieldErrors.firstName ? <Text style={styles.errorText}>{fieldErrors.firstName}</Text> : null}
+        <TextInput
+          style={styles.input}
+          placeholder="Full name as shown on ID"
+          value={form.fullNameOnId}
+          onChangeText={(value) => onChange('fullNameOnId', value)}
+        />
+        {fieldErrors.fullNameOnId ? (
+          <Text style={styles.errorText}>{fieldErrors.fullNameOnId}</Text>
+        ) : null}
 
-        <TextInput style={styles.input} placeholder="Last name" value={form.lastName} onChangeText={(value) => onChange('lastName', value)} />
-        {fieldErrors.lastName ? <Text style={styles.errorText}>{fieldErrors.lastName}</Text> : null}
-
-        <TextInput style={styles.input} placeholder="Phone" keyboardType="phone-pad" value={form.phone} onChangeText={(value) => onChange('phone', value)} />
-        {fieldErrors.phone ? <Text style={styles.errorText}>{fieldErrors.phone}</Text> : null}
-
-        <TextInput style={styles.input} placeholder="Country code" value={form.countryCode} onChangeText={(value) => onChange('countryCode', value)} />
-        {fieldErrors.countryCode ? <Text style={styles.errorText}>{fieldErrors.countryCode}</Text> : null}
-
-        <TextInput style={styles.input} placeholder="City" value={form.city} onChangeText={(value) => onChange('city', value)} />
-        {fieldErrors.city ? <Text style={styles.errorText}>{fieldErrors.city}</Text> : null}
-
-        <TextInput style={styles.input} placeholder="Date of birth (YYYY-MM-DD)" value={form.dateOfBirth} onChangeText={(value) => onChange('dateOfBirth', value)} />
+        <TextInput
+          style={styles.input}
+          placeholder="Date of birth (YYYY-MM-DD)"
+          value={form.dateOfBirth}
+          onChangeText={(value) => onChange('dateOfBirth', value)}
+        />
         {fieldErrors.dateOfBirth ? <Text style={styles.errorText}>{fieldErrors.dateOfBirth}</Text> : null}
 
-        <TextInput style={styles.input} placeholder="Address line 1" value={form.addressLine1} onChangeText={(value) => onChange('addressLine1', value)} />
-        <TextInput style={styles.input} placeholder="Address line 2" value={form.addressLine2} onChangeText={(value) => onChange('addressLine2', value)} />
-        <TextInput style={styles.input} placeholder="Postal code" value={form.postalCode} onChangeText={(value) => onChange('postalCode', value)} />
-        <TextInput style={styles.input} placeholder="Preferred language (en, ar, de, fr, it)" autoCapitalize="none" value={form.preferredLanguage} onChangeText={(value) => onChange('preferredLanguage', value)} />
-        {fieldErrors.preferredLanguage ? <Text style={styles.errorText}>{fieldErrors.preferredLanguage}</Text> : null}
-        <TextInput style={styles.input} placeholder="Emergency contact name" value={form.emergencyContactName} onChangeText={(value) => onChange('emergencyContactName', value)} />
+        <TextInput
+          style={styles.input}
+          placeholder="ID or residency number"
+          autoCapitalize="characters"
+          value={form.idOrResidencyNumber}
+          onChangeText={(value) => onChange('idOrResidencyNumber', value)}
+        />
+        {fieldErrors.idOrResidencyNumber ? (
+          <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text>
+        ) : null}
 
-        <TextInput style={styles.input} placeholder="Emergency contact phone" keyboardType="phone-pad" value={form.emergencyContactPhone} onChangeText={(value) => onChange('emergencyContactPhone', value)} />
-        {fieldErrors.emergencyContactPhone ? <Text style={styles.errorText}>{fieldErrors.emergencyContactPhone}</Text> : null}
+        <TextInput
+          style={styles.input}
+          placeholder="Coverage city"
+          value={form.coverageCity}
+          onChangeText={(value) => onChange('coverageCity', value)}
+        />
+
+        <TextInput
+          style={[styles.input, styles.multilineInput]}
+          placeholder="Coverage areas (comma separated)"
+          multiline
+          value={form.coverageAreasInput}
+          onChangeText={(value) => onChange('coverageAreasInput', value)}
+        />
+        <Text style={styles.helperInline}>
+          Add one or more service areas separated by commas if the driver covers multiple zones.
+        </Text>
+        {fieldErrors.coverageAreasInput ? (
+          <Text style={styles.errorText}>{fieldErrors.coverageAreasInput}</Text>
+        ) : null}
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
@@ -298,10 +297,14 @@ export default function CompleteProfileScreen() {
           disabled={!isFormValid || isSaving}
           onPress={() => void onContinue()}
         >
-          {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.continueButtonText}>Continue to Vehicle & Documents</Text>}
+          {isSaving ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.continueButtonText}>Continue to Document Upload</Text>
+          )}
         </Pressable>
 
-        {isSaving ? <Text style={styles.savingText}>Saving profile...</Text> : null}
+        {isSaving ? <Text style={styles.savingText}>Saving personal info...</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -362,11 +365,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
   },
+  multilineInput: {
+    minHeight: 88,
+    textAlignVertical: 'top',
+  },
   errorText: {
     marginTop: -2,
     marginBottom: 2,
     color: '#DC2626',
     fontSize: 12,
+  },
+  helperInline: {
+    marginTop: -2,
+    marginBottom: 4,
+    color: '#64748B',
+    fontSize: 12,
+    lineHeight: 18,
   },
   continueButton: {
     marginTop: 8,
