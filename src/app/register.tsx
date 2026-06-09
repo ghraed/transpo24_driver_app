@@ -12,8 +12,10 @@ import {
   View,
 } from 'react-native';
 
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useAuth } from '@/context/auth-context';
 import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
+import { COUNTRY_OPTIONS, getFlagEmoji } from '@/lib/locations';
 import type { RegisterDriverPayload } from '@/types/auth';
 
 interface RegisterFormState {
@@ -48,6 +50,29 @@ export default function DriverRegisterScreen() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>('');
 
+  const selectedCountry = useMemo(
+    () => COUNTRY_OPTIONS.find((country) => country.code === form.countryCode) ?? null,
+    [form.countryCode],
+  );
+
+  const countryOptions = useMemo(
+    () =>
+      COUNTRY_OPTIONS.map((country) => ({
+        label: `${getFlagEmoji(country.code)}  ${country.name} (${country.code})`,
+        value: country.code,
+      })),
+    [],
+  );
+
+  const cityOptions = useMemo(
+    () =>
+      (selectedCountry?.cities ?? []).map((city) => ({
+        label: city,
+        value: city,
+      })),
+    [selectedCountry],
+  );
+
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof RegisterFormState, string>> = {};
 
@@ -68,6 +93,18 @@ export default function DriverRegisterScreen() {
 
   const onChange = <K extends keyof RegisterFormState>(key: K, value: RegisterFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const onCountrySelect = (countryCode: string) => {
+    setForm((prev) => {
+      const nextCountry = COUNTRY_OPTIONS.find((country) => country.code === countryCode);
+      const canKeepCity = nextCountry?.cities.includes(prev.city) ?? false;
+      return {
+        ...prev,
+        countryCode,
+        city: canKeepCity ? prev.city : '',
+      };
+    });
   };
 
   const onSubmit = async (): Promise<void> => {
@@ -116,12 +153,15 @@ export default function DriverRegisterScreen() {
           </Text>
         </View>
 
+        <Text style={styles.label}>First name</Text>
         <TextInput style={styles.input} placeholder="First name" value={form.firstName} onChangeText={(value) => onChange('firstName', value)} />
         {fieldErrors.firstName ? <Text style={styles.errorText}>{fieldErrors.firstName}</Text> : null}
 
+        <Text style={styles.label}>Last name</Text>
         <TextInput style={styles.input} placeholder="Last name" value={form.lastName} onChangeText={(value) => onChange('lastName', value)} />
         {fieldErrors.lastName ? <Text style={styles.errorText}>{fieldErrors.lastName}</Text> : null}
 
+        <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -132,6 +172,7 @@ export default function DriverRegisterScreen() {
         />
         {fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
 
+        <Text style={styles.label}>Phone</Text>
         <TextInput
           style={styles.input}
           placeholder="Phone"
@@ -141,6 +182,7 @@ export default function DriverRegisterScreen() {
         />
         {fieldErrors.phone ? <Text style={styles.errorText}>{fieldErrors.phone}</Text> : null}
 
+        <Text style={styles.label}>Password</Text>
         <TextInput
           style={styles.input}
           placeholder="Password"
@@ -150,6 +192,7 @@ export default function DriverRegisterScreen() {
         />
         {fieldErrors.password ? <Text style={styles.errorText}>{fieldErrors.password}</Text> : null}
 
+        <Text style={styles.label}>Confirm password</Text>
         <TextInput
           style={styles.input}
           placeholder="Confirm password"
@@ -159,18 +202,31 @@ export default function DriverRegisterScreen() {
         />
         {fieldErrors.confirmPassword ? <Text style={styles.errorText}>{fieldErrors.confirmPassword}</Text> : null}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Country code (optional)"
-          value={form.countryCode}
-          onChangeText={(value) => onChange('countryCode', value)}
+        <Text style={styles.label}>Country code</Text>
+        <SearchableSelect
+          emptyMessage="No countries found."
+          onSelect={onCountrySelect}
+          options={countryOptions}
+          placeholder="Select country (optional)"
+          searchPlaceholder="Search country"
+          selectedLabel={
+            selectedCountry
+              ? `${getFlagEmoji(selectedCountry.code)}  ${selectedCountry.name} (${selectedCountry.code})`
+              : undefined
+          }
+          title="Select country"
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="City (optional)"
-          value={form.city}
-          onChangeText={(value) => onChange('city', value)}
+        <Text style={styles.label}>City</Text>
+        <SearchableSelect
+          disabled={!selectedCountry}
+          emptyMessage={selectedCountry ? 'No cities found.' : 'Select a country first.'}
+          onSelect={(city) => onChange('city', city)}
+          options={cityOptions}
+          placeholder={selectedCountry ? 'Select city (optional)' : 'Select country first'}
+          searchPlaceholder="Search city"
+          selectedLabel={form.city || undefined}
+          title={selectedCountry ? `Select city in ${selectedCountry.name}` : 'Select city'}
         />
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
@@ -219,6 +275,12 @@ const styles = StyleSheet.create({
     color: '#475569',
     fontSize: 14,
   },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: -2,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#D0D5DD',
@@ -226,6 +288,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
+    color: '#0F172A',
   },
   errorText: {
     marginTop: -2,

@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import DateTimePicker from '@expo/ui/community/datetime-picker';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -43,8 +44,8 @@ export default function CompleteProfileScreen() {
     fullNameOnId: '',
     dateOfBirth: '',
     idOrResidencyNumber: '',
-    coverageCity: '',
-    coverageAreasInput: '',
+    coverageCity: 'Profile coverage managed later',
+    coverageAreasInput: 'Profile coverage managed later',
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -52,6 +53,7 @@ export default function CompleteProfileScreen() {
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [currentTimeMs] = useState<number>(() => Date.now());
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState<boolean>(false);
   const hasUserEditedRef = useRef<boolean>(false);
 
   const applyFormFromSources = useCallback((
@@ -62,14 +64,12 @@ export default function CompleteProfileScreen() {
     const derivedFullName =
       onboarding?.fullNameOnId?.trim() ||
       `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim();
-    const coverageAreas = onboarding?.coverageAreas?.join(', ') ?? driver?.coverageAreas?.join(', ') ?? '';
-
     setForm({
       fullNameOnId: derivedFullName,
       dateOfBirth: toDateOnly(onboarding?.dateOfBirth ?? driver?.dateOfBirth),
       idOrResidencyNumber: '',
-      coverageCity: onboarding?.coverageCity ?? driver?.city ?? '',
-      coverageAreasInput: coverageAreas,
+      coverageCity: onboarding?.coverageCity ?? driver?.city ?? 'Profile coverage managed later',
+      coverageAreasInput: 'Profile coverage managed later',
     });
   }, [driver?.city, driver?.coverageAreas, driver?.dateOfBirth, driver?.firstName, driver?.lastName]);
 
@@ -100,15 +100,6 @@ export default function CompleteProfileScreen() {
     return () => clearTimeout(timeoutId);
   }, [loadProfile]);
 
-  const normalizedCoverageAreas = useMemo(
-    () =>
-      form.coverageAreasInput
-        .split(',')
-        .map((value) => value.trim())
-        .filter(Boolean),
-    [form.coverageAreasInput],
-  );
-
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof DriverPersonalInfoForm, string>> = {};
 
@@ -132,13 +123,8 @@ export default function CompleteProfileScreen() {
     if (!form.idOrResidencyNumber.trim()) {
       errors.idOrResidencyNumber = 'ID or residency number is required.';
     }
-
-    if (!form.coverageCity.trim() && normalizedCoverageAreas.length === 0) {
-      errors.coverageAreasInput = 'Select at least one coverage city or area.';
-    }
-
     return errors;
-  }, [currentTimeMs, form, normalizedCoverageAreas]);
+  }, [currentTimeMs, form]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -150,6 +136,17 @@ export default function CompleteProfileScreen() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const datePickerValue = useMemo(() => {
+    const parsed = form.dateOfBirth ? new Date(form.dateOfBirth) : new Date('2000-01-01');
+    return Number.isNaN(parsed.getTime()) ? new Date('2000-01-01') : parsed;
+  }, [form.dateOfBirth]);
+
+  const maximumDate = useMemo(() => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() - 18);
+    return today;
+  }, []);
+
   const onContinue = async (): Promise<void> => {
     if (!isFormValid || isSaving) return;
 
@@ -160,9 +157,6 @@ export default function CompleteProfileScreen() {
       fullNameOnId: form.fullNameOnId.trim(),
       dateOfBirth: form.dateOfBirth.trim(),
       idOrResidencyNumber: form.idOrResidencyNumber.trim(),
-      coverageCity: form.coverageCity.trim() || undefined,
-      coverageAreas:
-        normalizedCoverageAreas.length > 0 ? normalizedCoverageAreas : undefined,
     };
 
     try {
@@ -193,8 +187,6 @@ export default function CompleteProfileScreen() {
         setSubmitError('This ID or residency number is already in use.');
       } else if (normalized.includes('18')) {
         setSubmitError('Driver must be at least 18 years old.');
-      } else if (normalized.includes('coverage')) {
-        setSubmitError('Select at least one city or coverage area.');
       } else {
         setSubmitError(message);
       }
@@ -240,6 +232,7 @@ export default function CompleteProfileScreen() {
           </Text>
         </View>
 
+        <Text style={styles.label}>Full name as shown on ID</Text>
         <TextInput
           style={styles.input}
           placeholder="Full name as shown on ID"
@@ -250,14 +243,19 @@ export default function CompleteProfileScreen() {
           <Text style={styles.errorText}>{fieldErrors.fullNameOnId}</Text>
         ) : null}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Date of birth (YYYY-MM-DD)"
-          value={form.dateOfBirth}
-          onChangeText={(value) => onChange('dateOfBirth', value)}
-        />
+        <Text style={styles.label}>Date of birth</Text>
+        <Pressable
+          style={styles.selectTrigger}
+          onPress={() => setIsDatePickerVisible(true)}
+        >
+          <Text style={form.dateOfBirth ? styles.selectValueText : styles.selectPlaceholderText}>
+            {form.dateOfBirth || 'Select date of birth'}
+          </Text>
+          <Text style={styles.selectChevron}>▼</Text>
+        </Pressable>
         {fieldErrors.dateOfBirth ? <Text style={styles.errorText}>{fieldErrors.dateOfBirth}</Text> : null}
 
+        <Text style={styles.label}>ID or residency number</Text>
         <TextInput
           style={styles.input}
           placeholder="ID or residency number"
@@ -267,27 +265,6 @@ export default function CompleteProfileScreen() {
         />
         {fieldErrors.idOrResidencyNumber ? (
           <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text>
-        ) : null}
-
-        <TextInput
-          style={styles.input}
-          placeholder="Coverage city"
-          value={form.coverageCity}
-          onChangeText={(value) => onChange('coverageCity', value)}
-        />
-
-        <TextInput
-          style={[styles.input, styles.multilineInput]}
-          placeholder="Coverage areas (comma separated)"
-          multiline
-          value={form.coverageAreasInput}
-          onChangeText={(value) => onChange('coverageAreasInput', value)}
-        />
-        <Text style={styles.helperInline}>
-          Add one or more service areas separated by commas if the driver covers multiple zones.
-        </Text>
-        {fieldErrors.coverageAreasInput ? (
-          <Text style={styles.errorText}>{fieldErrors.coverageAreasInput}</Text>
         ) : null}
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
@@ -306,6 +283,20 @@ export default function CompleteProfileScreen() {
 
         {isSaving ? <Text style={styles.savingText}>Saving personal info...</Text> : null}
       </ScrollView>
+
+      {isDatePickerVisible ? (
+        <DateTimePicker
+          value={datePickerValue}
+          mode="date"
+          maximumDate={maximumDate}
+          presentation={Platform.OS === 'android' ? 'dialog' : undefined}
+          onDismiss={() => setIsDatePickerVisible(false)}
+          onValueChange={(_, selectedDate) => {
+            setIsDatePickerVisible(false);
+            onChange('dateOfBirth', toDateOnly(selectedDate.toISOString()));
+          }}
+        />
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -364,23 +355,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
+    color: '#0F172A',
   },
-  multilineInput: {
-    minHeight: 88,
-    textAlignVertical: 'top',
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: -2,
+  },
+  selectTrigger: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+  },
+  selectValueText: {
+    color: '#0F172A',
+    fontSize: 15,
+    flex: 1,
+  },
+  selectPlaceholderText: {
+    color: '#94A3B8',
+    fontSize: 15,
+    flex: 1,
+  },
+  selectChevron: {
+    color: '#64748B',
+    fontSize: 12,
+    marginLeft: 12,
   },
   errorText: {
     marginTop: -2,
     marginBottom: 2,
     color: '#DC2626',
     fontSize: 12,
-  },
-  helperInline: {
-    marginTop: -2,
-    marginBottom: 4,
-    color: '#64748B',
-    fontSize: 12,
-    lineHeight: 18,
   },
   continueButton: {
     marginTop: 8,

@@ -68,6 +68,7 @@ export default function DriverLoginScreen() {
         <Text style={styles.subtitle}>Sign in to manage your transport requests.</Text>
       </View>
 
+      <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -76,6 +77,7 @@ export default function DriverLoginScreen() {
         value={email}
         onChangeText={setEmail}
       />
+      <Text style={styles.label}>Password</Text>
       <TextInput
         style={styles.input}
         placeholder="Password"
@@ -151,6 +153,12 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#475467',
   },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 6,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#D0D5DD',
@@ -158,6 +166,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 12,
+    color: '#0F172A',
   },
   button: {
     minHeight: 48,
