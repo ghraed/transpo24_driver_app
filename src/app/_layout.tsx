@@ -21,7 +21,8 @@ function AppNavigator() {
       <Stack.Screen name="index" options={{ title: 'Driver Login' }} />
       <Stack.Screen name="register" options={{ title: 'Driver Registration' }} />
       <Stack.Screen name="complete-profile" options={{ title: 'Complete Profile' }} />
-      <Stack.Screen name="vehicle-documents" options={{ title: 'Vehicle & Documents' }} />
+      <Stack.Screen name="vehicle-documents" options={{ title: 'Driver Documents' }} />
+      <Stack.Screen name="vehicle-information" options={{ title: 'Vehicle Information' }} />
       <Stack.Screen name="set-availability" options={{ title: 'Set Availability' }} />
       <Stack.Screen name="waiting-approval" options={{ title: 'Waiting Approval' }} />
       <Stack.Screen name="driver-home" options={{ title: 'Driver Home' }} />

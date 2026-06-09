@@ -8,9 +8,11 @@ import type {
   DriverRequestAlertsResponse,
   DriverRequestDetailsResponse,
   DriverAuthResponse,
+  DriverDocumentsStatusResponse,
   DriverMeResponse,
   DriverOnboardingResponse,
   DriverPersonalInfoPayload,
+  IdentityDocumentKind,
   DriverVehicle,
   IgnoreDriverRequestAlertResponse,
   DriverVehicleDocumentsResponse,
@@ -133,6 +135,14 @@ function uploadFormDataWithXhr(
 function toNetworkError(endpoint: string, error: unknown): Error {
   if (error instanceof Error) {
     const message = error.message.toLowerCase();
+    if (
+      error.name === 'AbortError' ||
+      message.includes('aborted') ||
+      message.includes('canceled') ||
+      message.includes('cancelled')
+    ) {
+      return new Error(`Request timed out while contacting ${endpoint}.`);
+    }
     if (
       message.includes('network request failed') ||
       message.includes('failed to fetch') ||
@@ -522,6 +532,123 @@ export async function uploadDriverVehicleDocuments(
   } catch {
     throw new Error(`Invalid upload response from server: ${successRaw}`);
   }
+}
+
+export async function getDriverDocumentsStatus(): Promise<DriverDocumentsStatusResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/onboarding/documents`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load driver documents status.');
+  }
+
+  return parseJsonResponse<DriverDocumentsStatusResponse>(
+    response,
+    'Failed to parse driver documents status response.',
+  );
+}
+
+export async function uploadDriverDocument(payload: {
+  documentType: 'PERSONAL_SELFIE' | 'ID_FRONT' | 'ID_BACK' | 'DRIVING_LICENSE' | 'SELF_IDENTITY_VERIFICATION';
+  file: LocalDocumentAsset;
+  expiryDate?: string;
+  idDocumentKind?: IdentityDocumentKind;
+}): Promise<DriverDocumentsStatusResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/onboarding/documents`;
+  const formData = new FormData();
+
+  switch (payload.documentType) {
+    case 'PERSONAL_SELFIE':
+      await appendFormDataAsset(formData, 'personalSelfie', payload.file, 'personal-selfie.jpg', 'image/jpeg');
+      break;
+    case 'ID_FRONT':
+      await appendFormDataAsset(formData, 'idFront', payload.file, 'id-front.jpg', 'image/jpeg');
+      if (payload.expiryDate) formData.append('idExpiryDate', payload.expiryDate);
+      if (payload.idDocumentKind) formData.append('idDocumentKind', payload.idDocumentKind);
+      break;
+    case 'ID_BACK':
+      await appendFormDataAsset(formData, 'idBack', payload.file, 'id-back.jpg', 'image/jpeg');
+      if (payload.expiryDate) formData.append('idExpiryDate', payload.expiryDate);
+      if (payload.idDocumentKind) formData.append('idDocumentKind', payload.idDocumentKind);
+      break;
+    case 'DRIVING_LICENSE':
+      await appendFormDataAsset(formData, 'drivingLicense', payload.file, 'driving-license.jpg', 'image/jpeg');
+      if (payload.expiryDate) formData.append('drivingLicenseExpiryDate', payload.expiryDate);
+      break;
+    case 'SELF_IDENTITY_VERIFICATION':
+      await appendFormDataAsset(
+        formData,
+        'selfIdentityVerification',
+        payload.file,
+        'self-identity-verification.jpg',
+        'image/jpeg',
+      );
+      break;
+  }
+
+  const token = await readAccessToken();
+
+  let xhrResponse: XhrResponsePayload;
+  try {
+    xhrResponse = await uploadFormDataWithXhr(endpoint, formData, token ?? undefined);
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (xhrResponse.status < 200 || xhrResponse.status >= 300) {
+    const raw = xhrResponse.responseText?.trim();
+    if (!raw) {
+      throw new Error('Failed to upload driver document.');
+    }
+    try {
+      const errorData = JSON.parse(raw) as ApiErrorResponse;
+      throw new Error(normalizeErrorMessage(errorData, 'Failed to upload driver document.'));
+    } catch {
+      throw new Error(raw);
+    }
+  }
+
+  const successRaw = xhrResponse.responseText?.trim();
+  if (!successRaw) {
+    throw new Error('Invalid upload response from server.');
+  }
+
+  try {
+    return JSON.parse(successRaw) as DriverDocumentsStatusResponse;
+  } catch {
+    throw new Error(`Invalid upload response from server: ${successRaw}`);
+  }
+}
+
+export async function submitDriverDocumentsForReview(): Promise<DriverDocumentsStatusResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/onboarding/submit-review`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to submit driver documents for review.');
+  }
+
+  return parseJsonResponse<DriverDocumentsStatusResponse>(
+    response,
+    'Failed to parse submit review response.',
+  );
 }
 
 export async function getDriverAvailability(): Promise<DriverAvailabilityResponse> {

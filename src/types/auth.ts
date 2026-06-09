@@ -141,6 +141,11 @@ export type VehicleType =
   | 'OTHER';
 
 export type DriverDocumentType =
+  | 'PERSONAL_SELFIE'
+  | 'ID_FRONT'
+  | 'ID_BACK'
+  | 'DRIVING_LICENSE'
+  | 'SELF_IDENTITY_VERIFICATION'
   | 'DRIVER_LICENSE_FRONT'
   | 'DRIVER_LICENSE_BACK'
   | 'IDENTITY_DOCUMENT'
@@ -151,7 +156,14 @@ export type DriverDocumentType =
   | 'TECHNICAL_INSPECTION'
   | 'PROFILE_PHOTO';
 
-export type DocumentStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+export type IdentityDocumentKind = 'NATIONAL_ID' | 'RESIDENCY_CARD';
+
+ export type DocumentStatus =
+  | 'UPLOADED'
+  | 'UNDER_REVIEW'
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED';
 
 export interface CreateDriverVehiclePayload {
   vehicleType: VehicleType;
@@ -209,7 +221,33 @@ export interface DriverDocument {
   status: DocumentStatus;
   rejectionReason: string | null;
   expiresAt: string | null;
+  reviewedAt?: string | null;
   createdAt: string;
+}
+
+export interface DriverOnboardingDocument {
+  id: string;
+  type: DriverDocumentType;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  status: DocumentStatus;
+  rejectionReason: string | null;
+  expiresAt: string | null;
+  reviewedAt: string | null;
+  uploadedAt: string;
+}
+
+export interface DriverDocumentsStatusResponse {
+  onboardingStatus: DriverStatus;
+  identityDocumentKind: IdentityDocumentKind | null;
+  requiredDocuments: DriverDocumentType[];
+  uploadedDocuments: DriverOnboardingDocument[];
+  missingDocuments: DriverDocumentType[];
+  missingDocumentLabels: string[];
+  canSubmitForReview: boolean;
+  submittedForReviewAt: string | null;
+  nextStep: DriverNextStep;
 }
 
 export interface DriverVehicle {
