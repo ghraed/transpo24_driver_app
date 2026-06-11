@@ -227,6 +227,28 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
+  return {
+    ...vehicle,
+    driverId: vehicle.driverId,
+    brand: vehicle.brand ?? vehicle.make,
+    make: vehicle.make ?? vehicle.brand,
+    licensePlateNumber: vehicle.licensePlateNumber ?? vehicle.plateNumber,
+    plateNumber: vehicle.plateNumber ?? vehicle.licensePlateNumber,
+    frontPhotoUrl: vehicle.frontPhotoUrl ?? null,
+    rearPhotoUrl: vehicle.rearPhotoUrl ?? null,
+    sidePhotoUrl: vehicle.sidePhotoUrl ?? null,
+    licensePlatePhotoUrl: vehicle.licensePlatePhotoUrl ?? null,
+    registrationFrontDocumentUrl: vehicle.registrationFrontDocumentUrl ?? null,
+    registrationBackDocumentUrl: vehicle.registrationBackDocumentUrl ?? null,
+    insuranceDocumentUrl: vehicle.insuranceDocumentUrl ?? null,
+    insuranceExpiryDate: vehicle.insuranceExpiryDate ?? null,
+    registrationExpiryDate: vehicle.registrationExpiryDate ?? null,
+    status: vehicle.status ?? null,
+    rejectionReason: vehicle.rejectionReason ?? null,
+  };
+}
+
 export async function registerDriver(payload: RegisterDriverPayload): Promise<DriverAuthResponse> {
   const endpoint = `${getApiBaseUrl()}/auth/driver/register`;
   let response: Response;
@@ -408,9 +430,32 @@ export async function getDriverVehicles(): Promise<DriverVehicle[]> {
     'Failed to parse vehicles response.',
   );
   return (data.vehicles ?? []).map((item) => ({
-    ...item.vehicle,
+    ...normalizeDriverVehicle(item.vehicle),
     documents: item.documents,
   }));
+}
+
+export async function getDriverVehicle(vehicleId: string): Promise<DriverVehicle> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load driver vehicle.');
+  }
+
+  const data = await parseJsonResponse<DriverVehicleDocumentsResponse>(
+    response,
+    'Failed to parse driver vehicle response.',
+  );
+  return normalizeDriverVehicle(data.vehicle);
 }
 
 export async function createDriverVehicle(
@@ -436,67 +481,144 @@ export async function createDriverVehicle(
     response,
     'Failed to parse create vehicle response.',
   );
-  return data.vehicle;
+  return normalizeDriverVehicle(data.vehicle);
+}
+
+export async function updateDriverVehicle(
+  vehicleId: string,
+  payload: Partial<CreateDriverVehiclePayload>,
+): Promise<DriverVehicle> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to update driver vehicle.');
+  }
+
+  const data = await parseJsonResponse<DriverVehicleDocumentsResponse>(
+    response,
+    'Failed to parse update vehicle response.',
+  );
+  return normalizeDriverVehicle(data.vehicle);
+}
+
+export async function deleteDriverVehicle(vehicleId: string): Promise<DriverVehicle> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'DELETE',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to deactivate driver vehicle.');
+  }
+
+  const data = await parseJsonResponse<DriverVehicleDocumentsResponse>(
+    response,
+    'Failed to parse deactivate vehicle response.',
+  );
+  return normalizeDriverVehicle(data.vehicle);
 }
 
 export async function uploadDriverVehicleDocuments(
   vehicleId: string,
   payload: {
-    driverLicenseFront: LocalDocumentAsset;
-    driverLicenseBack: LocalDocumentAsset;
-    identityDocument: LocalDocumentAsset;
-    vehicleRegistration: LocalDocumentAsset;
-    vehicleInsurance: LocalDocumentAsset;
-    vehiclePhotos: LocalDocumentAsset[];
+    frontPhoto?: LocalDocumentAsset;
+    rearPhoto?: LocalDocumentAsset;
+    sidePhoto?: LocalDocumentAsset;
+    licensePlatePhoto?: LocalDocumentAsset;
+    registrationFrontDocument?: LocalDocumentAsset;
+    registrationBackDocument?: LocalDocumentAsset;
+    insuranceDocument?: LocalDocumentAsset;
+    insuranceExpiryDate?: string;
+    registrationExpiryDate?: string;
   },
 ): Promise<DriverVehicleDocumentsResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/documents`;
   const formData = new FormData();
 
-  await appendFormDataAsset(
-    formData,
-    'driverLicenseFront',
-    payload.driverLicenseFront,
-    'driver-license-front.jpg',
-    'image/jpeg',
-  );
-  await appendFormDataAsset(
-    formData,
-    'driverLicenseBack',
-    payload.driverLicenseBack,
-    'driver-license-back.jpg',
-    'image/jpeg',
-  );
-  await appendFormDataAsset(
-    formData,
-    'identityDocument',
-    payload.identityDocument,
-    'identity-document.jpg',
-    'image/jpeg',
-  );
-  await appendFormDataAsset(
-    formData,
-    'vehicleRegistration',
-    payload.vehicleRegistration,
-    'vehicle-registration.jpg',
-    'image/jpeg',
-  );
-  await appendFormDataAsset(
-    formData,
-    'vehicleInsurance',
-    payload.vehicleInsurance,
-    'vehicle-insurance.jpg',
-    'image/jpeg',
-  );
-
-  for (const [index, photo] of payload.vehiclePhotos.entries()) {
+  if (payload.frontPhoto) {
     await appendFormDataAsset(
       formData,
-      'vehiclePhotos',
-      photo,
-      `vehicle-photo-${index + 1}.jpg`,
+      'frontPhoto',
+      payload.frontPhoto,
+      'vehicle-front-photo.jpg',
       'image/jpeg',
     );
+  }
+  if (payload.rearPhoto) {
+    await appendFormDataAsset(
+      formData,
+      'rearPhoto',
+      payload.rearPhoto,
+      'vehicle-rear-photo.jpg',
+      'image/jpeg',
+    );
+  }
+  if (payload.sidePhoto) {
+    await appendFormDataAsset(
+      formData,
+      'sidePhoto',
+      payload.sidePhoto,
+      'vehicle-side-photo.jpg',
+      'image/jpeg',
+    );
+  }
+  if (payload.licensePlatePhoto) {
+    await appendFormDataAsset(
+      formData,
+      'licensePlatePhoto',
+      payload.licensePlatePhoto,
+      'vehicle-license-plate-photo.jpg',
+      'image/jpeg',
+    );
+  }
+  if (payload.registrationFrontDocument) {
+    await appendFormDataAsset(
+      formData,
+      'registrationFrontDocument',
+      payload.registrationFrontDocument,
+      'vehicle-registration-front.jpg',
+      'image/jpeg',
+    );
+  }
+  if (payload.registrationBackDocument) {
+    await appendFormDataAsset(
+      formData,
+      'registrationBackDocument',
+      payload.registrationBackDocument,
+      'vehicle-registration-back.jpg',
+      'image/jpeg',
+    );
+  }
+  if (payload.insuranceDocument) {
+    await appendFormDataAsset(
+      formData,
+      'insuranceDocument',
+      payload.insuranceDocument,
+      'vehicle-insurance-document.jpg',
+      'image/jpeg',
+    );
+  }
+  if (payload.insuranceExpiryDate) {
+    formData.append('insuranceExpiryDate', payload.insuranceExpiryDate);
+  }
+  if (payload.registrationExpiryDate) {
+    formData.append('registrationExpiryDate', payload.registrationExpiryDate);
   }
 
   const token = await readAccessToken();

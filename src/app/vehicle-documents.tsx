@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@expo/ui/community/datetime-picker';
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -12,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -609,13 +608,13 @@ export default function VehicleDocumentsScreen() {
         <Pressable
           style={[styles.continueButton, isBusy && styles.continueButtonDisabled]}
           disabled={isBusy}
-          onPress={() => router.push('/vehicle-information')}
+          onPress={() => router.push('/vehicle-information?flow=onboarding')}
         >
           <Text style={styles.continueButtonText}>Continue to Vehicle Information</Text>
         </Pressable>
       </ScrollView>
       {isIdentityExpiryPickerVisible ? (
-        <DateTimePicker
+        <ExpoDateTimePicker
           mode="date"
           presentation="dialog"
           value={
@@ -632,7 +631,7 @@ export default function VehicleDocumentsScreen() {
         />
       ) : null}
       {isDrivingLicenseExpiryPickerVisible ? (
-        <DateTimePicker
+        <ExpoDateTimePicker
           mode="date"
           presentation="dialog"
           value={

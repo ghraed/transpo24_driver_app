@@ -15,6 +15,12 @@ export type DriverNextStep =
   | 'WAITING_APPROVAL'
   | 'HOME';
 
+export type DriverOnboardingNextStep =
+  | 'COMPLETE_PROFILE'
+  | 'UPLOAD_DOCUMENTS'
+  | 'WAITING_APPROVAL'
+  | 'HOME';
+
 export type DayOfWeek =
   | 'MONDAY'
   | 'TUESDAY'
@@ -67,6 +73,14 @@ export interface CompleteDriverProfileForm {
   emergencyContactPhone: string;
 }
 
+export interface DriverPersonalInfoPayload {
+  fullNameOnId: string;
+  dateOfBirth: string;
+  idOrResidencyNumber: string;
+  coverageCity?: string;
+  coverageAreas?: string[];
+}
+
 export interface LoginPayload {
   email: string;
   password: string;
@@ -107,16 +121,35 @@ export interface DriverMeResponse {
   nextStep: DriverNextStep;
 }
 
+export interface DriverOnboardingResponse {
+  driverId: string;
+  fullNameOnId: string | null;
+  dateOfBirth: string | null;
+  coverageCity: string | null;
+  coverageAreas: string[];
+  idOrResidencyNumberMasked: string | null;
+  onboardingStatus: DriverStatus;
+  isPersonalInfoCompleted: boolean;
+  nextStep: DriverOnboardingNextStep;
+}
+
 export type VehicleType =
-  | 'CAR_CARRIER'
-  | 'FLATBED_TRUCK'
-  | 'TOW_TRUCK'
+  | 'FLATBED_OPEN'
+  | 'FLATBED_ENCLOSED'
+  | 'SMALL_TRUCK'
+  | 'MEDIUM_TRUCK'
+  | 'PICKUP'
   | 'VAN'
-  | 'BOX_TRUCK'
-  | 'PICKUP_TRUCK'
-  | 'MOTORCYCLE_TRAILER'
-  | 'FURNITURE_TRUCK'
-  | 'OTHER';
+  | 'TOW_TRUCK'
+  | 'MOTORCYCLE';
+
+export type VehicleCondition = 'EXCELLENT' | 'GOOD' | 'NEEDS_MAINTENANCE';
+
+export type VehicleReviewStatus =
+  | 'PENDING_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'INACTIVE';
 
 export type DriverDocumentType =
   | 'PERSONAL_SELFIE'
@@ -131,6 +164,13 @@ export type DriverDocumentType =
   | 'VEHICLE_REGISTRATION'
   | 'VEHICLE_INSURANCE'
   | 'VEHICLE_PHOTO'
+  | 'VEHICLE_FRONT_PHOTO'
+  | 'VEHICLE_REAR_PHOTO'
+  | 'VEHICLE_SIDE_PHOTO'
+  | 'VEHICLE_LICENSE_PLATE_PHOTO'
+  | 'VEHICLE_REGISTRATION_FRONT'
+  | 'VEHICLE_REGISTRATION_BACK'
+  | 'VEHICLE_INSURANCE_DOCUMENT'
   | 'TECHNICAL_INSPECTION'
   | 'PROFILE_PHOTO';
 
@@ -145,30 +185,39 @@ export type IdentityDocumentKind = 'NATIONAL_ID' | 'RESIDENCY_CARD';
 
 export interface CreateDriverVehiclePayload {
   vehicleType: VehicleType;
-  make: string;
+  brand: string;
   model: string;
   year: number;
-  plateNumber: string;
+  licensePlateNumber: string;
+  condition: VehicleCondition;
   color?: string;
   capacityKg?: number;
   lengthCm?: number;
   widthCm?: number;
   heightCm?: number;
-  hasTrailer: boolean;
+  hasTrailer?: boolean;
+  insuranceExpiryDate?: string;
+  registrationExpiryDate?: string;
 }
 
-export interface DriverVehicleForm {
+export type VehicleUploadFile = LocalDocumentAsset;
+
+export interface CreateDriverVehicleForm {
   vehicleType: VehicleType | '';
-  make: string;
+  brand: string;
   model: string;
   year: string;
-  plateNumber: string;
-  color: string;
-  capacityKg: string;
-  lengthCm: string;
-  widthCm: string;
-  heightCm: string;
-  hasTrailer: boolean;
+  licensePlateNumber: string;
+  condition: VehicleCondition | '';
+  frontPhoto?: VehicleUploadFile;
+  rearPhoto?: VehicleUploadFile;
+  sidePhoto?: VehicleUploadFile;
+  licensePlatePhoto?: VehicleUploadFile;
+  registrationFrontDocument?: VehicleUploadFile;
+  registrationBackDocument?: VehicleUploadFile;
+  insuranceDocument?: VehicleUploadFile;
+  insuranceExpiryDate: string;
+  registrationExpiryDate: string;
 }
 
 export interface LocalDocumentAsset {
@@ -178,15 +227,6 @@ export interface LocalDocumentAsset {
   fileSize?: number;
   width?: number;
   height?: number;
-}
-
-export interface DriverDocumentsForm {
-  driverLicenseFront?: LocalDocumentAsset;
-  driverLicenseBack?: LocalDocumentAsset;
-  identityDocument?: LocalDocumentAsset;
-  vehicleRegistration?: LocalDocumentAsset;
-  vehicleInsurance?: LocalDocumentAsset;
-  vehiclePhotos: LocalDocumentAsset[];
 }
 
 export interface DriverDocument {
@@ -230,17 +270,32 @@ export interface DriverDocumentsStatusResponse {
 
 export interface DriverVehicle {
   id: string;
+  driverId: string;
   vehicleType: VehicleType;
+  brand: string;
   make: string;
   model: string;
   year: number;
+  licensePlateNumber: string;
   plateNumber: string;
+  condition: VehicleCondition;
   color: string | null;
   capacityKg: number | null;
   lengthCm: number | null;
   widthCm: number | null;
   heightCm: number | null;
   hasTrailer: boolean;
+  frontPhotoUrl: string | null;
+  rearPhotoUrl: string | null;
+  sidePhotoUrl: string | null;
+  licensePlatePhotoUrl: string | null;
+  registrationFrontDocumentUrl: string | null;
+  registrationBackDocumentUrl: string | null;
+  insuranceDocumentUrl: string | null;
+  insuranceExpiryDate: string | null;
+  registrationExpiryDate: string | null;
+  status: VehicleReviewStatus | null;
+  rejectionReason: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -277,12 +332,12 @@ export interface UpdateDriverAvailabilityPayload {
   baseAddress?: string;
   acceptsImmediateRequests: boolean;
   acceptsScheduledRequests: boolean;
-  weeklySchedule: Array<{
+  weeklySchedule: {
     dayOfWeek: DayOfWeek;
     isAvailable: boolean;
     startTime?: string;
     endTime?: string;
-  }>;
+  }[];
 }
 
 export interface UpdateDriverOnlineStatusPayload {
@@ -322,10 +377,10 @@ export interface DriverAvailabilityForm {
 export interface DriverVehiclesListResponse {
   driverStatus: DriverStatus;
   nextStep: DriverNextStep;
-  vehicles: Array<{
+  vehicles: {
     vehicle: DriverVehicle;
     documents: DriverDocument[];
-  }>;
+  }[];
 }
 
 export interface DriverAuthResponse {

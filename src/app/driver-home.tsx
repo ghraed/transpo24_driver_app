@@ -1,15 +1,18 @@
 import { useRouter, type Href } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { getDriverVehicles } from '@/lib/api';
 import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
 import { validateOfferAcceptedPayload } from '@/utils/locationValidation';
 
 export default function DriverHomeScreen() {
   const router = useRouter();
   const { user, driver, signOut, accessToken } = useAuth();
+  const [hasVehicles, setHasVehicles] = useState<boolean>(true);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState<boolean>(true);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -40,6 +43,34 @@ export default function DriverHomeScreen() {
     };
   }, [accessToken, router]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadVehicles = async (): Promise<void> => {
+      setIsLoadingVehicles(true);
+      try {
+        const vehicles = await getDriverVehicles();
+        if (isMounted) {
+          setHasVehicles(vehicles.length > 0);
+        }
+      } catch {
+        if (isMounted) {
+          setHasVehicles(true);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingVehicles(false);
+        }
+      }
+    };
+
+    void loadVehicles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const onSignOut = async (): Promise<void> => {
     await signOut();
     router.replace('/');
@@ -58,6 +89,21 @@ export default function DriverHomeScreen() {
         <Pressable style={styles.acceptedJobsButton} onPress={() => router.push('/accepted-jobs')}>
           <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
         </Pressable>
+
+        <Pressable style={styles.vehiclesButton} onPress={() => router.push('/my-vehicles')}>
+          <Text style={styles.acceptedJobsButtonText}>My Vehicles</Text>
+        </Pressable>
+
+        {isLoadingVehicles ? (
+          <View style={styles.vehicleHintRow}>
+            <ActivityIndicator size="small" color="#1D4ED8" />
+            <Text style={styles.vehicleHintText}>Checking your vehicle status...</Text>
+          </View>
+        ) : !hasVehicles ? (
+          <Text style={styles.vehicleHintText}>
+            Add at least one vehicle to start receiving requests.
+          </Text>
+        ) : null}
 
         <Pressable style={styles.debugButton} onPress={() => router.push('/socket-debug' as Href)}>
           <Text style={styles.acceptedJobsButtonText}>Socket Debug</Text>
@@ -101,7 +147,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  vehiclesButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   acceptedJobsButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  vehicleHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  vehicleHintText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
   button: {
     marginTop: 8,
     minHeight: 44,
