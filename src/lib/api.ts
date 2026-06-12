@@ -26,6 +26,9 @@ import type {
   UpdateDriverAvailabilityPayload,
   UpdateDriverOnlineStatusPayload,
   UpdateDriverProfilePayload,
+  VehicleLoadCapacitiesListResponse,
+  VehicleLoadCapacity,
+  VehicleLoadCapacityPayload,
 } from '@/types/auth';
 
 interface ApiErrorResponse {
@@ -254,9 +257,30 @@ function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
     insuranceDocumentUrl: toAbsoluteApiUrl(vehicle.insuranceDocumentUrl),
     insuranceExpiryDate: vehicle.insuranceExpiryDate ?? null,
     registrationExpiryDate: vehicle.registrationExpiryDate ?? null,
+    loadProfileName: vehicle.loadProfileName ?? null,
+    dimensionsAreStandard: vehicle.dimensionsAreStandard ?? false,
+    allowedCargoTypes: vehicle.allowedCargoTypes ?? [],
+    workingSchedule: vehicle.workingSchedule ?? [],
+    isDefaultLoadProfile: vehicle.isDefaultLoadProfile ?? false,
     status: vehicle.verificationStatus ?? vehicle.status ?? null,
     verificationStatus: vehicle.verificationStatus ?? vehicle.status ?? null,
     rejectionReason: vehicle.rejectionReason ?? null,
+  };
+}
+
+function normalizeVehicleLoadCapacity(
+  capacity: VehicleLoadCapacity,
+): VehicleLoadCapacity {
+  return {
+    ...capacity,
+    name: capacity.name ?? null,
+    maxLoadKg: capacity.maxLoadKg ?? null,
+    cargoLengthM: capacity.cargoLengthM ?? null,
+    cargoWidthM: capacity.cargoWidthM ?? null,
+    cargoHeightM: capacity.cargoHeightM ?? null,
+    allowedCargoTypes: capacity.allowedCargoTypes ?? [],
+    workingSchedule: capacity.workingSchedule ?? [],
+    isDefault: Boolean(capacity.isDefault),
   };
 }
 
@@ -543,6 +567,103 @@ export async function deleteDriverVehicle(vehicleId: string): Promise<DriverVehi
     'Failed to parse deactivate vehicle response.',
   );
   return normalizeDriverVehicle(data.vehicle);
+}
+
+export async function getVehicleLoadCapacity(vehicleId: string): Promise<VehicleLoadCapacity> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/load-capacity`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load vehicle load capacity.');
+  }
+
+  const data = await parseJsonResponse<VehicleLoadCapacity>(
+    response,
+    'Failed to parse vehicle load capacity response.',
+  );
+  return normalizeVehicleLoadCapacity(data);
+}
+
+export async function saveVehicleLoadCapacity(
+  vehicleId: string,
+  payload: VehicleLoadCapacityPayload,
+): Promise<VehicleLoadCapacity> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/load-capacity`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to save vehicle load capacity.');
+  }
+
+  const data = await parseJsonResponse<VehicleLoadCapacity>(
+    response,
+    'Failed to parse vehicle load capacity save response.',
+  );
+  return normalizeVehicleLoadCapacity(data);
+}
+
+export async function getMyLoadCapacities(): Promise<VehicleLoadCapacity[]> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/load-capacities`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load vehicle load capacities.');
+  }
+
+  const data = await parseJsonResponse<VehicleLoadCapacitiesListResponse>(
+    response,
+    'Failed to parse vehicle load capacities response.',
+  );
+  return (data.loadCapacities ?? []).map(normalizeVehicleLoadCapacity);
+}
+
+export async function setDefaultLoadCapacity(vehicleId: string): Promise<VehicleLoadCapacity> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/load-capacity/set-default`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to set default load capacity.');
+  }
+
+  const data = await parseJsonResponse<VehicleLoadCapacity>(
+    response,
+    'Failed to parse default load capacity response.',
+  );
+  return normalizeVehicleLoadCapacity(data);
 }
 
 export async function uploadDriverVehicleDocuments(

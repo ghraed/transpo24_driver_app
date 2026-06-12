@@ -13,6 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { deleteDriverVehicle, getDriverVehicles } from '@/lib/api';
+import {
+  formatDimensionsSummary,
+  getCapacityStatusLabel,
+  VEHICLE_TYPE_LABELS,
+} from '@/lib/vehicle-load-capacity';
 import type { DriverVehicle, VehicleReviewStatus } from '@/types/auth';
 
 const STATUS_LABELS: Record<VehicleReviewStatus, string> = {
@@ -35,17 +40,6 @@ function getStatusColor(status: VehicleReviewStatus | null): string {
       return '#1D4ED8';
   }
 }
-
-const VEHICLE_TYPE_LABELS: Record<DriverVehicle['vehicleType'], string> = {
-  OPEN_CAR_CARRIER: 'Open car carrier / open flatbed',
-  ENCLOSED_CARRIER: 'Enclosed carrier',
-  SMALL_TRUCK: 'Small truck',
-  MEDIUM_TRUCK: 'Medium truck',
-  PICKUP: 'Pickup',
-  VAN: 'Van',
-  TOW_TRUCK: 'Tow truck',
-  MOTORCYCLE: 'Motorcycle',
-};
 
 const VEHICLE_CONDITION_LABELS: Record<DriverVehicle['condition'], string> = {
   EXCELLENT: 'Excellent',
@@ -138,6 +132,15 @@ export default function MyVehiclesScreen() {
           <Text style={styles.primaryButtonText}>Add New Vehicle</Text>
         </Pressable>
 
+        {vehicles.length > 0 ? (
+          <Pressable
+            style={styles.secondaryActionButton}
+            onPress={() => router.push('/manage-load-capacities')}
+          >
+            <Text style={styles.secondaryActionButtonText}>Manage Load Capacities</Text>
+          </Pressable>
+        ) : null}
+
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
         {isLoading ? (
@@ -192,6 +195,29 @@ export default function MyVehiclesScreen() {
                 <Text style={styles.metaText}>
                   State: {vehicle.isActive ? 'Active' : 'Inactive'}
                 </Text>
+                <Text style={styles.metaText}>
+                  Load capacity: {getCapacityStatusLabel(vehicle)}
+                </Text>
+                {getCapacityStatusLabel(vehicle) === 'Defined' ? (
+                  <Text style={styles.metaText}>
+                    Capacity summary: {vehicle.loadProfileName?.trim() || 'Vehicle load profile'}
+                    {' • '}
+                    {vehicle.capacityKg ? `${vehicle.capacityKg} kg` : 'Weight optional'}
+                    {' • '}
+                    {formatDimensionsSummary(
+                      Boolean(vehicle.dimensionsAreStandard),
+                      vehicle.lengthCm !== null && vehicle.lengthCm !== undefined
+                        ? Number((vehicle.lengthCm / 100).toFixed(2))
+                        : null,
+                      vehicle.widthCm !== null && vehicle.widthCm !== undefined
+                        ? Number((vehicle.widthCm / 100).toFixed(2))
+                        : null,
+                      vehicle.heightCm !== null && vehicle.heightCm !== undefined
+                        ? Number((vehicle.heightCm / 100).toFixed(2))
+                        : null,
+                    )}
+                  </Text>
+                ) : null}
                 {vehicleStatus === 'PENDING_REVIEW' ? (
                   <Text style={styles.pendingText}>Your vehicle is under review.</Text>
                 ) : null}
@@ -202,6 +228,20 @@ export default function MyVehiclesScreen() {
                 ) : null}
 
                 <View style={styles.actionRow}>
+                  <Pressable
+                    style={styles.secondaryButton}
+                    onPress={() =>
+                      router.push(
+                        `/load-capacity?vehicleId=${vehicle.id}&flow=management&returnTo=manage-load-capacities`,
+                      )
+                    }
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      {getCapacityStatusLabel(vehicle) === 'Defined'
+                        ? 'Edit Capacity'
+                        : 'Define Capacity'}
+                    </Text>
+                  </Pressable>
                   <Pressable
                     style={styles.secondaryButton}
                     onPress={() =>
@@ -297,7 +337,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  secondaryActionButton: {
+    minHeight: 50,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1D4ED8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
   primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  secondaryActionButtonText: { color: '#1D4ED8', fontWeight: '700', fontSize: 15 },
   secondaryButton: {
     flex: 1,
     minHeight: 46,

@@ -682,9 +682,18 @@ export default function VehicleInformationScreen() {
       setSubmitSuccess(isEditing ? 'Vehicle updated successfully.' : 'Vehicle saved successfully.');
       setTimeout(() => {
         if (flow === 'management') {
-          router.replace('/my-vehicles');
+          if (isEditing) {
+            router.replace('/my-vehicles');
+          } else {
+            router.replace(
+              `/load-capacity?vehicleId=${vehicle.id}&flow=management&returnTo=manage-load-capacities`,
+            );
+          }
         } else {
-          router.replace(nextStepToRoute(documentResponse?.nextStep ?? 'WAITING_APPROVAL'));
+          const nextStep = documentResponse?.nextStep ?? 'WAITING_APPROVAL';
+          router.replace(
+            `/load-capacity?vehicleId=${vehicle.id}&flow=onboarding&nextStep=${nextStep}`,
+          );
         }
       }, 500);
     } catch (error) {

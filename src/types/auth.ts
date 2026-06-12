@@ -145,6 +145,16 @@ export type VehicleType =
 
 export type VehicleCondition = 'EXCELLENT' | 'GOOD' | 'NEEDS_MAINTENANCE';
 
+export type VehicleCargoType =
+  | 'VEHICLE'
+  | 'MOTORCYCLE'
+  | 'GOODS'
+  | 'FURNITURE'
+  | 'FRAGILE_GOODS'
+  | 'REFRIGERATED_GOODS'
+  | 'HEAVY_EQUIPMENT'
+  | 'OTHER';
+
 export type VehicleReviewStatus =
   | 'PENDING_REVIEW'
   | 'APPROVED'
@@ -281,10 +291,15 @@ export interface DriverVehicle {
   plateNumber: string;
   condition: VehicleCondition;
   color: string | null;
+  loadProfileName?: string | null;
   capacityKg: number | null;
   lengthCm: number | null;
   widthCm: number | null;
   heightCm: number | null;
+  dimensionsAreStandard?: boolean;
+  allowedCargoTypes?: VehicleCargoType[];
+  workingSchedule?: WorkingDaySchedule[];
+  isDefaultLoadProfile?: boolean;
   hasTrailer: boolean;
   frontPhotoUrl: string | null;
   rearPhotoUrl: string | null;
@@ -308,6 +323,51 @@ export interface DriverVehicleDocumentsResponse {
   vehicle: DriverVehicle;
   documents: DriverDocument[];
   nextStep: DriverNextStep;
+}
+
+export interface WorkingTimeRange {
+  startTime: string;
+  endTime: string;
+}
+
+export interface WorkingDaySchedule {
+  dayOfWeek: DayOfWeek;
+  isAvailable: boolean;
+  timeRanges: WorkingTimeRange[];
+}
+
+export interface VehicleLoadCapacityPayload {
+  name?: string;
+  maxLoadKg?: number;
+  cargoLengthM?: number;
+  cargoWidthM?: number;
+  cargoHeightM?: number;
+  dimensionsAreStandard?: boolean;
+  allowedCargoTypes: VehicleCargoType[];
+  workingSchedule: WorkingDaySchedule[];
+  isDefault?: boolean;
+}
+
+export interface VehicleLoadCapacity {
+  id: string;
+  driverId?: string;
+  vehicleId: string;
+  name?: string | null;
+  vehicleType: VehicleType;
+  maxLoadKg?: number | null;
+  cargoLengthM?: number | null;
+  cargoWidthM?: number | null;
+  cargoHeightM?: number | null;
+  dimensionsAreStandard: boolean;
+  allowedCargoTypes: VehicleCargoType[];
+  workingSchedule: WorkingDaySchedule[];
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface VehicleLoadCapacitiesListResponse {
+  loadCapacities: VehicleLoadCapacity[];
 }
 
 export interface DriverAvailabilityDay {

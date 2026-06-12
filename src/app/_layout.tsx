@@ -23,6 +23,8 @@ function AppNavigator() {
       <Stack.Screen name="vehicle-documents" options={{ title: 'Driver Documents' }} />
       <Stack.Screen name="vehicle-information" options={{ title: 'Vehicle Information' }} />
       <Stack.Screen name="my-vehicles" options={{ title: 'My Vehicles' }} />
+      <Stack.Screen name="manage-load-capacities" options={{ title: 'Manage Load Capacities' }} />
+      <Stack.Screen name="load-capacity" options={{ title: 'Define Load Capacity' }} />
       <Stack.Screen name="set-availability" options={{ title: 'Set Availability' }} />
       <Stack.Screen name="waiting-approval" options={{ title: 'Waiting Approval' }} />
       <Stack.Screen name="driver-home" options={{ title: 'Driver Home' }} />
