@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -178,7 +179,18 @@ function formatDate(value: string): string {
 
 function readAssetLabel(asset?: LocalDocumentAsset, fallback?: string | null): string {
   if (asset?.fileName?.trim()) return asset.fileName;
-  if (fallback) return 'Uploaded file';
+  if (fallback) {
+    const withoutQuery = fallback.split('?')[0] ?? fallback;
+    const filename = withoutQuery.split('/').filter(Boolean).pop();
+    if (filename) {
+      try {
+        return decodeURIComponent(filename);
+      } catch {
+        return filename;
+      }
+    }
+    return 'Uploaded file';
+  }
   return 'No file selected';
 }
 
@@ -719,6 +731,7 @@ export default function VehicleInformationScreen() {
   }) => {
     const localAsset = vehicleForm[field];
     const hasImagePreview = kind === 'image' && !isPdfFile(localAsset, remoteUrl);
+    const documentLabel = readAssetLabel(localAsset, remoteUrl);
     return (
       <View style={styles.uploadCard}>
         <Text style={styles.uploadTitle}>{label} *</Text>
@@ -731,17 +744,27 @@ export default function VehicleInformationScreen() {
           />
         ) : (
           <View style={styles.documentPlaceholder}>
-            <Text style={styles.documentPlaceholderText}>
-              {readAssetLabel(localAsset, remoteUrl)}
-            </Text>
+            <Text style={styles.documentPlaceholderText}>{documentLabel}</Text>
           </View>
         )}
         {fieldErrors[field] ? <Text style={styles.errorText}>{fieldErrors[field]}</Text> : null}
-        <Pressable style={styles.secondaryButton} onPress={() => void onPress()}>
-          <Text style={styles.secondaryButtonText}>
-            {localAsset || remoteUrl ? 'Replace file' : 'Choose file'}
-          </Text>
-        </Pressable>
+        <View style={styles.uploadActionRow}>
+          <Pressable style={styles.secondaryButton} onPress={() => void onPress()}>
+            <Text style={styles.secondaryButtonText}>
+              {localAsset || remoteUrl ? 'Replace file' : 'Choose file'}
+            </Text>
+          </Pressable>
+          {kind === 'document' && remoteUrl ? (
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => {
+                void Linking.openURL(remoteUrl);
+              }}
+            >
+              <Text style={styles.secondaryButtonText}>Open</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
     );
   };
@@ -1156,6 +1179,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     gap: 8,
+  },
+  uploadActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
   },
   uploadTitle: { color: '#0F172A', fontWeight: '700', fontSize: 14 },
   uploadHelper: { color: '#64748B', fontSize: 12 },

@@ -227,6 +227,14 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+function toAbsoluteApiUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+
+  const baseUrl = getApiBaseUrl();
+  return url.startsWith('/') ? `${baseUrl}${url}` : `${baseUrl}/${url}`;
+}
+
 function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
   return {
     ...vehicle,
@@ -237,13 +245,13 @@ function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
     vehicleTypeLegacy: vehicle.vehicleTypeLegacy ?? vehicle.vehicleType,
     licensePlateNumber: vehicle.licensePlateNumber ?? vehicle.plateNumber,
     plateNumber: vehicle.plateNumber ?? vehicle.licensePlateNumber,
-    frontPhotoUrl: vehicle.frontPhotoUrl ?? null,
-    rearPhotoUrl: vehicle.rearPhotoUrl ?? null,
-    sidePhotoUrl: vehicle.sidePhotoUrl ?? null,
-    licensePlatePhotoUrl: vehicle.licensePlatePhotoUrl ?? null,
-    registrationFrontDocumentUrl: vehicle.registrationFrontDocumentUrl ?? null,
-    registrationBackDocumentUrl: vehicle.registrationBackDocumentUrl ?? null,
-    insuranceDocumentUrl: vehicle.insuranceDocumentUrl ?? null,
+    frontPhotoUrl: toAbsoluteApiUrl(vehicle.frontPhotoUrl),
+    rearPhotoUrl: toAbsoluteApiUrl(vehicle.rearPhotoUrl),
+    sidePhotoUrl: toAbsoluteApiUrl(vehicle.sidePhotoUrl),
+    licensePlatePhotoUrl: toAbsoluteApiUrl(vehicle.licensePlatePhotoUrl),
+    registrationFrontDocumentUrl: toAbsoluteApiUrl(vehicle.registrationFrontDocumentUrl),
+    registrationBackDocumentUrl: toAbsoluteApiUrl(vehicle.registrationBackDocumentUrl),
+    insuranceDocumentUrl: toAbsoluteApiUrl(vehicle.insuranceDocumentUrl),
     insuranceExpiryDate: vehicle.insuranceExpiryDate ?? null,
     registrationExpiryDate: vehicle.registrationExpiryDate ?? null,
     status: vehicle.verificationStatus ?? vehicle.status ?? null,
