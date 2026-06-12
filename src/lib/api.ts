@@ -233,6 +233,8 @@ function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
     driverId: vehicle.driverId,
     brand: vehicle.brand ?? vehicle.make,
     make: vehicle.make ?? vehicle.brand,
+    vehicleType: vehicle.vehicleType,
+    vehicleTypeLegacy: vehicle.vehicleTypeLegacy ?? vehicle.vehicleType,
     licensePlateNumber: vehicle.licensePlateNumber ?? vehicle.plateNumber,
     plateNumber: vehicle.plateNumber ?? vehicle.licensePlateNumber,
     frontPhotoUrl: vehicle.frontPhotoUrl ?? null,
@@ -244,7 +246,8 @@ function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
     insuranceDocumentUrl: vehicle.insuranceDocumentUrl ?? null,
     insuranceExpiryDate: vehicle.insuranceExpiryDate ?? null,
     registrationExpiryDate: vehicle.registrationExpiryDate ?? null,
-    status: vehicle.status ?? null,
+    status: vehicle.verificationStatus ?? vehicle.status ?? null,
+    verificationStatus: vehicle.verificationStatus ?? vehicle.status ?? null,
     rejectionReason: vehicle.rejectionReason ?? null,
   };
 }

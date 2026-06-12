@@ -36,6 +36,23 @@ function getStatusColor(status: VehicleReviewStatus | null): string {
   }
 }
 
+const VEHICLE_TYPE_LABELS: Record<DriverVehicle['vehicleType'], string> = {
+  OPEN_CAR_CARRIER: 'Open car carrier / open flatbed',
+  ENCLOSED_CARRIER: 'Enclosed carrier',
+  SMALL_TRUCK: 'Small truck',
+  MEDIUM_TRUCK: 'Medium truck',
+  PICKUP: 'Pickup',
+  VAN: 'Van',
+  TOW_TRUCK: 'Tow truck',
+  MOTORCYCLE: 'Motorcycle',
+};
+
+const VEHICLE_CONDITION_LABELS: Record<DriverVehicle['condition'], string> = {
+  EXCELLENT: 'Excellent',
+  GOOD: 'Good',
+  NEEDS_MAINTENANCE: 'Needs maintenance',
+};
+
 export default function MyVehiclesScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -137,7 +154,8 @@ export default function MyVehiclesScreen() {
           </View>
         ) : (
           vehicles.map((vehicle) => {
-            const statusLabel = vehicle.status ? STATUS_LABELS[vehicle.status] : 'Pending review';
+            const vehicleStatus = vehicle.verificationStatus ?? vehicle.status;
+            const statusLabel = vehicleStatus ? STATUS_LABELS[vehicleStatus] : 'Pending review';
             return (
               <View key={vehicle.id} style={styles.vehicleCard}>
                 <View style={styles.vehicleHeader}>
@@ -147,13 +165,13 @@ export default function MyVehiclesScreen() {
                   <View
                     style={[
                       styles.statusBadge,
-                      { backgroundColor: `${getStatusColor(vehicle.status)}15` },
+                      { backgroundColor: `${getStatusColor(vehicleStatus)}15` },
                     ]}
                   >
                     <Text
                       style={[
                         styles.statusBadgeText,
-                        { color: getStatusColor(vehicle.status) },
+                        { color: getStatusColor(vehicleStatus) },
                       ]}
                     >
                       {statusLabel}
@@ -161,18 +179,23 @@ export default function MyVehiclesScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.metaText}>Type: {vehicle.vehicleType}</Text>
+                <Text style={styles.metaText}>
+                  Type: {VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType}
+                </Text>
                 <Text style={styles.metaText}>
                   License plate: {vehicle.licensePlateNumber}
                 </Text>
-                <Text style={styles.metaText}>Condition: {vehicle.condition}</Text>
+                <Text style={styles.metaText}>
+                  Condition: {VEHICLE_CONDITION_LABELS[vehicle.condition] ?? vehicle.condition}
+                </Text>
+                <Text style={styles.metaText}>Verification: {statusLabel}</Text>
                 <Text style={styles.metaText}>
                   State: {vehicle.isActive ? 'Active' : 'Inactive'}
                 </Text>
-                {vehicle.status === 'PENDING_REVIEW' ? (
+                {vehicleStatus === 'PENDING_REVIEW' ? (
                   <Text style={styles.pendingText}>Your vehicle is under review.</Text>
                 ) : null}
-                {vehicle.status === 'REJECTED' && vehicle.rejectionReason ? (
+                {vehicleStatus === 'REJECTED' && vehicle.rejectionReason ? (
                   <Text style={styles.errorText}>
                     Rejection reason: {vehicle.rejectionReason}
                   </Text>

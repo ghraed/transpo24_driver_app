@@ -27,7 +27,9 @@ import {
 import type {
   CreateDriverVehicleForm,
   CreateDriverVehiclePayload,
+  DriverNextStep,
   DriverVehicle,
+  DriverVehicleDocumentsResponse,
   LocalDocumentAsset,
   VehicleCondition,
   VehicleType,
@@ -44,8 +46,8 @@ const DOCUMENT_ALLOWED_TYPES = new Set([
 ]);
 
 const VEHICLE_TYPE_OPTIONS: { label: string; value: VehicleType }[] = [
-  { label: 'Flatbed / Open Carrier', value: 'FLATBED_OPEN' },
-  { label: 'Enclosed Carrier', value: 'FLATBED_ENCLOSED' },
+  { label: 'Open car carrier / open flatbed', value: 'OPEN_CAR_CARRIER' },
+  { label: 'Enclosed carrier', value: 'ENCLOSED_CARRIER' },
   { label: 'Small Truck', value: 'SMALL_TRUCK' },
   { label: 'Medium Truck', value: 'MEDIUM_TRUCK' },
   { label: 'Pickup', value: 'PICKUP' },
@@ -193,6 +195,21 @@ function normalizeDateValue(value: string): Date {
 
 function formatSelectorLabel(value: string, options: SelectorOption[]): string {
   return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function nextStepToRoute(nextStep: DriverNextStep): '/vehicle-documents' | '/my-vehicles' | '/set-availability' | '/waiting-approval' | '/driver-home' {
+  switch (nextStep) {
+    case 'ADD_VEHICLE_DOCUMENTS':
+      return '/my-vehicles';
+    case 'SET_AVAILABILITY':
+      return '/set-availability';
+    case 'WAITING_APPROVAL':
+      return '/waiting-approval';
+    case 'HOME':
+      return '/driver-home';
+    case 'COMPLETE_PROFILE':
+      return '/vehicle-documents';
+  }
 }
 
 export default function VehicleInformationScreen() {
@@ -622,6 +639,7 @@ export default function VehicleInformationScreen() {
       const vehicle = isEditing && vehicleId
         ? await updateDriverVehicle(vehicleId, payload)
         : await createDriverVehicle(payload);
+      let documentResponse: DriverVehicleDocumentsResponse | null = null;
 
       const shouldUploadDocuments =
         Boolean(vehicleForm.frontPhoto) ||
@@ -636,7 +654,7 @@ export default function VehicleInformationScreen() {
           (existingVehicle?.registrationExpiryDate?.slice(0, 10) ?? '');
 
       if (shouldUploadDocuments) {
-        await uploadDriverVehicleDocuments(vehicle.id, {
+        documentResponse = await uploadDriverVehicleDocuments(vehicle.id, {
           frontPhoto: vehicleForm.frontPhoto,
           rearPhoto: vehicleForm.rearPhoto,
           sidePhoto: vehicleForm.sidePhoto,
@@ -654,7 +672,7 @@ export default function VehicleInformationScreen() {
         if (flow === 'management') {
           router.replace('/my-vehicles');
         } else {
-          router.replace('/set-availability');
+          router.replace(nextStepToRoute(documentResponse?.nextStep ?? 'WAITING_APPROVAL'));
         }
       }, 500);
     } catch (error) {
@@ -978,7 +996,7 @@ export default function VehicleInformationScreen() {
                 ? isEditing
                   ? 'Save Changes'
                   : 'Save Vehicle'
-                : 'Continue to Set Availability'}
+                : 'Save Vehicle'}
             </Text>
           )}
         </Pressable>

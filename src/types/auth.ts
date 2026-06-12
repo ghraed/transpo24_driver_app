@@ -134,8 +134,8 @@ export interface DriverOnboardingResponse {
 }
 
 export type VehicleType =
-  | 'FLATBED_OPEN'
-  | 'FLATBED_ENCLOSED'
+  | 'OPEN_CAR_CARRIER'
+  | 'ENCLOSED_CARRIER'
   | 'SMALL_TRUCK'
   | 'MEDIUM_TRUCK'
   | 'PICKUP'
@@ -272,6 +272,7 @@ export interface DriverVehicle {
   id: string;
   driverId: string;
   vehicleType: VehicleType;
+  vehicleTypeLegacy?: string;
   brand: string;
   make: string;
   model: string;
@@ -295,6 +296,7 @@ export interface DriverVehicle {
   insuranceExpiryDate: string | null;
   registrationExpiryDate: string | null;
   status: VehicleReviewStatus | null;
+  verificationStatus?: VehicleReviewStatus | null;
   rejectionReason: string | null;
   isActive: boolean;
   createdAt: string;
