@@ -39,7 +39,9 @@ export interface RegisterDriverPayload {
   phone: string;
   password: string;
   countryCode?: string;
+  countryCodes?: string[];
   city?: string;
+  cities?: string[];
 }
 
 export interface UpdateDriverProfilePayload {
@@ -47,7 +49,11 @@ export interface UpdateDriverProfilePayload {
   lastName: string;
   phone: string;
   countryCode?: string;
+  countryCodes?: string[];
   city?: string;
+  cities?: string[];
+  fullNameOnId?: string;
+  idOrResidencyNumber?: string;
   dateOfBirth?: string;
   addressLine1?: string;
   addressLine2?: string;
@@ -64,6 +70,8 @@ export interface CompleteDriverProfileForm {
   phone: string;
   countryCode: string;
   city: string;
+  fullNameOnId: string;
+  idOrResidencyNumber: string;
   dateOfBirth: string;
   addressLine1: string;
   addressLine2: string;
@@ -100,8 +108,13 @@ export interface DriverProfile {
   lastName: string;
   phone: string;
   countryCode: string | null;
+  countryCodes: string[];
   city: string | null;
+  cities: string[];
+  coverageAreas: string[];
+  fullNameOnId: string | null;
   dateOfBirth: string | null;
+  idOrResidencyNumberMasked: string | null;
   addressLine1: string | null;
   addressLine2: string | null;
   postalCode: string | null;

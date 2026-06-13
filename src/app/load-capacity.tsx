@@ -16,6 +16,11 @@ import {
 import { useAuth } from '@/context/auth-context';
 import { getDriverVehicle, getVehicleLoadCapacity, saveVehicleLoadCapacity } from '@/lib/api';
 import {
+  clearLastOnboardingRoute,
+  persistLastOnboardingRoute,
+} from '@/lib/auth-storage';
+import { nextStepToRoute } from '@/lib/onboarding-route';
+import {
   CARGO_TYPE_OPTIONS,
   createDefaultWorkingSchedule,
   DAY_LABELS,
@@ -30,7 +35,6 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
 import type {
-  DriverNextStep,
   DriverVehicle,
   VehicleCargoType,
   VehicleLoadCapacity,
@@ -47,23 +51,6 @@ interface CapacityFormState {
   allowedCargoTypes: VehicleCargoType[];
   workingSchedule: WorkingDaySchedule[];
   isDefault: boolean;
-}
-
-function nextStepToRoute(
-  nextStep: DriverNextStep,
-): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
 }
 
 function toNumericInput(value?: number | null): string {
@@ -147,6 +134,15 @@ export default function LoadCapacityScreen() {
   const [loadError, setLoadError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
+
+  useEffect(() => {
+    if (flow !== 'onboarding' || !vehicleId) return;
+
+    const route =
+      `/load-capacity?vehicleId=${encodeURIComponent(vehicleId)}` +
+      `&flow=onboarding&nextStep=${encodeURIComponent(nextStep)}`;
+    void persistLastOnboardingRoute(route);
+  }, [flow, nextStep, vehicleId]);
 
   const loadData = useCallback(async (): Promise<void> => {
     if (!vehicleId) {
@@ -441,6 +437,9 @@ export default function LoadCapacityScreen() {
 
       setTimeout(() => {
         if (flow === 'onboarding') {
+          if (nextStep === 'HOME') {
+            void clearLastOnboardingRoute();
+          }
           router.replace(nextStepToRoute(nextStep));
         } else {
           router.replace(returnTo);

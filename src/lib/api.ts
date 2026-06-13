@@ -284,6 +284,18 @@ function normalizeVehicleLoadCapacity(
   };
 }
 
+function normalizeDriverDocumentsStatus(
+  status: DriverDocumentsStatusResponse,
+): DriverDocumentsStatusResponse {
+  return {
+    ...status,
+    uploadedDocuments: (status.uploadedDocuments ?? []).map((document) => ({
+      ...document,
+      url: toAbsoluteApiUrl(document.url) ?? document.url,
+    })),
+  };
+}
+
 export async function registerDriver(payload: RegisterDriverPayload): Promise<DriverAuthResponse> {
   const endpoint = `${getApiBaseUrl()}/auth/driver/register`;
   let response: Response;
@@ -804,10 +816,11 @@ export async function getDriverDocumentsStatus(): Promise<DriverDocumentsStatusR
     throw await parseError(response, 'Failed to load driver documents status.');
   }
 
-  return parseJsonResponse<DriverDocumentsStatusResponse>(
+  const data = await parseJsonResponse<DriverDocumentsStatusResponse>(
     response,
     'Failed to parse driver documents status response.',
   );
+  return normalizeDriverDocumentsStatus(data);
 }
 
 export async function uploadDriverDocument(payload: {
@@ -876,7 +889,9 @@ export async function uploadDriverDocument(payload: {
   }
 
   try {
-    return JSON.parse(successRaw) as DriverDocumentsStatusResponse;
+    return normalizeDriverDocumentsStatus(
+      JSON.parse(successRaw) as DriverDocumentsStatusResponse,
+    );
   } catch {
     throw new Error(`Invalid upload response from server: ${successRaw}`);
   }
@@ -899,10 +914,11 @@ export async function submitDriverDocumentsForReview(): Promise<DriverDocumentsS
     throw await parseError(response, 'Failed to submit driver documents for review.');
   }
 
-  return parseJsonResponse<DriverDocumentsStatusResponse>(
+  const data = await parseJsonResponse<DriverDocumentsStatusResponse>(
     response,
     'Failed to parse submit review response.',
   );
+  return normalizeDriverDocumentsStatus(data);
 }
 
 export async function getDriverAvailability(): Promise<DriverAvailabilityResponse> {

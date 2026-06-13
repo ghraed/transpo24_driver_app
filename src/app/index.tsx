@@ -1,30 +1,17 @@
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import {
+  clearLastOnboardingRoute,
   clearRememberedCredentials,
+  readLastOnboardingRoute,
   persistRememberedCredentials,
   readRememberedCredentials,
 } from '@/lib/auth-storage';
-import type { DriverNextStep } from '@/types/auth';
-
-function nextStepToRoute(nextStep: DriverNextStep): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
-}
+import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 
 export default function DriverLoginScreen() {
   const router = useRouter();
@@ -61,6 +48,8 @@ export default function DriverLoginScreen() {
         email: email.trim().toLowerCase(),
         password,
       });
+      const savedRoute = await readLastOnboardingRoute();
+      const targetRoute = resolveDriverEntryRoute(nextStep, savedRoute);
 
       if (rememberMe) {
         await persistRememberedCredentials(email.trim().toLowerCase(), password);
@@ -68,7 +57,11 @@ export default function DriverLoginScreen() {
         await clearRememberedCredentials();
       }
 
-      router.replace(nextStepToRoute(nextStep));
+      if (nextStep === 'HOME') {
+        await clearLastOnboardingRoute();
+      }
+
+      router.replace(targetRoute as Href);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Login failed.');
     } finally {

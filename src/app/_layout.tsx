@@ -1,11 +1,56 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider, useAuth } from '@/context/auth-context';
+import {
+  clearLastOnboardingRoute,
+  readLastOnboardingRoute,
+} from '@/lib/auth-storage';
+import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 
 function AppNavigator() {
-  const { isRestoringSession } = useAuth();
+  const { accessToken, isRestoringSession, refreshDriverMe, signOut } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const hasResolvedInitialRouteRef = useRef(false);
+
+  useEffect(() => {
+    if (isRestoringSession) return;
+
+    if (!accessToken) {
+      hasResolvedInitialRouteRef.current = false;
+      return;
+    }
+
+    if (pathname !== '/' && pathname !== '/register') {
+      hasResolvedInitialRouteRef.current = true;
+      return;
+    }
+
+    if (hasResolvedInitialRouteRef.current) return;
+    hasResolvedInitialRouteRef.current = true;
+
+    const resolveEntryRoute = async (): Promise<void> => {
+      try {
+        const response = await refreshDriverMe();
+        const savedRoute = await readLastOnboardingRoute();
+        const targetRoute = resolveDriverEntryRoute(response.nextStep, savedRoute);
+
+        if (response.nextStep === 'HOME') {
+          await clearLastOnboardingRoute();
+        }
+
+        router.replace(targetRoute as Href);
+      } catch {
+        await signOut();
+        router.replace('/');
+      }
+    };
+
+    void resolveEntryRoute();
+  }, [accessToken, isRestoringSession, pathname, refreshDriverMe, router, signOut]);
 
   if (isRestoringSession) {
     return (

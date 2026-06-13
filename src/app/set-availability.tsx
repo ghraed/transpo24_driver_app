@@ -18,11 +18,15 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
+import {
+  clearLastOnboardingRoute,
+  persistLastOnboardingRoute,
+} from '@/lib/auth-storage';
+import { nextStepToRoute } from '@/lib/onboarding-route';
 import type {
   DayOfWeek,
   DriverAvailabilityForm,
   DriverAvailabilityFormDay,
-  DriverNextStep,
   UpdateDriverAvailabilityPayload,
 } from '@/types/auth';
 
@@ -46,23 +50,6 @@ const ORDERED_DAYS: DayOfWeek[] = [
   'SATURDAY',
   'SUNDAY',
 ];
-
-function nextStepToRoute(
-  nextStep: DriverNextStep,
-): '/complete-profile' | '/vehicle-documents' | '/set-availability' | '/waiting-approval' | '/driver-home' {
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/driver-home';
-  }
-}
 
 function parseNumber(value: string): number | undefined {
   const trimmed = value.trim();
@@ -129,6 +116,10 @@ export default function SetAvailabilityScreen() {
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
   const [approveDebugMessage, setApproveDebugMessage] = useState<string>('');
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') || '(EXPO_PUBLIC_API_URL not set)';
+
+  useEffect(() => {
+    void persistLastOnboardingRoute('/set-availability');
+  }, []);
 
   const applyAvailability = useCallback((response: Awaited<ReturnType<typeof refreshDriverAvailability>>): void => {
     setForm({
@@ -357,6 +348,10 @@ export default function SetAvailabilityScreen() {
         return;
       }
 
+      if (response.nextStep === 'HOME') {
+        await clearLastOnboardingRoute();
+      }
+
       router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save availability.';
@@ -443,6 +438,7 @@ export default function SetAvailabilityScreen() {
 
       const response = await refreshDriverMe();
       if (response.nextStep === 'HOME') {
+        await clearLastOnboardingRoute();
         router.replace('/driver-home');
         return;
       }

@@ -19,8 +19,10 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
+import { persistLastOnboardingRoute } from '@/lib/auth-storage';
 import {
   createDriverVehicle,
+  getDriverVehicles,
   getDriverVehicle,
   updateDriverVehicle,
   uploadDriverVehicleDocuments,
@@ -239,6 +241,7 @@ export default function VehicleInformationScreen() {
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [activeDateField, setActiveDateField] = useState<DateFieldKey | null>(null);
   const [activeSelectorField, setActiveSelectorField] = useState<SelectorField | null>(null);
   const [selectorSearch, setSelectorSearch] = useState<string>('');
@@ -249,17 +252,43 @@ export default function VehicleInformationScreen() {
 
   const isEditing = Boolean(vehicleId);
 
-  const loadVehicle = useCallback(async (): Promise<void> => {
-    if (!vehicleId) {
-      setIsLoading(false);
-      return;
-    }
+  useEffect(() => {
+    if (flow !== 'onboarding') return;
 
+    const route = vehicleId
+      ? `/vehicle-information?vehicleId=${encodeURIComponent(vehicleId)}&flow=onboarding`
+      : '/vehicle-information?flow=onboarding';
+    void persistLastOnboardingRoute(route);
+  }, [flow, vehicleId]);
+
+  const loadVehicle = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setLoadError('');
 
     try {
-      const vehicle = await getDriverVehicle(vehicleId);
+      let resolvedVehicleId = vehicleId;
+
+      if (!resolvedVehicleId && flow === 'onboarding') {
+        const vehicles = await getDriverVehicles();
+        const latestVehicle = [...vehicles]
+          .sort(
+            (left, right) =>
+              new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+          )[0];
+        resolvedVehicleId = latestVehicle?.id;
+      }
+
+      if (!resolvedVehicleId) {
+        setExistingVehicle(null);
+        setVehicleForm(EMPTY_FORM);
+        setBrandSelection('');
+        setBrandOtherValue('');
+        setModelSelection('');
+        setModelOtherValue('');
+        return;
+      }
+
+      const vehicle = await getDriverVehicle(resolvedVehicleId);
       setExistingVehicle(vehicle);
       setVehicleForm({
         vehicleType: vehicle.vehicleType,
@@ -285,7 +314,7 @@ export default function VehicleInformationScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [vehicleId]);
+  }, [flow, vehicleId]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -640,6 +669,8 @@ export default function VehicleInformationScreen() {
   });
 
   const onSaveVehicle = async (): Promise<void> => {
+    setHasAttemptedSubmit(true);
+
     if (!isFormValid || isSaving) return;
 
     setIsSaving(true);
@@ -756,7 +787,9 @@ export default function VehicleInformationScreen() {
             <Text style={styles.documentPlaceholderText}>{documentLabel}</Text>
           </View>
         )}
-        {fieldErrors[field] ? <Text style={styles.errorText}>{fieldErrors[field]}</Text> : null}
+        {hasAttemptedSubmit && fieldErrors[field] ? (
+          <Text style={styles.errorText}>{fieldErrors[field]}</Text>
+        ) : null}
         <View style={styles.uploadActionRow}>
           <Pressable style={styles.secondaryButton} onPress={() => void onPress()}>
             <Text style={styles.secondaryButtonText}>
@@ -826,7 +859,9 @@ export default function VehicleInformationScreen() {
                 : 'Select vehicle type'}
             </Text>
           </Pressable>
-          {fieldErrors.vehicleType ? <Text style={styles.errorText}>{fieldErrors.vehicleType}</Text> : null}
+          {hasAttemptedSubmit && fieldErrors.vehicleType ? (
+            <Text style={styles.errorText}>{fieldErrors.vehicleType}</Text>
+          ) : null}
 
           <Text style={styles.fieldLabel}>Vehicle brand *</Text>
           <Pressable style={styles.selectorField} onPress={() => openSelector('brand')}>
@@ -834,7 +869,9 @@ export default function VehicleInformationScreen() {
               {vehicleForm.brand || 'Select vehicle brand'}
             </Text>
           </Pressable>
-          {fieldErrors.brand ? <Text style={styles.errorText}>{fieldErrors.brand}</Text> : null}
+          {hasAttemptedSubmit && fieldErrors.brand ? (
+            <Text style={styles.errorText}>{fieldErrors.brand}</Text>
+          ) : null}
           {brandSelection === OTHER_OPTION ? (
             <>
               <Text style={styles.fieldLabel}>Other vehicle brand *</Text>
@@ -847,7 +884,7 @@ export default function VehicleInformationScreen() {
                   onVehicleChange('brand', value);
                 }}
               />
-              {fieldErrors.brandOther ? (
+              {hasAttemptedSubmit && fieldErrors.brandOther ? (
                 <Text style={styles.errorText}>{fieldErrors.brandOther}</Text>
               ) : null}
             </>
@@ -865,7 +902,9 @@ export default function VehicleInformationScreen() {
               {vehicleForm.model || 'Select vehicle model'}
             </Text>
           </Pressable>
-          {fieldErrors.model ? <Text style={styles.errorText}>{fieldErrors.model}</Text> : null}
+          {hasAttemptedSubmit && fieldErrors.model ? (
+            <Text style={styles.errorText}>{fieldErrors.model}</Text>
+          ) : null}
           {modelSelection === OTHER_OPTION ? (
             <>
               <Text style={styles.fieldLabel}>Other vehicle model *</Text>
@@ -878,7 +917,7 @@ export default function VehicleInformationScreen() {
                   onVehicleChange('model', value);
                 }}
               />
-              {fieldErrors.modelOther ? (
+              {hasAttemptedSubmit && fieldErrors.modelOther ? (
                 <Text style={styles.errorText}>{fieldErrors.modelOther}</Text>
               ) : null}
             </>
@@ -890,7 +929,9 @@ export default function VehicleInformationScreen() {
               {vehicleForm.year || 'Select vehicle year'}
             </Text>
           </Pressable>
-          {fieldErrors.year ? <Text style={styles.errorText}>{fieldErrors.year}</Text> : null}
+          {hasAttemptedSubmit && fieldErrors.year ? (
+            <Text style={styles.errorText}>{fieldErrors.year}</Text>
+          ) : null}
 
           <Text style={styles.fieldLabel}>License plate number *</Text>
           <TextInput
@@ -899,7 +940,7 @@ export default function VehicleInformationScreen() {
             value={vehicleForm.licensePlateNumber}
             onChangeText={(value) => onVehicleChange('licensePlateNumber', value)}
           />
-          {fieldErrors.licensePlateNumber ? (
+          {hasAttemptedSubmit && fieldErrors.licensePlateNumber ? (
             <Text style={styles.errorText}>{fieldErrors.licensePlateNumber}</Text>
           ) : null}
 
@@ -911,7 +952,9 @@ export default function VehicleInformationScreen() {
                 : 'Select vehicle condition'}
             </Text>
           </Pressable>
-          {fieldErrors.condition ? <Text style={styles.errorText}>{fieldErrors.condition}</Text> : null}
+          {hasAttemptedSubmit && fieldErrors.condition ? (
+            <Text style={styles.errorText}>{fieldErrors.condition}</Text>
+          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -982,7 +1025,7 @@ export default function VehicleInformationScreen() {
               {formatDate(vehicleForm.insuranceExpiryDate)}
             </Text>
           </Pressable>
-          {fieldErrors.insuranceExpiryDate ? (
+          {hasAttemptedSubmit && fieldErrors.insuranceExpiryDate ? (
             <Text style={styles.errorText}>{fieldErrors.insuranceExpiryDate}</Text>
           ) : null}
 
@@ -999,7 +1042,7 @@ export default function VehicleInformationScreen() {
               {formatDate(vehicleForm.registrationExpiryDate)}
             </Text>
           </Pressable>
-          {fieldErrors.registrationExpiryDate ? (
+          {hasAttemptedSubmit && fieldErrors.registrationExpiryDate ? (
             <Text style={styles.errorText}>{fieldErrors.registrationExpiryDate}</Text>
           ) : null}
         </View>
@@ -1016,8 +1059,8 @@ export default function VehicleInformationScreen() {
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
         <Pressable
-          style={[styles.primaryButton, (!isFormValid || isSaving) && styles.buttonDisabled]}
-          disabled={!isFormValid || isSaving}
+          style={[styles.primaryButton, isSaving && styles.buttonDisabled]}
+          disabled={isSaving}
           onPress={() => void onSaveVehicle()}
         >
           {isSaving ? (

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { getDriverVehicles } from '@/lib/api';
+import { clearLastOnboardingRoute } from '@/lib/auth-storage';
 import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
 import { validateOfferAcceptedPayload } from '@/utils/locationValidation';
 
@@ -13,6 +14,10 @@ export default function DriverHomeScreen() {
   const { user, driver, signOut, accessToken } = useAuth();
   const [hasVehicles, setHasVehicles] = useState<boolean>(true);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState<boolean>(true);
+
+  useEffect(() => {
+    void clearLastOnboardingRoute();
+  }, []);
 
   useEffect(() => {
     if (!accessToken) return;

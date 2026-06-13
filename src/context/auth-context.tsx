@@ -4,7 +4,7 @@ import {
   approveDriverForTesting as approveDriverForTestingApi,
   getDriverAvailability,
   getDriverMe,
-  login,
+  loginDriver,
   registerDriver,
   updateDriverAvailability,
   updateDriverProfile,
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (payload: LoginPayload): Promise<DriverNextStep> => {
-    const response = await login(payload);
+    const response = await loginDriver(payload);
 
     await persistAccessToken(response.accessToken);
     setAccessToken(response.accessToken);
