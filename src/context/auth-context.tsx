@@ -29,6 +29,7 @@ interface AuthContextValue {
   driver: DriverProfile | null;
   isAuthenticated: boolean;
   isRestoringSession: boolean;
+  hasRestoredStoredSession: boolean;
   signIn: (payload: LoginPayload) => Promise<DriverNextStep>;
   signOut: () => Promise<void>;
   registerNewDriver: (payload: RegisterDriverPayload) => Promise<DriverAuthResponse>;
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [driver, setDriver] = useState<DriverProfile | null>(null);
   const [isRestoringSession, setIsRestoringSession] = useState<boolean>(true);
+  const [hasRestoredStoredSession, setHasRestoredStoredSession] = useState<boolean>(false);
 
   const applyDriverMeResponse = useCallback((response: DriverMeResponse): void => {
     setUser(response.user);
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsRestoringSession(true);
     try {
       const token = await readAccessToken();
+      setHasRestoredStoredSession(Boolean(token));
       setAccessToken(token);
 
       if (token) {
@@ -84,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const registerNewDriver = useCallback(async (payload: RegisterDriverPayload) => {
     const response = await registerDriver(payload);
     await persistAccessToken(response.accessToken);
+    setHasRestoredStoredSession(false);
     setAccessToken(response.accessToken);
     setUser(response.user);
     setDriver(response.driver);
@@ -94,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await loginDriver(payload);
 
     await persistAccessToken(response.accessToken);
+    setHasRestoredStoredSession(false);
     setAccessToken(response.accessToken);
     setUser(response.user);
     setDriver(response.driver ?? null);
@@ -136,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = useCallback(async (): Promise<void> => {
     await clearAccessToken();
+    setHasRestoredStoredSession(false);
     setAccessToken(null);
     setUser(null);
     setDriver(null);
@@ -148,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       driver,
       isAuthenticated: Boolean(accessToken),
       isRestoringSession,
+      hasRestoredStoredSession,
       signIn,
       signOut,
       registerNewDriver,
@@ -161,6 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [
       accessToken,
       driver,
+      hasRestoredStoredSession,
       isRestoringSession,
       refreshDriverMe,
       refreshDriverAvailability,

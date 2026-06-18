@@ -52,6 +52,29 @@ function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): s
   return errorData.message ?? fallback;
 }
 
+function tryParseJson<T>(rawText: string): T {
+  return JSON.parse(rawText) as T;
+}
+
+function sanitizeMalformedJson(rawText: string): string {
+  return rawText
+    .replace(/^\uFEFF/, '')
+    .replace(/,\s*,+/g, ',')
+    .replace(/,\s*([}\]])/g, '$1');
+}
+
+function parsePossiblyMalformedJson<T>(rawText: string): T {
+  try {
+    return tryParseJson<T>(rawText);
+  } catch {
+    const sanitized = sanitizeMalformedJson(rawText);
+    if (sanitized === rawText) {
+      throw new Error('JSON_PARSE_FAILED');
+    }
+    return tryParseJson<T>(sanitized);
+  }
+}
+
 async function parseError(response: Response, fallback: string): Promise<Error> {
   try {
     const rawText = await response.text();
@@ -59,7 +82,7 @@ async function parseError(response: Response, fallback: string): Promise<Error> 
       return new Error(fallback);
     }
     try {
-      const errorData = JSON.parse(rawText) as ApiErrorResponse;
+      const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
       return new Error(normalizeErrorMessage(errorData, fallback));
     } catch {
       return new Error(rawText);
@@ -76,7 +99,7 @@ async function parseJsonResponse<T>(response: Response, fallback: string): Promi
   }
 
   try {
-    return JSON.parse(rawText) as T;
+    return parsePossiblyMalformedJson<T>(rawText);
   } catch {
     throw new Error(`${fallback} (received non-JSON response)`);
   }
@@ -581,6 +604,83 @@ export async function deleteDriverVehicle(vehicleId: string): Promise<DriverVehi
   return normalizeDriverVehicle(data.vehicle);
 }
 
+export async function activateDriverVehicle(vehicleId: string): Promise<DriverVehicle> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/activate`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to activate driver vehicle.');
+  }
+
+  const data = await parseJsonResponse<DriverVehicleDocumentsResponse>(
+    response,
+    'Failed to parse activate vehicle response.',
+  );
+  return normalizeDriverVehicle(data.vehicle);
+}
+
+export async function approveDriverVehicleForTesting(vehicleId: string): Promise<DriverVehicle> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/testing/approve`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to approve vehicle in testing mode.');
+  }
+
+  const vehicles = await getDriverVehicles();
+  const updatedVehicle = vehicles.find((vehicle) => vehicle.id === vehicleId);
+  if (!updatedVehicle) {
+    throw new Error('Vehicle approval request succeeded, but the updated vehicle was not found.');
+  }
+  return updatedVehicle;
+}
+
+export interface ApproveDriverVehicleDebugResponse {
+  ok: boolean;
+  status: number;
+  rawBody: string;
+}
+
+export async function approveDriverVehicleForTestingDebug(
+  vehicleId: string,
+): Promise<ApproveDriverVehicleDebugResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/testing/approve`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  const rawBody = await response.text();
+  return {
+    ok: response.ok,
+    status: response.status,
+    rawBody,
+  };
+}
+
 export async function getVehicleLoadCapacity(vehicleId: string): Promise<VehicleLoadCapacity> {
   const endpoint = `${getApiBaseUrl()}/driver/me/vehicles/${vehicleId}/load-capacity`;
   let response: Response;
@@ -995,16 +1095,12 @@ export async function updateDriverOnlineStatus(
 
 export async function approveDriverForTesting(): Promise<DriverMeResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me/testing/approve`;
-  const token = await readAccessToken();
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
       method: 'PATCH',
-      headers,
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);
@@ -1014,10 +1110,14 @@ export async function approveDriverForTesting(): Promise<DriverMeResponse> {
     throw await parseError(response, 'Failed to approve driver in testing mode.');
   }
 
-  return parseJsonResponse<DriverMeResponse>(
-    response,
-    'Failed to parse testing approval response.',
-  );
+  try {
+    return await parseJsonResponse<DriverMeResponse>(
+      response,
+      'Failed to parse testing approval response.',
+    );
+  } catch {
+    return getDriverMe();
+  }
 }
 
 export interface ApproveDriverDebugResponse {
@@ -1028,16 +1128,12 @@ export interface ApproveDriverDebugResponse {
 
 export async function approveDriverForTestingDebug(): Promise<ApproveDriverDebugResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me/testing/approve`;
-  const token = await readAccessToken();
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
       method: 'PATCH',
-      headers,
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);

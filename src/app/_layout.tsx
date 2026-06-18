@@ -11,7 +11,13 @@ import {
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 
 function AppNavigator() {
-  const { accessToken, isRestoringSession, refreshDriverMe, signOut } = useAuth();
+  const {
+    accessToken,
+    isRestoringSession,
+    hasRestoredStoredSession,
+    refreshDriverMe,
+    signOut,
+  } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const hasResolvedInitialRouteRef = useRef(false);
@@ -21,6 +27,11 @@ function AppNavigator() {
 
     if (!accessToken) {
       hasResolvedInitialRouteRef.current = false;
+      return;
+    }
+
+    if (!hasRestoredStoredSession) {
+      hasResolvedInitialRouteRef.current = true;
       return;
     }
 
@@ -50,7 +61,15 @@ function AppNavigator() {
     };
 
     void resolveEntryRoute();
-  }, [accessToken, isRestoringSession, pathname, refreshDriverMe, router, signOut]);
+  }, [
+    accessToken,
+    hasRestoredStoredSession,
+    isRestoringSession,
+    pathname,
+    refreshDriverMe,
+    router,
+    signOut,
+  ]);
 
   if (isRestoringSession) {
     return (

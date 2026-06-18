@@ -33,6 +33,8 @@ export function nextStepToRoute(nextStep: DriverNextStep): DriverAppRoute {
       return '/waiting-approval';
     case 'HOME':
       return '/driver-home';
+    default:
+      return '/';
   }
 }
 
@@ -75,5 +77,7 @@ export function resolveDriverEntryRoute(
       return '/waiting-approval';
     case 'HOME':
       return '/driver-home';
+    default:
+      return '/';
   }
 }

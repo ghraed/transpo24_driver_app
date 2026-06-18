@@ -12,7 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
-import { deleteDriverVehicle, getDriverVehicles } from '@/lib/api';
+import {
+  activateDriverVehicle,
+  approveDriverVehicleForTesting,
+  getDriverVehicles,
+} from '@/lib/api';
 import {
   formatDimensionsSummary,
   getCapacityStatusLabel,
@@ -21,7 +25,7 @@ import {
 import type { DriverVehicle, VehicleReviewStatus } from '@/types/auth';
 
 const STATUS_LABELS: Record<VehicleReviewStatus, string> = {
-  PENDING_REVIEW: 'Pending review',
+  PENDING_REVIEW: 'Pending approval',
   APPROVED: 'Approved',
   REJECTED: 'Rejected',
   INACTIVE: 'Inactive',
@@ -91,19 +95,38 @@ export default function MyVehiclesScreen() {
     return () => clearTimeout(timeoutId);
   }, [loadVehicles]);
 
-  const onDeactivateVehicle = async (vehicleId: string): Promise<void> => {
+  const onActivateVehicle = async (vehicleId: string): Promise<void> => {
     if (isMutatingId) return;
 
     setIsMutatingId(vehicleId);
     setErrorMessage('');
     try {
-      const updatedVehicle = await deleteDriverVehicle(vehicleId);
+      const updatedVehicle = await activateDriverVehicle(vehicleId);
       setVehicles((current) =>
         current.map((vehicle) => (vehicle.id === vehicleId ? updatedVehicle : vehicle)),
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to deactivate vehicle.',
+        error instanceof Error ? error.message : 'Failed to activate vehicle.',
+      );
+    } finally {
+      setIsMutatingId(null);
+    }
+  };
+
+  const onApproveVehicleForTesting = async (vehicleId: string): Promise<void> => {
+    if (isMutatingId) return;
+
+    setIsMutatingId(vehicleId);
+    setErrorMessage('');
+    try {
+      const updatedVehicle = await approveDriverVehicleForTesting(vehicleId);
+      setVehicles((current) =>
+        current.map((vehicle) => (vehicle.id === vehicleId ? updatedVehicle : vehicle)),
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Failed to approve vehicle in testing mode.',
       );
     } finally {
       setIsMutatingId(null);
@@ -219,7 +242,7 @@ export default function MyVehiclesScreen() {
                   </Text>
                 ) : null}
                 {vehicleStatus === 'PENDING_REVIEW' ? (
-                  <Text style={styles.pendingText}>Your vehicle is under review.</Text>
+                  <Text style={styles.pendingText}>Your vehicle is pending approval.</Text>
                 ) : null}
                 {vehicleStatus === 'REJECTED' && vehicle.rejectionReason ? (
                   <Text style={styles.errorText}>
@@ -250,23 +273,39 @@ export default function MyVehiclesScreen() {
                   >
                     <Text style={styles.secondaryButtonText}>Edit</Text>
                   </Pressable>
-                  {vehicle.isActive ? (
+                  {!vehicle.isActive ? (
                     <Pressable
                       style={[
-                        styles.dangerButton,
+                        styles.secondaryButton,
                         isMutatingId === vehicle.id && styles.buttonDisabled,
                       ]}
                       disabled={isMutatingId === vehicle.id}
-                      onPress={() => void onDeactivateVehicle(vehicle.id)}
+                      onPress={() => void onActivateVehicle(vehicle.id)}
                     >
                       {isMutatingId === vehicle.id ? (
-                        <ActivityIndicator color="#FFFFFF" />
+                        <ActivityIndicator color="#1D4ED8" />
                       ) : (
-                        <Text style={styles.dangerButtonText}>Deactivate</Text>
+                        <Text style={styles.secondaryButtonText}>Activate</Text>
                       )}
                     </Pressable>
                   ) : null}
                 </View>
+                {vehicleStatus === 'PENDING_REVIEW' ? (
+                  <Pressable
+                    style={[
+                      styles.testingButton,
+                      isMutatingId === vehicle.id && styles.buttonDisabled,
+                    ]}
+                    disabled={isMutatingId === vehicle.id}
+                    onPress={() => void onApproveVehicleForTesting(vehicle.id)}
+                  >
+                    {isMutatingId === vehicle.id ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <Text style={styles.testingButtonText}>Approve Vehicle For Testing</Text>
+                    )}
+                  </Pressable>
+                ) : null}
               </View>
             );
           })
@@ -358,6 +397,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryButtonText: { color: '#1D4ED8', fontWeight: '700' },
+  testingButton: {
+    minHeight: 46,
+    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testingButtonText: { color: '#FFFFFF', fontWeight: '700' },
   dangerButton: {
     flex: 1,
     minHeight: 46,

@@ -1053,7 +1053,7 @@ export default function VehicleInformationScreen() {
           </Text>
         ) : null}
         {existingVehicle?.status === 'PENDING_REVIEW' ? (
-          <Text style={styles.infoText}>Your vehicle is under review.</Text>
+          <Text style={styles.infoText}>Your vehicle is pending approval.</Text>
         ) : null}
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}

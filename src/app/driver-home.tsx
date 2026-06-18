@@ -1,10 +1,21 @@
 import { useRouter, type Href } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
-import { getDriverVehicles } from '@/lib/api';
+import {
+  getDriverAvailability,
+  getDriverVehicles,
+  updateDriverOnlineStatus,
+} from '@/lib/api';
 import { clearLastOnboardingRoute } from '@/lib/auth-storage';
 import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
 import { validateOfferAcceptedPayload } from '@/utils/locationValidation';
@@ -14,6 +25,10 @@ export default function DriverHomeScreen() {
   const { user, driver, signOut, accessToken } = useAuth();
   const [hasVehicles, setHasVehicles] = useState<boolean>(true);
   const [isLoadingVehicles, setIsLoadingVehicles] = useState<boolean>(true);
+  const [isOnline, setIsOnline] = useState<boolean>(false);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState<boolean>(true);
+  const [isUpdatingAvailability, setIsUpdatingAvailability] = useState<boolean>(false);
+  const [availabilityError, setAvailabilityError] = useState<string>('');
 
   useEffect(() => {
     void clearLastOnboardingRoute();
@@ -76,6 +91,55 @@ export default function DriverHomeScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAvailability = async (): Promise<void> => {
+      setIsLoadingAvailability(true);
+      setAvailabilityError('');
+      try {
+        const availability = await getDriverAvailability();
+        if (isMounted) {
+          setIsOnline(availability.isOnline);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setAvailabilityError(
+            error instanceof Error ? error.message : 'Failed to load availability.',
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingAvailability(false);
+        }
+      }
+    };
+
+    void loadAvailability();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const onToggleAvailability = async (nextValue: boolean): Promise<void> => {
+    if (isLoadingAvailability || isUpdatingAvailability) return;
+
+    setIsUpdatingAvailability(true);
+    setAvailabilityError('');
+
+    try {
+      const response = await updateDriverOnlineStatus({ isOnline: nextValue });
+      setIsOnline(response.isOnline);
+    } catch (error) {
+      setAvailabilityError(
+        error instanceof Error ? error.message : 'Failed to update online status.',
+      );
+    } finally {
+      setIsUpdatingAvailability(false);
+    }
+  };
+
   const onSignOut = async (): Promise<void> => {
     await signOut();
     router.replace('/');
@@ -86,6 +150,38 @@ export default function DriverHomeScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Driver Home</Text>
         <Text style={styles.subtitle}>Welcome {driver?.firstName || user?.email || 'Driver'}.</Text>
+
+        <View style={styles.availabilityCard}>
+          <View style={styles.availabilityHeader}>
+            <View style={styles.availabilityCopy}>
+              <Text style={styles.availabilityTitle}>Set Availability</Text>
+              <Text style={styles.availabilitySubtitle}>
+                {isLoadingAvailability
+                  ? 'Loading online status...'
+                  : isOnline
+                    ? 'You are online and can receive matching requests.'
+                    : 'You are offline and will not receive new requests.'}
+              </Text>
+            </View>
+            {isLoadingAvailability ? (
+              <ActivityIndicator size="small" color="#1D4ED8" />
+            ) : (
+              <Switch
+                value={isOnline}
+                onValueChange={(value) => void onToggleAvailability(value)}
+                disabled={isUpdatingAvailability}
+                trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                thumbColor={isOnline ? '#1D4ED8' : '#FFFFFF'}
+              />
+            )}
+          </View>
+          {isUpdatingAvailability ? (
+            <Text style={styles.availabilityHint}>Updating availability...</Text>
+          ) : null}
+          {availabilityError ? (
+            <Text style={styles.availabilityErrorText}>{availabilityError}</Text>
+          ) : null}
+        </View>
 
         <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
           <Text style={styles.requestsButtonText}>Available Requests</Text>
@@ -127,6 +223,43 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
   subtitle: { color: '#475569' },
+  availabilityCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+    borderRadius: 12,
+    backgroundColor: '#F8FBFF',
+    padding: 14,
+    gap: 8,
+  },
+  availabilityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  availabilityCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  availabilityTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  availabilitySubtitle: {
+    fontSize: 13,
+    color: '#475569',
+  },
+  availabilityHint: {
+    color: '#1D4ED8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  availabilityErrorText: {
+    color: '#B91C1C',
+    fontSize: 13,
+  },
   requestsButton: {
     marginTop: 8,
     minHeight: 44,
