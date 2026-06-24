@@ -11,6 +11,7 @@ import {
   persistRememberedCredentials,
   readRememberedCredentials,
 } from '@/lib/auth-storage';
+import { resetUsersForTesting } from '@/lib/api';
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 
 export default function DriverLoginScreen() {
@@ -21,6 +22,7 @@ export default function DriverLoginScreen() {
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isResettingUsers, setIsResettingUsers] = useState<boolean>(false);
 
   useEffect(() => {
     const loadRemembered = async (): Promise<void> => {
@@ -35,7 +37,10 @@ export default function DriverLoginScreen() {
   }, []);
 
   const onLogin = useCallback(async (): Promise<void> => {
-    if (!email.trim() || !password.trim()) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.replace(/[\r\n]+/g, '');
+
+    if (!normalizedEmail || !normalizedPassword) {
       setErrorMessage('Email and password are required.');
       return;
     }
@@ -45,14 +50,14 @@ export default function DriverLoginScreen() {
 
     try {
       const nextStep = await signIn({
-        email: email.trim().toLowerCase(),
-        password,
+        email: normalizedEmail,
+        password: normalizedPassword,
       });
       const savedRoute = await readLastOnboardingRoute();
       const targetRoute = resolveDriverEntryRoute(nextStep, savedRoute);
 
       if (rememberMe) {
-        await persistRememberedCredentials(email.trim().toLowerCase(), password);
+        await persistRememberedCredentials(normalizedEmail, normalizedPassword);
       } else {
         await clearRememberedCredentials();
       }
@@ -69,24 +74,51 @@ export default function DriverLoginScreen() {
     }
   }, [email, password, rememberMe, router, signIn]);
 
+  const onResetUsers = useCallback(async (): Promise<void> => {
+    if (isResettingUsers) return;
+
+    setIsResettingUsers(true);
+    setErrorMessage('');
+
+    try {
+      const response = await resetUsersForTesting();
+      setErrorMessage(
+        `Deleted ${response.deletedUsers} user(s). Kept ${response.keptEmail}.`,
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Failed to reset users.',
+      );
+    } finally {
+      setIsResettingUsers(false);
+    }
+  }, [isResettingUsers]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Driver Login</Text>
         <Text style={styles.subtitle}>Sign in to manage your transport requests.</Text>
+        <Text style={styles.helperText}>Test account: `driver@test.com` with password `driver@test.com`.</Text>
       </View>
 
       <TextInput
         style={styles.input}
         placeholder="Email"
         autoCapitalize="none"
+        autoComplete="email"
+        textContentType="username"
+        importantForAutofill="yes"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
       />
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.passwordInput]}
         placeholder="Password"
+        autoComplete="current-password"
+        textContentType="password"
+        importantForAutofill="yes"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -102,6 +134,18 @@ export default function DriverLoginScreen() {
 
       <Pressable style={[styles.button, isSubmitting && styles.buttonDisabled]} onPress={() => void onLogin()} disabled={isSubmitting}>
         {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Login</Text>}
+      </Pressable>
+
+      <Pressable
+        style={[styles.secondaryButton, isResettingUsers && styles.buttonDisabled]}
+        onPress={() => void onResetUsers()}
+        disabled={isResettingUsers}
+      >
+        {isResettingUsers ? (
+          <ActivityIndicator color="#1D4ED8" />
+        ) : (
+          <Text style={styles.secondaryButtonText}>Delete Users Except driver@test.com</Text>
+        )}
       </Pressable>
 
       <Link href="/register" style={styles.linkText}>
@@ -159,6 +203,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#475467',
   },
+  helperText: {
+    marginTop: 8,
+    color: '#475467',
+    fontSize: 13,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#D0D5DD',
@@ -166,6 +215,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     marginBottom: 12,
+  },
+  passwordInput: {
+    color: '#000000',
   },
   button: {
     minHeight: 48,
@@ -182,6 +234,23 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 16,
+  },
+  secondaryButton: {
+    minHeight: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#1D4ED8',
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  secondaryButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
   linkText: {
     marginTop: 16,

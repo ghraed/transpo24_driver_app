@@ -11,6 +11,7 @@ export type DriverStatus =
 export type DriverNextStep =
   | 'COMPLETE_PROFILE'
   | 'ADD_VEHICLE_DOCUMENTS'
+  | 'UPLOAD_DOCUMENTS'
   | 'SET_AVAILABILITY'
   | 'WAITING_APPROVAL'
   | 'HOME';

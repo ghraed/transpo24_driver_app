@@ -118,6 +118,7 @@ export default function LoadCapacityScreen() {
   const nextStep =
     params.nextStep === 'COMPLETE_PROFILE' ||
     params.nextStep === 'ADD_VEHICLE_DOCUMENTS' ||
+    params.nextStep === 'UPLOAD_DOCUMENTS' ||
     params.nextStep === 'SET_AVAILABILITY' ||
     params.nextStep === 'WAITING_APPROVAL' ||
     params.nextStep === 'HOME'

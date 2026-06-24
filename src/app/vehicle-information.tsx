@@ -214,6 +214,7 @@ function formatSelectorLabel(value: string, options: SelectorOption[]): string {
 function nextStepToRoute(nextStep: DriverNextStep): '/vehicle-documents' | '/my-vehicles' | '/set-availability' | '/waiting-approval' | '/driver-home' {
   switch (nextStep) {
     case 'ADD_VEHICLE_DOCUMENTS':
+    case 'UPLOAD_DOCUMENTS':
       return '/my-vehicles';
     case 'SET_AVAILABILITY':
       return '/set-availability';

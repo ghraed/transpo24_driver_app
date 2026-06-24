@@ -26,6 +26,7 @@ export function nextStepToRoute(nextStep: DriverNextStep): DriverAppRoute {
     case 'COMPLETE_PROFILE':
       return '/complete-profile';
     case 'ADD_VEHICLE_DOCUMENTS':
+    case 'UPLOAD_DOCUMENTS':
       return '/vehicle-documents';
     case 'SET_AVAILABILITY':
       return '/set-availability';
@@ -57,6 +58,7 @@ export function resolveDriverEntryRoute(
     case 'COMPLETE_PROFILE':
       return '/complete-profile';
     case 'ADD_VEHICLE_DOCUMENTS':
+    case 'UPLOAD_DOCUMENTS':
       if (
         savedRoute === '/vehicle-documents' ||
         savedRoute.startsWith('/vehicle-documents?') ||

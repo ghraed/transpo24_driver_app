@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getDriverRequestAlerts } from '@/lib/api';
+import { connectSocket, onRequestDeleted } from '@/services/socketService';
+import { readAccessToken } from '@/lib/auth-storage';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 
 function formatSchedule(isImmediate: boolean, scheduledPickupAt: string | null): string {
@@ -69,12 +71,24 @@ export default function ReceiveRequestAlertsScreen() {
   useFocusEffect(
     useCallback(() => {
       void loadAlerts();
+      let unsubscribeDeleted: (() => void) | null = null;
+      void (async () => {
+        const token = await readAccessToken();
+        if (!token) return;
+        connectSocket(token);
+        unsubscribeDeleted = onRequestDeleted((payload) => {
+          setAlerts((current) =>
+            current.filter((alert) => alert.requestId !== payload.requestId),
+          );
+        });
+      })();
       const pollingId = setInterval(() => {
         void loadAlerts(true);
       }, 20000);
 
       return () => {
         clearInterval(pollingId);
+        unsubscribeDeleted?.();
       };
     }, [loadAlerts]),
   );

@@ -68,6 +68,8 @@ export default function DriverRegisterScreen() {
     else if (form.password.length < 8) errors.password = 'Password must be at least 8 characters.';
     if (!form.confirmPassword) errors.confirmPassword = 'Confirm your password.';
     else if (form.password !== form.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
+    if (form.countryCodes.length === 0) errors.countryCodes = 'At least one country is required.';
+    if (form.cities.length === 0) errors.cities = 'At least one city is required.';
 
     return errors;
   }, [form]);
@@ -213,6 +215,9 @@ export default function DriverRegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.replace('/')}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
           <Text style={styles.title}>Join Transpo24 as a Driver</Text>
           <Text style={styles.subtitle}>
             Create your account and start receiving transport requests.
@@ -295,7 +300,7 @@ export default function DriverRegisterScreen() {
             >
               {selectedCountries.length
                 ? selectedCountries.map((country) => country.label).join(', ')
-                : 'Select countries (optional)'}
+                : 'Select countries'}
             </Text>
           </Pressable>
           {selectedCountries.length ? (
@@ -308,6 +313,7 @@ export default function DriverRegisterScreen() {
             </View>
           ) : null}
         </View>
+        {hasAttemptedSubmit && fieldErrors.countryCodes ? <Text style={styles.errorText}>{fieldErrors.countryCodes}</Text> : null}
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Cities</Text>
@@ -328,7 +334,7 @@ export default function DriverRegisterScreen() {
               {form.cities.length
                 ? form.cities.join(', ')
                 : selectedCountries.length > 0
-                  ? 'Select cities (optional)'
+                  ? 'Select cities'
                   : 'Choose countries first'}
             </Text>
           </Pressable>
@@ -342,6 +348,7 @@ export default function DriverRegisterScreen() {
             </View>
           ) : null}
         </View>
+        {hasAttemptedSubmit && fieldErrors.cities ? <Text style={styles.errorText}>{fieldErrors.cities}</Text> : null}
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
@@ -435,6 +442,17 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 8,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingRight: 12,
+    marginBottom: 4,
+  },
+  backButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
   },
   title: {
     fontSize: 28,

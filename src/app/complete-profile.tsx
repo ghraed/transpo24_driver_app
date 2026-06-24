@@ -47,9 +47,27 @@ function isAtLeast18(dateValue: string): boolean {
   return adult.getTime() <= Date.now();
 }
 
-function normalizeDateValue(value: string): Date {
-  if (!value) return new Date();
+function normalizeDateValue(value: string, fallbackDate: Date): Date {
+  if (!value) return fallbackDate;
+  const [year, month, day] = value.split('-').map(Number);
+  if (
+    Number.isFinite(year) &&
+    Number.isFinite(month) &&
+    Number.isFinite(day) &&
+    year > 0 &&
+    month > 0 &&
+    day > 0
+  ) {
+    return new Date(year, month - 1, day);
+  }
   return new Date(value);
+}
+
+function formatDateOnly(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 export default function CompleteProfileScreen() {
@@ -79,6 +97,7 @@ export default function CompleteProfileScreen() {
   const [submitError, setSubmitError] = useState<string>('');
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [activeDateField, setActiveDateField] = useState<'dateOfBirth' | null>(null);
+  const [activeDateValue, setActiveDateValue] = useState<Date | null>(null);
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState<boolean>(false);
   const [languageSearch, setLanguageSearch] = useState<string>('');
   const hasUserEditedRef = useRef<boolean>(false);
@@ -162,14 +181,11 @@ export default function CompleteProfileScreen() {
 
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof CompleteDriverProfileForm, string>> = {};
+    const phoneValue = form.phone.trim() || driver?.phone?.trim() || '';
 
-    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
-    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
-    if (!form.phone.trim()) errors.phone = 'Phone is required.';
-    else if (!PHONE_PATTERN.test(form.phone.trim())) errors.phone = 'Enter a valid phone number.';
+    if (!phoneValue) errors.phone = 'Phone is required.';
+    else if (!PHONE_PATTERN.test(phoneValue)) errors.phone = 'Enter a valid phone number.';
 
-    if (!form.countryCode.trim()) errors.countryCode = 'Country code is required.';
-    if (!form.city.trim()) errors.city = 'City is required.';
     if (!form.fullNameOnId.trim() && !(driver?.fullNameOnId?.trim())) {
       errors.fullNameOnId = 'Full name on ID is required.';
     }
@@ -200,7 +216,12 @@ export default function CompleteProfileScreen() {
     }
 
     return errors;
-  }, [driver?.fullNameOnId, driver?.idOrResidencyNumberMasked, form]);
+  }, [
+    driver?.fullNameOnId,
+    driver?.idOrResidencyNumberMasked,
+    driver?.phone,
+    form,
+  ]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -212,6 +233,19 @@ export default function CompleteProfileScreen() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const openDatePicker = useCallback(
+    (field: 'dateOfBirth') => {
+      setActiveDateField(field);
+      setActiveDateValue(normalizeDateValue(form[field], maximumDobDate));
+    },
+    [form, maximumDobDate],
+  );
+
+  const closeDatePicker = useCallback(() => {
+    setActiveDateField(null);
+    setActiveDateValue(null);
+  }, []);
+
   const onContinue = async (): Promise<void> => {
     setHasAttemptedSubmit(true);
 
@@ -221,11 +255,11 @@ export default function CompleteProfileScreen() {
     setSubmitError('');
 
     const payload: UpdateDriverProfilePayload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      phone: form.phone.trim(),
-      countryCode: form.countryCode.trim() || undefined,
-      city: form.city.trim() || undefined,
+      firstName: driver?.firstName?.trim() || form.firstName.trim(),
+      lastName: driver?.lastName?.trim() || form.lastName.trim(),
+      phone: driver?.phone?.trim() || form.phone.trim(),
+      countryCode: driver?.countryCode?.trim() || undefined,
+      city: driver?.city?.trim() || undefined,
       fullNameOnId: form.fullNameOnId.trim() || undefined,
       idOrResidencyNumber: form.idOrResidencyNumber.trim() || undefined,
       dateOfBirth: form.dateOfBirth.trim() || undefined,
@@ -306,6 +340,9 @@ export default function CompleteProfileScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.replace('/register')}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
           <Text style={styles.progress}>Step 1 of 3: Profile</Text>
           <Text style={styles.title}>Complete Your Profile</Text>
           <Text style={styles.subtitle}>
@@ -315,36 +352,6 @@ export default function CompleteProfileScreen() {
             Your profile information helps us verify your account and assign suitable transport requests.
           </Text>
         </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>First Name</Text>
-          <TextInput style={styles.input} placeholder="First name" value={form.firstName} onChangeText={(value) => onChange('firstName', value)} />
-        </View>
-        {hasAttemptedSubmit && fieldErrors.firstName ? <Text style={styles.errorText}>{fieldErrors.firstName}</Text> : null}
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Last Name</Text>
-          <TextInput style={styles.input} placeholder="Last name" value={form.lastName} onChangeText={(value) => onChange('lastName', value)} />
-        </View>
-        {hasAttemptedSubmit && fieldErrors.lastName ? <Text style={styles.errorText}>{fieldErrors.lastName}</Text> : null}
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Phone</Text>
-          <TextInput style={styles.input} placeholder="Phone" keyboardType="phone-pad" value={form.phone} onChangeText={(value) => onChange('phone', value)} />
-        </View>
-        {hasAttemptedSubmit && fieldErrors.phone ? <Text style={styles.errorText}>{fieldErrors.phone}</Text> : null}
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Country Code</Text>
-          <TextInput style={styles.input} placeholder="Country code" value={form.countryCode} onChangeText={(value) => onChange('countryCode', value)} />
-        </View>
-        {hasAttemptedSubmit && fieldErrors.countryCode ? <Text style={styles.errorText}>{fieldErrors.countryCode}</Text> : null}
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>City</Text>
-          <TextInput style={styles.input} placeholder="City" value={form.city} onChangeText={(value) => onChange('city', value)} />
-        </View>
-        {hasAttemptedSubmit && fieldErrors.city ? <Text style={styles.errorText}>{fieldErrors.city}</Text> : null}
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Full Name On ID</Text>
@@ -370,7 +377,7 @@ export default function CompleteProfileScreen() {
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>Date Of Birth</Text>
-          <Pressable style={styles.input} onPress={() => setActiveDateField('dateOfBirth')}>
+          <Pressable style={styles.input} onPress={() => openDatePicker('dateOfBirth')}>
             <Text style={form.dateOfBirth ? styles.inputText : styles.placeholderText}>
               {form.dateOfBirth || 'Select date of birth'}
             </Text>
@@ -483,15 +490,17 @@ export default function CompleteProfileScreen() {
         <ExpoDateTimePicker
           mode="date"
           presentation="dialog"
-          value={normalizeDateValue(form[activeDateField])}
+          value={activeDateValue ?? maximumDobDate}
           maximumDate={maximumDobDate}
           onValueChange={(_event, selectedDate) => {
+            const field = activeDateField;
             if (selectedDate) {
-              onChange(activeDateField, selectedDate.toISOString().slice(0, 10));
+              setActiveDateValue(selectedDate);
+              onChange(field, formatDateOnly(selectedDate));
             }
-            setActiveDateField(null);
+            closeDatePicker();
           }}
-          onDismiss={() => setActiveDateField(null)}
+          onDismiss={closeDatePicker}
         />
       ) : null}
     </KeyboardAvoidingView>
@@ -528,6 +537,16 @@ const styles = StyleSheet.create({
     color: '#1D4ED8',
     fontWeight: '700',
     fontSize: 13,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingRight: 12,
+  },
+  backButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
   },
   title: {
     fontSize: 28,

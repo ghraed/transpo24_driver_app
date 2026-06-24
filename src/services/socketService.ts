@@ -21,6 +21,10 @@ export type SocketDebugPongPayload = {
   note: string | null;
 };
 
+export type RequestDeletedPayload = {
+  requestId: string;
+};
+
 const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
 let socket: Socket | null = null;
 let currentToken: string | null = null;
@@ -137,6 +141,15 @@ export function onOfferAccepted(callback: (payload: OfferAcceptedPayload) => voi
   instance.off('offerAccepted', callback);
   instance.on('offerAccepted', callback);
   return () => instance.off('offerAccepted', callback);
+}
+
+export function onRequestDeleted(
+  callback: (payload: RequestDeletedPayload) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('requestDeleted', callback);
+  instance.on('requestDeleted', callback);
+  return () => instance.off('requestDeleted', callback);
 }
 
 export function onDriverLocationUpdated(

@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Image,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -47,6 +48,17 @@ function hasValidCoordinates(latitude: number | null, longitude: number | null):
   );
 }
 
+function resolveAssetUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return trimmed;
+  if (/^(https?:|file:|content:|data:)/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
+  return `${baseUrl}${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
+}
+
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -56,6 +68,7 @@ export default function AcceptedJobDetailsScreen() {
   const [details, setDetails] = useState<DriverAcceptedJobDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId.trim()) {
@@ -279,12 +292,20 @@ export default function AcceptedJobDetailsScreen() {
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
-                <Image key={photo.id} source={{ uri: photo.url }} style={styles.photo} />
+                <Pressable key={photo.id} onPress={() => setExpandedPhotoUrl(resolveAssetUrl(photo.url))}>
+                  <Image source={{ uri: resolveAssetUrl(photo.url) }} style={styles.photo} />
+                </Pressable>
               ))}
             </ScrollView>
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={Boolean(expandedPhotoUrl)} transparent animationType="fade" onRequestClose={() => setExpandedPhotoUrl('')}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setExpandedPhotoUrl('')}>
+          {expandedPhotoUrl ? <Image source={{ uri: expandedPhotoUrl }} style={styles.expandedPhoto} resizeMode="contain" /> : null}
+        </Pressable>
+      </Modal>
 
       <View style={styles.footer}>
         <Pressable
@@ -420,6 +441,17 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 8,
     backgroundColor: '#E2E8F0',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  expandedPhoto: {
+    width: '100%',
+    height: '100%',
   },
   footer: {
     position: 'absolute',

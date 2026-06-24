@@ -36,6 +36,7 @@ interface ApiErrorResponse {
 }
 
 const REQUEST_TIMEOUT_MS = 12000;
+const AUTH_REGISTER_TIMEOUT_MS = 30000;
 
 function getApiBaseUrl(): string {
   const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
@@ -105,9 +106,13 @@ async function parseJsonResponse<T>(response: Response, fallback: string): Promi
   }
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     return await fetch(url, { ...init, signal: controller.signal });
@@ -329,7 +334,7 @@ export async function registerDriver(payload: RegisterDriverPayload): Promise<Dr
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
-    });
+    }, AUTH_REGISTER_TIMEOUT_MS);
   } catch (error) {
     throw toNetworkError(endpoint, error);
   }
@@ -1126,6 +1131,11 @@ export interface ApproveDriverDebugResponse {
   rawBody: string;
 }
 
+export interface ResetUsersForTestingResponse {
+  deletedUsers: number;
+  keptEmail: string;
+}
+
 export async function approveDriverForTestingDebug(): Promise<ApproveDriverDebugResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me/testing/approve`;
   let response: Response;
@@ -1145,6 +1155,31 @@ export async function approveDriverForTestingDebug(): Promise<ApproveDriverDebug
     status: response.status,
     rawBody,
   };
+}
+
+export async function resetUsersForTesting(): Promise<ResetUsersForTestingResponse> {
+  const endpoint = `${getApiBaseUrl()}/auth/testing/reset-users`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to reset users for testing.');
+  }
+
+  return parseJsonResponse<ResetUsersForTestingResponse>(
+    response,
+    'Failed to parse reset users response.',
+  );
 }
 
 export async function getDriverRequestAlerts(): Promise<DriverRequestAlertsResponse> {

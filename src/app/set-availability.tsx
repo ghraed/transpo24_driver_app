@@ -481,6 +481,9 @@ export default function SetAvailabilityScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.replace('/vehicle-documents')}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
           <Text style={styles.progress}>Step 3 of 3: Availability</Text>
           <Text style={styles.title}>Set Your Availability</Text>
           <Text style={styles.subtitle}>
@@ -727,6 +730,16 @@ const styles = StyleSheet.create({
   header: {
     gap: 4,
     marginBottom: 4,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingRight: 12,
+  },
+  backButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
   },
   progress: {
     color: '#1D4ED8',

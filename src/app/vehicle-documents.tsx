@@ -462,6 +462,9 @@ export default function VehicleDocumentsScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.replace('/complete-profile')}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
           <Text style={styles.progress}>Step 2 of 3: Documents</Text>
           <Text style={styles.title}>Upload Driver Documents</Text>
           <Text style={styles.subtitle}>
@@ -733,6 +736,16 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   header: { gap: 4, marginBottom: 4 },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingRight: 12,
+  },
+  backButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+  },
   progress: { color: '#1D4ED8', fontWeight: '700', fontSize: 13 },
   title: { fontSize: 27, fontWeight: '700', color: '#0F172A' },
   subtitle: { color: '#475569', fontSize: 14 },

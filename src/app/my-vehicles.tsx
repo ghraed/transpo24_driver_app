@@ -15,6 +15,7 @@ import { useAuth } from '@/context/auth-context';
 import {
   activateDriverVehicle,
   approveDriverVehicleForTesting,
+  getDriverAvailability,
   getDriverVehicles,
 } from '@/lib/api';
 import {
@@ -22,7 +23,11 @@ import {
   getCapacityStatusLabel,
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
-import type { DriverVehicle, VehicleReviewStatus } from '@/types/auth';
+import type {
+  DriverAvailabilityResponse,
+  DriverVehicle,
+  VehicleReviewStatus,
+} from '@/types/auth';
 
 const STATUS_LABELS: Record<VehicleReviewStatus, string> = {
   PENDING_REVIEW: 'Pending approval',
@@ -55,6 +60,7 @@ export default function MyVehiclesScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
+  const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isMutatingId, setIsMutatingId] = useState<string | null>(null);
@@ -69,11 +75,17 @@ export default function MyVehiclesScreen() {
     setErrorMessage('');
 
     try {
-      const response = await getDriverVehicles();
-      setVehicles(response);
+      const [vehiclesResponse, availabilityResponse] = await Promise.all([
+        getDriverVehicles(),
+        getDriverAvailability(),
+      ]);
+      setVehicles(vehiclesResponse);
+      setAvailability(availabilityResponse);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load your vehicles.';
+        error instanceof Error
+          ? error.message
+          : 'Failed to load your vehicles and service radius.';
       const normalized = message.toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
@@ -154,6 +166,40 @@ export default function MyVehiclesScreen() {
         >
           <Text style={styles.primaryButtonText}>Add New Vehicle</Text>
         </Pressable>
+
+        <View style={styles.availabilityCard}>
+          <View style={styles.availabilityHeader}>
+            <View style={styles.availabilityCopy}>
+              <Text style={styles.availabilityTitle}>Service Radius</Text>
+              <Text style={styles.availabilitySubtitle}>
+                Requests are matched against this radius from your base location.
+              </Text>
+            </View>
+            <Pressable
+              style={styles.availabilityButton}
+              onPress={() => router.push('/set-availability')}
+            >
+              <Text style={styles.availabilityButtonText}>Edit Radius</Text>
+            </Pressable>
+          </View>
+          <Text style={styles.availabilityValue}>
+            {availability ? `${availability.serviceRadiusKm} km` : 'Not set'}
+          </Text>
+          <Text style={styles.metaText}>
+            Online: {availability?.isOnline ? 'Yes' : 'No'}
+          </Text>
+          <Text style={styles.metaText}>
+            Base location:{' '}
+            {availability?.baseAddress?.trim()
+              ? availability.baseAddress.trim()
+              : availability?.baseLatitude !== null &&
+                  availability?.baseLatitude !== undefined &&
+                  availability?.baseLongitude !== null &&
+                  availability?.baseLongitude !== undefined
+                ? `${availability.baseLatitude.toFixed(6)}, ${availability.baseLongitude.toFixed(6)}`
+                : 'Not set'}
+          </Text>
+        </View>
 
         {vehicles.length > 0 ? (
           <Pressable
@@ -341,6 +387,51 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
   helperText: { color: '#475569', fontSize: 14, textAlign: 'center' },
+  availabilityCard: {
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
+  },
+  availabilityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  availabilityCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  availabilityTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  availabilitySubtitle: {
+    fontSize: 13,
+    color: '#475569',
+  },
+  availabilityValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1D4ED8',
+  },
+  availabilityButton: {
+    minHeight: 40,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1D4ED8',
+  },
+  availabilityButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   vehicleCard: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
