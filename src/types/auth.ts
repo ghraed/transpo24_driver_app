@@ -160,7 +160,14 @@ export type DriverDocumentType =
 
 export type IdentityDocumentKind = 'NATIONAL_ID' | 'RESIDENCY_CARD';
 
- export type DocumentStatus =
+export type DriverOnboardingDocumentType =
+  | 'PERSONAL_SELFIE'
+  | 'ID_FRONT'
+  | 'ID_BACK'
+  | 'DRIVING_LICENSE'
+  | 'SELF_IDENTITY_VERIFICATION';
+
+export type DocumentStatus =
   | 'UPLOADED'
   | 'UNDER_REVIEW'
   | 'PENDING_REVIEW'
@@ -229,7 +236,7 @@ export interface DriverDocument {
 
 export interface DriverOnboardingDocument {
   id: string;
-  type: DriverDocumentType;
+  type: DriverOnboardingDocumentType;
   url: string;
   mimeType: string;
   sizeBytes: number;
@@ -243,14 +250,43 @@ export interface DriverOnboardingDocument {
 export interface DriverDocumentsStatusResponse {
   onboardingStatus: DriverStatus;
   identityDocumentKind: IdentityDocumentKind | null;
-  requiredDocuments: DriverDocumentType[];
+  requiredDocuments: DriverOnboardingDocumentType[];
   uploadedDocuments: DriverOnboardingDocument[];
-  missingDocuments: DriverDocumentType[];
+  missingDocuments: DriverOnboardingDocumentType[];
   missingDocumentLabels: string[];
   canSubmitForReview: boolean;
   submittedForReviewAt: string | null;
   nextStep: DriverNextStep;
 }
+
+export interface DriverDocumentUploadItem {
+  documentType: DriverOnboardingDocumentType;
+  file?: LocalDocumentAsset;
+  uploaded?: DriverOnboardingDocument;
+  required: boolean;
+}
+
+export interface DriverDocumentsState {
+  personalSelfie?: LocalDocumentAsset;
+  idFront?: LocalDocumentAsset;
+  idBack?: LocalDocumentAsset;
+  drivingLicense?: LocalDocumentAsset;
+  selfIdentityVerification?: LocalDocumentAsset;
+  idDocumentKind: IdentityDocumentKind | '';
+  idExpiryDate: string;
+  drivingLicenseExpiryDate: string;
+}
+
+export interface UploadDriverDocumentPayload {
+  documentType: DriverOnboardingDocumentType;
+  file: LocalDocumentAsset;
+  expiryDate?: string;
+  idDocumentKind?: IdentityDocumentKind;
+}
+
+export type DriverDocumentResponse = DriverOnboardingDocument;
+export type DriverDocumentsChecklistResponse = DriverDocumentsStatusResponse;
+export type SubmitDriverDocumentsReviewResponse = DriverDocumentsStatusResponse;
 
 export interface DriverVehicle {
   id: string;

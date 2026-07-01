@@ -5,10 +5,10 @@ import type {
   DriverAcceptedJobDetailsResponse,
   DriverAcceptedJobsResponse,
   DriverAvailabilityResponse,
+  DriverDocumentsChecklistResponse,
   DriverRequestAlertsResponse,
   DriverRequestDetailsResponse,
   DriverAuthResponse,
-  DriverDocumentsStatusResponse,
   DriverMeResponse,
   DriverOnboardingResponse,
   DriverPersonalInfoPayload,
@@ -23,9 +23,11 @@ import type {
   RegisterDriverPayload,
   SendDriverPriceOfferPayload,
   SendDriverPriceOfferResponse,
+  SubmitDriverDocumentsReviewResponse,
   UpdateDriverAvailabilityPayload,
   UpdateDriverOnlineStatusPayload,
   UpdateDriverProfilePayload,
+  UploadDriverDocumentPayload,
 } from '@/types/auth';
 
 interface ApiErrorResponse {
@@ -544,7 +546,7 @@ export async function uploadDriverVehicleDocuments(
   }
 }
 
-export async function getDriverDocumentsStatus(): Promise<DriverDocumentsStatusResponse> {
+export async function getDriverDocumentsStatus(): Promise<DriverDocumentsChecklistResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/onboarding/documents`;
   let response: Response;
   try {
@@ -560,18 +562,15 @@ export async function getDriverDocumentsStatus(): Promise<DriverDocumentsStatusR
     throw await parseError(response, 'Failed to load driver documents status.');
   }
 
-  return parseJsonResponse<DriverDocumentsStatusResponse>(
+  return parseJsonResponse<DriverDocumentsChecklistResponse>(
     response,
     'Failed to parse driver documents status response.',
   );
 }
 
-export async function uploadDriverDocument(payload: {
-  documentType: 'PERSONAL_SELFIE' | 'ID_FRONT' | 'ID_BACK' | 'DRIVING_LICENSE' | 'SELF_IDENTITY_VERIFICATION';
-  file: LocalDocumentAsset;
-  expiryDate?: string;
-  idDocumentKind?: IdentityDocumentKind;
-}): Promise<DriverDocumentsStatusResponse> {
+export async function uploadDriverDocument(
+  payload: UploadDriverDocumentPayload,
+): Promise<DriverDocumentsChecklistResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/onboarding/documents`;
   const formData = new FormData();
 
@@ -632,13 +631,13 @@ export async function uploadDriverDocument(payload: {
   }
 
   try {
-    return JSON.parse(successRaw) as DriverDocumentsStatusResponse;
+    return JSON.parse(successRaw) as DriverDocumentsChecklistResponse;
   } catch {
     throw new Error(`Invalid upload response from server: ${successRaw}`);
   }
 }
 
-export async function submitDriverDocumentsForReview(): Promise<DriverDocumentsStatusResponse> {
+export async function submitDriverDocumentsForReview(): Promise<SubmitDriverDocumentsReviewResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/onboarding/submit-review`;
   let response: Response;
   try {
@@ -655,7 +654,7 @@ export async function submitDriverDocumentsForReview(): Promise<DriverDocumentsS
     throw await parseError(response, 'Failed to submit driver documents for review.');
   }
 
-  return parseJsonResponse<DriverDocumentsStatusResponse>(
+  return parseJsonResponse<SubmitDriverDocumentsReviewResponse>(
     response,
     'Failed to parse submit review response.',
   );

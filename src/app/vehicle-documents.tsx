@@ -21,8 +21,10 @@ import {
   uploadDriverDocument,
 } from '@/lib/api';
 import type {
-  DriverDocumentType,
-  DriverDocumentsStatusResponse,
+  DriverDocumentUploadItem,
+  DriverDocumentsChecklistResponse,
+  DriverDocumentsState,
+  DriverOnboardingDocumentType,
   DriverOnboardingDocument,
   IdentityDocumentKind,
   LocalDocumentAsset,
@@ -30,17 +32,6 @@ import type {
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const PHOTO_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-
-interface OnboardingDocumentsForm {
-  personalSelfie?: LocalDocumentAsset;
-  idFront?: LocalDocumentAsset;
-  idBack?: LocalDocumentAsset;
-  drivingLicense?: LocalDocumentAsset;
-  selfIdentityVerification?: LocalDocumentAsset;
-  idDocumentKind: IdentityDocumentKind | '';
-  idExpiryDate: string;
-  drivingLicenseExpiryDate: string;
-}
 
 function toDateOnly(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
@@ -61,15 +52,17 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
 export default function VehicleDocumentsScreen() {
   const router = useRouter();
 
-  const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<OnboardingDocumentsForm>({
+  const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<DriverDocumentsState>({
     idDocumentKind: '',
     idExpiryDate: '',
     drivingLicenseExpiryDate: '',
   });
-  const [documentsStatus, setDocumentsStatus] = useState<DriverDocumentsStatusResponse | null>(null);
+  const [documentsStatus, setDocumentsStatus] = useState<DriverDocumentsChecklistResponse | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeOnboardingUploadType, setActiveOnboardingUploadType] =
-    useState<DriverDocumentType | null>(null);
+    useState<DriverOnboardingDocumentType | null>(null);
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
@@ -128,7 +121,7 @@ export default function VehicleDocumentsScreen() {
 
     const validateOnboardingImage = (
       asset: LocalDocumentAsset | undefined,
-      existingType: DriverDocumentType,
+      existingType: DriverOnboardingDocumentType,
       fieldKey: string,
       label: string,
     ): void => {
@@ -227,13 +220,13 @@ export default function VehicleDocumentsScreen() {
 
   const canSubmitOnboardingReview = Boolean(documentsStatus?.canSubmitForReview) && !isBusy;
 
-  const onOnboardingDocumentChange = <K extends keyof OnboardingDocumentsForm>(
+  const onOnboardingDocumentChange = <K extends keyof DriverDocumentsState>(
     key: K,
-    value: OnboardingDocumentsForm[K],
+    value: DriverDocumentsState[K],
   ): void => {
     setOnboardingDocumentsForm((prev) => {
       if (key === 'idDocumentKind') {
-        const nextKind = value as OnboardingDocumentsForm['idDocumentKind'];
+        const nextKind = value as DriverDocumentsState['idDocumentKind'];
         return {
           ...prev,
           idDocumentKind: nextKind,
@@ -247,7 +240,7 @@ export default function VehicleDocumentsScreen() {
 
   const setOnboardingDocument = (
     key: Exclude<
-      keyof OnboardingDocumentsForm,
+      keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
     value?: LocalDocumentAsset,
@@ -257,7 +250,7 @@ export default function VehicleDocumentsScreen() {
 
   const pickOnboardingDocument = async (
     key: Exclude<
-      keyof OnboardingDocumentsForm,
+      keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
     source: 'gallery' | 'camera',
@@ -310,7 +303,7 @@ export default function VehicleDocumentsScreen() {
 
   const promptOnboardingImageSource = (
     key: Exclude<
-      keyof OnboardingDocumentsForm,
+      keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
   ): void => {
@@ -335,22 +328,81 @@ export default function VehicleDocumentsScreen() {
   };
 
   const getUploadedOnboardingDocument = useCallback(
-    (type: DriverDocumentType): DriverOnboardingDocument | undefined =>
+    (type: DriverOnboardingDocumentType): DriverOnboardingDocument | undefined =>
       documentsStatus?.uploadedDocuments.find((document) => document.type === type),
     [documentsStatus],
   );
 
+  const getUploadValidationMessage = useCallback(
+    (documentType: DriverOnboardingDocumentType): string | null => {
+      switch (documentType) {
+        case 'PERSONAL_SELFIE':
+          return fieldErrors.personalSelfie ?? null;
+        case 'ID_FRONT':
+          return (
+            fieldErrors.idFront ?? fieldErrors.idDocumentKind ?? fieldErrors.idExpiryDate ?? null
+          );
+        case 'ID_BACK':
+          return (
+            fieldErrors.idBack ?? fieldErrors.idDocumentKind ?? fieldErrors.idExpiryDate ?? null
+          );
+        case 'DRIVING_LICENSE':
+          return fieldErrors.drivingLicense ?? fieldErrors.drivingLicenseExpiryDate ?? null;
+        case 'SELF_IDENTITY_VERIFICATION':
+          return null;
+      }
+    },
+    [fieldErrors],
+  );
+
+  const documentUploadItems = useMemo<DriverDocumentUploadItem[]>(
+    () => [
+      {
+        documentType: 'PERSONAL_SELFIE',
+        file: onboardingDocumentsForm.personalSelfie,
+        uploaded: getUploadedOnboardingDocument('PERSONAL_SELFIE'),
+        required: true,
+      },
+      {
+        documentType: 'ID_FRONT',
+        file: onboardingDocumentsForm.idFront,
+        uploaded: getUploadedOnboardingDocument('ID_FRONT'),
+        required: true,
+      },
+      {
+        documentType: 'ID_BACK',
+        file: onboardingDocumentsForm.idBack,
+        uploaded: getUploadedOnboardingDocument('ID_BACK'),
+        required: true,
+      },
+      {
+        documentType: 'DRIVING_LICENSE',
+        file: onboardingDocumentsForm.drivingLicense,
+        uploaded: getUploadedOnboardingDocument('DRIVING_LICENSE'),
+        required: true,
+      },
+      {
+        documentType: 'SELF_IDENTITY_VERIFICATION',
+        file: onboardingDocumentsForm.selfIdentityVerification,
+        uploaded: getUploadedOnboardingDocument('SELF_IDENTITY_VERIFICATION'),
+        required: false,
+      },
+    ],
+    [getUploadedOnboardingDocument, onboardingDocumentsForm],
+  );
+
   const uploadSelectedOnboardingDocument = async (
-    documentType:
-      | 'PERSONAL_SELFIE'
-      | 'ID_FRONT'
-      | 'ID_BACK'
-      | 'DRIVING_LICENSE'
-      | 'SELF_IDENTITY_VERIFICATION',
+    documentType: DriverOnboardingDocumentType,
   ): Promise<void> => {
     if (activeOnboardingUploadType) return;
     setSubmitError('');
     setSubmitSuccess('');
+
+    const validationMessage = getUploadValidationMessage(documentType);
+    if (validationMessage) {
+      setSubmitError(validationMessage);
+      return;
+    }
 
     const asset =
       documentType === 'PERSONAL_SELFIE'
@@ -446,26 +498,25 @@ export default function VehicleDocumentsScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.progress}>Step 2 of 3: Documents</Text>
-          <Text style={styles.title}>Upload Driver Documents</Text>
+          <Text style={styles.title}>Required Documents</Text>
           <Text style={styles.subtitle}>
-            Upload the documents needed for verification, then continue to vehicle
-            information.
+            Upload the documents below before your account can be approved.
           </Text>
-          <Text style={styles.helper}>Clear documents help us verify your driver account faster.</Text>
+          <Text style={styles.helper}>Clear photos help us review your driver account faster.</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Identity Verification Documents</Text>
+          <Text style={styles.sectionTitle}>Driver Documents</Text>
           <Text style={styles.helper}>
             Upload the required personal documents before submitting your account for review.
           </Text>
 
           {renderOnboardingDocumentPicker(
-            'Recent personal photo / selfie *',
+            'Recent personal photo',
             'Take a selfie in front of a white background with good lighting and a clear face.',
             'PERSONAL_SELFIE',
-            onboardingDocumentsForm.personalSelfie,
-            getUploadedOnboardingDocument('PERSONAL_SELFIE'),
+            documentUploadItems[0]?.file,
+            documentUploadItems[0]?.uploaded,
             () => promptOnboardingImageSource('personalSelfie'),
           )}
           {fieldErrors.personalSelfie ? (
@@ -473,11 +524,11 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'ID or residency card front *',
+            'ID / Residency front side',
             'Upload clear photos of the front and back sides. The document must not be expired.',
             'ID_FRONT',
-            onboardingDocumentsForm.idFront,
-            getUploadedOnboardingDocument('ID_FRONT'),
+            documentUploadItems[1]?.file,
+            documentUploadItems[1]?.uploaded,
             () => promptOnboardingImageSource('idFront'),
           )}
           {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
@@ -531,21 +582,21 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'ID or residency card back *',
+            'ID / Residency back side',
             'Upload clear photos of the front and back sides. The document must not be expired.',
             'ID_BACK',
-            onboardingDocumentsForm.idBack,
-            getUploadedOnboardingDocument('ID_BACK'),
+            documentUploadItems[2]?.file,
+            documentUploadItems[2]?.uploaded,
             () => promptOnboardingImageSource('idBack'),
           )}
           {fieldErrors.idBack ? <Text style={styles.errorText}>{fieldErrors.idBack}</Text> : null}
 
           {renderOnboardingDocumentPicker(
-            'Driving license *',
-            'Upload a clear valid image from your gallery or camera showing the allowed vehicle categories.',
+            'Driving license',
+            'Upload a clear valid photo showing the permitted vehicle categories.',
             'DRIVING_LICENSE',
-            onboardingDocumentsForm.drivingLicense,
-            getUploadedOnboardingDocument('DRIVING_LICENSE'),
+            documentUploadItems[3]?.file,
+            documentUploadItems[3]?.uploaded,
             () => promptOnboardingImageSource('drivingLicense'),
           )}
           {fieldErrors.drivingLicense ? (
@@ -574,11 +625,11 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'Self-identity verification',
-            'A selfie verification test may be required later.',
+            'Self-verification selfie',
+            'You may be asked to complete a selfie verification step.',
             'SELF_IDENTITY_VERIFICATION',
-            onboardingDocumentsForm.selfIdentityVerification,
-            getUploadedOnboardingDocument('SELF_IDENTITY_VERIFICATION'),
+            documentUploadItems[4]?.file,
+            documentUploadItems[4]?.uploaded,
             () => promptOnboardingImageSource('selfIdentityVerification'),
             true,
           )}
@@ -610,7 +661,7 @@ export default function VehicleDocumentsScreen() {
 
           {!canSubmitOnboardingReview ? (
             <Text style={styles.helper}>
-              Upload all required documents first, then the review button will be enabled.
+              Upload and save all required documents first, then the review button will be enabled.
             </Text>
           ) : null}
         </View>
@@ -688,7 +739,10 @@ export default function VehicleDocumentsScreen() {
 
     return (
       <View style={styles.docRow}>
-        <Text style={styles.fieldLabel}>{label}{optional ? '' : ''}</Text>
+        <Text style={styles.fieldLabel}>
+          {label}
+          {optional ? ' (Optional)' : ' *'}
+        </Text>
         <Text style={styles.helper}>{instruction}</Text>
         {previewUri && isImagePreview ? (
           <Image source={{ uri: previewUri }} style={styles.onboardingPreview} />
