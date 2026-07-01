@@ -1,10 +1,10 @@
-import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@expo/ui/community/datetime-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -12,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -30,13 +29,6 @@ import type {
 } from '@/types/auth';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const MAX_PDF_BYTES = 10 * 1024 * 1024;
-const DOCUMENT_ALLOWED_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf',
-]);
 const PHOTO_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 interface OnboardingDocumentsForm {
@@ -53,17 +45,6 @@ interface OnboardingDocumentsForm {
 function toDateOnly(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
   return isoDate.slice(0, 10);
-}
-
-function toAssetFromDocumentPicker(
-  asset: DocumentPicker.DocumentPickerAsset,
-): LocalDocumentAsset {
-  return {
-    uri: asset.uri,
-    fileName: asset.name,
-    mimeType: asset.mimeType ?? undefined,
-    fileSize: asset.size ?? undefined,
-  };
 }
 
 function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
@@ -200,16 +181,9 @@ export default function VehicleDocumentsScreen() {
       errors.drivingLicense = 'Driving license photo is required.';
     } else if (drivingLicenseAsset) {
       const mime = drivingLicenseAsset.mimeType ?? '';
-      if (!DOCUMENT_ALLOWED_TYPES.has(mime)) {
-        errors.drivingLicense = 'Driving license must be PDF, JPEG, PNG, or WEBP.';
-      } else if (mime === 'application/pdf') {
-        if (drivingLicenseAsset.fileSize && drivingLicenseAsset.fileSize > MAX_PDF_BYTES) {
-          errors.drivingLicense = 'Driving license PDF must be 10 MB or smaller.';
-        }
-      } else if (
-        drivingLicenseAsset.fileSize &&
-        drivingLicenseAsset.fileSize > MAX_IMAGE_BYTES
-      ) {
+      if (!PHOTO_ALLOWED_TYPES.has(mime)) {
+        errors.drivingLicense = 'Driving license must be JPEG, PNG, or WEBP.';
+      } else if (drivingLicenseAsset.fileSize && drivingLicenseAsset.fileSize > MAX_IMAGE_BYTES) {
         errors.drivingLicense = 'Driving license image must be 5 MB or smaller.';
       }
     }
@@ -286,20 +260,40 @@ export default function VehicleDocumentsScreen() {
       keyof OnboardingDocumentsForm,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
-    type: 'image' | 'document' = 'image',
+    source: 'gallery' | 'camera',
   ): Promise<void> => {
     if (activeOnboardingUploadType) return;
 
-    if (type === 'image') {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-        setSubmitError('Media library permission is required to select images.');
+    try {
+      if (source === 'gallery') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+          setSubmitError('Media library permission is required to select images.');
+          return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsMultipleSelection: false,
+          quality: 0.9,
+        });
+
+        if (result.canceled) return;
+        const asset = result.assets[0];
+        if (!asset) return;
+        setOnboardingDocument(key, toAssetFromImagePicker(asset));
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+        setSubmitError('Camera permission is required to take a document photo.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
-        allowsMultipleSelection: false,
+        allowsEditing: false,
         quality: 0.9,
       });
 
@@ -307,19 +301,37 @@ export default function VehicleDocumentsScreen() {
       const asset = result.assets[0];
       if (!asset) return;
       setOnboardingDocument(key, toAssetFromImagePicker(asset));
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error ? error.message : 'Failed to select a document image.',
+      );
+    }
+  };
+
+  const promptOnboardingImageSource = (
+    key: Exclude<
+      keyof OnboardingDocumentsForm,
+      'idExpiryDate' | 'drivingLicenseExpiryDate'
+    >,
+  ): void => {
+    const chooseGallery = (): void => {
+      void pickOnboardingDocument(key, 'gallery');
+    };
+
+    const chooseCamera = (): void => {
+      void pickOnboardingDocument(key, 'camera');
+    };
+
+    if (Platform.OS === 'web') {
+      chooseGallery();
       return;
     }
 
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset) return;
-    setOnboardingDocument(key, toAssetFromDocumentPicker(asset));
+    Alert.alert('Select document image', 'Choose how to add this document image.', [
+      { text: 'Take Photo', onPress: chooseCamera },
+      { text: 'Open Gallery', onPress: chooseGallery },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const getUploadedOnboardingDocument = useCallback(
@@ -454,7 +466,7 @@ export default function VehicleDocumentsScreen() {
             'PERSONAL_SELFIE',
             onboardingDocumentsForm.personalSelfie,
             getUploadedOnboardingDocument('PERSONAL_SELFIE'),
-            () => void pickOnboardingDocument('personalSelfie', 'image'),
+            () => promptOnboardingImageSource('personalSelfie'),
           )}
           {fieldErrors.personalSelfie ? (
             <Text style={styles.errorText}>{fieldErrors.personalSelfie}</Text>
@@ -466,7 +478,7 @@ export default function VehicleDocumentsScreen() {
             'ID_FRONT',
             onboardingDocumentsForm.idFront,
             getUploadedOnboardingDocument('ID_FRONT'),
-            () => void pickOnboardingDocument('idFront', 'image'),
+            () => promptOnboardingImageSource('idFront'),
           )}
           {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
 
@@ -524,17 +536,17 @@ export default function VehicleDocumentsScreen() {
             'ID_BACK',
             onboardingDocumentsForm.idBack,
             getUploadedOnboardingDocument('ID_BACK'),
-            () => void pickOnboardingDocument('idBack', 'image'),
+            () => promptOnboardingImageSource('idBack'),
           )}
           {fieldErrors.idBack ? <Text style={styles.errorText}>{fieldErrors.idBack}</Text> : null}
 
           {renderOnboardingDocumentPicker(
             'Driving license *',
-            'Upload a clear valid photo showing the allowed vehicle categories.',
+            'Upload a clear valid image from your gallery or camera showing the allowed vehicle categories.',
             'DRIVING_LICENSE',
             onboardingDocumentsForm.drivingLicense,
             getUploadedOnboardingDocument('DRIVING_LICENSE'),
-            () => void pickOnboardingDocument('drivingLicense', 'document'),
+            () => promptOnboardingImageSource('drivingLicense'),
           )}
           {fieldErrors.drivingLicense ? (
             <Text style={styles.errorText}>{fieldErrors.drivingLicense}</Text>
@@ -567,7 +579,7 @@ export default function VehicleDocumentsScreen() {
             'SELF_IDENTITY_VERIFICATION',
             onboardingDocumentsForm.selfIdentityVerification,
             getUploadedOnboardingDocument('SELF_IDENTITY_VERIFICATION'),
-            () => void pickOnboardingDocument('selfIdentityVerification', 'image'),
+            () => promptOnboardingImageSource('selfIdentityVerification'),
             true,
           )}
 
@@ -697,7 +709,9 @@ export default function VehicleDocumentsScreen() {
             onPress={onPick}
             disabled={Boolean(activeOnboardingUploadType)}
           >
-            <Text style={styles.uploadButtonText}>{asset || uploaded ? 'Replace' : 'Select'}</Text>
+            <Text style={styles.uploadButtonText}>
+              {asset || uploaded ? 'Replace Image' : 'Add Image'}
+            </Text>
           </Pressable>
           <Pressable
             style={[

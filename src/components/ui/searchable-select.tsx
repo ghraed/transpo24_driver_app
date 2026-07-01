@@ -14,7 +14,9 @@ interface SearchableSelectProps {
   placeholder: string;
   searchPlaceholder: string;
   selectedLabel?: string;
+  selectedValues?: string[];
   title: string;
+  multiSelect?: boolean;
 }
 
 export function SearchableSelect({
@@ -25,7 +27,9 @@ export function SearchableSelect({
   placeholder,
   searchPlaceholder,
   selectedLabel,
+  selectedValues,
   title,
+  multiSelect = false,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -40,6 +44,8 @@ export function SearchableSelect({
     setIsOpen(false);
     setQuery('');
   };
+
+  const selectedValueSet = useMemo(() => new Set(selectedValues ?? []), [selectedValues]);
 
   return (
     <>
@@ -83,10 +89,17 @@ export function SearchableSelect({
                 <Pressable
                   onPress={() => {
                     onSelect(item.value);
-                    close();
+                    if (!multiSelect) {
+                      close();
+                    }
                   }}
                   style={styles.optionRow}
                 >
+                  {multiSelect ? (
+                    <Text style={styles.optionCheckmark}>
+                      {selectedValueSet.has(item.value) ? '✓' : ''}
+                    </Text>
+                  ) : null}
                   <Text style={styles.optionText}>{item.label}</Text>
                 </Pressable>
               )}
@@ -173,12 +186,21 @@ const styles = StyleSheet.create({
   },
   optionRow: {
     paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E2E8F0',
+  },
+  optionCheckmark: {
+    width: 24,
+    fontSize: 16,
+    color: '#1D4ED8',
+    fontWeight: '700',
   },
   optionText: {
     fontSize: 15,
     color: '#0F172A',
+    flex: 1,
   },
   emptyText: {
     paddingVertical: 24,

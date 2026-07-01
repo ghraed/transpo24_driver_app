@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -14,6 +14,11 @@ import {
 
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useAuth } from '@/context/auth-context';
+import {
+  clearDriverRegisterDraft,
+  persistDriverRegisterDraft,
+  readDriverRegisterDraft,
+} from '@/lib/auth-storage';
 import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
 import { COUNTRY_OPTIONS, getFlagEmoji } from '@/lib/locations';
 import type { RegisterDriverPayload } from '@/types/auth';
@@ -25,9 +30,20 @@ interface RegisterFormState {
   phone: string;
   password: string;
   confirmPassword: string;
-  countryCode: string;
+  countryCodes: string[];
   city: string;
 }
+
+const TEST_REGISTER_FORM: RegisterFormState = {
+  firstName: 'Test',
+  lastName: 'Driver',
+  email: 'driver.test+mobile@transpo24.local',
+  phone: '+96170123456',
+  password: 'TestPass123',
+  confirmPassword: 'TestPass123',
+  countryCodes: ['LB'],
+  city: 'Beirut',
+};
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -37,22 +53,13 @@ export default function DriverRegisterScreen() {
   const router = useRouter();
   const { registerNewDriver } = useAuth();
 
-  const [form, setForm] = useState<RegisterFormState>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    countryCode: '',
-    city: '',
-  });
+  const [form, setForm] = useState<RegisterFormState>(TEST_REGISTER_FORM);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>('');
 
-  const selectedCountry = useMemo(
-    () => COUNTRY_OPTIONS.find((country) => country.code === form.countryCode) ?? null,
-    [form.countryCode],
+  const selectedCountries = useMemo(
+    () => COUNTRY_OPTIONS.filter((country) => form.countryCodes.includes(country.code)),
+    [form.countryCodes],
   );
 
   const countryOptions = useMemo(
@@ -65,12 +72,30 @@ export default function DriverRegisterScreen() {
   );
 
   const cityOptions = useMemo(
-    () =>
-      (selectedCountry?.cities ?? []).map((city) => ({
+    () => {
+      const uniqueCities = Array.from(
+        new Set(selectedCountries.flatMap((country) => country.cities)),
+      );
+
+      return uniqueCities.map((city) => ({
         label: city,
         value: city,
-      })),
-    [selectedCountry],
+      }));
+    },
+    [selectedCountries],
+  );
+
+  const selectedCountryLabel = useMemo(() => {
+    if (!selectedCountries.length) return undefined;
+
+    return selectedCountries
+      .map((country) => `${getFlagEmoji(country.code)}  ${country.name} (${country.code})`)
+      .join(', ');
+  }, [selectedCountries]);
+
+  const selectedCountryNames = useMemo(
+    () => selectedCountries.map((country) => country.name).join(', '),
+    [selectedCountries],
   );
 
   const fieldErrors = useMemo(() => {
@@ -97,15 +122,49 @@ export default function DriverRegisterScreen() {
 
   const onCountrySelect = (countryCode: string) => {
     setForm((prev) => {
-      const nextCountry = COUNTRY_OPTIONS.find((country) => country.code === countryCode);
-      const canKeepCity = nextCountry?.cities.includes(prev.city) ?? false;
+      const countryCodes = prev.countryCodes.includes(countryCode)
+        ? prev.countryCodes.filter((value) => value !== countryCode)
+        : [...prev.countryCodes, countryCode];
+      const nextCountries = COUNTRY_OPTIONS.filter((country) => countryCodes.includes(country.code));
+      const allowedCities = new Set(nextCountries.flatMap((country) => country.cities));
+      const canKeepCity = allowedCities.has(prev.city);
       return {
         ...prev,
-        countryCode,
+        countryCodes,
         city: canKeepCity ? prev.city : '',
       };
     });
   };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadDraft = async (): Promise<void> => {
+      const draft = await readDriverRegisterDraft();
+      if (!draft || !isMounted) return;
+
+      setForm({
+        firstName: draft.firstName || TEST_REGISTER_FORM.firstName,
+        lastName: draft.lastName || TEST_REGISTER_FORM.lastName,
+        email: draft.email || TEST_REGISTER_FORM.email,
+        phone: draft.phone || TEST_REGISTER_FORM.phone,
+        password: draft.password || TEST_REGISTER_FORM.password,
+        confirmPassword: draft.confirmPassword || TEST_REGISTER_FORM.confirmPassword,
+        countryCodes: draft.countryCodes.length ? draft.countryCodes : TEST_REGISTER_FORM.countryCodes,
+        city: draft.city || TEST_REGISTER_FORM.city,
+      });
+    };
+
+    void loadDraft();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    void persistDriverRegisterDraft(form);
+  }, [form]);
 
   const onSubmit = async (): Promise<void> => {
     if (!isFormValid || isSubmitting) return;
@@ -119,12 +178,13 @@ export default function DriverRegisterScreen() {
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
       password: form.password,
-      countryCode: form.countryCode.trim() || undefined,
+      countryCode: form.countryCodes[0]?.trim() || undefined,
       city: form.city.trim() || undefined,
     };
 
     try {
       const nextStep = await registerNewDriver(payload);
+      await clearDriverRegisterDraft();
       router.replace(getDriverRouteForNextStep(nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Registration failed.';
@@ -205,28 +265,26 @@ export default function DriverRegisterScreen() {
         <Text style={styles.label}>Country code</Text>
         <SearchableSelect
           emptyMessage="No countries found."
+          multiSelect
           onSelect={onCountrySelect}
           options={countryOptions}
-          placeholder="Select country (optional)"
+          placeholder="Select countries (optional)"
           searchPlaceholder="Search country"
-          selectedLabel={
-            selectedCountry
-              ? `${getFlagEmoji(selectedCountry.code)}  ${selectedCountry.name} (${selectedCountry.code})`
-              : undefined
-          }
-          title="Select country"
+          selectedLabel={selectedCountryLabel}
+          selectedValues={form.countryCodes}
+          title="Select countries"
         />
 
         <Text style={styles.label}>City</Text>
         <SearchableSelect
-          disabled={!selectedCountry}
-          emptyMessage={selectedCountry ? 'No cities found.' : 'Select a country first.'}
+          disabled={!selectedCountries.length}
+          emptyMessage={selectedCountries.length ? 'No cities found.' : 'Select at least one country first.'}
           onSelect={(city) => onChange('city', city)}
           options={cityOptions}
-          placeholder={selectedCountry ? 'Select city (optional)' : 'Select country first'}
+          placeholder={selectedCountries.length ? 'Select city (optional)' : 'Select country first'}
           searchPlaceholder="Search city"
           selectedLabel={form.city || undefined}
-          title={selectedCountry ? `Select city in ${selectedCountry.name}` : 'Select city'}
+          title={selectedCountries.length ? `Select city in ${selectedCountryNames}` : 'Select city'}
         />
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
