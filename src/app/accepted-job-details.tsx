@@ -51,7 +51,6 @@ function formatVehicleCondition(condition: string | null): string {
   if (!condition) return 'N/A';
   return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
 }
-
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();

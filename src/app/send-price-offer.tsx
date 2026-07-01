@@ -57,7 +57,6 @@ function formatVehicleCondition(condition: string): string {
   if (!condition.trim()) return 'N/A';
   return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
 }
-
 export default function SendPriceOfferScreen() {
   const router = useRouter();
   const { signOut } = useAuth();

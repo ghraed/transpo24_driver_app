@@ -429,7 +429,6 @@ export interface RequestVehicleDetailsSummary {
   condition: VehicleCondition | null;
   conditionNotes: string | null;
 }
-
 export interface RequestScheduleSummary {
   isImmediate: boolean;
   scheduledPickupAt: string | null;

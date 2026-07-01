@@ -43,7 +43,6 @@ function formatVehicleCondition(condition: string | null): string {
   if (!condition) return 'N/A';
   return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
 }
-
 export default function ReceiveRequestAlertsScreen() {
   const router = useRouter();
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
