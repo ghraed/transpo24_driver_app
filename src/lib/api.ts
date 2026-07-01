@@ -318,8 +318,8 @@ export async function getDriverMe(): Promise<DriverMeResponse> {
   return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse driver profile response.');
 }
 
-export async function getDriverOnboardingStatus(): Promise<DriverOnboardingResponse> {
-  const endpoint = `${getApiBaseUrl()}/driver/profile/onboarding`;
+export async function getMyDriverOnboarding(): Promise<DriverOnboardingResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/onboarding`;
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
@@ -340,14 +340,18 @@ export async function getDriverOnboardingStatus(): Promise<DriverOnboardingRespo
   );
 }
 
-export async function updateDriverPersonalInfo(
+export async function getDriverOnboardingStatus(): Promise<DriverOnboardingResponse> {
+  return getMyDriverOnboarding();
+}
+
+export async function updateMyDriverOnboardingProfile(
   payload: DriverPersonalInfoPayload,
 ): Promise<DriverOnboardingResponse> {
-  const endpoint = `${getApiBaseUrl()}/driver/profile/onboarding/personal-info`;
+  const endpoint = `${getApiBaseUrl()}/driver/me/onboarding/profile`;
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
-      method: 'POST',
+      method: 'PATCH',
       headers: await getAuthHeaders(),
       body: JSON.stringify(payload),
     });
@@ -363,6 +367,12 @@ export async function updateDriverPersonalInfo(
     response,
     'Failed to parse driver personal info response.',
   );
+}
+
+export async function updateDriverPersonalInfo(
+  payload: DriverPersonalInfoPayload,
+): Promise<DriverOnboardingResponse> {
+  return updateMyDriverOnboardingProfile(payload);
 }
 
 export async function updateDriverProfile(

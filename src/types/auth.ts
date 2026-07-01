@@ -63,7 +63,7 @@ export interface DriverPersonalInfoForm {
   dateOfBirth: string;
   idOrResidencyNumber: string;
   coverageCity: string;
-  coverageAreasInput: string;
+  coverageAreas: string[];
 }
 
 export interface DriverPersonalInfoPayload {
@@ -93,7 +93,9 @@ export interface DriverProfile {
   lastName: string;
   phone: string;
   countryCode: string | null;
+  countryCodes?: string[];
   city: string | null;
+  cities?: string[];
   coverageAreas: string[];
   fullNameOnId: string | null;
   dateOfBirth: string | null;

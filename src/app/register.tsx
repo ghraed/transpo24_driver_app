@@ -207,9 +207,12 @@ export default function DriverRegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.title}>Join Transpo24 as a Driver</Text>
+          <Text style={styles.title}>Driver Registration</Text>
           <Text style={styles.subtitle}>
-            Create your account and start receiving transport requests.
+            Create a driver account or continue with your existing customer account details.
+          </Text>
+          <Text style={styles.helper}>
+            Your phone number is verified through WhatsApp before driver onboarding is completed.
           </Text>
         </View>
 
@@ -297,7 +300,7 @@ export default function DriverRegisterScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Create Driver Account</Text>
+            <Text style={styles.submitButtonText}>Continue</Text>
           )}
         </Pressable>
 
@@ -322,6 +325,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 8,
+    gap: 4,
   },
   title: {
     fontSize: 28,
@@ -332,6 +336,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: '#475569',
     fontSize: 14,
+  },
+  helper: {
+    color: '#64748B',
+    fontSize: 13,
+    lineHeight: 18,
   },
   label: {
     fontSize: 14,

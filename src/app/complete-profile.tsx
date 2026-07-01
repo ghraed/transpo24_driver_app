@@ -13,9 +13,12 @@ import {
   View,
 } from 'react-native';
 
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useAuth } from '@/context/auth-context';
+import { COUNTRY_OPTIONS } from '@/lib/locations';
 import { getDriverRouteForNextStep, normalizeDriverNextStep } from '@/lib/driver-onboarding';
 import type {
+  DriverNextStep,
   DriverOnboardingResponse,
   DriverPersonalInfoForm,
   DriverPersonalInfoPayload,
@@ -36,6 +39,24 @@ function isAtLeast18(dateValue: string): boolean {
   return adult.getTime() <= Date.now();
 }
 
+function getCoverageOptions(
+  countryCodes: string[] | undefined,
+  storedCities: string[] | undefined,
+): string[] {
+  if (storedCities && storedCities.length > 0) {
+    return Array.from(new Set(storedCities)).sort((left, right) => left.localeCompare(right));
+  }
+
+  const normalizedCountryCodes = (countryCodes ?? []).filter(Boolean);
+  const cities =
+    normalizedCountryCodes.length > 0
+      ? COUNTRY_OPTIONS.filter((country) => normalizedCountryCodes.includes(country.code))
+          .flatMap((country) => country.cities)
+      : COUNTRY_OPTIONS.flatMap((country) => country.cities);
+
+  return Array.from(new Set(cities)).sort((left, right) => left.localeCompare(right));
+}
+
 export default function CompleteProfileScreen() {
   const router = useRouter();
   const { driver, refreshDriverOnboarding, saveDriverPersonalInfo, signOut } = useAuth();
@@ -44,8 +65,8 @@ export default function CompleteProfileScreen() {
     fullNameOnId: '',
     dateOfBirth: '',
     idOrResidencyNumber: '',
-    coverageCity: 'Profile coverage managed later',
-    coverageAreasInput: 'Profile coverage managed later',
+    coverageCity: '',
+    coverageAreas: [],
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -55,6 +76,22 @@ export default function CompleteProfileScreen() {
   const [currentTimeMs] = useState<number>(() => Date.now());
   const [isDatePickerVisible, setIsDatePickerVisible] = useState<boolean>(false);
   const hasUserEditedRef = useRef<boolean>(false);
+  const coverageAreaOptions = useMemo(
+    () =>
+      getCoverageOptions(
+        driver?.countryCodes ?? (driver?.countryCode ? [driver.countryCode] : []),
+        driver?.cities,
+      )
+        .map((city) => ({ label: city, value: city })),
+    [driver],
+  );
+  const selectedCoverageAreasLabel = useMemo(() => {
+    if (form.coverageAreas.length === 0) {
+      return undefined;
+    }
+
+    return form.coverageAreas.join(', ');
+  }, [form.coverageAreas]);
 
   const applyFormFromSources = useCallback((
     onboarding?: DriverOnboardingResponse | null,
@@ -68,10 +105,16 @@ export default function CompleteProfileScreen() {
       fullNameOnId: derivedFullName,
       dateOfBirth: toDateOnly(onboarding?.dateOfBirth ?? driver?.dateOfBirth),
       idOrResidencyNumber: '',
-      coverageCity: onboarding?.coverageCity ?? driver?.city ?? 'Profile coverage managed later',
-      coverageAreasInput: 'Profile coverage managed later',
+      coverageCity: onboarding?.coverageCity ?? driver?.city ?? '',
+      coverageAreas: onboarding?.coverageAreas ?? driver?.coverageAreas ?? [],
     });
   }, [driver?.city, driver?.coverageAreas, driver?.dateOfBirth, driver?.firstName, driver?.lastName]);
+
+  const routeFromOnboardingStatus = useCallback((nextStep: DriverNextStep): void => {
+    if (nextStep !== 'COMPLETE_PROFILE') {
+      router.replace(getDriverRouteForNextStep(nextStep));
+    }
+  }, [router]);
 
   const loadProfile = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -80,6 +123,7 @@ export default function CompleteProfileScreen() {
     try {
       const response = await refreshDriverOnboarding();
       applyFormFromSources(response);
+      routeFromOnboardingStatus(normalizeDriverNextStep(response.nextStep));
     } catch (error) {
       if (driver) {
         applyFormFromSources();
@@ -90,7 +134,7 @@ export default function CompleteProfileScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [applyFormFromSources, driver, refreshDriverOnboarding]);
+  }, [applyFormFromSources, driver, refreshDriverOnboarding, routeFromOnboardingStatus]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -123,6 +167,11 @@ export default function CompleteProfileScreen() {
     if (!form.idOrResidencyNumber.trim()) {
       errors.idOrResidencyNumber = 'ID or residency number is required.';
     }
+
+    if (!form.coverageCity.trim() && form.coverageAreas.length === 0) {
+      errors.coverageCity = 'Select at least one city or covered area.';
+    }
+
     return errors;
   }, [currentTimeMs, form]);
 
@@ -135,6 +184,16 @@ export default function CompleteProfileScreen() {
     hasUserEditedRef.current = true;
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  const onCoverageAreaToggle = useCallback((value: string): void => {
+    hasUserEditedRef.current = true;
+    setForm((prev) => ({
+      ...prev,
+      coverageAreas: prev.coverageAreas.includes(value)
+        ? prev.coverageAreas.filter((item) => item !== value)
+        : [...prev.coverageAreas, value],
+    }));
+  }, []);
 
   const datePickerValue = useMemo(() => {
     const parsed = form.dateOfBirth ? new Date(form.dateOfBirth) : new Date('2000-01-01');
@@ -157,6 +216,8 @@ export default function CompleteProfileScreen() {
       fullNameOnId: form.fullNameOnId.trim(),
       dateOfBirth: form.dateOfBirth.trim(),
       idOrResidencyNumber: form.idOrResidencyNumber.trim(),
+      coverageCity: form.coverageCity.trim() || undefined,
+      coverageAreas: form.coverageAreas.length > 0 ? form.coverageAreas : undefined,
     };
 
     try {
@@ -185,6 +246,8 @@ export default function CompleteProfileScreen() {
 
       if (normalized.includes('id or residency')) {
         setSubmitError('This ID or residency number is already in use.');
+      } else if (normalized.includes('coverage')) {
+        setSubmitError('Select at least one city or covered area.');
       } else if (normalized.includes('18')) {
         setSubmitError('Driver must be at least 18 years old.');
       } else {
@@ -223,12 +286,12 @@ export default function CompleteProfileScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.progress}>Step 1 of 2: Personal Info</Text>
-          <Text style={styles.title}>Complete Your Driver Profile</Text>
+          <Text style={styles.title}>Driver Registration</Text>
           <Text style={styles.subtitle}>
-            Add the ID details and coverage areas needed before document upload.
+            Enter your personal information as shown on your official documents.
           </Text>
           <Text style={styles.helper}>
-            This step saves the personal information used for verification and onboarding.
+            Add your ID details and service coverage before continuing to document upload.
           </Text>
         </View>
 
@@ -255,16 +318,42 @@ export default function CompleteProfileScreen() {
         </Pressable>
         {fieldErrors.dateOfBirth ? <Text style={styles.errorText}>{fieldErrors.dateOfBirth}</Text> : null}
 
-        <Text style={styles.label}>ID or residency number</Text>
+        <Text style={styles.label}>ID / Residency number</Text>
         <TextInput
           style={styles.input}
-          placeholder="ID or residency number"
+          placeholder="ID / Residency number"
           autoCapitalize="characters"
           value={form.idOrResidencyNumber}
           onChangeText={(value) => onChange('idOrResidencyNumber', value)}
         />
         {fieldErrors.idOrResidencyNumber ? (
           <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text>
+        ) : null}
+
+        <Text style={styles.label}>City or covered areas</Text>
+        <SearchableSelect
+          emptyMessage="No coverage areas found."
+          onSelect={(city) => onChange('coverageCity', city)}
+          options={coverageAreaOptions}
+          placeholder="Select primary city"
+          searchPlaceholder="Search city"
+          selectedLabel={form.coverageCity || undefined}
+          title="Select city"
+        />
+
+        <SearchableSelect
+          emptyMessage="No coverage areas found."
+          multiSelect
+          onSelect={onCoverageAreaToggle}
+          options={coverageAreaOptions}
+          placeholder="Select covered areas"
+          searchPlaceholder="Search covered area"
+          selectedLabel={selectedCoverageAreasLabel}
+          selectedValues={form.coverageAreas}
+          title="Select covered areas"
+        />
+        {fieldErrors.coverageCity ? (
+          <Text style={styles.errorText}>{fieldErrors.coverageCity}</Text>
         ) : null}
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
@@ -277,7 +366,7 @@ export default function CompleteProfileScreen() {
           {isSaving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.continueButtonText}>Continue to Document Upload</Text>
+            <Text style={styles.continueButtonText}>Continue</Text>
           )}
         </Pressable>
 

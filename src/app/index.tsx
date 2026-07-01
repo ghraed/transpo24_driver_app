@@ -65,7 +65,9 @@ export default function DriverLoginScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Driver Login</Text>
-        <Text style={styles.subtitle}>Sign in to manage your transport requests.</Text>
+        <Text style={styles.subtitle}>
+          Sign in with your existing account, including a shared customer account, to continue driver onboarding.
+        </Text>
       </View>
 
       <Text style={styles.label}>Email</Text>
