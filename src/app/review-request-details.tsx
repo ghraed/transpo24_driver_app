@@ -27,7 +27,7 @@ function formatDate(value: string | null): string {
 }
 
 function availabilityMessage(requestStatus: string): string | null {
-  if (requestStatus === 'PENDING_QUOTES') {
+  if (requestStatus === 'PENDING_QUOTES' || requestStatus === 'QUOTED') {
     return null;
   }
 
@@ -93,9 +93,27 @@ export default function ReviewRequestDetailsScreen() {
   const canAccept = useMemo(() => {
     if (!details) return false;
     if (details.alertStatus === 'IGNORED' || details.alertStatus === 'EXPIRED') return false;
-    if (details.requestStatus !== 'PENDING_QUOTES') return false;
+    if (details.offerStatus) return false;
+    if (details.requestStatus !== 'PENDING_QUOTES' && details.requestStatus !== 'QUOTED') return false;
     return true;
   }, [details]);
+
+  const offerStatusMessage = useMemo(() => {
+    if (!details?.offerStatus) return null;
+    if (details.offerStatus === 'PENDING') {
+      return 'Offer submitted. Waiting for customer selection.';
+    }
+    if (details.offerStatus === 'ACCEPTED') {
+      return 'You were selected for this request.';
+    }
+    if (details.offerStatus === 'REJECTED') {
+      return 'This offer was not selected.';
+    }
+    if (details.offerStatus === 'CANCELLED' || details.offerStatus === 'EXPIRED') {
+      return `Offer status: ${details.offerStatus.toLowerCase()}.`;
+    }
+    return null;
+  }, [details?.offerStatus]);
 
   const onIgnore = (): void => {
     if (!requestId || isBusy) return;
@@ -197,10 +215,19 @@ export default function ReviewRequestDetailsScreen() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         {requestUnavailableMessage ? <Text style={styles.warningText}>{requestUnavailableMessage}</Text> : null}
+        {offerStatusMessage ? <Text style={styles.infoText}>{offerStatusMessage}</Text> : null}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Service</Text>
           <Text style={styles.sectionValue}>{details.service?.nameEn || details.service?.key || 'Service'}</Text>
+          <Text style={styles.metaText}>Request status: {details.requestStatus}</Text>
+          <Text style={styles.metaText}>Offer status: {details.offerStatus || 'Not submitted'}</Text>
+          <Text style={styles.metaText}>
+            Distance:{' '}
+            {typeof details.distanceKm === 'number'
+              ? `${details.distanceKm.toFixed(1)} km`
+              : 'Not available'}
+          </Text>
         </View>
 
         <View style={styles.card}>
@@ -300,7 +327,11 @@ export default function ReviewRequestDetailsScreen() {
           disabled={!canAccept || isBusy}
         >
           <Text style={styles.primaryActionButtonText}>
-            {isBusy ? 'Please wait...' : 'Accept & Send Offer'}
+            {details.offerStatus === 'PENDING'
+              ? 'Offer Already Submitted'
+              : isBusy
+                ? 'Please wait...'
+                : 'Accept & Send Offer'}
           </Text>
         </Pressable>
       </View>
@@ -333,6 +364,11 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 14,
     color: '#B45309',
+    textAlign: 'left',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#1D4ED8',
     textAlign: 'left',
   },
   primaryButton: {

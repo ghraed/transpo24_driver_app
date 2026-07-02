@@ -1,3 +1,5 @@
+import type { DriverRequestAlertStatus, RequestStatus, VehicleCondition } from './auth';
+
 export type UserRole = "CUSTOMER" | "DRIVER" | "ADMIN";
 
 export type TripStatus =
@@ -23,11 +25,62 @@ export type AddressedLocation = GeoLocation & {
 
 export type OfferAcceptedPayload = {
   tripId: string;
+  acceptedOfferId?: string;
   driverId: string;
   customerId: string;
+  agreedPrice?: number;
+  currency?: string;
   pickupLocation: AddressedLocation;
   dropoffLocation: AddressedLocation;
   status: TripStatus;
+};
+
+export type RequestNewPayload = {
+  alertId: string;
+  requestId: string;
+  alertStatus: DriverRequestAlertStatus;
+  requestStatus: RequestStatus;
+  service: {
+    id: string;
+    key: string;
+    nameEn: string;
+    nameAr: string;
+    icon: string | null;
+  } | null;
+  pickup: {
+    latitude: number | null;
+    longitude: number | null;
+    address: string | null;
+  };
+  dropoff: {
+    latitude: number | null;
+    longitude: number | null;
+    address: string | null;
+  };
+  schedule: {
+    isImmediate: boolean;
+    scheduledPickupAt: string | null;
+  };
+  item: {
+    title: string | null;
+    type: string | null;
+    description: string | null;
+  };
+  vehicleDetails: {
+    condition: VehicleCondition | null;
+    conditionNotes: string | null;
+  } | null;
+  distanceKm: number | null;
+  createdAt: string;
+  submittedAt: string | null;
+};
+
+export type OfferRejectedPayload = {
+  requestId: string;
+  offerId: string;
+  driverId: string;
+  status: string;
+  rejectedAt: string;
 };
 
 export type DriverLocationUpdatePayload = {

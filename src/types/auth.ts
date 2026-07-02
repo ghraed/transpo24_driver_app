@@ -638,6 +638,9 @@ export interface DriverRequestAlertSummary {
   submittedAt: string | null;
 }
 
+export type DriverRequestNotificationPayload = DriverRequestAlertSummary;
+export type DriverRequestListItem = DriverRequestAlertSummary;
+
 export interface DriverRequestAlertsResponse {
   alerts: DriverRequestAlertSummary[];
 }
@@ -652,6 +655,7 @@ export interface RequestPhoto {
 }
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  offerStatus: DriverOfferStatus | null;
   customer: {
     firstName: string | null;
     rating: number | null;
@@ -724,6 +728,22 @@ export interface DriverOffer {
   status: DriverOfferStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export type DriverOfferResponse = DriverOffer;
+export type CreateDriverOfferPayload = SendDriverPriceOfferPayload;
+export type CreateDriverOfferResponse = SendDriverPriceOfferResponse;
+
+export interface DriverAvailabilityStatus {
+  isOnline: boolean;
+  driverStatus: DriverStatus;
+  nextStep: DriverNextStep;
+}
+
+export interface DriverRequestChatState {
+  isAvailable: boolean;
+  requestId: string;
+  reason?: string;
 }
 
 export interface SendDriverPriceOfferResponse {

@@ -172,6 +172,9 @@ export default function AcceptedJobDetailsScreen() {
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
           <Text style={styles.metaText}>Accepted at: {formatDate(details.acceptedAt)}</Text>
+          <Text style={styles.walletNotice}>
+            The amount has been reserved from the customer wallet.
+          </Text>
         </View>
 
         <View style={styles.card}>
@@ -184,6 +187,17 @@ export default function AcceptedJobDetailsScreen() {
             Rating:{' '}
             {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
           </Text>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push({
+                pathname: '/request-chat',
+                params: { requestId: details.requestId },
+              })
+            }
+          >
+            <Text style={styles.secondaryButtonText}>Chat with Customer</Text>
+          </Pressable>
         </View>
 
         <View style={styles.card}>
@@ -391,6 +405,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#14532D',
+  },
+  walletNotice: {
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: '600',
   },
   card: {
     backgroundColor: '#FFFFFF',

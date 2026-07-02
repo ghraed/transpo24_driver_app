@@ -45,6 +45,7 @@ function AppNavigator() {
         name="offer-waiting-response"
         options={{ title: 'Waiting for Customer Response' }}
       />
+      <Stack.Screen name="request-chat" options={{ title: 'Chat with Customer' }} />
       <Stack.Screen name="explore" options={{ title: 'Explore' }} />
     </Stack>
   );
