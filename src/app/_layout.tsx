@@ -1,5 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
@@ -22,6 +21,7 @@ function AppNavigator() {
       <Stack.Screen name="register" options={{ title: 'Driver Registration' }} />
       <Stack.Screen name="complete-profile" options={{ title: 'Complete Profile' }} />
       <Stack.Screen name="vehicle-documents" options={{ title: 'Driver Documents' }} />
+      <Stack.Screen name="my-vehicles" options={{ title: 'My Vehicles' }} />
       <Stack.Screen name="vehicle-information" options={{ title: 'Vehicle Information' }} />
       <Stack.Screen name="set-availability" options={{ title: 'Set Availability' }} />
       <Stack.Screen name="waiting-approval" options={{ title: 'Waiting Approval' }} />

@@ -129,16 +129,22 @@ export interface DriverOnboardingResponse {
   nextStep: DriverNextStep;
 }
 
-export type VehicleType =
-  | 'CAR_CARRIER'
-  | 'FLATBED_TRUCK'
-  | 'TOW_TRUCK'
+export type DriverVehicleType =
+  | 'OPEN_CAR_CARRIER'
+  | 'ENCLOSED_CARRIER'
+  | 'SMALL_TRUCK'
+  | 'MEDIUM_TRUCK'
+  | 'PICKUP'
   | 'VAN'
-  | 'BOX_TRUCK'
-  | 'PICKUP_TRUCK'
-  | 'MOTORCYCLE_TRAILER'
-  | 'FURNITURE_TRUCK'
-  | 'OTHER';
+  | 'TOW_TRUCK'
+  | 'MOTORCYCLE';
+
+export type VehicleType = DriverVehicleType;
+
+export type DriverVehicleCondition =
+  | 'EXCELLENT'
+  | 'GOOD'
+  | 'NEEDS_MAINTENANCE';
 
 export type DriverDocumentType =
   | 'PERSONAL_SELFIE'
@@ -171,6 +177,7 @@ export interface CreateDriverVehiclePayload {
   model: string;
   year: number;
   plateNumber: string;
+  condition: DriverVehicleCondition;
   color?: string;
   capacityKg?: number;
   lengthCm?: number;
@@ -179,12 +186,15 @@ export interface CreateDriverVehiclePayload {
   hasTrailer: boolean;
 }
 
+export type UpdateDriverVehiclePayload = Partial<CreateDriverVehiclePayload>;
+
 export interface DriverVehicleForm {
   vehicleType: VehicleType | '';
   make: string;
   model: string;
   year: string;
   plateNumber: string;
+  condition: DriverVehicleCondition | '';
   color: string;
   capacityKg: string;
   lengthCm: string;
@@ -192,6 +202,17 @@ export interface DriverVehicleForm {
   heightCm: string;
   hasTrailer: boolean;
 }
+
+export type DriverVehiclePhotoType =
+  | 'FRONT'
+  | 'REAR'
+  | 'SIDE'
+  | 'PLATE';
+
+export type DriverVehicleDocumentType =
+  | 'REGISTRATION_FRONT'
+  | 'REGISTRATION_BACK'
+  | 'INSURANCE';
 
 export interface LocalDocumentAsset {
   uri: string;
@@ -275,27 +296,85 @@ export interface DriverDocumentsStatusResponse {
 
 export interface DriverVehicle {
   id: string;
+  driverId?: string;
   vehicleType: VehicleType;
+  vehicleTypeLegacy?: string;
+  brand?: string;
   make: string;
   model: string;
   year: number;
+  licensePlateNumber?: string;
   plateNumber: string;
+  condition: DriverVehicleCondition;
   color: string | null;
+  loadProfileName?: string | null;
   capacityKg: number | null;
   lengthCm: number | null;
   widthCm: number | null;
   heightCm: number | null;
+  dimensionsAreStandard?: boolean;
+  allowedCargoTypes?: string[];
+  workingSchedule?: {
+    dayOfWeek: DayOfWeek;
+    isAvailable: boolean;
+    timeRanges: {
+      startTime: string;
+      endTime: string;
+    }[];
+  }[];
+  isDefaultLoadProfile?: boolean;
   hasTrailer: boolean;
+  frontPhotoUrl?: string | null;
+  rearPhotoUrl?: string | null;
+  sidePhotoUrl?: string | null;
+  licensePlatePhotoUrl?: string | null;
+  registrationFrontDocumentUrl?: string | null;
+  registrationBackDocumentUrl?: string | null;
+  insuranceDocumentUrl?: string | null;
+  insuranceExpiryDate?: string | null;
+  registrationExpiryDate?: string | null;
+  completeness?: DriverVehicleCompletenessResponse;
+  status?: string;
+  verificationStatus?: string;
+  rejectionReason?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   documents?: DriverDocument[];
 }
 
+export interface DriverVehicleCompletenessResponse {
+  hasBasicInfo: boolean;
+  hasRequiredPhotos: boolean;
+  hasRequiredDocuments: boolean;
+  isComplete: boolean;
+  missingFields: string[];
+}
+
 export interface DriverVehicleDocumentsResponse {
   vehicle: DriverVehicle;
   documents: DriverDocument[];
   nextStep: DriverNextStep;
+}
+
+export interface UploadDriverVehiclePhotoPayload {
+  photoType: DriverVehiclePhotoType;
+  file: LocalDocumentAsset;
+}
+
+export interface UploadDriverVehicleDocumentPayload {
+  documentType: DriverVehicleDocumentType;
+  file: LocalDocumentAsset;
+}
+
+export interface UploadDriverVehicleAssetsPayload {
+  frontPhoto: LocalDocumentAsset;
+  rearPhoto: LocalDocumentAsset;
+  sidePhoto: LocalDocumentAsset;
+  licensePlatePhoto: LocalDocumentAsset;
+  registrationFrontDocument: LocalDocumentAsset;
+  registrationBackDocument: LocalDocumentAsset;
+  insuranceDocument: LocalDocumentAsset;
 }
 
 export interface DriverAvailabilityDay {
