@@ -202,6 +202,29 @@ export interface LocalDocumentAsset {
   height?: number;
 }
 
+export interface UploadDriverDocumentPayload {
+  documentType:
+    | 'PERSONAL_SELFIE'
+    | 'ID_FRONT'
+    | 'ID_BACK'
+    | 'DRIVING_LICENSE'
+    | 'SELF_IDENTITY_VERIFICATION';
+  file: LocalDocumentAsset;
+  expiryDate?: string;
+  idDocumentKind?: IdentityDocumentKind;
+}
+
+export interface DriverDocumentsState {
+  personalSelfie?: LocalDocumentAsset;
+  idFront?: LocalDocumentAsset;
+  idBack?: LocalDocumentAsset;
+  drivingLicense?: LocalDocumentAsset;
+  selfIdentityVerification?: LocalDocumentAsset;
+  idDocumentKind: IdentityDocumentKind | '';
+  idExpiryDate: string;
+  drivingLicenseExpiryDate: string;
+}
+
 export interface DriverDocumentsForm {
   driverLicenseFront?: LocalDocumentAsset;
   driverLicenseBack?: LocalDocumentAsset;

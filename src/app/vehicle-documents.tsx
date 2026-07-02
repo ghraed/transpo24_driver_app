@@ -1,6 +1,6 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@expo/ui/community/datetime-picker';
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -10,9 +10,9 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Alert,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -21,11 +21,12 @@ import {
   submitDriverDocumentsForReview,
   uploadDriverDocument,
 } from '@/lib/api';
+import { getDriverRouteForNextStep, normalizeDriverNextStep } from '@/lib/driver-onboarding';
 import type {
   DriverDocumentType,
+  DriverDocumentsState,
   DriverDocumentsStatusResponse,
   DriverOnboardingDocument,
-  IdentityDocumentKind,
   LocalDocumentAsset,
 } from '@/types/auth';
 
@@ -38,17 +39,6 @@ const DOCUMENT_ALLOWED_TYPES = new Set([
   'application/pdf',
 ]);
 const PHOTO_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-
-interface OnboardingDocumentsForm {
-  personalSelfie?: LocalDocumentAsset;
-  idFront?: LocalDocumentAsset;
-  idBack?: LocalDocumentAsset;
-  drivingLicense?: LocalDocumentAsset;
-  selfIdentityVerification?: LocalDocumentAsset;
-  idDocumentKind: IdentityDocumentKind | '';
-  idExpiryDate: string;
-  drivingLicenseExpiryDate: string;
-}
 
 function toDateOnly(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
@@ -80,7 +70,7 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
 export default function VehicleDocumentsScreen() {
   const router = useRouter();
 
-  const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<OnboardingDocumentsForm>({
+  const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<DriverDocumentsState>({
     idDocumentKind: '',
     idExpiryDate: '',
     drivingLicenseExpiryDate: '',
@@ -106,6 +96,11 @@ export default function VehicleDocumentsScreen() {
 
     try {
       const status = await getDriverDocumentsStatus();
+      const nextStep = normalizeDriverNextStep(status.nextStep);
+      if (nextStep !== 'UPLOAD_DOCUMENTS') {
+        router.replace(getDriverRouteForNextStep(nextStep));
+        return;
+      }
       setDocumentsStatus(status);
       setOnboardingDocumentsForm((prev) => ({
         ...prev,
@@ -131,7 +126,7 @@ export default function VehicleDocumentsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -253,13 +248,13 @@ export default function VehicleDocumentsScreen() {
 
   const canSubmitOnboardingReview = Boolean(documentsStatus?.canSubmitForReview) && !isBusy;
 
-  const onOnboardingDocumentChange = <K extends keyof OnboardingDocumentsForm>(
+  const onOnboardingDocumentChange = <K extends keyof DriverDocumentsState>(
     key: K,
-    value: OnboardingDocumentsForm[K],
+    value: DriverDocumentsState[K],
   ): void => {
     setOnboardingDocumentsForm((prev) => {
       if (key === 'idDocumentKind') {
-        const nextKind = value as OnboardingDocumentsForm['idDocumentKind'];
+        const nextKind = value as DriverDocumentsState['idDocumentKind'];
         return {
           ...prev,
           idDocumentKind: nextKind,
@@ -273,7 +268,7 @@ export default function VehicleDocumentsScreen() {
 
   const setOnboardingDocument = (
     key: Exclude<
-      keyof OnboardingDocumentsForm,
+      keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
     value?: LocalDocumentAsset,
@@ -283,7 +278,7 @@ export default function VehicleDocumentsScreen() {
 
   const pickOnboardingDocument = async (
     key: Exclude<
-      keyof OnboardingDocumentsForm,
+      keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
     type: 'image' | 'document' = 'image',
@@ -320,6 +315,33 @@ export default function VehicleDocumentsScreen() {
     const asset = result.assets[0];
     if (!asset) return;
     setOnboardingDocument(key, toAssetFromDocumentPicker(asset));
+  };
+
+  const captureOnboardingDocument = async (
+    key: Exclude<
+      keyof DriverDocumentsState,
+      'idExpiryDate' | 'drivingLicenseExpiryDate'
+    >,
+  ): Promise<void> => {
+    if (activeOnboardingUploadType) return;
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Camera permission is required to capture document photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.9,
+      cameraType: ImagePicker.CameraType.front,
+    });
+
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (!asset) return;
+    setOnboardingDocument(key, toAssetFromImagePicker(asset));
   };
 
   const getUploadedOnboardingDocument = useCallback(
@@ -434,12 +456,13 @@ export default function VehicleDocumentsScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.progress}>Step 2 of 3: Documents</Text>
-          <Text style={styles.title}>Upload Driver Documents</Text>
+          <Text style={styles.title}>Required Documents</Text>
           <Text style={styles.subtitle}>
-            Upload the documents needed for verification, then continue to vehicle
-            information.
+            Upload the documents below before your account can be approved.
           </Text>
-          <Text style={styles.helper}>Clear documents help us verify your driver account faster.</Text>
+          <Text style={styles.helper}>
+            Clear, readable documents help us review your driver account faster.
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -449,24 +472,26 @@ export default function VehicleDocumentsScreen() {
           </Text>
 
           {renderOnboardingDocumentPicker(
-            'Recent personal photo / selfie *',
+            'Recent personal photo *',
             'Take a selfie in front of a white background with good lighting and a clear face.',
             'PERSONAL_SELFIE',
             onboardingDocumentsForm.personalSelfie,
             getUploadedOnboardingDocument('PERSONAL_SELFIE'),
             () => void pickOnboardingDocument('personalSelfie', 'image'),
+            () => void captureOnboardingDocument('personalSelfie'),
           )}
           {fieldErrors.personalSelfie ? (
             <Text style={styles.errorText}>{fieldErrors.personalSelfie}</Text>
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'ID or residency card front *',
-            'Upload clear photos of the front and back sides. The document must not be expired.',
+            'ID / Residency front side *',
+            'Upload clear front and back photos. The document must be valid and not expired.',
             'ID_FRONT',
             onboardingDocumentsForm.idFront,
             getUploadedOnboardingDocument('ID_FRONT'),
             () => void pickOnboardingDocument('idFront', 'image'),
+            () => void captureOnboardingDocument('idFront'),
           )}
           {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
 
@@ -519,22 +544,24 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'ID or residency card back *',
-            'Upload clear photos of the front and back sides. The document must not be expired.',
+            'ID / Residency back side *',
+            'Upload clear front and back photos. The document must be valid and not expired.',
             'ID_BACK',
             onboardingDocumentsForm.idBack,
             getUploadedOnboardingDocument('ID_BACK'),
             () => void pickOnboardingDocument('idBack', 'image'),
+            () => void captureOnboardingDocument('idBack'),
           )}
           {fieldErrors.idBack ? <Text style={styles.errorText}>{fieldErrors.idBack}</Text> : null}
 
           {renderOnboardingDocumentPicker(
             'Driving license *',
-            'Upload a clear valid photo showing the allowed vehicle categories.',
+            'Upload a clear valid photo showing the permitted vehicle categories.',
             'DRIVING_LICENSE',
             onboardingDocumentsForm.drivingLicense,
             getUploadedOnboardingDocument('DRIVING_LICENSE'),
             () => void pickOnboardingDocument('drivingLicense', 'document'),
+            () => void captureOnboardingDocument('drivingLicense'),
           )}
           {fieldErrors.drivingLicense ? (
             <Text style={styles.errorText}>{fieldErrors.drivingLicense}</Text>
@@ -562,12 +589,13 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'Self-identity verification',
-            'A selfie verification test may be required later.',
+            'Self-verification selfie',
+            'You may be asked to complete a selfie verification step.',
             'SELF_IDENTITY_VERIFICATION',
             onboardingDocumentsForm.selfIdentityVerification,
             getUploadedOnboardingDocument('SELF_IDENTITY_VERIFICATION'),
             () => void pickOnboardingDocument('selfIdentityVerification', 'image'),
+            () => void captureOnboardingDocument('selfIdentityVerification'),
             true,
           )}
 
@@ -606,16 +634,9 @@ export default function VehicleDocumentsScreen() {
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
-        <Pressable
-          style={[styles.continueButton, isBusy && styles.continueButtonDisabled]}
-          disabled={isBusy}
-          onPress={() => router.push('/vehicle-information')}
-        >
-          <Text style={styles.continueButtonText}>Continue to Vehicle Information</Text>
-        </Pressable>
       </ScrollView>
       {isIdentityExpiryPickerVisible ? (
-        <DateTimePicker
+        <ExpoDateTimePicker
           mode="date"
           presentation="dialog"
           value={
@@ -632,7 +653,7 @@ export default function VehicleDocumentsScreen() {
         />
       ) : null}
       {isDrivingLicenseExpiryPickerVisible ? (
-        <DateTimePicker
+        <ExpoDateTimePicker
           mode="date"
           presentation="dialog"
           value={
@@ -666,6 +687,7 @@ export default function VehicleDocumentsScreen() {
     asset: LocalDocumentAsset | undefined,
     uploaded: DriverOnboardingDocument | undefined,
     onPick: () => void,
+    onCapture: () => void,
     optional = false,
   ): React.ReactNode {
     const isUploading = activeOnboardingUploadType === type;
@@ -694,10 +716,16 @@ export default function VehicleDocumentsScreen() {
         <View style={styles.docButtonsRow}>
           <Pressable
             style={styles.uploadButtonSmall}
-            onPress={onPick}
+            onPress={() => {
+              Alert.alert('Add document', 'Choose how you want to provide this file.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Take photo', onPress: onCapture },
+                { text: 'Choose file', onPress: onPick },
+              ]);
+            }}
             disabled={Boolean(activeOnboardingUploadType)}
           >
-            <Text style={styles.uploadButtonText}>{asset || uploaded ? 'Replace' : 'Select'}</Text>
+            <Text style={styles.uploadButtonText}>{asset || uploaded ? 'Replace' : 'Add'}</Text>
           </Pressable>
           <Pressable
             style={[
@@ -822,16 +850,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   uploadButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
-  continueButton: {
-    marginTop: 4,
-    minHeight: 50,
-    borderRadius: 10,
-    backgroundColor: '#1D4ED8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   continueButtonDisabled: { opacity: 0.5 },
-  continueButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
   primaryButton: {
     minHeight: 48,
     borderRadius: 10,

@@ -12,7 +12,6 @@ import type {
   DriverMeResponse,
   DriverOnboardingResponse,
   DriverPersonalInfoPayload,
-  IdentityDocumentKind,
   DriverVehicle,
   IgnoreDriverRequestAlertResponse,
   DriverVehicleDocumentsResponse,
@@ -26,6 +25,7 @@ import type {
   UpdateDriverAvailabilityPayload,
   UpdateDriverOnlineStatusPayload,
   UpdateDriverProfilePayload,
+  UploadDriverDocumentPayload,
 } from '@/types/auth';
 
 interface ApiErrorResponse {
@@ -556,12 +556,9 @@ export async function getDriverDocumentsStatus(): Promise<DriverDocumentsStatusR
   );
 }
 
-export async function uploadDriverDocument(payload: {
-  documentType: 'PERSONAL_SELFIE' | 'ID_FRONT' | 'ID_BACK' | 'DRIVING_LICENSE' | 'SELF_IDENTITY_VERIFICATION';
-  file: LocalDocumentAsset;
-  expiryDate?: string;
-  idDocumentKind?: IdentityDocumentKind;
-}): Promise<DriverDocumentsStatusResponse> {
+export async function uploadDriverDocument(
+  payload: UploadDriverDocumentPayload,
+): Promise<DriverDocumentsStatusResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/onboarding/documents`;
   const formData = new FormData();
 
