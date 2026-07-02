@@ -52,7 +52,7 @@ export default function DriverHomeScreen() {
           );
           if (!hasCompleteVehicle) {
             setVehicleNotice(
-              'Add at least one complete vehicle before you can receive requests.',
+              'Complete at least one vehicle and its load setup before you can receive requests.',
             );
           } else {
             setVehicleNotice('');

@@ -141,6 +141,13 @@ export type DriverVehicleType =
 
 export type VehicleType = DriverVehicleType;
 
+export type DriverCargoType =
+  | 'VEHICLE'
+  | 'MOTORCYCLE'
+  | 'GOODS'
+  | 'FURNITURE'
+  | 'OTHER';
+
 export type DriverVehicleCondition =
   | 'EXCELLENT'
   | 'GOOD'
@@ -345,11 +352,84 @@ export interface DriverVehicle {
 
 export interface DriverVehicleCompletenessResponse {
   hasBasicInfo: boolean;
+  hasLoadCapacityProfile?: boolean;
   hasRequiredPhotos: boolean;
   hasRequiredDocuments: boolean;
   isComplete: boolean;
   missingFields: string[];
 }
+
+export interface CargoDimensions {
+  lengthM: number | null;
+  widthM: number | null;
+  heightM: number | null;
+}
+
+export interface WorkingAvailabilityTimeRange {
+  startTime: string;
+  endTime: string;
+}
+
+export interface WorkingAvailabilityItem {
+  dayOfWeek: DayOfWeek;
+  isAvailable: boolean;
+  timeRanges: WorkingAvailabilityTimeRange[];
+}
+
+export interface DriverVehicleLoadFormDay {
+  dayOfWeek: DayOfWeek;
+  label: string;
+  isAvailable: boolean;
+  startTime: string;
+  endTime: string;
+}
+
+export interface DriverVehicleLoadFormValues {
+  name: string;
+  maxLoadKg: string;
+  cargoLengthM: string;
+  cargoWidthM: string;
+  cargoHeightM: string;
+  allowedCargoTypes: DriverCargoType[];
+  workingSchedule: DriverVehicleLoadFormDay[];
+  isDefault: boolean;
+}
+
+export interface DriverVehicleLoadPayload {
+  name?: string;
+  maxLoadKg?: number;
+  cargoLengthM?: number;
+  cargoWidthM?: number;
+  cargoHeightM?: number;
+  dimensionsAreStandard?: boolean;
+  allowedCargoTypes: DriverCargoType[];
+  workingSchedule: WorkingAvailabilityItem[];
+  isDefault?: boolean;
+}
+
+export interface DriverVehicleLoadResponse {
+  id: string;
+  driverId: string;
+  vehicleId: string;
+  name: string | null;
+  vehicleType: VehicleType;
+  maxLoadKg: number | null;
+  cargoLengthM: number | null;
+  cargoWidthM: number | null;
+  cargoHeightM: number | null;
+  dimensionsAreStandard: boolean;
+  allowedCargoTypes: DriverCargoType[];
+  workingSchedule: WorkingAvailabilityItem[];
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DriverVehicleLoadsResponse {
+  loadCapacities: DriverVehicleLoadResponse[];
+}
+
+export type SetDefaultVehicleLoadResponse = DriverVehicleLoadResponse;
 
 export interface DriverVehicleDocumentsResponse {
   vehicle: DriverVehicle;

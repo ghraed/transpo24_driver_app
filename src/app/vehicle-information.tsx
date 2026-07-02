@@ -279,6 +279,14 @@ export default function VehicleInformationScreen() {
       });
 
       setSubmitSuccess('Vehicle saved successfully.');
+      if (uploaded.nextStep === 'ADD_VEHICLE_DOCUMENTS') {
+        router.replace({
+          pathname: '/vehicle-load',
+          params: { vehicleId },
+        });
+        return;
+      }
+
       router.replace(
         uploaded.nextStep === 'HOME' || uploaded.nextStep === 'WAITING_APPROVAL'
           ? ('/my-vehicles' as Href)

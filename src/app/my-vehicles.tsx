@@ -17,6 +17,13 @@ function summarizeVehicle(vehicle: DriverVehicle): string {
   return `${vehicle.make} ${vehicle.model} (${vehicle.plateNumber})`;
 }
 
+function getLoadActionRoute(vehicleId: string) {
+  return {
+    pathname: '/vehicle-load' as const,
+    params: { vehicleId },
+  };
+}
+
 export default function MyVehiclesScreen() {
   const router = useRouter();
   const [data, setData] = useState<DriverVehiclesListResponse | null>(null);
@@ -69,6 +76,10 @@ export default function MyVehiclesScreen() {
 
   const vehicles = data?.vehicles ?? [];
   const hasCompleteVehicle = vehicles.some((item) => item.vehicle.completeness?.isComplete);
+  const hasVehicles = vehicles.length > 0;
+  const needsLoadSetup = vehicles.some(
+    (item) => !item.vehicle.completeness?.hasLoadCapacityProfile,
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -84,7 +95,17 @@ export default function MyVehiclesScreen() {
           <View style={styles.noticeCard}>
             <Text style={styles.noticeTitle}>Vehicle required</Text>
             <Text style={styles.noticeText}>
-              At least one complete vehicle is required before you can receive transport requests.
+              At least one complete vehicle with load setup is required before you can receive
+              transport requests.
+            </Text>
+          </View>
+        ) : null}
+
+        {needsLoadSetup ? (
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeTitle}>Load setup required</Text>
+            <Text style={styles.noticeText}>
+              Complete the vehicle load setup before the driver account can receive requests.
             </Text>
           </View>
         ) : null}
@@ -95,6 +116,21 @@ export default function MyVehiclesScreen() {
         >
           <Text style={styles.primaryButtonText}>Add New Vehicle</Text>
         </Pressable>
+
+        {hasVehicles ? (
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() =>
+              vehicles.length === 1
+                ? router.push(getLoadActionRoute(vehicles[0]?.vehicle.id ?? ''))
+                : router.push('/manage-loads')
+            }
+          >
+            <Text style={styles.secondaryButtonText}>
+              {vehicles.length === 1 ? 'Set Load Capacity' : 'Manage Loads'}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {vehicles.length === 0 ? (
           <View style={styles.emptyCard}>
@@ -123,6 +159,28 @@ export default function MyVehiclesScreen() {
                 ? 'Complete'
                 : `Incomplete: ${(item.vehicle.completeness?.missingFields ?? []).join(', ')}`}
             </Text>
+            <Text
+              style={[
+                styles.loadStatus,
+                item.vehicle.completeness?.hasLoadCapacityProfile
+                  ? styles.statusComplete
+                  : styles.statusIncomplete,
+              ]}
+            >
+              {item.vehicle.completeness?.hasLoadCapacityProfile
+                ? `Load ready${item.vehicle.isDefaultLoadProfile ? ' • Default load' : ''}`
+                : 'Load capacity setup required'}
+            </Text>
+            <Pressable
+              style={styles.inlineButton}
+              onPress={() => router.push(getLoadActionRoute(item.vehicle.id))}
+            >
+              <Text style={styles.inlineButtonText}>
+                {item.vehicle.completeness?.hasLoadCapacityProfile
+                  ? 'Edit Load'
+                  : 'Set Load Capacity'}
+              </Text>
+            </Pressable>
           </View>
         ))}
       </ScrollView>
@@ -191,6 +249,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
   },
+  secondaryButton: {
+    minHeight: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 15,
+  },
   emptyCard: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -228,6 +300,25 @@ const styles = StyleSheet.create({
   },
   statusIncomplete: {
     color: '#B45309',
+  },
+  loadStatus: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  inlineButton: {
+    marginTop: 6,
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  inlineButtonText: {
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 14,
   },
   errorText: {
     color: '#DC2626',
