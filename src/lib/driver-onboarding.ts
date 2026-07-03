@@ -5,6 +5,8 @@ export type DriverRoute =
   | '/complete-profile'
   | '/vehicle-documents'
   | '/vehicle-information'
+  | '/manage-loads'
+  | '/vehicle-load'
   | '/set-availability'
   | '/waiting-approval'
   | '/driver-home';
@@ -30,7 +32,7 @@ export function getDriverRouteForNextStep(nextStep: DriverNextStep): DriverRoute
     case 'UPLOAD_DOCUMENTS':
       return '/vehicle-documents';
     case 'ADD_VEHICLE_DOCUMENTS':
-      return '/vehicle-information';
+      return '/manage-loads';
     case 'SET_AVAILABILITY':
       return '/set-availability';
     case 'WAITING_APPROVAL':

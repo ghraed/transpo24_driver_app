@@ -8,11 +8,21 @@ type CompletedParams = {
   deliveredAt?: string;
 };
 
+function formatDateTime(value: string | null): string {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleString();
+}
+
 export default function DriverTripCompletedScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<CompletedParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId : 'N/A';
   const deliveredAt = typeof params.deliveredAt === 'string' ? params.deliveredAt : null;
+  const payoutAvailableAt = deliveredAt
+    ? new Date(new Date(deliveredAt).getTime() + 24 * 60 * 60 * 1000)
+    : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -20,8 +30,12 @@ export default function DriverTripCompletedScreen() {
         <Text style={styles.title}>Trip Delivered</Text>
         <Text style={styles.subtitle}>Delivery confirmed successfully.</Text>
         <Text style={styles.meta}>Trip ID: {tripId}</Text>
+        <Text style={styles.meta}>Delivered At: {formatDateTime(deliveredAt)}</Text>
         <Text style={styles.meta}>
-          Delivered At: {deliveredAt ? new Date(deliveredAt).toLocaleString() : 'N/A'}
+          Expected wallet release: {payoutAvailableAt ? payoutAvailableAt.toLocaleString() : 'Within 24 hours'}
+        </Text>
+        <Text style={styles.notice}>
+          Your payment will be transferred to your in-app wallet within 24 hours, minus the app commission.
         </Text>
         <Pressable style={styles.button} onPress={() => router.replace('/driver-home')}>
           <Text style={styles.buttonText}>Back to Driver Home</Text>
@@ -56,6 +70,10 @@ const styles = StyleSheet.create({
   },
   meta: {
     color: '#475569',
+  },
+  notice: {
+    color: '#166534',
+    fontWeight: '600',
   },
   button: {
     marginTop: 8,

@@ -1,22 +1,96 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAuth } from '@/context/auth-context';
+import {
+  connectSocket,
+  onOfferAccepted,
+  onOfferRejected,
+  onSocketConnected,
+  onSocketDisconnect,
+  onSocketError,
+} from '@/services/socketService';
+import { validateOfferAcceptedPayload, validateOfferRejectedPayload } from '@/utils/locationValidation';
+
 export default function OfferWaitingResponseScreen() {
   const router = useRouter();
+  const { accessToken } = useAuth();
   const params = useLocalSearchParams<{ requestId?: string; status?: string; offerId?: string }>();
+  const requestId = typeof params.requestId === 'string' ? params.requestId : '';
+  const [selectionMessage, setSelectionMessage] = useState<string>('');
+  const [socketStatus, setSocketStatus] = useState<'connected' | 'disconnected' | 'connecting'>(
+    'connecting',
+  );
+  const [socketMessage, setSocketMessage] = useState<string>('');
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    connectSocket(accessToken);
+    setSocketStatus('connecting');
+
+    const unsubscribeAccepted = onOfferAccepted((payload) => {
+      const validated = validateOfferAcceptedPayload(payload);
+      if (!validated || validated.tripId !== requestId) return;
+
+      setSelectionMessage(
+        'You were selected for this request. The amount has been reserved from the customer wallet.',
+      );
+      router.replace({
+        pathname: '/accepted-job-details',
+        params: { requestId: validated.tripId },
+      });
+    });
+
+    const unsubscribeRejected = onOfferRejected((payload) => {
+      const validated = validateOfferRejectedPayload(payload);
+      if (!validated || validated.requestId !== requestId) return;
+
+      setSelectionMessage('Your offer was not selected for this request.');
+    });
+
+    const unsubscribeConnected = onSocketConnected(() => {
+      setSocketStatus('connected');
+      setSocketMessage('');
+    });
+    const unsubscribeDisconnected = onSocketDisconnect(() => {
+      setSocketStatus('disconnected');
+    });
+    const unsubscribeSocketError = onSocketError((message) => {
+      setSocketStatus('disconnected');
+      setSocketMessage(message);
+    });
+
+    return () => {
+      unsubscribeAccepted();
+      unsubscribeRejected();
+      unsubscribeConnected();
+      unsubscribeDisconnected();
+      unsubscribeSocketError();
+    };
+  }, [accessToken, requestId, router]);
+
+  const waitingMessage = useMemo(() => {
+    if (selectionMessage) return selectionMessage;
+    return 'Your offer is pending customer review. We will notify you when the customer chooses.';
+  }, [selectionMessage]);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>Offer Sent Successfully</Text>
         <Text style={styles.subtitle}>
-          Your offer is pending customer review. We will notify you when the customer chooses.
+          {waitingMessage}
         </Text>
         <Text style={styles.meta}>Request ID: {params.requestId || 'N/A'}</Text>
         <Text style={styles.meta}>Offer ID: {params.offerId || 'N/A'}</Text>
         <Text style={styles.meta}>Request Status: {params.status || 'N/A'}</Text>
+        <Text style={styles.meta}>
+          Real-time connection: {socketStatus}
+          {socketMessage ? ` • ${socketMessage}` : ''}
+        </Text>
 
         <Pressable style={styles.primaryButton} onPress={() => router.replace('/receive-requests')}>
           <Text style={styles.primaryButtonText}>Back to Available Requests</Text>

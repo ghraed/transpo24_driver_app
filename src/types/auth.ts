@@ -43,11 +43,14 @@ export interface UpdateDriverProfilePayload {
   phone: string;
   countryCode?: string;
   city?: string;
+  coverageAreas?: string[];
+  fullNameOnId?: string;
   dateOfBirth?: string;
+  idOrResidencyNumber?: string;
   addressLine1?: string;
   addressLine2?: string;
   postalCode?: string;
-  preferredLanguage?: PreferredLanguage;
+  preferredLanguages?: PreferredLanguage[];
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   profilePhotoUrl?: string | null;
@@ -62,8 +65,12 @@ export interface DriverPersonalInfoForm {
   fullNameOnId: string;
   dateOfBirth: string;
   idOrResidencyNumber: string;
-  coverageCity: string;
-  coverageAreas: string[];
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  preferredLanguages: PreferredLanguage[];
+  emergencyContactName: string;
+  emergencyContactPhone: string;
 }
 
 export interface DriverPersonalInfoPayload {
@@ -93,9 +100,7 @@ export interface DriverProfile {
   lastName: string;
   phone: string;
   countryCode: string | null;
-  countryCodes?: string[];
   city: string | null;
-  cities?: string[];
   coverageAreas: string[];
   fullNameOnId: string | null;
   dateOfBirth: string | null;
@@ -103,7 +108,7 @@ export interface DriverProfile {
   addressLine1: string | null;
   addressLine2: string | null;
   postalCode: string | null;
-  preferredLanguage: string | null;
+  preferredLanguages: PreferredLanguage[];
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   profilePhotoUrl: string | null;
@@ -131,16 +136,29 @@ export interface DriverOnboardingResponse {
   nextStep: DriverNextStep;
 }
 
-export type VehicleType =
-  | 'CAR_CARRIER'
-  | 'FLATBED_TRUCK'
-  | 'TOW_TRUCK'
+export type DriverVehicleType =
+  | 'OPEN_CAR_CARRIER'
+  | 'ENCLOSED_CARRIER'
+  | 'SMALL_TRUCK'
+  | 'MEDIUM_TRUCK'
+  | 'PICKUP'
   | 'VAN'
-  | 'BOX_TRUCK'
-  | 'PICKUP_TRUCK'
-  | 'MOTORCYCLE_TRAILER'
-  | 'FURNITURE_TRUCK'
+  | 'TOW_TRUCK'
+  | 'MOTORCYCLE';
+
+export type VehicleType = DriverVehicleType;
+
+export type DriverCargoType =
+  | 'VEHICLE'
+  | 'MOTORCYCLE'
+  | 'GOODS'
+  | 'FURNITURE'
   | 'OTHER';
+
+export type DriverVehicleCondition =
+  | 'EXCELLENT'
+  | 'GOOD'
+  | 'NEEDS_MAINTENANCE';
 
 export type DriverDocumentType =
   | 'PERSONAL_SELFIE'
@@ -160,14 +178,7 @@ export type DriverDocumentType =
 
 export type IdentityDocumentKind = 'NATIONAL_ID' | 'RESIDENCY_CARD';
 
-export type DriverOnboardingDocumentType =
-  | 'PERSONAL_SELFIE'
-  | 'ID_FRONT'
-  | 'ID_BACK'
-  | 'DRIVING_LICENSE'
-  | 'SELF_IDENTITY_VERIFICATION';
-
-export type DocumentStatus =
+ export type DocumentStatus =
   | 'UPLOADED'
   | 'UNDER_REVIEW'
   | 'PENDING_REVIEW'
@@ -180,6 +191,7 @@ export interface CreateDriverVehiclePayload {
   model: string;
   year: number;
   plateNumber: string;
+  condition: DriverVehicleCondition;
   color?: string;
   capacityKg?: number;
   lengthCm?: number;
@@ -188,12 +200,15 @@ export interface CreateDriverVehiclePayload {
   hasTrailer: boolean;
 }
 
+export type UpdateDriverVehiclePayload = Partial<CreateDriverVehiclePayload>;
+
 export interface DriverVehicleForm {
   vehicleType: VehicleType | '';
   make: string;
   model: string;
   year: string;
   plateNumber: string;
+  condition: DriverVehicleCondition | '';
   color: string;
   capacityKg: string;
   lengthCm: string;
@@ -202,6 +217,17 @@ export interface DriverVehicleForm {
   hasTrailer: boolean;
 }
 
+export type DriverVehiclePhotoType =
+  | 'FRONT'
+  | 'REAR'
+  | 'SIDE'
+  | 'PLATE';
+
+export type DriverVehicleDocumentType =
+  | 'REGISTRATION_FRONT'
+  | 'REGISTRATION_BACK'
+  | 'INSURANCE';
+
 export interface LocalDocumentAsset {
   uri: string;
   fileName?: string;
@@ -209,6 +235,29 @@ export interface LocalDocumentAsset {
   fileSize?: number;
   width?: number;
   height?: number;
+}
+
+export interface UploadDriverDocumentPayload {
+  documentType:
+    | 'PERSONAL_SELFIE'
+    | 'ID_FRONT'
+    | 'ID_BACK'
+    | 'DRIVING_LICENSE'
+    | 'SELF_IDENTITY_VERIFICATION';
+  file: LocalDocumentAsset;
+  expiryDate?: string;
+  idDocumentKind?: IdentityDocumentKind;
+}
+
+export interface DriverDocumentsState {
+  personalSelfie?: LocalDocumentAsset;
+  idFront?: LocalDocumentAsset;
+  idBack?: LocalDocumentAsset;
+  drivingLicense?: LocalDocumentAsset;
+  selfIdentityVerification?: LocalDocumentAsset;
+  idDocumentKind: IdentityDocumentKind | '';
+  idExpiryDate: string;
+  drivingLicenseExpiryDate: string;
 }
 
 export interface DriverDocumentsForm {
@@ -236,7 +285,7 @@ export interface DriverDocument {
 
 export interface DriverOnboardingDocument {
   id: string;
-  type: DriverOnboardingDocumentType;
+  type: DriverDocumentType;
   url: string;
   mimeType: string;
   sizeBytes: number;
@@ -250,67 +299,169 @@ export interface DriverOnboardingDocument {
 export interface DriverDocumentsStatusResponse {
   onboardingStatus: DriverStatus;
   identityDocumentKind: IdentityDocumentKind | null;
-  requiredDocuments: DriverOnboardingDocumentType[];
+  requiredDocuments: DriverDocumentType[];
   uploadedDocuments: DriverOnboardingDocument[];
-  missingDocuments: DriverOnboardingDocumentType[];
+  missingDocuments: DriverDocumentType[];
   missingDocumentLabels: string[];
   canSubmitForReview: boolean;
   submittedForReviewAt: string | null;
   nextStep: DriverNextStep;
 }
 
-export interface DriverDocumentUploadItem {
-  documentType: DriverOnboardingDocumentType;
-  file?: LocalDocumentAsset;
-  uploaded?: DriverOnboardingDocument;
-  required: boolean;
-}
-
-export interface DriverDocumentsState {
-  personalSelfie?: LocalDocumentAsset;
-  idFront?: LocalDocumentAsset;
-  idBack?: LocalDocumentAsset;
-  drivingLicense?: LocalDocumentAsset;
-  selfIdentityVerification?: LocalDocumentAsset;
-  idDocumentKind: IdentityDocumentKind | '';
-  idExpiryDate: string;
-  drivingLicenseExpiryDate: string;
-}
-
-export interface UploadDriverDocumentPayload {
-  documentType: DriverOnboardingDocumentType;
-  file: LocalDocumentAsset;
-  expiryDate?: string;
-  idDocumentKind?: IdentityDocumentKind;
-}
-
-export type DriverDocumentResponse = DriverOnboardingDocument;
-export type DriverDocumentsChecklistResponse = DriverDocumentsStatusResponse;
-export type SubmitDriverDocumentsReviewResponse = DriverDocumentsStatusResponse;
-
 export interface DriverVehicle {
   id: string;
+  driverId?: string;
   vehicleType: VehicleType;
+  vehicleTypeLegacy?: string;
+  brand?: string;
   make: string;
   model: string;
   year: number;
+  licensePlateNumber?: string;
   plateNumber: string;
+  condition: DriverVehicleCondition;
   color: string | null;
+  loadProfileName?: string | null;
   capacityKg: number | null;
   lengthCm: number | null;
   widthCm: number | null;
   heightCm: number | null;
+  dimensionsAreStandard?: boolean;
+  allowedCargoTypes?: string[];
+  workingSchedule?: {
+    dayOfWeek: DayOfWeek;
+    isAvailable: boolean;
+    timeRanges: {
+      startTime: string;
+      endTime: string;
+    }[];
+  }[];
+  isDefaultLoadProfile?: boolean;
   hasTrailer: boolean;
+  frontPhotoUrl?: string | null;
+  rearPhotoUrl?: string | null;
+  sidePhotoUrl?: string | null;
+  licensePlatePhotoUrl?: string | null;
+  registrationFrontDocumentUrl?: string | null;
+  registrationBackDocumentUrl?: string | null;
+  insuranceDocumentUrl?: string | null;
+  insuranceExpiryDate?: string | null;
+  registrationExpiryDate?: string | null;
+  completeness?: DriverVehicleCompletenessResponse;
+  status?: string;
+  verificationStatus?: string;
+  rejectionReason?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
   documents?: DriverDocument[];
 }
 
+export interface DriverVehicleCompletenessResponse {
+  hasBasicInfo: boolean;
+  hasLoadCapacityProfile?: boolean;
+  hasRequiredPhotos: boolean;
+  hasRequiredDocuments: boolean;
+  isComplete: boolean;
+  missingFields: string[];
+}
+
+export interface CargoDimensions {
+  lengthM: number | null;
+  widthM: number | null;
+  heightM: number | null;
+}
+
+export interface WorkingAvailabilityTimeRange {
+  startTime: string;
+  endTime: string;
+}
+
+export interface WorkingAvailabilityItem {
+  dayOfWeek: DayOfWeek;
+  isAvailable: boolean;
+  timeRanges: WorkingAvailabilityTimeRange[];
+}
+
+export interface DriverVehicleLoadFormDay {
+  dayOfWeek: DayOfWeek;
+  label: string;
+  isAvailable: boolean;
+  startTime: string;
+  endTime: string;
+}
+
+export interface DriverVehicleLoadFormValues {
+  name: string;
+  maxLoadKg: string;
+  cargoLengthM: string;
+  cargoWidthM: string;
+  cargoHeightM: string;
+  allowedCargoTypes: DriverCargoType[];
+  workingSchedule: DriverVehicleLoadFormDay[];
+  isDefault: boolean;
+}
+
+export interface DriverVehicleLoadPayload {
+  name?: string;
+  maxLoadKg?: number;
+  cargoLengthM?: number;
+  cargoWidthM?: number;
+  cargoHeightM?: number;
+  dimensionsAreStandard?: boolean;
+  allowedCargoTypes: DriverCargoType[];
+  workingSchedule: WorkingAvailabilityItem[];
+  isDefault?: boolean;
+}
+
+export interface DriverVehicleLoadResponse {
+  id: string;
+  driverId: string;
+  vehicleId: string;
+  name: string | null;
+  vehicleType: VehicleType;
+  maxLoadKg: number | null;
+  cargoLengthM: number | null;
+  cargoWidthM: number | null;
+  cargoHeightM: number | null;
+  dimensionsAreStandard: boolean;
+  allowedCargoTypes: DriverCargoType[];
+  workingSchedule: WorkingAvailabilityItem[];
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DriverVehicleLoadsResponse {
+  loadCapacities: DriverVehicleLoadResponse[];
+}
+
+export type SetDefaultVehicleLoadResponse = DriverVehicleLoadResponse;
+
 export interface DriverVehicleDocumentsResponse {
   vehicle: DriverVehicle;
   documents: DriverDocument[];
   nextStep: DriverNextStep;
+}
+
+export interface UploadDriverVehiclePhotoPayload {
+  photoType: DriverVehiclePhotoType;
+  file: LocalDocumentAsset;
+}
+
+export interface UploadDriverVehicleDocumentPayload {
+  documentType: DriverVehicleDocumentType;
+  file: LocalDocumentAsset;
+}
+
+export interface UploadDriverVehicleAssetsPayload {
+  frontPhoto: LocalDocumentAsset;
+  rearPhoto: LocalDocumentAsset;
+  sidePhoto: LocalDocumentAsset;
+  licensePlatePhoto: LocalDocumentAsset;
+  registrationFrontDocument: LocalDocumentAsset;
+  registrationBackDocument: LocalDocumentAsset;
+  insuranceDocument: LocalDocumentAsset;
 }
 
 export interface DriverAvailabilityDay {
@@ -494,6 +645,9 @@ export interface DriverRequestAlertSummary {
   submittedAt: string | null;
 }
 
+export type DriverRequestNotificationPayload = DriverRequestAlertSummary;
+export type DriverRequestListItem = DriverRequestAlertSummary;
+
 export interface DriverRequestAlertsResponse {
   alerts: DriverRequestAlertSummary[];
 }
@@ -508,6 +662,7 @@ export interface RequestPhoto {
 }
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  offerStatus: DriverOfferStatus | null;
   customer: {
     firstName: string | null;
     rating: number | null;
@@ -580,6 +735,22 @@ export interface DriverOffer {
   status: DriverOfferStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export type DriverOfferResponse = DriverOffer;
+export type CreateDriverOfferPayload = SendDriverPriceOfferPayload;
+export type CreateDriverOfferResponse = SendDriverPriceOfferResponse;
+
+export interface DriverAvailabilityStatus {
+  isOnline: boolean;
+  driverStatus: DriverStatus;
+  nextStep: DriverNextStep;
+}
+
+export interface DriverRequestChatState {
+  isAvailable: boolean;
+  requestId: string;
+  reason?: string;
 }
 
 export interface SendDriverPriceOfferResponse {

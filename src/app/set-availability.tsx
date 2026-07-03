@@ -367,10 +367,14 @@ export default function SetAvailabilityScreen() {
         return;
       }
 
-      if (normalized.includes('vehicle') || normalized.includes('documents')) {
-        setSubmitError('Vehicle/documents are incomplete. Redirecting...');
+      if (
+        normalized.includes('vehicle') ||
+        normalized.includes('documents') ||
+        normalized.includes('load profile')
+      ) {
+        setSubmitError('Vehicle, load setup, or documents are incomplete. Redirecting...');
         setTimeout(() => {
-          router.replace('/vehicle-information');
+          router.replace('/manage-loads');
         }, 700);
         return;
       }

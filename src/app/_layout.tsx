@@ -1,5 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
@@ -22,7 +21,10 @@ function AppNavigator() {
       <Stack.Screen name="register" options={{ title: 'Driver Registration' }} />
       <Stack.Screen name="complete-profile" options={{ title: 'Complete Profile' }} />
       <Stack.Screen name="vehicle-documents" options={{ title: 'Driver Documents' }} />
+      <Stack.Screen name="my-vehicles" options={{ title: 'My Vehicles' }} />
       <Stack.Screen name="vehicle-information" options={{ title: 'Vehicle Information' }} />
+      <Stack.Screen name="manage-loads" options={{ title: 'Manage Loads' }} />
+      <Stack.Screen name="vehicle-load" options={{ title: 'Set Load Capacity' }} />
       <Stack.Screen name="set-availability" options={{ title: 'Set Availability' }} />
       <Stack.Screen name="waiting-approval" options={{ title: 'Waiting Approval' }} />
       <Stack.Screen name="driver-home" options={{ title: 'Driver Home' }} />
@@ -35,6 +37,7 @@ function AppNavigator() {
       <Stack.Screen name="go-to-pickup" options={{ title: 'Go to Pickup Location' }} />
       <Stack.Screen name="pickup-item" options={{ title: 'Pickup Item' }} />
       <Stack.Screen name="deliver-item" options={{ title: 'Deliver Item' }} />
+      <Stack.Screen name="additional-expense" options={{ title: 'Additional Expenses' }} />
       <Stack.Screen name="driver-trip-completed" options={{ title: 'Trip Completed' }} />
       <Stack.Screen name="socket-debug" options={{ title: 'Socket Debug' }} />
       <Stack.Screen name="review-request-details" options={{ title: 'Request Details' }} />
@@ -43,6 +46,7 @@ function AppNavigator() {
         name="offer-waiting-response"
         options={{ title: 'Waiting for Customer Response' }}
       />
+      <Stack.Screen name="request-chat" options={{ title: 'Chat with Customer' }} />
       <Stack.Screen name="explore" options={{ title: 'Explore' }} />
     </Stack>
   );

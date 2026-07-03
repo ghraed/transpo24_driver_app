@@ -26,6 +26,11 @@ export const COUNTRY_OPTIONS: CountryOption[] = [
     cities: ['Alexandria', 'Aswan', 'Cairo', 'Giza', 'Hurghada', 'Luxor', 'Mansoura', 'Sharm El Sheikh', 'Suez', 'Tanta'],
   },
   {
+    code: 'FR',
+    name: 'France',
+    cities: ['Bordeaux', 'Lille', 'Lyon', 'Marseille', 'Nice', 'Nantes', 'Paris', 'Strasbourg', 'Toulouse'],
+  },
+  {
     code: 'JO',
     name: 'Jordan',
     cities: ['Amman', 'Aqaba', 'Irbid', 'Jerash', 'Madaba', 'Mafraq', 'Salt', 'Zarqa'],

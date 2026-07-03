@@ -15,7 +15,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
+import {
+  connectSocket,
+  joinTripRoom,
+  leaveTripRoom,
+  onAdditionalChargeAdded,
+  onItemDelivered,
+  onItemPickedUp,
+  onTripStatusUpdated,
+} from '@/services/socketService';
 import type { DriverAcceptedJobDetailsResponse } from '@/types/auth';
+import { calculateDistanceMeters } from '@/utils/pickupValidation';
 
 function formatDate(value: string | null): string {
   if (!value) return 'N/A';
@@ -51,15 +61,93 @@ function formatVehicleCondition(condition: string | null): string {
   if (!condition) return 'N/A';
   return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
 }
+
+function formatRequestStatus(status: string): string {
+  return status.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
+}
+
+function toProgressStages(status: string): Array<{ label: string; state: 'done' | 'current' | 'upcoming' }> {
+  const order = [
+    'DRIVER_ASSIGNED',
+    'DRIVER_GOING_TO_PICKUP',
+    'DRIVER_ARRIVED_PICKUP',
+    'ITEM_PICKED_UP',
+    'DRIVER_GOING_TO_DROPOFF',
+    'DELIVERED',
+  ] as const;
+
+  const labels: Record<(typeof order)[number], string> = {
+    DRIVER_ASSIGNED: 'Accept Request',
+    DRIVER_GOING_TO_PICKUP: 'On the Way to Pickup',
+    DRIVER_ARRIVED_PICKUP: 'Arrived at Location',
+    ITEM_PICKED_UP: 'Picked Up',
+    DRIVER_GOING_TO_DROPOFF: 'On the Way to Delivery',
+    DELIVERED: 'Delivered',
+  };
+
+  const normalizedStatus =
+    status === 'ACCEPTED'
+      ? 'DRIVER_ASSIGNED'
+      : status === 'PICKUP_IN_PROGRESS' || status === 'IN_TRANSIT'
+      ? 'DRIVER_GOING_TO_DROPOFF'
+      : status === 'COMPLETED'
+      ? 'DELIVERED'
+      : status;
+
+  const currentIndex = order.indexOf(normalizedStatus as (typeof order)[number]);
+
+  return order.map((item, index) => ({
+    label: labels[item],
+    state:
+      currentIndex === -1
+        ? index === 0
+          ? 'current'
+          : 'upcoming'
+        : index < currentIndex
+        ? 'done'
+        : index === currentIndex
+        ? 'current'
+        : 'upcoming',
+  }));
+}
+
+function getNextAction(status: string): {
+  label: string;
+  route: '/go-to-pickup' | '/pickup-item' | '/deliver-item';
+  enabled: boolean;
+} {
+  switch (status) {
+    case 'ACCEPTED':
+      return { label: 'Accept Request', route: '/go-to-pickup', enabled: true };
+    case 'DRIVER_ASSIGNED':
+      return { label: 'Accept Request', route: '/go-to-pickup', enabled: true };
+    case 'DRIVER_GOING_TO_PICKUP':
+      return { label: 'On the Way to Pickup', route: '/go-to-pickup', enabled: true };
+    case 'DRIVER_ARRIVED_PICKUP':
+      return { label: 'Picked Up', route: '/pickup-item', enabled: true };
+    case 'ITEM_PICKED_UP':
+    case 'PICKUP_IN_PROGRESS':
+    case 'IN_TRANSIT':
+    case 'DRIVER_GOING_TO_DROPOFF':
+      return { label: 'On the Way to Delivery', route: '/deliver-item', enabled: true };
+    case 'DELIVERED':
+    case 'COMPLETED':
+      return { label: 'Delivered', route: '/deliver-item', enabled: false };
+    default:
+      return { label: 'Waiting for next step', route: '/go-to-pickup', enabled: false };
+  }
+}
+
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { accessToken, signOut } = useAuth();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
 
   const [details, setDetails] = useState<DriverAcceptedJobDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId.trim()) {
@@ -96,25 +184,89 @@ export default function AcceptedJobDetailsScreen() {
     void loadDetails();
   }, [loadDetails]);
 
-  const canGoToPickup = useMemo(() => {
+  useEffect(() => {
+    if (!accessToken || !requestId.trim()) return;
+
+    try {
+      connectSocket(accessToken);
+      joinTripRoom(requestId);
+    } catch {
+      return;
+    }
+
+    const unsubscribeStatus = onTripStatusUpdated((payload) => {
+      if (payload.tripId !== requestId) return;
+      setStatusMessage(`Status updated to ${formatRequestStatus(payload.status)}.`);
+      if (payload.status === 'DELIVERED') {
+        router.replace({
+          pathname: '/driver-trip-completed',
+          params: { tripId: requestId, deliveredAt: payload.updatedAt },
+        });
+        return;
+      }
+      void loadDetails();
+    });
+
+    const unsubscribePickedUp = onItemPickedUp((payload) => {
+      if (payload.tripId !== requestId) return;
+      setStatusMessage('Pickup confirmed successfully.');
+      void loadDetails();
+    });
+
+    const unsubscribeDelivered = onItemDelivered((payload) => {
+      if (payload.tripId !== requestId) return;
+      router.replace({
+        pathname: '/driver-trip-completed',
+        params: { tripId: requestId, deliveredAt: payload.deliveredAt },
+      });
+    });
+
+    const unsubscribeAdditionalCharge = onAdditionalChargeAdded((payload) => {
+      if (payload.requestId !== requestId) return;
+      setStatusMessage(
+        `Additional expense submitted: ${formatMoney(payload.walletDeduction.amount, payload.walletDeduction.currency)} will be deducted from the customer wallet.`,
+      );
+    });
+
+    return () => {
+      unsubscribeStatus();
+      unsubscribePickedUp();
+      unsubscribeDelivered();
+      unsubscribeAdditionalCharge();
+      leaveTripRoom(requestId);
+    };
+  }, [accessToken, loadDetails, requestId, router]);
+
+  const nextAction = useMemo(
+    () => (details ? getNextAction(String(details.requestStatus)) : null),
+    [details],
+  );
+
+  const progressStages = useMemo(
+    () => (details ? toProgressStages(String(details.requestStatus)) : []),
+    [details],
+  );
+
+  const canSubmitExpense = useMemo(() => {
     if (!details) return false;
-    return (
-      details.requestStatus === 'ACCEPTED' ||
-      details.requestStatus === 'DRIVER_ASSIGNED' ||
-      details.requestStatus === 'DRIVER_GOING_TO_PICKUP' ||
-      details.requestStatus === 'DRIVER_ARRIVED_PICKUP'
-    );
+    return !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(String(details.requestStatus));
   }, [details]);
 
-  const canGoToDropoff = useMemo(() => {
-    if (!details) return false;
-    const requestStatus = String(details.requestStatus);
-    return (
-      requestStatus === 'ITEM_PICKED_UP' ||
-      requestStatus === 'PICKUP_IN_PROGRESS' ||
-      requestStatus === 'IN_TRANSIT' ||
-      requestStatus === 'DRIVER_GOING_TO_DROPOFF'
+  const tripDistanceLabel = useMemo(() => {
+    if (!details) return 'Distance unavailable';
+    if (
+      !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) ||
+      !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)
+    ) {
+      return 'Distance unavailable';
+    }
+
+    const distanceMeters = calculateDistanceMeters(
+      { latitude: details.pickup.latitude as number, longitude: details.pickup.longitude as number },
+      { latitude: details.dropoff.latitude as number, longitude: details.dropoff.longitude as number },
     );
+
+    return `${(distanceMeters / 1000).toFixed(1)} km`;
   }, [details]);
 
   const openMap = async (latitude: number | null, longitude: number | null): Promise<void> => {
@@ -166,12 +318,51 @@ export default function AcceptedJobDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.successHeader}>
-          <Text style={styles.title}>Your offer was accepted</Text>
-          <Text style={styles.subtitle}>Review the job details and get ready for pickup.</Text>
+          <Text style={styles.title}>Active Request</Text>
+          <Text style={styles.subtitle}>Review the job details and continue the next required execution step.</Text>
           <Text style={styles.offerPrice}>
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
           <Text style={styles.metaText}>Accepted at: {formatDate(details.acceptedAt)}</Text>
+          <Text style={styles.walletNotice}>
+            The amount has been reserved from the customer wallet.
+          </Text>
+          {statusMessage ? <Text style={styles.statusNotice}>{statusMessage}</Text> : null}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Request Summary</Text>
+          <Text style={styles.metaText}>Service: {details.service?.nameEn || details.service?.key || 'Transport request'}</Text>
+          <Text style={styles.metaText}>Pickup: {details.pickup.address || 'Address unavailable'}</Text>
+          <Text style={styles.metaText}>Dropoff: {details.dropoff.address || 'Address unavailable'}</Text>
+          <Text style={styles.metaText}>Distance: {tripDistanceLabel}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Request Progress</Text>
+          <Text style={styles.progressLabel}>Current status: {formatRequestStatus(String(details.requestStatus))}</Text>
+          <Text style={styles.metaText}>Next action: {nextAction?.label || 'N/A'}</Text>
+          <View style={styles.progressList}>
+            {progressStages.map((stage) => (
+              <View key={stage.label} style={styles.progressRow}>
+                <View
+                  style={[
+                    styles.progressDot,
+                    stage.state === 'done' && styles.progressDotDone,
+                    stage.state === 'current' && styles.progressDotCurrent,
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.progressText,
+                    stage.state === 'current' && styles.progressTextCurrent,
+                  ]}
+                >
+                  {stage.label}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -184,6 +375,17 @@ export default function AcceptedJobDetailsScreen() {
             Rating:{' '}
             {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
           </Text>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() =>
+              router.push({
+                pathname: '/request-chat',
+                params: { requestId: details.requestId },
+              })
+            }
+          >
+            <Text style={styles.secondaryButtonText}>Chat with Customer</Text>
+          </Pressable>
         </View>
 
         <View style={styles.card}>
@@ -296,17 +498,34 @@ export default function AcceptedJobDetailsScreen() {
             </ScrollView>
           )}
         </View>
+
+        {canSubmitExpense ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Additional Expenses</Text>
+            <Text style={styles.metaText}>
+              Submit unexpected costs with an invoice or receipt photo. This amount will be deducted from the customer&apos;s wallet.
+            </Text>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() =>
+                router.push((`/additional-expense?requestId=${encodeURIComponent(details.requestId)}`) as never)
+              }
+            >
+              <Text style={styles.secondaryButtonText}>Submit Expense</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
 
       <View style={styles.footer}>
         <Pressable
           style={[
             styles.primaryActionButton,
-            !canGoToPickup && !canGoToDropoff && styles.disabledButton,
+            !nextAction?.enabled && styles.disabledButton,
           ]}
           onPress={() =>
             router.push({
-              pathname: canGoToDropoff ? '/deliver-item' : '/go-to-pickup',
+              pathname: nextAction?.route || '/go-to-pickup',
               params: {
                 tripId: details.requestId,
                 pickupLatitude: String(details.pickup.latitude ?? ''),
@@ -318,10 +537,10 @@ export default function AcceptedJobDetailsScreen() {
               },
             })
           }
-          disabled={!canGoToPickup && !canGoToDropoff}
+          disabled={!nextAction?.enabled}
         >
           <Text style={styles.primaryActionButtonText}>
-            {canGoToDropoff ? 'Go to Dropoff Location' : 'Go to Pickup Location'}
+            {nextAction?.label || 'Waiting for next step'}
           </Text>
         </Pressable>
       </View>
@@ -391,6 +610,50 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#14532D',
+  },
+  walletNotice: {
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statusNotice: {
+    color: '#1D4ED8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  progressLabel: {
+    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  progressList: {
+    marginTop: 6,
+    gap: 6,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: '#CBD5E1',
+  },
+  progressDotDone: {
+    backgroundColor: '#16A34A',
+  },
+  progressDotCurrent: {
+    backgroundColor: '#2563EB',
+  },
+  progressText: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  progressTextCurrent: {
+    color: '#0F172A',
+    fontWeight: '700',
   },
   card: {
     backgroundColor: '#FFFFFF',

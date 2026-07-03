@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 
 import type {
+  AdditionalExpenseResponse,
   DriverArrivedPickupConfirmedPayload,
   ItemPickedUpPayload,
   ItemDeliveredPayload,
@@ -8,6 +9,8 @@ import type {
   DriverLocationUpdatePayload,
   DriverLocationUpdatedPayload,
   OfferAcceptedPayload,
+  OfferRejectedPayload,
+  RequestNewPayload,
   TripStatusUpdatedPayload,
 } from '@/types/trip.types';
 
@@ -139,6 +142,20 @@ export function onOfferAccepted(callback: (payload: OfferAcceptedPayload) => voi
   return () => instance.off('offerAccepted', callback);
 }
 
+export function onRequestNew(callback: (payload: RequestNewPayload) => void): () => void {
+  const instance = getSocket();
+  instance.off('requestNew', callback);
+  instance.on('requestNew', callback);
+  return () => instance.off('requestNew', callback);
+}
+
+export function onOfferRejected(callback: (payload: OfferRejectedPayload) => void): () => void {
+  const instance = getSocket();
+  instance.off('offerRejected', callback);
+  instance.on('offerRejected', callback);
+  return () => instance.off('offerRejected', callback);
+}
+
 export function onDriverLocationUpdated(
   callback: (payload: DriverLocationUpdatedPayload) => void,
 ): () => void {
@@ -182,6 +199,15 @@ export function onItemDelivered(
   instance.off('itemDelivered', callback);
   instance.on('itemDelivered', callback);
   return () => instance.off('itemDelivered', callback);
+}
+
+export function onAdditionalChargeAdded(
+  callback: (payload: AdditionalExpenseResponse) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('additionalChargeAdded', callback);
+  instance.on('additionalChargeAdded', callback);
+  return () => instance.off('additionalChargeAdded', callback);
 }
 
 export function onSocketDisconnect(callback: (reason: string) => void): () => void {

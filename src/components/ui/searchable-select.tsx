@@ -9,6 +9,7 @@ export interface SearchableSelectOption {
 interface SearchableSelectProps {
   disabled?: boolean;
   emptyMessage: string;
+  multiple?: boolean;
   onSelect: (value: string) => void;
   options: SearchableSelectOption[];
   placeholder: string;
@@ -16,20 +17,19 @@ interface SearchableSelectProps {
   selectedLabel?: string;
   selectedValues?: string[];
   title: string;
-  multiSelect?: boolean;
 }
 
 export function SearchableSelect({
   disabled = false,
   emptyMessage,
+  multiple = false,
   onSelect,
   options,
   placeholder,
   searchPlaceholder,
   selectedLabel,
-  selectedValues,
+  selectedValues = [],
   title,
-  multiSelect = false,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -44,8 +44,6 @@ export function SearchableSelect({
     setIsOpen(false);
     setQuery('');
   };
-
-  const selectedValueSet = useMemo(() => new Set(selectedValues ?? []), [selectedValues]);
 
   return (
     <>
@@ -89,22 +87,26 @@ export function SearchableSelect({
                 <Pressable
                   onPress={() => {
                     onSelect(item.value);
-                    if (!multiSelect) {
+                    if (!multiple) {
                       close();
                     }
                   }}
                   style={styles.optionRow}
                 >
-                  {multiSelect ? (
-                    <Text style={styles.optionCheckmark}>
-                      {selectedValueSet.has(item.value) ? '✓' : ''}
-                    </Text>
-                  ) : null}
                   <Text style={styles.optionText}>{item.label}</Text>
+                  {multiple && selectedValues.includes(item.value) ? (
+                    <Text style={styles.selectedMark}>✓</Text>
+                  ) : null}
                 </Pressable>
               )}
               ListEmptyComponent={<Text style={styles.emptyText}>{emptyMessage}</Text>}
             />
+
+            {multiple ? (
+              <Pressable style={styles.doneButton} onPress={close}>
+                <Text style={styles.doneButtonText}>Done</Text>
+              </Pressable>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -186,25 +188,36 @@ const styles = StyleSheet.create({
   },
   optionRow: {
     paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E2E8F0',
-  },
-  optionCheckmark: {
-    width: 24,
-    fontSize: 16,
-    color: '#1D4ED8',
-    fontWeight: '700',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   optionText: {
     fontSize: 15,
     color: '#0F172A',
-    flex: 1,
+  },
+  selectedMark: {
+    color: '#16A34A',
+    fontSize: 16,
+    fontWeight: '700',
   },
   emptyText: {
     paddingVertical: 24,
     textAlign: 'center',
     color: '#64748B',
+  },
+  doneButton: {
+    minHeight: 46,
+    borderRadius: 10,
+    backgroundColor: '#1D4ED8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

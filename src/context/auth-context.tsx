@@ -4,11 +4,11 @@ import {
   approveDriverForTesting as approveDriverForTestingApi,
   getDriverAvailability,
   getDriverMe,
-  getMyDriverOnboarding,
+  getDriverOnboardingStatus,
   loginDriver,
   registerDriver,
   updateDriverAvailability,
-  updateMyDriverOnboardingProfile,
+  updateDriverPersonalInfo,
   updateDriverProfile,
 } from '@/lib/api';
 import { normalizeDriverNextStep } from '@/lib/driver-onboarding';
@@ -94,13 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [restoreSession]);
 
   const refreshDriverOnboarding = useCallback(async (): Promise<DriverOnboardingResponse> => {
-    return getMyDriverOnboarding();
+    return getDriverOnboardingStatus();
   }, []);
 
   const resolvePostAuthNextStep = useCallback(
     async (fallbackStep?: string): Promise<DriverNextStep> => {
       try {
-        const onboarding = await getMyDriverOnboarding();
+        const onboarding = await getDriverOnboardingStatus();
         const normalizedOnboardingStep = normalizeDriverNextStep(
           onboarding.nextStep,
         );
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const saveDriverPersonalInfo = useCallback(
     async (payload: DriverPersonalInfoPayload): Promise<DriverOnboardingResponse> => {
-      const updated = await updateMyDriverOnboardingProfile(payload);
+      const updated = await updateDriverPersonalInfo(payload);
       try {
         const me = await getDriverMe();
         applyDriverMeResponse(me);
