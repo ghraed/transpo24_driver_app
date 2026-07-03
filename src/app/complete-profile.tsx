@@ -45,6 +45,17 @@ const PREFERRED_LANGUAGE_OPTIONS: Array<{ label: string; value: PreferredLanguag
   { label: 'French', value: 'fr' },
   { label: 'Italian', value: 'it' },
 ];
+const PERSONAL_INFO_TEST_DEFAULTS: DriverPersonalInfoForm = {
+  fullNameOnId: 'Test Driver Account',
+  dateOfBirth: '1995-05-15',
+  idOrResidencyNumber: 'DRV-12345678',
+  addressLine1: 'Hamra Main Street',
+  addressLine2: 'Building 12, Floor 3',
+  postalCode: '1103',
+  preferredLanguages: ['en', 'ar'],
+  emergencyContactName: 'Test Emergency Contact',
+  emergencyContactPhone: '+96170002000',
+};
 
 function formatSelectedLanguagesLabel(values: PreferredLanguage[]): string | undefined {
   if (values.length === 0) return undefined;
@@ -63,15 +74,7 @@ export default function CompleteProfileScreen() {
     useAuth();
 
   const [form, setForm] = useState<DriverPersonalInfoForm>({
-    fullNameOnId: '',
-    dateOfBirth: '',
-    idOrResidencyNumber: '',
-    addressLine1: '',
-    addressLine2: '',
-    postalCode: '',
-    preferredLanguages: [],
-    emergencyContactName: '',
-    emergencyContactPhone: '',
+    ...PERSONAL_INFO_TEST_DEFAULTS,
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -81,6 +84,8 @@ export default function CompleteProfileScreen() {
   const [currentTimeMs] = useState<number>(() => Date.now());
   const [isDatePickerVisible, setIsDatePickerVisible] = useState<boolean>(false);
   const hasUserEditedRef = useRef<boolean>(false);
+  const hasDriver = Boolean(driver);
+  const preferredLanguagesKey = (driver?.preferredLanguages ?? []).join('|');
 
   const applyFormFromSources = useCallback((
     onboarding?: DriverOnboardingResponse | null,
@@ -89,17 +94,25 @@ export default function CompleteProfileScreen() {
 
     const derivedFullName =
       onboarding?.fullNameOnId?.trim() ||
-      `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim();
+      `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim() ||
+      PERSONAL_INFO_TEST_DEFAULTS.fullNameOnId;
     setForm({
       fullNameOnId: derivedFullName,
-      dateOfBirth: toDateOnly(onboarding?.dateOfBirth ?? driver?.dateOfBirth),
-      idOrResidencyNumber: '',
-      addressLine1: driver?.addressLine1 ?? '',
-      addressLine2: driver?.addressLine2 ?? '',
-      postalCode: driver?.postalCode ?? '',
-      preferredLanguages: driver?.preferredLanguages ?? [],
-      emergencyContactName: driver?.emergencyContactName ?? '',
-      emergencyContactPhone: driver?.emergencyContactPhone ?? '',
+      dateOfBirth:
+        toDateOnly(onboarding?.dateOfBirth ?? driver?.dateOfBirth) ||
+        PERSONAL_INFO_TEST_DEFAULTS.dateOfBirth,
+      idOrResidencyNumber: PERSONAL_INFO_TEST_DEFAULTS.idOrResidencyNumber,
+      addressLine1: driver?.addressLine1 ?? PERSONAL_INFO_TEST_DEFAULTS.addressLine1,
+      addressLine2: driver?.addressLine2 ?? PERSONAL_INFO_TEST_DEFAULTS.addressLine2,
+      postalCode: driver?.postalCode ?? PERSONAL_INFO_TEST_DEFAULTS.postalCode,
+      preferredLanguages:
+        driver?.preferredLanguages?.length
+          ? [...driver.preferredLanguages]
+          : [...PERSONAL_INFO_TEST_DEFAULTS.preferredLanguages],
+      emergencyContactName:
+        driver?.emergencyContactName ?? PERSONAL_INFO_TEST_DEFAULTS.emergencyContactName,
+      emergencyContactPhone:
+        driver?.emergencyContactPhone ?? PERSONAL_INFO_TEST_DEFAULTS.emergencyContactPhone,
     });
   }, [
     driver?.addressLine1,
@@ -110,7 +123,7 @@ export default function CompleteProfileScreen() {
     driver?.firstName,
     driver?.lastName,
     driver?.postalCode,
-    driver?.preferredLanguages,
+    preferredLanguagesKey,
   ]);
 
   const loadProfile = useCallback(async (): Promise<void> => {
@@ -135,7 +148,7 @@ export default function CompleteProfileScreen() {
         }
         applyFormFromSources(response);
       } catch {
-        if (driver) {
+        if (hasDriver) {
           applyFormFromSources();
         } else {
           const message = error instanceof Error ? error.message : 'Failed to load profile.';
@@ -145,7 +158,7 @@ export default function CompleteProfileScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [applyFormFromSources, driver, refreshDriverMe, refreshDriverOnboarding, router]);
+  }, [applyFormFromSources, hasDriver, refreshDriverMe, refreshDriverOnboarding, router]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
