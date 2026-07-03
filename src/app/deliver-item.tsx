@@ -1,13 +1,15 @@
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { deliverItem, startDelivery } from '@/services/tripService';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
+import type { LocalDocumentAsset } from '@/types/auth';
 import type { AddressedLocation, DeliverItemRequest, GeoLocation } from '@/types/trip.types';
 import {
   DELIVER_CONFIRM_RADIUS_METERS,
@@ -42,6 +44,17 @@ function buildCompletedRoute(tripId: string, deliveredAt: string): Href {
   return {
     pathname: '/driver-trip-completed',
     params: { tripId, deliveredAt },
+  };
+}
+
+function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
+  return {
+    uri: asset.uri,
+    fileName: asset.fileName ?? undefined,
+    mimeType: asset.mimeType ?? undefined,
+    fileSize: asset.fileSize ?? undefined,
+    width: asset.width,
+    height: asset.height,
   };
 }
 
@@ -82,7 +95,7 @@ export default function DeliverItemScreen() {
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const [isStartingDelivery, setIsStartingDelivery] = useState<boolean>(true);
   const [notes, setNotes] = useState<string>('');
-  const [proofImageUrl, setProofImageUrl] = useState<string>('');
+  const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
   const [locationMessage, setLocationMessage] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -110,12 +123,12 @@ export default function DeliverItemScreen() {
   const payloadValidationMessage = useMemo(() => {
     const payload: DeliverItemRequest = {
       notes: notes.trim() || undefined,
-      proofImageUrl: proofImageUrl.trim() || undefined,
+      proofPhotos,
       latitude: driverLocation?.latitude,
       longitude: driverLocation?.longitude,
     };
     return validateDeliverItemRequest(payload);
-  }, [driverLocation, notes, proofImageUrl]);
+  }, [driverLocation, notes, proofPhotos]);
 
   useEffect(() => {
     let active = true;
@@ -315,7 +328,7 @@ export default function DeliverItemScreen() {
 
     const payload: DeliverItemRequest = {
       notes: notes.trim() || undefined,
-      proofImageUrl: proofImageUrl.trim() || undefined,
+      proofPhotos,
       latitude: latestLocation.latitude,
       longitude: latestLocation.longitude,
     };
@@ -335,6 +348,47 @@ export default function DeliverItemScreen() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const pickFromLibrary = async (): Promise<void> => {
+    setSubmitError('');
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Photo library permission is required to select delivery photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.9,
+      selectionLimit: 8,
+    });
+
+    if (result.canceled) return;
+    setProofPhotos((current) => [...current, ...result.assets.map(toAssetFromImagePicker)].slice(0, 8));
+  };
+
+  const capturePhoto = async (): Promise<void> => {
+    setSubmitError('');
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Camera permission is required to capture delivery photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.9,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+    setProofPhotos((current) => [...current, toAssetFromImagePicker(result.assets[0])].slice(0, 8));
+  };
+
+  const removeProofPhoto = (uri: string): void => {
+    setProofPhotos((current) => current.filter((item) => item.uri !== uri));
   };
 
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
@@ -396,7 +450,7 @@ export default function DeliverItemScreen() {
       </View>
 
       <View style={styles.bottomCard}>
-        <Text style={styles.title}>Deliver Item</Text>
+        <Text style={styles.title}>On the Way to Delivery</Text>
         <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
         <Text style={styles.subText}>Trip ID: {tripId}</Text>
         <Text style={styles.subText}>Pickup: {pickupLocation.address || 'Pickup address unavailable'}</Text>
@@ -413,14 +467,30 @@ export default function DeliverItemScreen() {
           multiline
           maxLength={500}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Proof image URL (optional)"
-          value={proofImageUrl}
-          onChangeText={setProofImageUrl}
-          autoCapitalize="none"
-          keyboardType="url"
-        />
+        <Text style={styles.label}>Delivery Photos</Text>
+        <Text style={styles.helperText}>Take photos at delivery. This is required.</Text>
+        <View style={styles.photoActionsRow}>
+          <Pressable style={styles.secondaryButton} onPress={() => void capturePhoto()}>
+            <Text style={styles.secondaryButtonText}>Take Photo</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryButton} onPress={() => void pickFromLibrary()}>
+            <Text style={styles.secondaryButtonText}>Choose Photos</Text>
+          </Pressable>
+        </View>
+        {proofPhotos.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+            {proofPhotos.map((photo) => (
+              <View key={photo.uri} style={styles.photoCard}>
+                <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+                <Pressable style={styles.removePhotoButton} onPress={() => removeProofPhoto(photo.uri)}>
+                  <Text style={styles.removePhotoButtonText}>Remove</Text>
+                </Pressable>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text style={styles.helperText}>No delivery photos selected yet.</Text>
+        )}
 
         {isStartingDelivery ? (
           <View style={styles.row}>
@@ -450,7 +520,7 @@ export default function DeliverItemScreen() {
               ? 'Too far from dropoff'
               : isSubmitting
               ? 'Confirming delivery...'
-              : 'Confirm Delivery'}
+              : 'Delivered'}
           </Text>
         </Pressable>
       </View>
@@ -514,6 +584,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  label: {
+    color: '#0F172A',
+    fontWeight: '700',
+    fontSize: 14,
+  },
   input: {
     minHeight: 44,
     borderWidth: 1,
@@ -526,6 +601,49 @@ const styles = StyleSheet.create({
   },
   helperText: {
     color: '#475569',
+  },
+  photoActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+  },
+  secondaryButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  photoRow: {
+    gap: 10,
+  },
+  photoCard: {
+    width: 112,
+    gap: 6,
+  },
+  photoPreview: {
+    width: 112,
+    height: 112,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
+  },
+  removePhotoButton: {
+    minHeight: 34,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removePhotoButtonText: {
+    color: '#334155',
+    fontWeight: '600',
+    fontSize: 12,
   },
   warningText: {
     color: '#B45309',

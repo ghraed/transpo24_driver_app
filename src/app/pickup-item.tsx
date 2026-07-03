@@ -1,8 +1,10 @@
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -16,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { onItemPickedUp, onTripStatusUpdated } from '@/services/socketService';
 import { pickupItem } from '@/services/tripService';
+import type { LocalDocumentAsset } from '@/types/auth';
 import type { AddressedLocation, GeoLocation, PickupItemRequest } from '@/types/trip.types';
 import {
   PICKUP_CONFIRM_RADIUS_METERS,
@@ -40,6 +43,17 @@ function parseNumber(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
+  return {
+    uri: asset.uri,
+    fileName: asset.fileName ?? undefined,
+    mimeType: asset.mimeType ?? undefined,
+    fileSize: asset.fileSize ?? undefined,
+    width: asset.width,
+    height: asset.height,
+  };
 }
 
 function toDeliverRouteParams(
@@ -96,7 +110,7 @@ export default function PickupItemScreen() {
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const [locationMessage, setLocationMessage] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [proofImageUrl, setProofImageUrl] = useState<string>('');
+  const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>('');
 
@@ -121,12 +135,12 @@ export default function PickupItemScreen() {
   const payloadValidationMessage = useMemo(() => {
     const payload: PickupItemRequest = {
       notes: notes.trim() || undefined,
-      proofImageUrl: proofImageUrl.trim() || undefined,
+      proofPhotos,
       latitude: driverLocation?.latitude,
       longitude: driverLocation?.longitude,
     };
     return validatePickupItemRequest(payload);
-  }, [driverLocation, notes, proofImageUrl]);
+  }, [driverLocation, notes, proofPhotos]);
 
   const isInvalidRoute = !isTripValid || !hasValidPickup || !hasValidDropoff;
 
@@ -254,7 +268,7 @@ export default function PickupItemScreen() {
 
     const payload: PickupItemRequest = {
       notes: notes.trim() || undefined,
-      proofImageUrl: proofImageUrl.trim() || undefined,
+      proofPhotos,
       latitude: canSendLocation ? latestLocation?.latitude : undefined,
       longitude: canSendLocation ? latestLocation?.longitude : undefined,
     };
@@ -290,6 +304,48 @@ export default function PickupItemScreen() {
     }
   };
 
+  const pickFromLibrary = async (): Promise<void> => {
+    setSubmitError('');
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Photo library permission is required to select pickup photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.9,
+      selectionLimit: 8,
+    });
+
+    if (result.canceled) return;
+    const pickedAssets = result.assets.map(toAssetFromImagePicker);
+    setProofPhotos((current) => [...current, ...pickedAssets].slice(0, 8));
+  };
+
+  const capturePhoto = async (): Promise<void> => {
+    setSubmitError('');
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Camera permission is required to capture pickup photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.9,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+    setProofPhotos((current) => [...current, toAssetFromImagePicker(result.assets[0])].slice(0, 8));
+  };
+
+  const removeProofPhoto = (uri: string): void => {
+    setProofPhotos((current) => current.filter((item) => item.uri !== uri));
+  };
+
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
@@ -305,8 +361,8 @@ export default function PickupItemScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.title}>Pickup Item</Text>
-          <Text style={styles.subTitle}>Confirm that you received the package from the customer.</Text>
+          <Text style={styles.title}>Picked Up</Text>
+          <Text style={styles.subTitle}>Confirm pickup after collecting the cargo or vehicle from the customer.</Text>
           <Text style={styles.metaText}>Trip ID: {tripId}</Text>
         </View>
 
@@ -370,16 +426,32 @@ export default function PickupItemScreen() {
           />
           <Text style={styles.hintText}>{notes.trim().length}/500</Text>
 
-          <Text style={styles.sectionTitle}>Proof Image URL (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="https://example.com/proof.jpg"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            value={proofImageUrl}
-            onChangeText={setProofImageUrl}
-          />
+          <Text style={styles.sectionTitle}>Pickup Photos</Text>
+          <Text style={styles.helperText}>
+            Take photos of the cargo or vehicle at pickup. This is required.
+          </Text>
+          <View style={styles.photoActionsRow}>
+            <Pressable style={styles.secondaryButton} onPress={() => void capturePhoto()}>
+              <Text style={styles.secondaryButtonText}>Take Photo</Text>
+            </Pressable>
+            <Pressable style={styles.secondaryButton} onPress={() => void pickFromLibrary()}>
+              <Text style={styles.secondaryButtonText}>Choose Photos</Text>
+            </Pressable>
+          </View>
+          {proofPhotos.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+              {proofPhotos.map((photo) => (
+                <View key={photo.uri} style={styles.photoCard}>
+                  <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
+                  <Pressable style={styles.removePhotoButton} onPress={() => removeProofPhoto(photo.uri)}>
+                    <Text style={styles.removePhotoButtonText}>Remove</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.hintText}>No pickup photos selected yet.</Text>
+          )}
         </View>
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
@@ -394,7 +466,7 @@ export default function PickupItemScreen() {
               ? 'Getting location...'
               : isSubmitting
               ? 'Confirming pickup...'
-              : 'Confirm Item Pickup'}
+              : 'Picked Up'}
           </Text>
         </Pressable>
 
@@ -476,6 +548,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
   },
+  helperText: {
+    color: '#475569',
+    fontSize: 13,
+  },
   textArea: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -485,6 +561,49 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     textAlignVertical: 'top',
     backgroundColor: '#FFFFFF',
+  },
+  photoActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryButton: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0FDF4',
+  },
+  secondaryButtonText: {
+    color: '#166534',
+    fontWeight: '700',
+  },
+  photoRow: {
+    gap: 10,
+  },
+  photoCard: {
+    width: 112,
+    gap: 6,
+  },
+  photoPreview: {
+    width: 112,
+    height: 112,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
+  },
+  removePhotoButton: {
+    minHeight: 34,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removePhotoButtonText: {
+    color: '#334155',
+    fontWeight: '600',
+    fontSize: 12,
   },
   actionButton: {
     minHeight: 48,

@@ -1,4 +1,9 @@
-import type { DriverRequestAlertStatus, RequestStatus, VehicleCondition } from './auth';
+import type {
+  DriverRequestAlertStatus,
+  LocalDocumentAsset,
+  RequestStatus,
+  VehicleCondition,
+} from './auth';
 
 export type UserRole = "CUSTOMER" | "DRIVER" | "ADMIN";
 
@@ -122,11 +127,24 @@ export type TripStatusUpdatedPayload = {
   updatedAt: string;
 };
 
+export type RequestProofPhotoType = 'PICKUP' | 'DELIVERY';
+
+export type RequestProofPhotoResponse = {
+  id: string;
+  type: RequestProofPhotoType;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  sortOrder: number;
+  createdAt: string;
+};
+
 export type PickupItemRequest = {
   latitude?: number;
   longitude?: number;
   notes?: string;
   proofImageUrl?: string;
+  proofPhotos?: LocalDocumentAsset[];
 };
 
 export type PickupItemResponse = {
@@ -137,6 +155,7 @@ export type PickupItemResponse = {
   pickedUpAt: string;
   pickupNotes: string | null;
   pickupProofImageUrl: string | null;
+  pickupProofPhotos: RequestProofPhotoResponse[];
   nextStep: "DELIVER_ITEM";
 };
 
@@ -148,6 +167,7 @@ export type ItemPickedUpPayload = {
   pickedUpAt: string;
   pickupNotes: string | null;
   pickupProofImageUrl: string | null;
+  pickupProofPhotos: RequestProofPhotoResponse[];
 };
 
 export type StartDeliveryResponse = {
@@ -165,6 +185,7 @@ export type DeliverItemRequest = {
   longitude?: number;
   notes?: string;
   proofImageUrl?: string;
+  proofPhotos?: LocalDocumentAsset[];
 };
 
 export type DeliverItemResponse = {
@@ -175,6 +196,7 @@ export type DeliverItemResponse = {
   deliveredAt: string;
   deliveryNotes: string | null;
   deliveryProofImageUrl: string | null;
+  deliveryProofPhotos: RequestProofPhotoResponse[];
   nextStep: "VIEW_EARNINGS_AND_RATINGS";
 };
 
@@ -186,4 +208,49 @@ export type ItemDeliveredPayload = {
   deliveredAt: string;
   deliveryNotes: string | null;
   deliveryProofImageUrl: string | null;
+  deliveryProofPhotos: RequestProofPhotoResponse[];
+};
+
+export type AdditionalExpenseFormValues = {
+  amount: string;
+  reason: string;
+  equipmentType: string;
+  invoice: LocalDocumentAsset | null;
+};
+
+export type CreateAdditionalExpensePayload = {
+  amount: number;
+  reason: string;
+  equipmentType?: string;
+  invoice: LocalDocumentAsset;
+};
+
+export type AdditionalExpenseResponse = {
+  id: string;
+  requestId: string;
+  driverId: string;
+  customerId: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  equipmentType: string | null;
+  invoiceUrl: string;
+  invoice: {
+    originalFilename: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+  };
+  walletDeduction: {
+    amount: number;
+    currency: string;
+    transactionType: 'ADDITIONAL_CHARGE';
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DriverPayoutSummary = {
+  message: string;
+  availableAt: string | null;
 };

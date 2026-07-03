@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 
 import type {
+  AdditionalExpenseResponse,
   DriverArrivedPickupConfirmedPayload,
   ItemPickedUpPayload,
   ItemDeliveredPayload,
@@ -198,6 +199,15 @@ export function onItemDelivered(
   instance.off('itemDelivered', callback);
   instance.on('itemDelivered', callback);
   return () => instance.off('itemDelivered', callback);
+}
+
+export function onAdditionalChargeAdded(
+  callback: (payload: AdditionalExpenseResponse) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('additionalChargeAdded', callback);
+  instance.on('additionalChargeAdded', callback);
+  return () => instance.off('additionalChargeAdded', callback);
 }
 
 export function onSocketDisconnect(callback: (reason: string) => void): () => void {
