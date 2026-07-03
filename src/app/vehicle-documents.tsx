@@ -37,6 +37,15 @@ const DOCUMENT_ALLOWED_TYPES = new Set([
   'application/pdf',
 ]);
 const PHOTO_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ONBOARDING_DOCUMENT_LABELS: Record<
+  'PERSONAL_SELFIE' | 'ID_FRONT' | 'ID_BACK' | 'DRIVING_LICENSE',
+  string
+> = {
+  PERSONAL_SELFIE: 'Personal selfie',
+  ID_FRONT: 'ID or residency card front',
+  ID_BACK: 'ID or residency card back',
+  DRIVING_LICENSE: 'Driving license',
+};
 
 function toDateOnly(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
@@ -135,7 +144,9 @@ export default function VehicleDocumentsScreen() {
 
   const fieldErrors = useMemo(() => {
     const errors: Record<string, string> = {};
-    const normalizedMissing = new Set(documentsStatus?.missingDocuments ?? []);
+    const uploadedDocumentTypes = new Set(
+      (documentsStatus?.uploadedDocuments ?? []).map((document) => document.type),
+    );
 
     const validateOnboardingImage = (
       asset: LocalDocumentAsset | undefined,
@@ -143,12 +154,13 @@ export default function VehicleDocumentsScreen() {
       fieldKey: string,
       label: string,
     ): void => {
-      if (!asset) {
-        if (normalizedMissing.has(existingType)) {
-          errors[fieldKey] = `${label} is required.`;
-        }
+      const hasUploadedDocument = uploadedDocumentTypes.has(existingType);
+      if (!asset && !hasUploadedDocument) {
+        errors[fieldKey] = `${label} is required.`;
         return;
       }
+
+      if (!asset) return;
 
       const mime = asset.mimeType ?? '';
       if (!PHOTO_ALLOWED_TYPES.has(mime)) {
@@ -181,14 +193,14 @@ export default function VehicleDocumentsScreen() {
     );
 
     if (
-      (normalizedMissing.has('ID_FRONT') || normalizedMissing.has('ID_BACK')) &&
+      (!uploadedDocumentTypes.has('ID_FRONT') || !uploadedDocumentTypes.has('ID_BACK')) &&
       !onboardingDocumentsForm.idDocumentKind
     ) {
       errors.idDocumentKind = 'Choose whether you have a national ID or residency card.';
     }
 
     const drivingLicenseAsset = onboardingDocumentsForm.drivingLicense;
-    if (!drivingLicenseAsset && normalizedMissing.has('DRIVING_LICENSE')) {
+    if (!drivingLicenseAsset && !uploadedDocumentTypes.has('DRIVING_LICENSE')) {
       errors.drivingLicense = 'Driving license photo is required.';
     } else if (drivingLicenseAsset) {
       const mime = drivingLicenseAsset.mimeType ?? '';
@@ -245,10 +257,37 @@ export default function VehicleDocumentsScreen() {
 
   const blockingMissingDocuments = useMemo(
     () =>
-      (documentsStatus?.missingDocuments ?? []).filter(
-        (documentType) => documentType !== 'SELF_IDENTITY_VERIFICATION',
-      ),
-    [documentsStatus?.missingDocuments],
+      (documentsStatus?.requiredDocuments ?? []).filter((documentType) => {
+        if (documentType === 'SELF_IDENTITY_VERIFICATION') return false;
+
+        const hasUploadedDocument = (documentsStatus?.uploadedDocuments ?? []).some(
+          (document) => document.type === documentType,
+        );
+        if (hasUploadedDocument) return false;
+
+        if (documentType === 'PERSONAL_SELFIE') {
+          return !onboardingDocumentsForm.personalSelfie;
+        }
+        if (documentType === 'ID_FRONT') {
+          return !onboardingDocumentsForm.idFront;
+        }
+        if (documentType === 'ID_BACK') {
+          return !onboardingDocumentsForm.idBack;
+        }
+        if (documentType === 'DRIVING_LICENSE') {
+          return !onboardingDocumentsForm.drivingLicense;
+        }
+
+        return false;
+      }),
+    [
+      documentsStatus?.requiredDocuments,
+      documentsStatus?.uploadedDocuments,
+      onboardingDocumentsForm.drivingLicense,
+      onboardingDocumentsForm.idBack,
+      onboardingDocumentsForm.idFront,
+      onboardingDocumentsForm.personalSelfie,
+    ],
   );
   const canContinueToVehicleInformation =
     Boolean(documentsStatus) &&
@@ -257,10 +296,15 @@ export default function VehicleDocumentsScreen() {
     !isBusy;
   const visibleMissingDocumentLabels = useMemo(
     () =>
-      (documentsStatus?.missingDocumentLabels ?? []).filter(
-        (label) => !label.toLowerCase().includes('self-verification'),
-      ),
-    [documentsStatus?.missingDocumentLabels],
+      blockingMissingDocuments
+        .filter(
+          (
+            documentType,
+          ): documentType is keyof typeof ONBOARDING_DOCUMENT_LABELS =>
+            documentType in ONBOARDING_DOCUMENT_LABELS,
+        )
+        .map((documentType) => ONBOARDING_DOCUMENT_LABELS[documentType]),
+    [blockingMissingDocuments],
   );
 
   const onOnboardingDocumentChange = <K extends keyof DriverDocumentsState>(

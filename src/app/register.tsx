@@ -19,8 +19,6 @@ import { COUNTRY_OPTIONS, getFlagEmoji } from '@/lib/locations';
 import type { RegisterDriverPayload } from '@/types/auth';
 
 interface RegisterFormState {
-  firstName: string;
-  lastName: string;
   email: string;
   phone: string;
   password: string;
@@ -28,6 +26,9 @@ interface RegisterFormState {
   countryCodes: string[];
   cities: string[];
 }
+
+const DEFAULT_DRIVER_FIRST_NAME = 'Driver';
+const DEFAULT_DRIVER_LAST_NAME = 'Account';
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -64,10 +65,8 @@ export default function DriverRegisterScreen() {
   const { registerNewDriver } = useAuth();
 
   const [form, setForm] = useState<RegisterFormState>({
-    firstName: 'Test',
-    lastName: 'Driver',
     email: 'test.driver@example.com',
-    phone: '+96170000000',
+    phone: '+96170001000',
     password: 'Test1234!',
     confirmPassword: 'Test1234!',
     countryCodes: ['LB', 'FR'],
@@ -102,8 +101,6 @@ export default function DriverRegisterScreen() {
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof RegisterFormState, string>> = {};
 
-    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
-    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
     if (!form.email.trim()) errors.email = 'Email is required.';
     else if (!isValidEmail(form.email.trim())) errors.email = 'Enter a valid email.';
     if (!form.phone.trim()) errors.phone = 'Phone is required.';
@@ -160,8 +157,8 @@ export default function DriverRegisterScreen() {
     setSubmitError('');
 
     const payload: RegisterDriverPayload = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
+      firstName: DEFAULT_DRIVER_FIRST_NAME,
+      lastName: DEFAULT_DRIVER_LAST_NAME,
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
       password: form.password,
@@ -198,14 +195,6 @@ export default function DriverRegisterScreen() {
             Create your account and start receiving transport requests.
           </Text>
         </View>
-
-        <Text style={styles.label}>First name</Text>
-        <TextInput style={styles.input} placeholder="First name" value={form.firstName} onChangeText={(value) => onChange('firstName', value)} />
-        {fieldErrors.firstName ? <Text style={styles.errorText}>{fieldErrors.firstName}</Text> : null}
-
-        <Text style={styles.label}>Last name</Text>
-        <TextInput style={styles.input} placeholder="Last name" value={form.lastName} onChangeText={(value) => onChange('lastName', value)} />
-        {fieldErrors.lastName ? <Text style={styles.errorText}>{fieldErrors.lastName}</Text> : null}
 
         <Text style={styles.label}>Email</Text>
         <TextInput
