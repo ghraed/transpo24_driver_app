@@ -1,9 +1,10 @@
 import { Link, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { resetDriversForTesting } from '@/lib/api';
 import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
 import {
   clearRememberedCredentials,
@@ -19,6 +20,7 @@ export default function DriverLoginScreen() {
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isResettingDrivers, setIsResettingDrivers] = useState<boolean>(false);
 
   useEffect(() => {
     const loadRemembered = async (): Promise<void> => {
@@ -61,6 +63,44 @@ export default function DriverLoginScreen() {
     }
   }, [email, password, rememberMe, router, signIn]);
 
+  const onDeleteTestDrivers = useCallback((): void => {
+    if (isResettingDrivers) return;
+
+    Alert.alert(
+      'Delete Test Drivers',
+      'This will delete all driver users except driver@test.com. Customer users will not be deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Drivers',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              setIsResettingDrivers(true);
+              setErrorMessage('');
+
+              try {
+                const result = await resetDriversForTesting();
+                Alert.alert(
+                  'Drivers Deleted',
+                  `${result.deletedDrivers} driver accounts were deleted. Kept: ${result.keptEmail}.`,
+                );
+              } catch (error) {
+                setErrorMessage(
+                  error instanceof Error
+                    ? error.message
+                    : 'Failed to delete test drivers.',
+                );
+              } finally {
+                setIsResettingDrivers(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  }, [isResettingDrivers]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -96,6 +136,18 @@ export default function DriverLoginScreen() {
 
       <Pressable style={[styles.button, isSubmitting && styles.buttonDisabled]} onPress={() => void onLogin()} disabled={isSubmitting}>
         {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Login</Text>}
+      </Pressable>
+
+      <Pressable
+        style={[styles.dangerButton, isResettingDrivers && styles.buttonDisabled]}
+        onPress={onDeleteTestDrivers}
+        disabled={isResettingDrivers}
+      >
+        {isResettingDrivers ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text style={styles.buttonText}>Delete Test Drivers</Text>
+        )}
       </Pressable>
 
       <Link href="/register" style={styles.linkText}>
@@ -175,6 +227,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 6,
+  },
+  dangerButton: {
+    minHeight: 48,
+    borderRadius: 10,
+    backgroundColor: '#B91C1C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
   },
   buttonDisabled: {
     opacity: 0.7,

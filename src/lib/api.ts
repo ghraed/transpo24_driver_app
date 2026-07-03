@@ -305,6 +305,37 @@ export async function loginDriver(payload: LoginPayload): Promise<LoginResponse>
   );
 }
 
+export async function resetDriversForTesting(): Promise<{
+  deletedDrivers: number;
+  keptEmail: string;
+}> {
+  const endpoint = `${getApiBaseUrl()}/auth/testing/reset-drivers`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(
+      response,
+      'Failed to delete test drivers.',
+    );
+  }
+
+  return parseJsonResponse<{ deletedDrivers: number; keptEmail: string }>(
+    response,
+    'Failed to parse reset drivers response.',
+  );
+}
+
 export async function getDriverMe(): Promise<DriverMeResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me`;
   let response: Response;

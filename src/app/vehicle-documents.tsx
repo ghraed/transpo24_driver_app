@@ -10,7 +10,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Alert,
   StyleSheet,
   Text,
   View,
@@ -18,7 +17,6 @@ import {
 
 import {
   getDriverDocumentsStatus,
-  submitDriverDocumentsForReview,
   uploadDriverDocument,
 } from '@/lib/api';
 import { getDriverRouteForNextStep, normalizeDriverNextStep } from '@/lib/driver-onboarding';
@@ -79,7 +77,6 @@ export default function VehicleDocumentsScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeOnboardingUploadType, setActiveOnboardingUploadType] =
     useState<DriverDocumentType | null>(null);
-  const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
@@ -88,7 +85,7 @@ export default function VehicleDocumentsScreen() {
   const [isDrivingLicenseExpiryPickerVisible, setIsDrivingLicenseExpiryPickerVisible] =
     useState<boolean>(false);
 
-  const isBusy = Boolean(activeOnboardingUploadType) || isSubmittingReview;
+  const isBusy = Boolean(activeOnboardingUploadType);
 
   const loadDocumentsStatus = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -246,7 +243,25 @@ export default function VehicleDocumentsScreen() {
     return errors;
   }, [documentsStatus, onboardingDocumentsForm]);
 
-  const canSubmitOnboardingReview = Boolean(documentsStatus?.canSubmitForReview) && !isBusy;
+  const blockingMissingDocuments = useMemo(
+    () =>
+      (documentsStatus?.missingDocuments ?? []).filter(
+        (documentType) => documentType !== 'SELF_IDENTITY_VERIFICATION',
+      ),
+    [documentsStatus?.missingDocuments],
+  );
+  const canContinueToVehicleInformation =
+    Boolean(documentsStatus) &&
+    blockingMissingDocuments.length === 0 &&
+    Object.keys(fieldErrors).length === 0 &&
+    !isBusy;
+  const visibleMissingDocumentLabels = useMemo(
+    () =>
+      (documentsStatus?.missingDocumentLabels ?? []).filter(
+        (label) => !label.toLowerCase().includes('self-verification'),
+      ),
+    [documentsStatus?.missingDocumentLabels],
+  );
 
   const onOnboardingDocumentChange = <K extends keyof DriverDocumentsState>(
     key: K,
@@ -281,6 +296,11 @@ export default function VehicleDocumentsScreen() {
       keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
+    documentType:
+      | 'PERSONAL_SELFIE'
+      | 'ID_FRONT'
+      | 'ID_BACK'
+      | 'DRIVING_LICENSE',
     type: 'image' | 'document' = 'image',
   ): Promise<void> => {
     if (activeOnboardingUploadType) return;
@@ -302,6 +322,7 @@ export default function VehicleDocumentsScreen() {
       const asset = result.assets[0];
       if (!asset) return;
       setOnboardingDocument(key, toAssetFromImagePicker(asset));
+      await uploadSelectedOnboardingDocument(documentType, toAssetFromImagePicker(asset));
       return;
     }
 
@@ -315,6 +336,7 @@ export default function VehicleDocumentsScreen() {
     const asset = result.assets[0];
     if (!asset) return;
     setOnboardingDocument(key, toAssetFromDocumentPicker(asset));
+    await uploadSelectedOnboardingDocument(documentType, toAssetFromDocumentPicker(asset));
   };
 
   const captureOnboardingDocument = async (
@@ -322,6 +344,11 @@ export default function VehicleDocumentsScreen() {
       keyof DriverDocumentsState,
       'idExpiryDate' | 'drivingLicenseExpiryDate'
     >,
+    documentType:
+      | 'PERSONAL_SELFIE'
+      | 'ID_FRONT'
+      | 'ID_BACK'
+      | 'DRIVING_LICENSE',
   ): Promise<void> => {
     if (activeOnboardingUploadType) return;
 
@@ -342,6 +369,7 @@ export default function VehicleDocumentsScreen() {
     const asset = result.assets[0];
     if (!asset) return;
     setOnboardingDocument(key, toAssetFromImagePicker(asset));
+    await uploadSelectedOnboardingDocument(documentType, toAssetFromImagePicker(asset));
   };
 
   const getUploadedOnboardingDocument = useCallback(
@@ -355,23 +383,22 @@ export default function VehicleDocumentsScreen() {
       | 'PERSONAL_SELFIE'
       | 'ID_FRONT'
       | 'ID_BACK'
-      | 'DRIVING_LICENSE'
-      | 'SELF_IDENTITY_VERIFICATION',
+      | 'DRIVING_LICENSE',
+    explicitAsset?: LocalDocumentAsset,
   ): Promise<void> => {
     if (activeOnboardingUploadType) return;
     setSubmitError('');
     setSubmitSuccess('');
 
     const asset =
+      explicitAsset ??
       documentType === 'PERSONAL_SELFIE'
         ? onboardingDocumentsForm.personalSelfie
         : documentType === 'ID_FRONT'
           ? onboardingDocumentsForm.idFront
           : documentType === 'ID_BACK'
             ? onboardingDocumentsForm.idBack
-            : documentType === 'DRIVING_LICENSE'
-              ? onboardingDocumentsForm.drivingLicense
-              : onboardingDocumentsForm.selfIdentityVerification;
+            : onboardingDocumentsForm.drivingLicense;
 
     if (!asset) {
       setSubmitError(`Select a file for ${documentType} first.`);
@@ -407,25 +434,11 @@ export default function VehicleDocumentsScreen() {
     }
   };
 
-  const onSubmitForReview = async (): Promise<void> => {
-    if (!canSubmitOnboardingReview || isSubmittingReview) return;
-
+  const onContinueToVehicleInformation = (): void => {
+    if (!canContinueToVehicleInformation) return;
     setSubmitError('');
     setSubmitSuccess('');
-    setIsSubmittingReview(true);
-
-    try {
-      const status = await submitDriverDocumentsForReview();
-      setDocumentsStatus(status);
-      setSubmitSuccess('Your documents were submitted for review.');
-      router.replace('/waiting-approval');
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'Failed to submit documents for review.',
-      );
-    } finally {
-      setIsSubmittingReview(false);
-    }
+    router.push('/vehicle-information');
   };
 
   if (isLoading) {
@@ -477,8 +490,8 @@ export default function VehicleDocumentsScreen() {
             'PERSONAL_SELFIE',
             onboardingDocumentsForm.personalSelfie,
             getUploadedOnboardingDocument('PERSONAL_SELFIE'),
-            () => void pickOnboardingDocument('personalSelfie', 'image'),
-            () => void captureOnboardingDocument('personalSelfie'),
+            () => void pickOnboardingDocument('personalSelfie', 'PERSONAL_SELFIE', 'image'),
+            () => void captureOnboardingDocument('personalSelfie', 'PERSONAL_SELFIE'),
           )}
           {fieldErrors.personalSelfie ? (
             <Text style={styles.errorText}>{fieldErrors.personalSelfie}</Text>
@@ -490,8 +503,8 @@ export default function VehicleDocumentsScreen() {
             'ID_FRONT',
             onboardingDocumentsForm.idFront,
             getUploadedOnboardingDocument('ID_FRONT'),
-            () => void pickOnboardingDocument('idFront', 'image'),
-            () => void captureOnboardingDocument('idFront'),
+            () => void pickOnboardingDocument('idFront', 'ID_FRONT', 'image'),
+            () => void captureOnboardingDocument('idFront', 'ID_FRONT'),
           )}
           {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
 
@@ -549,8 +562,8 @@ export default function VehicleDocumentsScreen() {
             'ID_BACK',
             onboardingDocumentsForm.idBack,
             getUploadedOnboardingDocument('ID_BACK'),
-            () => void pickOnboardingDocument('idBack', 'image'),
-            () => void captureOnboardingDocument('idBack'),
+            () => void pickOnboardingDocument('idBack', 'ID_BACK', 'image'),
+            () => void captureOnboardingDocument('idBack', 'ID_BACK'),
           )}
           {fieldErrors.idBack ? <Text style={styles.errorText}>{fieldErrors.idBack}</Text> : null}
 
@@ -560,8 +573,8 @@ export default function VehicleDocumentsScreen() {
             'DRIVING_LICENSE',
             onboardingDocumentsForm.drivingLicense,
             getUploadedOnboardingDocument('DRIVING_LICENSE'),
-            () => void pickOnboardingDocument('drivingLicense', 'document'),
-            () => void captureOnboardingDocument('drivingLicense'),
+            () => void pickOnboardingDocument('drivingLicense', 'DRIVING_LICENSE', 'image'),
+            () => void captureOnboardingDocument('drivingLicense', 'DRIVING_LICENSE'),
           )}
           {fieldErrors.drivingLicense ? (
             <Text style={styles.errorText}>{fieldErrors.drivingLicense}</Text>
@@ -588,33 +601,21 @@ export default function VehicleDocumentsScreen() {
             <Text style={styles.errorText}>{fieldErrors.drivingLicenseExpiryDate}</Text>
           ) : null}
 
-          {renderOnboardingDocumentPicker(
-            'Self-verification selfie',
-            'You may be asked to complete a selfie verification step.',
-            'SELF_IDENTITY_VERIFICATION',
-            onboardingDocumentsForm.selfIdentityVerification,
-            getUploadedOnboardingDocument('SELF_IDENTITY_VERIFICATION'),
-            () => void pickOnboardingDocument('selfIdentityVerification', 'image'),
-            () => void captureOnboardingDocument('selfIdentityVerification'),
-            true,
-          )}
-
-          {documentsStatus?.missingDocumentLabels?.length ? (
+          {visibleMissingDocumentLabels.length ? (
             <Text style={styles.helper}>
-              Missing documents: {documentsStatus.missingDocumentLabels.join(', ')}
+              Missing documents: {visibleMissingDocumentLabels.join(', ')}
             </Text>
           ) : null}
 
           <Pressable
-            style={[styles.primaryButton, !canSubmitOnboardingReview && styles.primaryButtonDisabled]}
-            disabled={!canSubmitOnboardingReview}
-            onPress={() => void onSubmitForReview()}
+            style={[
+              styles.primaryButton,
+              !canContinueToVehicleInformation && styles.primaryButtonDisabled,
+            ]}
+            disabled={!canContinueToVehicleInformation}
+            onPress={onContinueToVehicleInformation}
           >
-            {isSubmittingReview ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Submit for Review</Text>
-            )}
+            <Text style={styles.primaryButtonText}>Continue to Vehicle Information</Text>
           </Pressable>
 
           {documentsStatus?.submittedForReviewAt ? (
@@ -624,9 +625,9 @@ export default function VehicleDocumentsScreen() {
             </Text>
           ) : null}
 
-          {!canSubmitOnboardingReview ? (
+          {!canContinueToVehicleInformation ? (
             <Text style={styles.helper}>
-              Upload all required documents first, then the review button will be enabled.
+              Upload all required documents first, then you can continue to vehicle information.
             </Text>
           ) : null}
         </View>
@@ -682,8 +683,7 @@ export default function VehicleDocumentsScreen() {
       | 'PERSONAL_SELFIE'
       | 'ID_FRONT'
       | 'ID_BACK'
-      | 'DRIVING_LICENSE'
-      | 'SELF_IDENTITY_VERIFICATION',
+      | 'DRIVING_LICENSE',
     asset: LocalDocumentAsset | undefined,
     uploaded: DriverOnboardingDocument | undefined,
     onPick: () => void,
@@ -716,29 +716,23 @@ export default function VehicleDocumentsScreen() {
         <View style={styles.docButtonsRow}>
           <Pressable
             style={styles.uploadButtonSmall}
-            onPress={() => {
-              Alert.alert('Add document', 'Choose how you want to provide this file.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Take photo', onPress: onCapture },
-                { text: 'Choose file', onPress: onPick },
-              ]);
-            }}
+            onPress={onPick}
             disabled={Boolean(activeOnboardingUploadType)}
           >
-            <Text style={styles.uploadButtonText}>{asset || uploaded ? 'Replace' : 'Add'}</Text>
+            <Text style={styles.uploadButtonText}>Select</Text>
           </Pressable>
           <Pressable
             style={[
               styles.uploadButtonSmall,
-              (!asset || Boolean(activeOnboardingUploadType)) && styles.continueButtonDisabled,
+              Boolean(activeOnboardingUploadType) && styles.continueButtonDisabled,
             ]}
-            disabled={!asset || Boolean(activeOnboardingUploadType)}
-            onPress={() => void uploadSelectedOnboardingDocument(type)}
+            disabled={Boolean(activeOnboardingUploadType)}
+            onPress={onCapture}
           >
             {isUploading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.uploadButtonText}>Upload</Text>
+              <Text style={styles.uploadButtonText}>Take Image</Text>
             )}
           </Pressable>
         </View>

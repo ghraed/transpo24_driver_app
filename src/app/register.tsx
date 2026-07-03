@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -25,12 +25,38 @@ interface RegisterFormState {
   phone: string;
   password: string;
   confirmPassword: string;
-  countryCode: string;
-  city: string;
+  countryCodes: string[];
+  cities: string[];
 }
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function formatSelectedCountriesLabel(countryCodes: string[]): string | undefined {
+  if (countryCodes.length === 0) return undefined;
+
+  const selected = COUNTRY_OPTIONS.filter((country) => countryCodes.includes(country.code));
+  if (selected.length === 0) return undefined;
+
+  if (selected.length <= 2) {
+    return selected
+      .map((country) => `${getFlagEmoji(country.code)}  ${country.name}`)
+      .join(', ');
+  }
+
+  const preview = selected
+    .slice(0, 2)
+    .map((country) => `${getFlagEmoji(country.code)}  ${country.name}`)
+    .join(', ');
+
+  return `${preview} +${selected.length - 2} more`;
+}
+
+function formatSelectedCitiesLabel(cities: string[]): string | undefined {
+  if (cities.length === 0) return undefined;
+  if (cities.length <= 2) return cities.join(', ');
+  return `${cities.slice(0, 2).join(', ')} +${cities.length - 2} more`;
 }
 
 export default function DriverRegisterScreen() {
@@ -38,21 +64,21 @@ export default function DriverRegisterScreen() {
   const { registerNewDriver } = useAuth();
 
   const [form, setForm] = useState<RegisterFormState>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    countryCode: '',
-    city: '',
+    firstName: 'Test',
+    lastName: 'Driver',
+    email: 'test.driver@example.com',
+    phone: '+96170000000',
+    password: 'Test1234!',
+    confirmPassword: 'Test1234!',
+    countryCodes: ['LB', 'FR'],
+    cities: ['Beirut', 'Paris'],
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>('');
 
-  const selectedCountry = useMemo(
-    () => COUNTRY_OPTIONS.find((country) => country.code === form.countryCode) ?? null,
-    [form.countryCode],
+  const selectedCountries = useMemo(
+    () => COUNTRY_OPTIONS.filter((country) => form.countryCodes.includes(country.code)),
+    [form.countryCodes],
   );
 
   const countryOptions = useMemo(
@@ -66,11 +92,11 @@ export default function DriverRegisterScreen() {
 
   const cityOptions = useMemo(
     () =>
-      (selectedCountry?.cities ?? []).map((city) => ({
+      Array.from(new Set(selectedCountries.flatMap((country) => country.cities))).map((city) => ({
         label: city,
         value: city,
       })),
-    [selectedCountry],
+    [selectedCountries],
   );
 
   const fieldErrors = useMemo(() => {
@@ -97,12 +123,32 @@ export default function DriverRegisterScreen() {
 
   const onCountrySelect = (countryCode: string) => {
     setForm((prev) => {
-      const nextCountry = COUNTRY_OPTIONS.find((country) => country.code === countryCode);
-      const canKeepCity = nextCountry?.cities.includes(prev.city) ?? false;
+      const isSelected = prev.countryCodes.includes(countryCode);
+      const nextCountryCodes = isSelected
+        ? prev.countryCodes.filter((code) => code !== countryCode)
+        : [...prev.countryCodes, countryCode];
+      const nextCountries = COUNTRY_OPTIONS.filter((country) =>
+        nextCountryCodes.includes(country.code),
+      );
+      const nextCitySet = new Set(nextCountries.flatMap((country) => country.cities));
+      const nextCities = prev.cities.filter((city) => nextCitySet.has(city));
+
       return {
         ...prev,
-        countryCode,
-        city: canKeepCity ? prev.city : '',
+        countryCodes: nextCountryCodes,
+        cities: nextCities,
+      };
+    });
+  };
+
+  const onCitySelect = (city: string) => {
+    setForm((prev) => {
+      const isSelected = prev.cities.includes(city);
+      return {
+        ...prev,
+        cities: isSelected
+          ? prev.cities.filter((value) => value !== city)
+          : [...prev.cities, city],
       };
     });
   };
@@ -119,8 +165,8 @@ export default function DriverRegisterScreen() {
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim(),
       password: form.password,
-      countryCode: form.countryCode.trim() || undefined,
-      city: form.city.trim() || undefined,
+      countryCode: form.countryCodes[0]?.trim() || undefined,
+      city: form.cities[0]?.trim() || undefined,
     };
 
     try {
@@ -202,31 +248,38 @@ export default function DriverRegisterScreen() {
         />
         {fieldErrors.confirmPassword ? <Text style={styles.errorText}>{fieldErrors.confirmPassword}</Text> : null}
 
-        <Text style={styles.label}>Country code</Text>
+        <Text style={styles.label}>Country</Text>
         <SearchableSelect
           emptyMessage="No countries found."
+          multiple
           onSelect={onCountrySelect}
           options={countryOptions}
-          placeholder="Select country (optional)"
+          placeholder="Select countries (optional)"
           searchPlaceholder="Search country"
-          selectedLabel={
-            selectedCountry
-              ? `${getFlagEmoji(selectedCountry.code)}  ${selectedCountry.name} (${selectedCountry.code})`
-              : undefined
-          }
-          title="Select country"
+          selectedLabel={formatSelectedCountriesLabel(form.countryCodes)}
+          selectedValues={form.countryCodes}
+          title="Select countries"
         />
+        <Text style={styles.helperText}>
+          Select one or more countries. Only cities from those countries will be shown.
+        </Text>
 
         <Text style={styles.label}>City</Text>
         <SearchableSelect
-          disabled={!selectedCountry}
-          emptyMessage={selectedCountry ? 'No cities found.' : 'Select a country first.'}
-          onSelect={(city) => onChange('city', city)}
+          disabled={selectedCountries.length === 0}
+          emptyMessage={selectedCountries.length > 0 ? 'No cities found.' : 'Select at least one country first.'}
+          multiple
+          onSelect={onCitySelect}
           options={cityOptions}
-          placeholder={selectedCountry ? 'Select city (optional)' : 'Select country first'}
+          placeholder={selectedCountries.length > 0 ? 'Select city (optional)' : 'Select country first'}
           searchPlaceholder="Search city"
-          selectedLabel={form.city || undefined}
-          title={selectedCountry ? `Select city in ${selectedCountry.name}` : 'Select city'}
+          selectedLabel={formatSelectedCitiesLabel(form.cities)}
+          selectedValues={form.cities}
+          title={
+            selectedCountries.length > 0
+              ? `Select city in ${selectedCountries.map((country) => country.name).join(', ')}`
+              : 'Select city'
+          }
         />
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
@@ -280,6 +333,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#334155',
     marginBottom: -2,
+  },
+  helperText: {
+    marginTop: -2,
+    marginBottom: 2,
+    color: '#64748B',
+    fontSize: 12,
   },
   input: {
     borderWidth: 1,
