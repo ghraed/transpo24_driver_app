@@ -16,12 +16,11 @@ import {
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { useAuth } from '@/context/auth-context';
 import { getDriverRouteForNextStep, normalizeDriverNextStep } from '@/lib/driver-onboarding';
-import { COUNTRY_OPTIONS } from '@/lib/locations';
 import type {
-  DriverCoverageAreaSelection,
   DriverOnboardingResponse,
   DriverPersonalInfoForm,
-  DriverPersonalInfoPayload,
+  PreferredLanguage,
+  UpdateDriverProfilePayload,
 } from '@/types/auth';
 
 function toDateOnly(isoDate: string | null | undefined): string {
@@ -39,27 +38,40 @@ function isAtLeast18(dateValue: string): boolean {
   return adult.getTime() <= Date.now();
 }
 
-function parseCoverageAreas(value: string): string[] {
-  return Array.from(
-    new Set(
-      value
-        .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0),
-    ),
-  );
+const PREFERRED_LANGUAGE_OPTIONS: Array<{ label: string; value: PreferredLanguage }> = [
+  { label: 'English', value: 'en' },
+  { label: 'Arabic', value: 'ar' },
+  { label: 'German', value: 'de' },
+  { label: 'French', value: 'fr' },
+  { label: 'Italian', value: 'it' },
+];
+
+function formatSelectedLanguagesLabel(values: PreferredLanguage[]): string | undefined {
+  if (values.length === 0) return undefined;
+
+  const labels = PREFERRED_LANGUAGE_OPTIONS.filter((option) =>
+    values.includes(option.value),
+  ).map((option) => option.label);
+
+  if (labels.length <= 2) return labels.join(', ');
+  return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
 }
 
 export default function CompleteProfileScreen() {
   const router = useRouter();
-  const { driver, refreshDriverOnboarding, saveDriverPersonalInfo, signOut } = useAuth();
+  const { driver, refreshDriverMe, refreshDriverOnboarding, saveDriverProfile, signOut } =
+    useAuth();
 
   const [form, setForm] = useState<DriverPersonalInfoForm>({
     fullNameOnId: '',
     dateOfBirth: '',
     idOrResidencyNumber: '',
-    coverageCity: '',
-    coverageAreasInput: '',
+    addressLine1: '',
+    addressLine2: '',
+    postalCode: '',
+    preferredLanguages: [],
+    emergencyContactName: '',
+    emergencyContactPhone: '',
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -82,63 +94,58 @@ export default function CompleteProfileScreen() {
       fullNameOnId: derivedFullName,
       dateOfBirth: toDateOnly(onboarding?.dateOfBirth ?? driver?.dateOfBirth),
       idOrResidencyNumber: '',
-      coverageCity: onboarding?.coverageCity ?? driver?.city ?? '',
-      coverageAreasInput:
-        onboarding?.coverageAreas.join(', ') ?? driver?.coverageAreas.join(', ') ?? '',
+      addressLine1: driver?.addressLine1 ?? '',
+      addressLine2: driver?.addressLine2 ?? '',
+      postalCode: driver?.postalCode ?? '',
+      preferredLanguages: driver?.preferredLanguages ?? [],
+      emergencyContactName: driver?.emergencyContactName ?? '',
+      emergencyContactPhone: driver?.emergencyContactPhone ?? '',
     });
-  }, [driver?.city, driver?.coverageAreas, driver?.dateOfBirth, driver?.firstName, driver?.lastName]);
-
-  const coverageAreas = useMemo(() => parseCoverageAreas(form.coverageAreasInput), [
-    form.coverageAreasInput,
+  }, [
+    driver?.addressLine1,
+    driver?.addressLine2,
+    driver?.dateOfBirth,
+    driver?.emergencyContactName,
+    driver?.emergencyContactPhone,
+    driver?.firstName,
+    driver?.lastName,
+    driver?.postalCode,
+    driver?.preferredLanguages,
   ]);
-
-  const coverageSelection = useMemo<DriverCoverageAreaSelection>(
-    () => ({
-      coverageCity: form.coverageCity.trim() || undefined,
-      coverageAreas: coverageAreas.length > 0 ? coverageAreas : undefined,
-    }),
-    [coverageAreas, form.coverageCity],
-  );
-
-  const driverCountryCode = driver?.countryCode ?? null;
-  const cityOptions = useMemo(() => {
-    const matchingCountry = driverCountryCode
-      ? COUNTRY_OPTIONS.find((country) => country.code === driverCountryCode)
-      : null;
-    const sourceCities =
-      matchingCountry?.cities.length
-        ? matchingCountry.cities
-        : COUNTRY_OPTIONS.flatMap((country) => country.cities);
-
-    return Array.from(new Set(sourceCities)).map((city) => ({
-      label: city,
-      value: city,
-    }));
-  }, [driverCountryCode]);
 
   const loadProfile = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setLoadError('');
 
     try {
-      const response = await refreshDriverOnboarding();
-      const nextStep = normalizeDriverNextStep(response.nextStep);
+      const me = await refreshDriverMe();
+      const nextStep = normalizeDriverNextStep(me.nextStep);
       if (nextStep !== 'COMPLETE_PROFILE') {
         router.replace(getDriverRouteForNextStep(nextStep));
         return;
       }
-      applyFormFromSources(response);
+      applyFormFromSources();
     } catch (error) {
-      if (driver) {
-        applyFormFromSources();
-      } else {
-        const message = error instanceof Error ? error.message : 'Failed to load profile.';
-        setLoadError(message);
+      try {
+        const response = await refreshDriverOnboarding();
+        const nextStep = normalizeDriverNextStep(response.nextStep);
+        if (nextStep !== 'COMPLETE_PROFILE') {
+          router.replace(getDriverRouteForNextStep(nextStep));
+          return;
+        }
+        applyFormFromSources(response);
+      } catch {
+        if (driver) {
+          applyFormFromSources();
+        } else {
+          const message = error instanceof Error ? error.message : 'Failed to load profile.';
+          setLoadError(message);
+        }
       }
     } finally {
       setIsLoading(false);
     }
-  }, [applyFormFromSources, driver, refreshDriverOnboarding, router]);
+  }, [applyFormFromSources, driver, refreshDriverMe, refreshDriverOnboarding, router]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -172,14 +179,28 @@ export default function CompleteProfileScreen() {
       errors.idOrResidencyNumber = 'ID or residency number is required.';
     }
 
-    if (
-      !coverageSelection.coverageCity?.trim() &&
-      (coverageSelection.coverageAreas?.length ?? 0) === 0
-    ) {
-      errors.coverageAreasInput = 'Select at least one city or covered area.';
+    if (!form.addressLine1.trim()) {
+      errors.addressLine1 = 'Address line 1 is required.';
     }
+
+    if (!form.postalCode.trim()) {
+      errors.postalCode = 'Postal code is required.';
+    }
+
+    if (form.preferredLanguages.length === 0) {
+      errors.preferredLanguages = 'Select at least one preferred language.';
+    }
+
+    if (!form.emergencyContactName.trim()) {
+      errors.emergencyContactName = 'Emergency contact name is required.';
+    }
+
+    if (!form.emergencyContactPhone.trim()) {
+      errors.emergencyContactPhone = 'Emergency contact phone is required.';
+    }
+
     return errors;
-  }, [coverageSelection, currentTimeMs, form]);
+  }, [currentTimeMs, form]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -196,6 +217,25 @@ export default function CompleteProfileScreen() {
     return Number.isNaN(parsed.getTime()) ? new Date('2000-01-01') : parsed;
   }, [form.dateOfBirth]);
 
+  const preferredLanguageOptions = useMemo(
+    () =>
+      PREFERRED_LANGUAGE_OPTIONS.map((option) => ({
+        label: option.label,
+        value: option.value,
+      })),
+    [],
+  );
+
+  const onPreferredLanguageSelect = (value: string): void => {
+    const nextValue = value as PreferredLanguage;
+    onChange(
+      'preferredLanguages',
+      form.preferredLanguages.includes(nextValue)
+        ? form.preferredLanguages.filter((item) => item !== nextValue)
+        : [...form.preferredLanguages, nextValue],
+    );
+  };
+
   const maximumDate = useMemo(() => {
     const today = new Date();
     today.setFullYear(today.getFullYear() - 18);
@@ -208,16 +248,25 @@ export default function CompleteProfileScreen() {
     setIsSaving(true);
     setSubmitError('');
 
-    const payload: DriverPersonalInfoPayload = {
+    const payload: UpdateDriverProfilePayload = {
+      firstName: driver?.firstName?.trim() || 'Driver',
+      lastName: driver?.lastName?.trim() || 'Account',
+      phone: driver?.phone?.trim() || '',
+      countryCode: driver?.countryCode ?? undefined,
+      city: driver?.city ?? undefined,
       fullNameOnId: form.fullNameOnId.trim(),
       dateOfBirth: form.dateOfBirth.trim(),
       idOrResidencyNumber: form.idOrResidencyNumber.trim(),
-      coverageCity: coverageSelection.coverageCity,
-      coverageAreas: coverageSelection.coverageAreas,
+      addressLine1: form.addressLine1.trim(),
+      addressLine2: form.addressLine2.trim() || undefined,
+      postalCode: form.postalCode.trim(),
+      preferredLanguages: form.preferredLanguages,
+      emergencyContactName: form.emergencyContactName.trim(),
+      emergencyContactPhone: form.emergencyContactPhone.trim(),
     };
 
     try {
-      const response = await saveDriverPersonalInfo(payload);
+      const response = await saveDriverProfile(payload);
       const nextStep = normalizeDriverNextStep(response.nextStep);
 
       if (nextStep === 'COMPLETE_PROFILE') {
@@ -285,7 +334,7 @@ export default function CompleteProfileScreen() {
             Enter your personal information as shown on your official documents.
           </Text>
           <Text style={styles.helper}>
-            Add the ID details and service coverage needed before document upload.
+            Add the ID details and contact information needed before document upload.
           </Text>
         </View>
 
@@ -324,29 +373,73 @@ export default function CompleteProfileScreen() {
           <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text>
         ) : null}
 
-        <Text style={styles.label}>City or covered areas</Text>
-        <SearchableSelect
-          emptyMessage="No cities found."
-          onSelect={(value) => onChange('coverageCity', value)}
-          options={cityOptions}
-          placeholder="Select city"
-          searchPlaceholder="Search city"
-          selectedLabel={form.coverageCity || undefined}
-          title="Select city"
-        />
+        <Text style={styles.label}>Address line 1</Text>
         <TextInput
-          style={[styles.input, styles.multilineInput]}
-          placeholder="Additional covered areas, separated by commas"
-          multiline
-          textAlignVertical="top"
-          value={form.coverageAreasInput}
-          onChangeText={(value) => onChange('coverageAreasInput', value)}
+          style={styles.input}
+          placeholder="Address line 1"
+          value={form.addressLine1}
+          onChangeText={(value) => onChange('addressLine1', value)}
         />
-        <Text style={styles.helper}>
-          Add one or more areas separated by commas if you cover more than the selected city.
-        </Text>
-        {fieldErrors.coverageAreasInput ? (
-          <Text style={styles.errorText}>{fieldErrors.coverageAreasInput}</Text>
+        {fieldErrors.addressLine1 ? (
+          <Text style={styles.errorText}>{fieldErrors.addressLine1}</Text>
+        ) : null}
+
+        <Text style={styles.label}>Address line 2</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Address line 2"
+          value={form.addressLine2}
+          onChangeText={(value) => onChange('addressLine2', value)}
+        />
+
+        <Text style={styles.label}>Postal code</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Postal code"
+          value={form.postalCode}
+          onChangeText={(value) => onChange('postalCode', value)}
+        />
+        {fieldErrors.postalCode ? (
+          <Text style={styles.errorText}>{fieldErrors.postalCode}</Text>
+        ) : null}
+
+        <Text style={styles.label}>Preferred languages</Text>
+        <SearchableSelect
+          emptyMessage="No languages found."
+          multiple
+          onSelect={onPreferredLanguageSelect}
+          options={preferredLanguageOptions}
+          placeholder="Select preferred languages"
+          searchPlaceholder="Search language"
+          selectedLabel={formatSelectedLanguagesLabel(form.preferredLanguages)}
+          selectedValues={form.preferredLanguages}
+          title="Select preferred languages"
+        />
+        {fieldErrors.preferredLanguages ? (
+          <Text style={styles.errorText}>{fieldErrors.preferredLanguages}</Text>
+        ) : null}
+
+        <Text style={styles.label}>Emergency contact name</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Emergency contact name"
+          value={form.emergencyContactName}
+          onChangeText={(value) => onChange('emergencyContactName', value)}
+        />
+        {fieldErrors.emergencyContactName ? (
+          <Text style={styles.errorText}>{fieldErrors.emergencyContactName}</Text>
+        ) : null}
+
+        <Text style={styles.label}>Emergency contact phone</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Emergency contact phone"
+          keyboardType="phone-pad"
+          value={form.emergencyContactPhone}
+          onChangeText={(value) => onChange('emergencyContactPhone', value)}
+        />
+        {fieldErrors.emergencyContactPhone ? (
+          <Text style={styles.errorText}>{fieldErrors.emergencyContactPhone}</Text>
         ) : null}
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}

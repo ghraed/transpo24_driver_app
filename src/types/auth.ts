@@ -43,11 +43,14 @@ export interface UpdateDriverProfilePayload {
   phone: string;
   countryCode?: string;
   city?: string;
+  coverageAreas?: string[];
+  fullNameOnId?: string;
   dateOfBirth?: string;
+  idOrResidencyNumber?: string;
   addressLine1?: string;
   addressLine2?: string;
   postalCode?: string;
-  preferredLanguage?: PreferredLanguage;
+  preferredLanguages?: PreferredLanguage[];
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   profilePhotoUrl?: string | null;
@@ -62,8 +65,12 @@ export interface DriverPersonalInfoForm {
   fullNameOnId: string;
   dateOfBirth: string;
   idOrResidencyNumber: string;
-  coverageCity: string;
-  coverageAreasInput: string;
+  addressLine1: string;
+  addressLine2: string;
+  postalCode: string;
+  preferredLanguages: PreferredLanguage[];
+  emergencyContactName: string;
+  emergencyContactPhone: string;
 }
 
 export interface DriverPersonalInfoPayload {
@@ -101,7 +108,7 @@ export interface DriverProfile {
   addressLine1: string | null;
   addressLine2: string | null;
   postalCode: string | null;
-  preferredLanguage: string | null;
+  preferredLanguages: PreferredLanguage[];
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   profilePhotoUrl: string | null;
