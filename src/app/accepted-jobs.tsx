@@ -34,10 +34,6 @@ function formatMoney(price: number, currency: string): string {
   }
 }
 
-function formatVehicleCondition(condition: string | null): string {
-  if (!condition) return 'N/A';
-  return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
-}
 export default function AcceptedJobsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -153,14 +149,6 @@ export default function AcceptedJobsScreen() {
               <Text style={styles.metaText}>
                 Offer: {formatMoney(job.acceptedOffer.price, job.acceptedOffer.currency)}
               </Text>
-              {job.vehicleDetails?.condition ? (
-                <Text style={styles.metaText}>
-                  Vehicle condition: {formatVehicleCondition(job.vehicleDetails.condition)}
-                </Text>
-              ) : null}
-              {job.vehicleDetails?.conditionNotes ? (
-                <Text style={styles.metaText}>Notes: {job.vehicleDetails.conditionNotes}</Text>
-              ) : null}
               <Text style={styles.metaText}>Accepted at: {formatDate(job.acceptedAt)}</Text>
 
               <View style={styles.cardButton}>

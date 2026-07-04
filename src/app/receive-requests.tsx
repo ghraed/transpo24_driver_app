@@ -11,17 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useAuth } from '@/context/auth-context';
 import { getDriverRequestAlerts } from '@/lib/api';
-import {
-  connectSocket,
-  onRequestNew,
-  onSocketConnected,
-  onSocketDisconnect,
-  onSocketError,
-} from '@/services/socketService';
+import { connectSocket, onRequestDeleted } from '@/services/socketService';
+import { readAccessToken } from '@/lib/auth-storage';
 import type { DriverRequestAlertSummary } from '@/types/auth';
-import { validateRequestNewPayload } from '@/utils/locationValidation';
 
 function formatSchedule(isImmediate: boolean, scheduledPickupAt: string | null): string {
   if (isImmediate) {
@@ -48,22 +41,12 @@ function badgeLabel(alertStatus: DriverRequestAlertSummary['alertStatus']): stri
   return 'Expired';
 }
 
-function formatVehicleCondition(condition: string | null): string {
-  if (!condition) return 'N/A';
-  return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
-}
 export default function ReceiveRequestAlertsScreen() {
   const router = useRouter();
-  const { accessToken } = useAuth();
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [socketStatus, setSocketStatus] = useState<'connected' | 'disconnected' | 'connecting'>(
-    'connecting',
-  );
-  const [socketMessage, setSocketMessage] = useState<string>('');
-  const [requestBanner, setRequestBanner] = useState<string>('');
 
   const loadAlerts = useCallback(async (refreshing = false): Promise<void> => {
     if (refreshing) {
@@ -88,61 +71,27 @@ export default function ReceiveRequestAlertsScreen() {
   useFocusEffect(
     useCallback(() => {
       void loadAlerts();
+      let unsubscribeDeleted: (() => void) | null = null;
+      void (async () => {
+        const token = await readAccessToken();
+        if (!token) return;
+        connectSocket(token);
+        unsubscribeDeleted = onRequestDeleted((payload) => {
+          setAlerts((current) =>
+            current.filter((alert) => alert.requestId !== payload.requestId),
+          );
+        });
+      })();
       const pollingId = setInterval(() => {
         void loadAlerts(true);
       }, 20000);
 
       return () => {
         clearInterval(pollingId);
+        unsubscribeDeleted?.();
       };
     }, [loadAlerts]),
   );
-
-  React.useEffect(() => {
-    if (!accessToken) return;
-
-    connectSocket(accessToken);
-    setSocketStatus('connecting');
-
-    const unsubscribeRequestNew = onRequestNew((payload) => {
-      const validated = validateRequestNewPayload(payload);
-      if (!validated) return;
-
-      const serviceName = validated.service?.nameEn || validated.service?.key || 'Transport request';
-      const distanceLabel =
-        typeof validated.distanceKm === 'number'
-          ? `${validated.distanceKm.toFixed(1)} km`
-          : 'Distance available in app';
-
-      setRequestBanner(`${serviceName} • ${distanceLabel}`);
-      setAlerts((current) => {
-        const nextItem: DriverRequestAlertSummary = {
-          ...validated,
-        };
-        const withoutDuplicate = current.filter((item) => item.alertId !== nextItem.alertId);
-        return [nextItem, ...withoutDuplicate];
-      });
-    });
-
-    const unsubscribeConnected = onSocketConnected(() => {
-      setSocketStatus('connected');
-      setSocketMessage('');
-    });
-    const unsubscribeDisconnected = onSocketDisconnect(() => {
-      setSocketStatus('disconnected');
-    });
-    const unsubscribeSocketError = onSocketError((message) => {
-      setSocketStatus('disconnected');
-      setSocketMessage(message);
-    });
-
-    return () => {
-      unsubscribeRequestNew();
-      unsubscribeConnected();
-      unsubscribeDisconnected();
-      unsubscribeSocketError();
-    };
-  }, [accessToken]);
 
   const hasAlerts = useMemo(() => alerts.length > 0, [alerts]);
 
@@ -153,17 +102,7 @@ export default function ReceiveRequestAlertsScreen() {
         <Text style={styles.subtitle}>
           Review new transport requests and choose which ones you want to quote.
         </Text>
-        <Text style={styles.connectionText}>
-          Real-time connection: {socketStatus}
-          {socketMessage ? ` • ${socketMessage}` : ''}
-        </Text>
       </View>
-
-      {requestBanner ? (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>New request: {requestBanner}</Text>
-        </View>
-      ) : null}
 
       {isLoading ? (
         <View style={styles.centeredState}>
@@ -218,14 +157,6 @@ export default function ReceiveRequestAlertsScreen() {
                   ? `Distance: ${alert.distanceKm.toFixed(1)} km`
                   : 'Distance: Not available'}
               </Text>
-              {alert.vehicleDetails?.condition ? (
-                <Text style={styles.metaText}>
-                  Vehicle condition: {formatVehicleCondition(alert.vehicleDetails.condition)}
-                </Text>
-              ) : null}
-              {alert.vehicleDetails?.conditionNotes ? (
-                <Text style={styles.metaText}>Notes: {alert.vehicleDetails.conditionNotes}</Text>
-              ) : null}
 
               <View style={styles.reviewButton}>
                 <Text style={styles.reviewButtonText}>Review Details</Text>
@@ -257,24 +188,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#475569',
-  },
-  connectionText: {
-    fontSize: 12,
-    color: '#64748B',
-  },
-  banner: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 12,
-    padding: 12,
-  },
-  bannerText: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    fontWeight: '700',
   },
   centeredState: {
     flex: 1,

@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { resolveBackendAssetUrl } from '@/config/backend';
 import {
   acceptDriverRequestAlert,
   getDriverRequestDetails,
@@ -27,7 +29,7 @@ function formatDate(value: string | null): string {
 }
 
 function availabilityMessage(requestStatus: string): string | null {
-  if (requestStatus === 'PENDING_QUOTES' || requestStatus === 'QUOTED') {
+  if (requestStatus === 'PENDING_QUOTES') {
     return null;
   }
 
@@ -46,10 +48,10 @@ function formatRoute(address: string | null, latitude: number | null, longitude:
   return 'Location unavailable';
 }
 
-function formatVehicleCondition(condition: string | null): string {
-  if (!condition) return 'N/A';
-  return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
+function resolveAssetUrl(url: string): string {
+  return resolveBackendAssetUrl(url);
 }
+
 export default function ReviewRequestDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ requestId?: string }>();
@@ -59,6 +61,7 @@ export default function ReviewRequestDetailsScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId) {
@@ -93,27 +96,9 @@ export default function ReviewRequestDetailsScreen() {
   const canAccept = useMemo(() => {
     if (!details) return false;
     if (details.alertStatus === 'IGNORED' || details.alertStatus === 'EXPIRED') return false;
-    if (details.offerStatus) return false;
-    if (details.requestStatus !== 'PENDING_QUOTES' && details.requestStatus !== 'QUOTED') return false;
+    if (details.requestStatus !== 'PENDING_QUOTES') return false;
     return true;
   }, [details]);
-
-  const offerStatusMessage = useMemo(() => {
-    if (!details?.offerStatus) return null;
-    if (details.offerStatus === 'PENDING') {
-      return 'Offer submitted. Waiting for customer selection.';
-    }
-    if (details.offerStatus === 'ACCEPTED') {
-      return 'You were selected for this request.';
-    }
-    if (details.offerStatus === 'REJECTED') {
-      return 'This offer was not selected.';
-    }
-    if (details.offerStatus === 'CANCELLED' || details.offerStatus === 'EXPIRED') {
-      return `Offer status: ${details.offerStatus.toLowerCase()}.`;
-    }
-    return null;
-  }, [details?.offerStatus]);
 
   const onIgnore = (): void => {
     if (!requestId || isBusy) return;
@@ -156,8 +141,6 @@ export default function ReviewRequestDetailsScreen() {
           requestId: response.requestId,
           alertId: response.alertId,
           serviceName: details?.service?.nameEn || details?.service?.key || '',
-          vehicleCondition: details?.vehicleDetails?.condition || '',
-          vehicleConditionNotes: details?.vehicleDetails?.conditionNotes || '',
           pickupAddress: details?.pickup?.address || '',
           dropoffAddress: details?.dropoff?.address || '',
           scheduledPickupAt: details?.schedule?.scheduledPickupAt || '',
@@ -215,19 +198,10 @@ export default function ReviewRequestDetailsScreen() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         {requestUnavailableMessage ? <Text style={styles.warningText}>{requestUnavailableMessage}</Text> : null}
-        {offerStatusMessage ? <Text style={styles.infoText}>{offerStatusMessage}</Text> : null}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Service</Text>
           <Text style={styles.sectionValue}>{details.service?.nameEn || details.service?.key || 'Service'}</Text>
-          <Text style={styles.metaText}>Request status: {details.requestStatus}</Text>
-          <Text style={styles.metaText}>Offer status: {details.offerStatus || 'Not submitted'}</Text>
-          <Text style={styles.metaText}>
-            Distance:{' '}
-            {typeof details.distanceKm === 'number'
-              ? `${details.distanceKm.toFixed(1)} km`
-              : 'Not available'}
-          </Text>
         </View>
 
         <View style={styles.card}>
@@ -273,14 +247,6 @@ export default function ReviewRequestDetailsScreen() {
               .join(' / ') || 'N/A'}
           </Text>
           <Text style={styles.metaText}>Condition: {details.itemDetails.condition || 'N/A'}</Text>
-          {details.vehicleDetails?.condition ? (
-            <Text style={styles.metaText}>
-              Vehicle condition: {formatVehicleCondition(details.vehicleDetails.condition)}
-            </Text>
-          ) : null}
-          {details.vehicleDetails?.conditionNotes ? (
-            <Text style={styles.metaText}>Condition notes: {details.vehicleDetails.conditionNotes}</Text>
-          ) : null}
           <Text style={styles.metaText}>
             Weight: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : 'N/A'}
           </Text>
@@ -306,12 +272,20 @@ export default function ReviewRequestDetailsScreen() {
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
-                <Image key={photo.id} source={{ uri: photo.url }} style={styles.photo} />
+                <Pressable key={photo.id} onPress={() => setExpandedPhotoUrl(resolveAssetUrl(photo.url))}>
+                  <Image source={{ uri: resolveAssetUrl(photo.url) }} style={styles.photo} />
+                </Pressable>
               ))}
             </ScrollView>
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={Boolean(expandedPhotoUrl)} transparent animationType="fade" onRequestClose={() => setExpandedPhotoUrl('')}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setExpandedPhotoUrl('')}>
+          {expandedPhotoUrl ? <Image source={{ uri: expandedPhotoUrl }} style={styles.expandedPhoto} resizeMode="contain" /> : null}
+        </Pressable>
+      </Modal>
 
       <View style={styles.actionsContainer}>
         <Pressable
@@ -327,11 +301,7 @@ export default function ReviewRequestDetailsScreen() {
           disabled={!canAccept || isBusy}
         >
           <Text style={styles.primaryActionButtonText}>
-            {details.offerStatus === 'PENDING'
-              ? 'Offer Already Submitted'
-              : isBusy
-                ? 'Please wait...'
-                : 'Accept & Send Offer'}
+            {isBusy ? 'Please wait...' : 'Accept & Send Offer'}
           </Text>
         </Pressable>
       </View>
@@ -364,11 +334,6 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 14,
     color: '#B45309',
-    textAlign: 'left',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#1D4ED8',
     textAlign: 'left',
   },
   primaryButton: {
@@ -437,6 +402,17 @@ const styles = StyleSheet.create({
     height: 84,
     borderRadius: 10,
     backgroundColor: '#E2E8F0',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  expandedPhoto: {
+    width: '100%',
+    height: '100%',
   },
   actionsContainer: {
     position: 'absolute',

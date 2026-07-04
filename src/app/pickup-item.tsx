@@ -1,7 +1,7 @@
-import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -28,6 +28,8 @@ import {
   isValidTripId,
   validatePickupItemRequest,
 } from '@/utils/pickupValidation';
+
+const MAX_PROOF_PHOTOS = 8;
 
 type PickupParams = {
   tripId?: string;
@@ -135,12 +137,11 @@ export default function PickupItemScreen() {
   const payloadValidationMessage = useMemo(() => {
     const payload: PickupItemRequest = {
       notes: notes.trim() || undefined,
-      proofPhotos,
       latitude: driverLocation?.latitude,
       longitude: driverLocation?.longitude,
     };
     return validatePickupItemRequest(payload);
-  }, [driverLocation, notes, proofPhotos]);
+  }, [driverLocation, notes]);
 
   const isInvalidRoute = !isTripValid || !hasValidPickup || !hasValidDropoff;
 
@@ -218,7 +219,7 @@ export default function PickupItemScreen() {
       });
 
       offItemPickedUp = onItemPickedUp((payload) => {
-        if (payload.tripId !== tripId) return;
+        if (payload.tripId !== tripId || payload.status !== 'ITEM_PICKED_UP') return;
         router.replace({ pathname: '/deliver-item', params: deliverParams });
       });
     } catch {
@@ -231,6 +232,50 @@ export default function PickupItemScreen() {
       offItemPickedUp?.();
     };
   }, [dropoffLocation, isInvalidRoute, pickupLocation, router, tripId]);
+
+  const appendProofPhotos = (assets: LocalDocumentAsset[]): void => {
+    setProofPhotos((current) => [...current, ...assets].slice(0, MAX_PROOF_PHOTOS));
+  };
+
+  const onSelectProofPhotos = async (): Promise<void> => {
+    setSubmitError('');
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Media library permission is required to select proof photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PROOF_PHOTOS,
+      quality: 0.9,
+    });
+
+    if (result.canceled) return;
+    appendProofPhotos(result.assets.map(toAssetFromImagePicker));
+  };
+
+  const onTakeProofPhoto = async (): Promise<void> => {
+    setSubmitError('');
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Camera permission is required to take proof photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.9,
+    });
+
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (!asset) return;
+    appendProofPhotos([toAssetFromImagePicker(asset)]);
+  };
 
   const onConfirmPickup = async (): Promise<void> => {
     setSubmitError('');
@@ -268,7 +313,7 @@ export default function PickupItemScreen() {
 
     const payload: PickupItemRequest = {
       notes: notes.trim() || undefined,
-      proofPhotos,
+      proofPhotos: proofPhotos.length ? proofPhotos : undefined,
       latitude: canSendLocation ? latestLocation?.latitude : undefined,
       longitude: canSendLocation ? latestLocation?.longitude : undefined,
     };
@@ -304,48 +349,6 @@ export default function PickupItemScreen() {
     }
   };
 
-  const pickFromLibrary = async (): Promise<void> => {
-    setSubmitError('');
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Photo library permission is required to select pickup photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.9,
-      selectionLimit: 8,
-    });
-
-    if (result.canceled) return;
-    const pickedAssets = result.assets.map(toAssetFromImagePicker);
-    setProofPhotos((current) => [...current, ...pickedAssets].slice(0, 8));
-  };
-
-  const capturePhoto = async (): Promise<void> => {
-    setSubmitError('');
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to capture pickup photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.9,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-    setProofPhotos((current) => [...current, toAssetFromImagePicker(result.assets[0])].slice(0, 8));
-  };
-
-  const removeProofPhoto = (uri: string): void => {
-    setProofPhotos((current) => current.filter((item) => item.uri !== uri));
-  };
-
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
@@ -361,8 +364,8 @@ export default function PickupItemScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.title}>Picked Up</Text>
-          <Text style={styles.subTitle}>Confirm pickup after collecting the cargo or vehicle from the customer.</Text>
+          <Text style={styles.title}>Pickup Item</Text>
+          <Text style={styles.subTitle}>Confirm that you received the package from the customer.</Text>
           <Text style={styles.metaText}>Trip ID: {tripId}</Text>
         </View>
 
@@ -426,32 +429,51 @@ export default function PickupItemScreen() {
           />
           <Text style={styles.hintText}>{notes.trim().length}/500</Text>
 
-          <Text style={styles.sectionTitle}>Pickup Photos</Text>
-          <Text style={styles.helperText}>
-            Take photos of the cargo or vehicle at pickup. This is required.
+          <Text style={styles.sectionTitle}>Proof Photos</Text>
+          <Text style={styles.metaText}>
+            Select multiple images from the gallery or capture more photos with the camera. Max {MAX_PROOF_PHOTOS}.
           </Text>
-          <View style={styles.photoActionsRow}>
-            <Pressable style={styles.secondaryButton} onPress={() => void capturePhoto()}>
-              <Text style={styles.secondaryButtonText}>Take Photo</Text>
-            </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={() => void pickFromLibrary()}>
-              <Text style={styles.secondaryButtonText}>Choose Photos</Text>
-            </Pressable>
-          </View>
           {proofPhotos.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-              {proofPhotos.map((photo) => (
-                <View key={photo.uri} style={styles.photoCard}>
-                  <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
-                  <Pressable style={styles.removePhotoButton} onPress={() => removeProofPhoto(photo.uri)}>
-                    <Text style={styles.removePhotoButtonText}>Remove</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.proofRow}>
+              {proofPhotos.map((photo, index) => (
+                <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
+                  <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
+                  <Text style={styles.proofName} numberOfLines={1}>
+                    {photo.fileName?.trim() || `Proof ${index + 1}`}
+                  </Text>
+                  <Pressable
+                    style={styles.removeProofButton}
+                    onPress={() =>
+                      setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
+                    }
+                  >
+                    <Text style={styles.removeProofButtonText}>Remove</Text>
                   </Pressable>
                 </View>
               ))}
             </ScrollView>
-          ) : (
-            <Text style={styles.hintText}>No pickup photos selected yet.</Text>
-          )}
+          ) : null}
+          <View style={styles.uploadActions}>
+            <Pressable
+              style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
+              onPress={() => void onSelectProofPhotos()}
+              disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+            >
+              <Text style={styles.uploadButtonText}>Choose Images</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
+              onPress={() => void onTakeProofPhoto()}
+              disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+            >
+              <Text style={styles.uploadButtonText}>Take Photo</Text>
+            </Pressable>
+            {proofPhotos.length > 0 ? (
+              <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
+                <Text style={styles.clearButtonText}>Clear All</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
@@ -465,8 +487,8 @@ export default function PickupItemScreen() {
             {isLoadingLocation
               ? 'Getting location...'
               : isSubmitting
-              ? 'Confirming pickup...'
-              : 'Picked Up'}
+                ? 'Confirming pickup...'
+                : 'Confirm Item Pickup'}
           </Text>
         </Pressable>
 
@@ -548,10 +570,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
   },
-  helperText: {
-    color: '#475569',
-    fontSize: 13,
-  },
   textArea: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
@@ -562,48 +580,75 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     backgroundColor: '#FFFFFF',
   },
-  photoActionsRow: {
-    flexDirection: 'row',
+  proofCard: {
+    gap: 8,
+  },
+  proofRow: {
     gap: 10,
+    paddingVertical: 4,
   },
-  secondaryButton: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#16A34A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F0FDF4',
-  },
-  secondaryButtonText: {
-    color: '#166534',
-    fontWeight: '700',
-  },
-  photoRow: {
-    gap: 10,
-  },
-  photoCard: {
-    width: 112,
+  proofItem: {
+    width: 160,
     gap: 6,
   },
-  photoPreview: {
-    width: 112,
-    height: 112,
+  proofPreview: {
+    width: '100%',
+    height: 120,
     borderRadius: 12,
     backgroundColor: '#E2E8F0',
   },
-  removePhotoButton: {
-    minHeight: 34,
-    borderRadius: 8,
-    backgroundColor: '#E2E8F0',
+  proofName: {
+    color: '#475569',
+    fontSize: 12,
+  },
+  uploadActions: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  uploadButton: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removePhotoButtonText: {
+  disabledUploadButton: {
+    backgroundColor: '#94A3B8',
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  clearButton: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  clearButtonText: {
     color: '#334155',
+    fontSize: 13,
     fontWeight: '600',
+  },
+  removeProofButton: {
+    minHeight: 32,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeProofButtonText: {
+    color: '#B91C1C',
     fontSize: 12,
+    fontWeight: '700',
   },
   actionButton: {
     minHeight: 48,

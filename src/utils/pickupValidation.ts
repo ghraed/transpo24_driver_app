@@ -86,10 +86,6 @@ export function validatePickupItemRequest(payload: PickupItemRequest): string | 
     return 'Proof image URL must be a valid URL.';
   }
 
-  if (!payload.proofPhotos?.length && !(payload.proofImageUrl?.trim().length ?? 0)) {
-    return 'At least one pickup photo is required.';
-  }
-
   return null;
 }
 
@@ -104,7 +100,6 @@ export function validatePickupItemResponse(payload: unknown): PickupItemResponse
     pickedUpAt,
     pickupNotes,
     pickupProofImageUrl,
-    pickupProofPhotos,
     nextStep,
   } = payload;
 
@@ -131,38 +126,6 @@ export function validatePickupItemResponse(payload: unknown): PickupItemResponse
     return null;
   }
 
-  if (!Array.isArray(pickupProofPhotos)) {
-    return null;
-  }
-
-  const mappedProofPhotos = pickupProofPhotos
-    .map((photo) => {
-      if (!isRecord(photo)) return null;
-      const { id, type, url, mimeType, sizeBytes, sortOrder, createdAt } = photo;
-      if (
-        typeof id !== 'string' ||
-        type !== 'PICKUP' ||
-        typeof url !== 'string' ||
-        typeof mimeType !== 'string' ||
-        typeof sizeBytes !== 'number' ||
-        typeof sortOrder !== 'number' ||
-        typeof createdAt !== 'string'
-      ) {
-        return null;
-      }
-
-      return {
-        id,
-        type: 'PICKUP' as const,
-        url,
-        mimeType,
-        sizeBytes,
-        sortOrder,
-        createdAt,
-      };
-    })
-    .filter((photo): photo is NonNullable<typeof photo> => photo !== null);
-
   return {
     tripId,
     driverId,
@@ -171,7 +134,6 @@ export function validatePickupItemResponse(payload: unknown): PickupItemResponse
     pickedUpAt,
     pickupNotes: pickupNotes ?? null,
     pickupProofImageUrl: pickupProofImageUrl ?? null,
-    pickupProofPhotos: mappedProofPhotos,
     nextStep: 'DELIVER_ITEM',
   };
 }

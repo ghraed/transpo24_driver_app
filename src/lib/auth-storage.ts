@@ -3,18 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 const ACCESS_TOKEN_KEY = 'transpo24.driver.accessToken';
 const REMEMBERED_EMAIL_KEY = 'transpo24.driver.rememberedEmail';
 const REMEMBERED_PASSWORD_KEY = 'transpo24.driver.rememberedPassword';
-const REGISTER_DRAFT_KEY = 'transpo24.driver.registerDraft';
-
-export interface DriverRegisterDraft {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-  countryCodes: string[];
-  city: string;
-}
+const LAST_ONBOARDING_ROUTE_KEY = 'transpo24.driver.lastOnboardingRoute';
+const ONBOARDING_DOCUMENTS_STATUS_KEY = 'transpo24.driver.onboardingDocumentsStatus';
 
 export async function persistAccessToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
@@ -53,33 +43,26 @@ export async function clearRememberedCredentials(): Promise<void> {
   ]);
 }
 
-export async function persistDriverRegisterDraft(draft: DriverRegisterDraft): Promise<void> {
-  await SecureStore.setItemAsync(REGISTER_DRAFT_KEY, JSON.stringify(draft));
+export async function persistLastOnboardingRoute(route: string): Promise<void> {
+  await SecureStore.setItemAsync(LAST_ONBOARDING_ROUTE_KEY, route);
 }
 
-export async function readDriverRegisterDraft(): Promise<DriverRegisterDraft | null> {
-  const raw = await SecureStore.getItemAsync(REGISTER_DRAFT_KEY);
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<DriverRegisterDraft>;
-    return {
-      firstName: typeof parsed.firstName === 'string' ? parsed.firstName : '',
-      lastName: typeof parsed.lastName === 'string' ? parsed.lastName : '',
-      email: typeof parsed.email === 'string' ? parsed.email : '',
-      phone: typeof parsed.phone === 'string' ? parsed.phone : '',
-      password: typeof parsed.password === 'string' ? parsed.password : '',
-      confirmPassword: typeof parsed.confirmPassword === 'string' ? parsed.confirmPassword : '',
-      countryCodes: Array.isArray(parsed.countryCodes)
-        ? parsed.countryCodes.filter((value): value is string => typeof value === 'string')
-        : [],
-      city: typeof parsed.city === 'string' ? parsed.city : '',
-    };
-  } catch {
-    return null;
-  }
+export async function readLastOnboardingRoute(): Promise<string | null> {
+  return SecureStore.getItemAsync(LAST_ONBOARDING_ROUTE_KEY);
 }
 
-export async function clearDriverRegisterDraft(): Promise<void> {
-  await SecureStore.deleteItemAsync(REGISTER_DRAFT_KEY);
+export async function clearLastOnboardingRoute(): Promise<void> {
+  await SecureStore.deleteItemAsync(LAST_ONBOARDING_ROUTE_KEY);
+}
+
+export async function persistOnboardingDocumentsStatus(status: string): Promise<void> {
+  await SecureStore.setItemAsync(ONBOARDING_DOCUMENTS_STATUS_KEY, status);
+}
+
+export async function readOnboardingDocumentsStatus(): Promise<string | null> {
+  return SecureStore.getItemAsync(ONBOARDING_DOCUMENTS_STATUS_KEY);
+}
+
+export async function clearOnboardingDocumentsStatus(): Promise<void> {
+  await SecureStore.deleteItemAsync(ONBOARDING_DOCUMENTS_STATUS_KEY);
 }

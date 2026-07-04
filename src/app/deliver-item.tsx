@@ -1,14 +1,15 @@
-import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { deliverItem, startDelivery } from '@/services/tripService';
+import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
+import { deliverItem, startDelivery } from '@/services/tripService';
 import type { LocalDocumentAsset } from '@/types/auth';
 import type { AddressedLocation, DeliverItemRequest, GeoLocation } from '@/types/trip.types';
 import {
@@ -23,6 +24,7 @@ import {
 
 const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
+const MAX_PROOF_PHOTOS = 8;
 
 type DeliverItemParams = {
   tripId?: string;
@@ -40,13 +42,6 @@ function parseNumber(value: string | string[] | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function buildCompletedRoute(tripId: string, deliveredAt: string): Href {
-  return {
-    pathname: '/driver-trip-completed',
-    params: { tripId, deliveredAt },
-  };
-}
-
 function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
   return {
     uri: asset.uri,
@@ -55,6 +50,13 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
     fileSize: asset.fileSize ?? undefined,
     width: asset.width,
     height: asset.height,
+  };
+}
+
+function buildCompletedRoute(tripId: string, deliveredAt: string): Href {
+  return {
+    pathname: '/driver-trip-completed',
+    params: { tripId, deliveredAt },
   };
 }
 
@@ -99,6 +101,7 @@ export default function DeliverItemScreen() {
   const [locationMessage, setLocationMessage] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [routeBlockedMessage, setRouteBlockedMessage] = useState<string>('');
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
@@ -123,12 +126,11 @@ export default function DeliverItemScreen() {
   const payloadValidationMessage = useMemo(() => {
     const payload: DeliverItemRequest = {
       notes: notes.trim() || undefined,
-      proofPhotos,
       latitude: driverLocation?.latitude,
       longitude: driverLocation?.longitude,
     };
     return validateDeliverItemRequest(payload);
-  }, [driverLocation, notes, proofPhotos]);
+  }, [driverLocation, notes]);
 
   useEffect(() => {
     let active = true;
@@ -144,9 +146,29 @@ export default function DeliverItemScreen() {
         await startDelivery(tripId);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to start delivery.';
+        const normalizedMessage = message.toLowerCase();
         if (
-          !message.toLowerCase().includes('already') &&
-          !message.toLowerCase().includes('driver_going_to_dropoff')
+          normalizedMessage.includes('trip status must be item_picked_up before starting delivery') ||
+          normalizedMessage.includes('pickup must be confirmed')
+        ) {
+          try {
+            const details = await getDriverAcceptedJobDetails(tripId);
+            if (details.requestStatus !== 'DRIVER_GOING_TO_DROPOFF') {
+              setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
+              setIsStartingDelivery(false);
+              setIsLoadingLocation(false);
+              return;
+            }
+          } catch {
+            setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
+            setIsStartingDelivery(false);
+            setIsLoadingLocation(false);
+            return;
+          }
+        }
+        if (
+          !normalizedMessage.includes('already') &&
+          !normalizedMessage.includes('driver_going_to_dropoff')
         ) {
           setSubmitError(message);
           setIsStartingDelivery(false);
@@ -292,6 +314,50 @@ export default function DeliverItemScreen() {
     };
   }, [isInvalidRoute, router, tripId]);
 
+  const appendProofPhotos = (assets: LocalDocumentAsset[]): void => {
+    setProofPhotos((current) => [...current, ...assets].slice(0, MAX_PROOF_PHOTOS));
+  };
+
+  const onSelectProofPhotos = async (): Promise<void> => {
+    setSubmitError('');
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Media library permission is required to select proof photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PROOF_PHOTOS,
+      quality: 0.9,
+    });
+
+    if (result.canceled) return;
+    appendProofPhotos(result.assets.map(toAssetFromImagePicker));
+  };
+
+  const onTakeProofPhoto = async (): Promise<void> => {
+    setSubmitError('');
+
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
+      setSubmitError('Camera permission is required to take proof photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.9,
+    });
+
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (!asset) return;
+    appendProofPhotos([toAssetFromImagePicker(asset)]);
+  };
+
   const onConfirmDelivery = async (): Promise<void> => {
     setSubmitError('');
     if (isInvalidRoute || !dropoffLocation) {
@@ -328,7 +394,7 @@ export default function DeliverItemScreen() {
 
     const payload: DeliverItemRequest = {
       notes: notes.trim() || undefined,
-      proofPhotos,
+      proofPhotos: proofPhotos.length ? proofPhotos : undefined,
       latitude: latestLocation.latitude,
       longitude: latestLocation.longitude,
     };
@@ -350,51 +416,37 @@ export default function DeliverItemScreen() {
     }
   };
 
-  const pickFromLibrary = async (): Promise<void> => {
-    setSubmitError('');
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Photo library permission is required to select delivery photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: true,
-      quality: 0.9,
-      selectionLimit: 8,
-    });
-
-    if (result.canceled) return;
-    setProofPhotos((current) => [...current, ...result.assets.map(toAssetFromImagePicker)].slice(0, 8));
-  };
-
-  const capturePhoto = async (): Promise<void> => {
-    setSubmitError('');
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to capture delivery photos.');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.9,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-    setProofPhotos((current) => [...current, toAssetFromImagePicker(result.assets[0])].slice(0, 8));
-  };
-
-  const removeProofPhoto = (uri: string): void => {
-    setProofPhotos((current) => current.filter((item) => item.uri !== uri));
-  };
-
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
         <Text style={styles.errorText}>Invalid trip data. Please reopen this trip from Accepted Jobs.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (routeBlockedMessage) {
+    return (
+      <SafeAreaView style={styles.centeredContainer}>
+        <Text style={styles.errorText}>{routeBlockedMessage}</Text>
+        <Pressable
+          style={styles.actionButton}
+          onPress={() =>
+            router.replace({
+              pathname: '/pickup-item',
+              params: {
+                tripId,
+                pickupLatitude: String(pickupLocation.latitude),
+                pickupLongitude: String(pickupLocation.longitude),
+                pickupAddress: pickupLocation.address ?? '',
+                dropoffLatitude: String(dropoffLocation.latitude),
+                dropoffLongitude: String(dropoffLocation.longitude),
+                dropoffAddress: dropoffLocation.address ?? '',
+              },
+            })
+          }
+        >
+          <Text style={styles.actionButtonText}>Go To Pickup Confirmation</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -450,7 +502,7 @@ export default function DeliverItemScreen() {
       </View>
 
       <View style={styles.bottomCard}>
-        <Text style={styles.title}>On the Way to Delivery</Text>
+        <Text style={styles.title}>Deliver Item</Text>
         <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
         <Text style={styles.subText}>Trip ID: {tripId}</Text>
         <Text style={styles.subText}>Pickup: {pickupLocation.address || 'Pickup address unavailable'}</Text>
@@ -467,30 +519,51 @@ export default function DeliverItemScreen() {
           multiline
           maxLength={500}
         />
-        <Text style={styles.label}>Delivery Photos</Text>
-        <Text style={styles.helperText}>Take photos at delivery. This is required.</Text>
-        <View style={styles.photoActionsRow}>
-          <Pressable style={styles.secondaryButton} onPress={() => void capturePhoto()}>
-            <Text style={styles.secondaryButtonText}>Take Photo</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => void pickFromLibrary()}>
-            <Text style={styles.secondaryButtonText}>Choose Photos</Text>
-          </Pressable>
-        </View>
+        <Text style={styles.subText}>Proof Photos</Text>
+        <Text style={styles.helperText}>
+          Select multiple images from the gallery or capture more photos with the camera. Max {MAX_PROOF_PHOTOS}.
+        </Text>
         {proofPhotos.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
-            {proofPhotos.map((photo) => (
-              <View key={photo.uri} style={styles.photoCard}>
-                <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
-                <Pressable style={styles.removePhotoButton} onPress={() => removeProofPhoto(photo.uri)}>
-                  <Text style={styles.removePhotoButtonText}>Remove</Text>
+          <View style={styles.proofGrid}>
+            {proofPhotos.map((photo, index) => (
+              <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
+                <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
+                <Text style={styles.helperText} numberOfLines={1}>
+                  {photo.fileName?.trim() || `Proof ${index + 1}`}
+                </Text>
+                <Pressable
+                  style={styles.removeProofButton}
+                  onPress={() =>
+                    setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
+                  }
+                >
+                  <Text style={styles.removeProofButtonText}>Remove</Text>
                 </Pressable>
               </View>
             ))}
-          </ScrollView>
-        ) : (
-          <Text style={styles.helperText}>No delivery photos selected yet.</Text>
-        )}
+          </View>
+        ) : null}
+        <View style={styles.uploadActions}>
+          <Pressable
+            style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
+            onPress={() => void onSelectProofPhotos()}
+            disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+          >
+            <Text style={styles.uploadButtonText}>Choose Images</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
+            onPress={() => void onTakeProofPhoto()}
+            disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+          >
+            <Text style={styles.uploadButtonText}>Take Photo</Text>
+          </Pressable>
+          {proofPhotos.length > 0 ? (
+            <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
+              <Text style={styles.clearButtonText}>Clear All</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {isStartingDelivery ? (
           <View style={styles.row}>
@@ -517,10 +590,10 @@ export default function DeliverItemScreen() {
             {isLoadingLocation
               ? 'Getting location...'
               : tooFarFromDropoff
-              ? 'Too far from dropoff'
-              : isSubmitting
-              ? 'Confirming delivery...'
-              : 'Delivered'}
+                ? 'Too far from dropoff'
+                : isSubmitting
+                  ? 'Confirming delivery...'
+                  : 'Confirm Delivery'}
           </Text>
         </Pressable>
       </View>
@@ -584,11 +657,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  label: {
-    color: '#0F172A',
-    fontWeight: '700',
-    fontSize: 14,
-  },
   input: {
     minHeight: 44,
     borderWidth: 1,
@@ -599,51 +667,75 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     color: '#0F172A',
   },
-  helperText: {
-    color: '#475569',
+  proofCard: {
+    gap: 8,
   },
-  photoActionsRow: {
+  proofGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
   },
-  secondaryButton: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-  },
-  secondaryButtonText: {
-    color: '#1D4ED8',
-    fontWeight: '700',
-  },
-  photoRow: {
-    gap: 10,
-  },
-  photoCard: {
-    width: 112,
+  proofItem: {
+    width: '48%',
     gap: 6,
   },
-  photoPreview: {
-    width: 112,
-    height: 112,
+  proofPreview: {
+    width: '100%',
+    height: 120,
     borderRadius: 12,
     backgroundColor: '#E2E8F0',
   },
-  removePhotoButton: {
-    minHeight: 34,
-    borderRadius: 8,
-    backgroundColor: '#E2E8F0',
+  uploadActions: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  uploadButton: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removePhotoButtonText: {
+  disabledUploadButton: {
+    backgroundColor: '#94A3B8',
+  },
+  uploadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  clearButton: {
+    minHeight: 42,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  clearButtonText: {
     color: '#334155',
+    fontSize: 13,
     fontWeight: '600',
+  },
+  removeProofButton: {
+    minHeight: 32,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeProofButtonText: {
+    color: '#B91C1C',
     fontSize: 12,
+    fontWeight: '700',
+  },
+  helperText: {
+    color: '#475569',
   },
   warningText: {
     color: '#B45309',

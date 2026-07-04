@@ -1,171 +1,177 @@
 import { useRouter, type Href } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
-import { getMyDriverVehicles, updateDriverOnlineStatus } from '@/lib/api';
 import {
-  connectSocket,
-  disconnectSocket,
-  onOfferAccepted,
-  onRequestNew,
-  onSocketConnected,
-  onSocketDisconnect,
-  onSocketError,
-} from '@/services/socketService';
-import {
-  validateOfferAcceptedPayload,
-  validateRequestNewPayload,
-} from '@/utils/locationValidation';
+  getDriverAvailability,
+  getDriverVehicles,
+  sendCustomerTestNotification,
+  updateDriverOnlineStatus,
+} from '@/lib/api';
+import { clearLastOnboardingRoute } from '@/lib/auth-storage';
+import { nextStepToRoute } from '@/lib/onboarding-route';
+import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
+import type { DriverAvailabilityResponse } from '@/types/auth';
+import { validateOfferAcceptedPayload } from '@/utils/locationValidation';
+
+function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse): boolean {
+  if (availability.nextStep === 'SET_AVAILABILITY') {
+    return false;
+  }
+
+  if (!availability.id) {
+    return false;
+  }
+
+  if (availability.baseLatitude === null || availability.baseLongitude === null) {
+    return false;
+  }
+
+  return availability.weeklySchedule.some((day) => day.isAvailable);
+}
 
 export default function DriverHomeScreen() {
+  const testCustomerEmail = 'raed.ghanim.2014@gmail.com';
   const router = useRouter();
-  const { user, driver, signOut, accessToken, refreshDriverAvailability } = useAuth();
-  const [vehicleNotice, setVehicleNotice] = useState<string>('');
+  const { user, driver, signOut, accessToken } = useAuth();
+  const [hasVehicles, setHasVehicles] = useState<boolean>(true);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState<boolean>(true);
   const [isOnline, setIsOnline] = useState<boolean>(false);
-  const [isUpdatingOnline, setIsUpdatingOnline] = useState<boolean>(false);
-  const [statusMessage, setStatusMessage] = useState<string>('');
-  const [socketStatus, setSocketStatus] = useState<'connected' | 'disconnected' | 'connecting'>(
-    'connecting',
-  );
-  const [socketMessage, setSocketMessage] = useState<string>('');
-  const [requestBanner, setRequestBanner] = useState<string>('');
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState<boolean>(true);
+  const [isUpdatingAvailability, setIsUpdatingAvailability] = useState<boolean>(false);
+  const [availabilityError, setAvailabilityError] = useState<string>('');
+  const [requiresAvailabilitySetup, setRequiresAvailabilitySetup] = useState<boolean>(false);
+  const [isSendingTestNotification, setIsSendingTestNotification] = useState<boolean>(false);
+  const [testNotificationMessage, setTestNotificationMessage] = useState<string>('');
+
+  useEffect(() => {
+    void clearLastOnboardingRoute();
+  }, []);
 
   useEffect(() => {
     if (!accessToken) return;
 
     connectSocket(accessToken);
-    setSocketStatus('connecting');
 
     const unsubscribeOfferAccepted = onOfferAccepted((payload) => {
       const validated = validateOfferAcceptedPayload(payload);
       if (!validated) return;
 
-      Alert.alert(
-        'You were selected',
-        'You were selected for this request. The amount has been reserved from the customer wallet.',
-        [
-          {
-            text: 'View job',
-            onPress: () =>
-              router.push({
-                pathname: '/accepted-job-details',
-                params: { requestId: validated.tripId },
-              }),
-          },
-        ],
-      );
-    });
-
-    const unsubscribeRequestNew = onRequestNew((payload) => {
-      const validated = validateRequestNewPayload(payload);
-      if (!validated) return;
-
-      const serviceName = validated.service?.nameEn || validated.service?.key || 'Transport request';
-      const distanceLabel =
-        typeof validated.distanceKm === 'number'
-          ? `${validated.distanceKm.toFixed(1)} km`
-          : 'Distance available in app';
-      setRequestBanner(`New request: ${serviceName} • ${distanceLabel}`);
-    });
-
-    const unsubscribeConnected = onSocketConnected(() => {
-      setSocketStatus('connected');
-      setSocketMessage('');
-    });
-
-    const unsubscribeDisconnected = onSocketDisconnect(() => {
-      setSocketStatus('disconnected');
-    });
-
-    const unsubscribeSocketError = onSocketError((message) => {
-      setSocketStatus('disconnected');
-      setSocketMessage(message);
+      router.push({
+        pathname: '/go-to-pickup',
+        params: {
+          tripId: validated.tripId,
+          pickupLatitude: String(validated.pickupLocation.latitude),
+          pickupLongitude: String(validated.pickupLocation.longitude),
+          pickupAddress: validated.pickupLocation.address ?? '',
+          dropoffLatitude: String(validated.dropoffLocation.latitude),
+          dropoffLongitude: String(validated.dropoffLocation.longitude),
+          dropoffAddress: validated.dropoffLocation.address ?? '',
+        },
+      });
     });
 
     return () => {
       unsubscribeOfferAccepted();
-      unsubscribeRequestNew();
-      unsubscribeConnected();
-      unsubscribeDisconnected();
-      unsubscribeSocketError();
       disconnectSocket();
     };
   }, [accessToken, router]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      void (async () => {
-        try {
-          const response = await getMyDriverVehicles();
-          const hasCompleteVehicle = response.vehicles.some(
-            (item) => item.vehicle.completeness?.isComplete,
-          );
-          if (!hasCompleteVehicle) {
-            setVehicleNotice(
-              'Complete at least one vehicle and its load setup before you can receive requests.',
-            );
-          } else {
-            setVehicleNotice('');
-          }
-        } catch {
-          setVehicleNotice('');
-        }
-      })();
-    }, 0);
+    let isMounted = true;
 
-    return () => clearTimeout(timeoutId);
+    const loadVehicles = async (): Promise<void> => {
+      setIsLoadingVehicles(true);
+      try {
+        const vehicles = await getDriverVehicles();
+        if (isMounted) {
+          setHasVehicles(vehicles.length > 0);
+        }
+      } catch {
+        if (isMounted) {
+          setHasVehicles(true);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingVehicles(false);
+        }
+      }
+    };
+
+    void loadVehicles();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      void (async () => {
-        try {
-          const availability = await refreshDriverAvailability();
+    let isMounted = true;
+
+    const loadAvailability = async (): Promise<void> => {
+      setIsLoadingAvailability(true);
+      setAvailabilityError('');
+      try {
+        const availability = await getDriverAvailability();
+        if (isMounted) {
           setIsOnline(availability.isOnline);
-          if (!availability.isOnline && driver?.status !== 'APPROVED') {
-            setStatusMessage('Account pending review. Going online is unavailable until approval.');
-            return;
-          }
-          setStatusMessage('');
-        } catch (error) {
-          setStatusMessage(
-            error instanceof Error ? error.message : 'Failed to load driver availability.',
+          setRequiresAvailabilitySetup(!hasCompletedAvailabilitySetup(availability));
+        }
+      } catch (error) {
+        if (isMounted) {
+          setAvailabilityError(
+            error instanceof Error ? error.message : 'Failed to load availability.',
           );
         }
-      })();
-    }, 0);
+      } finally {
+        if (isMounted) {
+          setIsLoadingAvailability(false);
+        }
+      }
+    };
 
-    return () => clearTimeout(timeoutId);
-  }, [driver?.status, refreshDriverAvailability]);
+    void loadAvailability();
 
-  const eligibilityMessage = useMemo(() => {
-    if (driver?.status !== 'APPROVED') {
-      return 'Not eligible to go online: account pending review.';
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const onToggleAvailability = async (nextValue: boolean): Promise<void> => {
+    if (isLoadingAvailability || isUpdatingAvailability) return;
+    if (requiresAvailabilitySetup) {
+      setAvailabilityError('Set availability first before changing online status.');
+      router.push(nextStepToRoute('SET_AVAILABILITY'));
+      return;
     }
 
-    if (vehicleNotice) {
-      return 'Not eligible to go online: complete vehicle and load setup first.';
-    }
+    setIsUpdatingAvailability(true);
+    setAvailabilityError('');
 
-    return '';
-  }, [driver?.status, vehicleNotice]);
-
-  const onToggleOnline = async (nextValue: boolean): Promise<void> => {
-    if (isUpdatingOnline) return;
-
-    setIsUpdatingOnline(true);
-    setStatusMessage('');
     try {
       const response = await updateDriverOnlineStatus({ isOnline: nextValue });
       setIsOnline(response.isOnline);
-      setStatusMessage(response.isOnline ? 'You are online and can receive requests.' : 'You are offline.');
+      setRequiresAvailabilitySetup(!hasCompletedAvailabilitySetup(response));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update online status.';
-      setStatusMessage(message);
+      const message =
+        error instanceof Error ? error.message : 'Failed to update online status.';
+      setAvailabilityError(message);
+
+      if (message.toLowerCase().includes('set availability first')) {
+        setRequiresAvailabilitySetup(true);
+        router.push(nextStepToRoute('SET_AVAILABILITY'));
+      }
     } finally {
-      setIsUpdatingOnline(false);
+      setIsUpdatingAvailability(false);
     }
   };
 
@@ -174,51 +180,71 @@ export default function DriverHomeScreen() {
     router.replace('/');
   };
 
+  const onSendTestNotification = async (): Promise<void> => {
+    if (isSendingTestNotification) return;
+
+    setIsSendingTestNotification(true);
+    setTestNotificationMessage('');
+
+    try {
+      const response = await sendCustomerTestNotification(testCustomerEmail);
+      setTestNotificationMessage(`Test notification sent to ${response.email}.`);
+    } catch (error) {
+      setTestNotificationMessage(
+        error instanceof Error ? error.message : 'Failed to send test notification.',
+      );
+    } finally {
+      setIsSendingTestNotification(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>Driver Home</Text>
         <Text style={styles.subtitle}>Welcome {driver?.firstName || user?.email || 'Driver'}.</Text>
-        {vehicleNotice ? <Text style={styles.noticeText}>{vehicleNotice}</Text> : null}
-        {requestBanner ? <Text style={styles.successText}>{requestBanner}</Text> : null}
 
-        <View style={styles.statusCard}>
-          <View style={styles.statusCopy}>
-            <Text style={styles.statusTitle}>Driver status</Text>
-            <Text style={styles.statusValue}>{isOnline ? 'Online' : 'Offline'}</Text>
-            <Text style={styles.statusHint}>
-              {eligibilityMessage || statusMessage || 'Switch online to receive transport requests.'}
-            </Text>
-            <Text style={styles.socketHint}>
-              Real-time connection: {socketStatus}
-              {socketMessage ? ` • ${socketMessage}` : ''}
-            </Text>
+        <View style={styles.availabilityCard}>
+          <View style={styles.availabilityHeader}>
+            <View style={styles.availabilityCopy}>
+              <Text style={styles.availabilityTitle}>Set Availability</Text>
+              <Text style={styles.availabilitySubtitle}>
+                {isLoadingAvailability
+                  ? 'Loading online status...'
+                  : isOnline
+                    ? 'You are online and can receive matching requests.'
+                    : 'You are offline and will not receive new requests.'}
+              </Text>
+            </View>
+            {isLoadingAvailability ? (
+              <ActivityIndicator size="small" color="#1D4ED8" />
+            ) : (
+              <Switch
+                value={isOnline}
+                onValueChange={(value) => void onToggleAvailability(value)}
+                disabled={isUpdatingAvailability}
+                trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                thumbColor={isOnline ? '#1D4ED8' : '#FFFFFF'}
+              />
+            )}
           </View>
-          <View style={styles.toggleWrap}>
-            {isUpdatingOnline ? <ActivityIndicator color="#2563EB" /> : null}
-            <Switch
-              value={isOnline}
-              onValueChange={(value) => void onToggleOnline(value)}
-              disabled={isUpdatingOnline}
-            />
-          </View>
+          {isUpdatingAvailability ? (
+            <Text style={styles.availabilityHint}>Updating availability...</Text>
+          ) : null}
+          {requiresAvailabilitySetup ? (
+            <Pressable
+              style={styles.setupAvailabilityButton}
+              onPress={() => router.push(nextStepToRoute('SET_AVAILABILITY'))}
+            >
+              <Text style={styles.setupAvailabilityButtonText}>Complete Availability Setup</Text>
+            </Pressable>
+          ) : null}
+          {availabilityError ? (
+            <Text style={styles.availabilityErrorText}>{availabilityError}</Text>
+          ) : null}
         </View>
 
-        <Pressable style={styles.vehiclesButton} onPress={() => router.push('/my-vehicles' as Href)}>
-          <Text style={styles.requestsButtonText}>My Vehicles</Text>
-        </Pressable>
-
-        <Pressable
-          style={[
-            styles.requestsButton,
-            vehicleNotice ? styles.disabledButton : null,
-          ]}
-          onPress={() =>
-            vehicleNotice
-              ? router.push('/my-vehicles' as Href)
-              : router.push('/receive-requests')
-          }
-        >
+        <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
           <Text style={styles.requestsButtonText}>Available Requests</Text>
         </Pressable>
 
@@ -226,9 +252,40 @@ export default function DriverHomeScreen() {
           <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
         </Pressable>
 
+        <Pressable style={styles.vehiclesButton} onPress={() => router.push('/my-vehicles')}>
+          <Text style={styles.acceptedJobsButtonText}>My Vehicles</Text>
+        </Pressable>
+
+        {isLoadingVehicles ? (
+          <View style={styles.vehicleHintRow}>
+            <ActivityIndicator size="small" color="#1D4ED8" />
+            <Text style={styles.vehicleHintText}>Checking your vehicle status...</Text>
+          </View>
+        ) : !hasVehicles ? (
+          <Text style={styles.vehicleHintText}>
+            Add at least one vehicle to start receiving requests.
+          </Text>
+        ) : null}
+
         <Pressable style={styles.debugButton} onPress={() => router.push('/socket-debug' as Href)}>
           <Text style={styles.acceptedJobsButtonText}>Socket Debug</Text>
         </Pressable>
+
+        <Pressable
+          style={styles.testNotificationButton}
+          onPress={() => void onSendTestNotification()}
+          disabled={isSendingTestNotification}
+        >
+          <Text style={styles.acceptedJobsButtonText}>
+            {isSendingTestNotification
+              ? 'Sending Test Notification...'
+              : 'Send Test Notification to Raed'}
+          </Text>
+        </Pressable>
+
+        {testNotificationMessage ? (
+          <Text style={styles.testNotificationMessage}>{testNotificationMessage}</Text>
+        ) : null}
 
         <Pressable style={styles.button} onPress={() => void onSignOut()}>
           <Text style={styles.buttonText}>Logout</Text>
@@ -243,68 +300,55 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
   subtitle: { color: '#475569' },
-  statusCard: {
+  availabilityCard: {
+    marginTop: 8,
     borderWidth: 1,
     borderColor: '#DBEAFE',
     borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    padding: 12,
+    backgroundColor: '#F8FBFF',
+    padding: 14,
+    gap: 8,
+  },
+  availabilityHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
   },
-  statusCopy: {
+  availabilityCopy: {
     flex: 1,
     gap: 4,
   },
-  statusTitle: {
-    color: '#1E3A8A',
+  availabilityTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    fontSize: 14,
-  },
-  statusValue: {
     color: '#0F172A',
-    fontWeight: '700',
-    fontSize: 18,
   },
-  statusHint: {
-    color: '#334155',
+  availabilitySubtitle: {
     fontSize: 13,
-  },
-  socketHint: {
     color: '#475569',
-    fontSize: 12,
   },
-  toggleWrap: {
+  availabilityHint: {
+    color: '#1D4ED8',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  setupAvailabilityButton: {
+    minHeight: 42,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 14,
   },
-  noticeText: {
-    color: '#B45309',
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#F59E0B',
-    borderRadius: 10,
-    padding: 10,
+  setupAvailabilityButtonText: {
+    color: '#1D4ED8',
     fontSize: 13,
+    fontWeight: '700',
   },
-  successText: {
-    color: '#166534',
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#86EFAC',
-    borderRadius: 10,
-    padding: 10,
+  availabilityErrorText: {
+    color: '#B91C1C',
     fontSize: 13,
-  },
-  vehiclesButton: {
-    marginTop: 8,
-    minHeight: 44,
-    borderRadius: 10,
-    backgroundColor: '#1D4ED8',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   requestsButton: {
     marginTop: 8,
@@ -313,9 +357,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0EA5E9',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  disabledButton: {
-    opacity: 0.6,
   },
   requestsButtonText: { color: '#FFFFFF', fontWeight: '700' },
   acceptedJobsButton: {
@@ -334,7 +375,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  testNotificationButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#9333EA',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 1,
+  },
+  vehiclesButton: {
+    marginTop: 8,
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   acceptedJobsButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  vehicleHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  vehicleHintText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
+  testNotificationMessage: {
+    color: '#475569',
+    fontSize: 13,
+  },
   button: {
     marginTop: 8,
     minHeight: 44,

@@ -424,7 +424,7 @@ export default function GoToPickupScreen() {
       </View>
 
       <View style={styles.bottomCard}>
-        <Text style={styles.title}>On the Way to Pickup</Text>
+        <Text style={styles.title}>Go to Pickup Location</Text>
         <Text style={styles.addressText}>{pickupLocation.address || 'Pickup address unavailable'}</Text>
         {distanceMeters !== null ? (
           <Text style={styles.distanceText}>Distance remaining: {(distanceMeters / 1000).toFixed(2)} km</Text>
@@ -449,14 +449,12 @@ export default function GoToPickupScreen() {
               ? 'Too far from pickup'
               : isSubmittingArrival
               ? 'Confirming arrival...'
-              : 'Arrived at Location'}
+              : 'Arrived at Pickup'}
           </Text>
         </Pressable>
-        {__DEV__ ? (
-          <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
-            <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
-          </Pressable>
-        ) : null}
+        <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
+          <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
+        </Pressable>
 
         <Text style={styles.radiusText}>Arrival allowed within {ARRIVAL_RADIUS_METERS} meters of pickup.</Text>
       </View>

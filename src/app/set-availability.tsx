@@ -1,12 +1,11 @@
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  approveDriverForTestingDebug,
 } from '@/lib/api';
-import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
 import {
   ActivityIndicator,
+  AppState,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,7 +17,28 @@ import {
   View,
 } from 'react-native';
 
+import {
+  isNativeMapRuntimeAvailable,
+  MapPressEvent,
+  NativeMapView,
+  NativeMarker,
+  PROVIDER_GOOGLE,
+  Region,
+} from '@/components/native-maps';
+import { getBackendApiBaseUrl } from '@/config/backend';
+import { HAS_GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { useAuth } from '@/context/auth-context';
+import {
+  clearLastOnboardingRoute,
+  persistLastOnboardingRoute,
+} from '@/lib/auth-storage';
+import {
+  resolvePlaceFromQuery,
+  resolvePlaceSuggestion,
+  searchPlacesAutocomplete,
+  type PlaceAutocompleteSuggestion,
+} from '@/lib/places';
+import { nextStepToRoute } from '@/lib/onboarding-route';
 import type {
   DayOfWeek,
   DriverAvailabilityForm,
@@ -47,6 +67,21 @@ const ORDERED_DAYS: DayOfWeek[] = [
   'SUNDAY',
 ];
 
+const DEFAULT_MAP_REGION: Region = {
+  latitude: 33.8938,
+  longitude: 35.5018,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
+
+type SelectedBaseLocation = {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  placeId?: string;
+  source?: 'device' | 'manual' | 'search';
+};
+
 function parseNumber(value: string): number | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -68,6 +103,32 @@ function detectDefaultTimezone(countryCode?: string | null): string {
   return deviceTimezone || 'UTC';
 }
 
+function formatAddressFromReverseGeocode(
+  reverseGeocodeResult: Location.LocationGeocodedAddress | undefined,
+): string {
+  return [
+    reverseGeocodeResult?.name,
+    reverseGeocodeResult?.street,
+    reverseGeocodeResult?.city,
+    reverseGeocodeResult?.region,
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
+function buildRegion(latitude?: number, longitude?: number): Region {
+  if (typeof latitude === 'number' && typeof longitude === 'number') {
+    return {
+      latitude,
+      longitude,
+      latitudeDelta: 0.03,
+      longitudeDelta: 0.03,
+    };
+  }
+
+  return DEFAULT_MAP_REGION;
+}
+
 function createDefaultWeeklySchedule(): DriverAvailabilityFormDay[] {
   return ORDERED_DAYS.map((day) => {
     const weekday = day !== 'SATURDAY' && day !== 'SUNDAY';
@@ -87,6 +148,7 @@ export default function SetAvailabilityScreen() {
     driver,
     refreshDriverAvailability,
     saveDriverAvailability,
+    approveDriverForTesting,
     refreshDriverMe,
     signOut,
   } = useAuth();
@@ -111,7 +173,27 @@ export default function SetAvailabilityScreen() {
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
   const [approveDebugMessage, setApproveDebugMessage] = useState<string>('');
-  const apiBaseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') || '(EXPO_PUBLIC_API_URL not set)';
+  const [selectedLocation, setSelectedLocation] = useState<SelectedBaseLocation | null>(null);
+  const [addressQuery, setAddressQuery] = useState<string>('');
+  const [mapRegion, setMapRegion] = useState<Region>(DEFAULT_MAP_REGION);
+  const [locationMessage, setLocationMessage] = useState<string>('');
+  const [isLocationServicesDisabled, setIsLocationServicesDisabled] = useState<boolean>(false);
+  const [searchMessage, setSearchMessage] = useState<string>('');
+  const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
+  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceAutocompleteSuggestion[]>([]);
+  const suppressAutocompleteRef = useRef<boolean>(false);
+  const mapRef = useRef<any>(null);
+  const apiBaseUrl = (() => {
+    try {
+      return getBackendApiBaseUrl();
+    } catch (error) {
+      return error instanceof Error ? error.message : '(EXPO_PUBLIC_API_URL not set)';
+    }
+  })();
+
+  useEffect(() => {
+    void persistLastOnboardingRoute('/set-availability');
+  }, []);
 
   const applyAvailability = useCallback((response: Awaited<ReturnType<typeof refreshDriverAvailability>>): void => {
     setForm({
@@ -134,7 +216,18 @@ export default function SetAvailabilityScreen() {
         };
       }),
     });
-  }, [driver?.countryCode]);
+    setAddressQuery(response.baseAddress ?? '');
+    setMapRegion(buildRegion(response.baseLatitude ?? undefined, response.baseLongitude ?? undefined));
+    setSelectedLocation(
+      response.baseLatitude !== null && response.baseLongitude !== null
+        ? {
+            latitude: response.baseLatitude,
+            longitude: response.baseLongitude,
+            address: response.baseAddress ?? undefined,
+          }
+        : null,
+    );
+  }, [driver?.countryCode, refreshDriverAvailability]);
 
   const loadAvailability = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -152,11 +245,7 @@ export default function SetAvailabilityScreen() {
   }, [applyAvailability, refreshDriverAvailability]);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      void loadAvailability();
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
+    void loadAvailability();
   }, [loadAvailability]);
 
   const fieldErrors = useMemo(() => {
@@ -259,48 +348,295 @@ export default function SetAvailabilityScreen() {
     }));
   };
 
-  const onUseCurrentLocation = async (): Promise<void> => {
-    setSubmitError('');
-    setSubmitSuccess('');
+  const applySelectedLocation = useCallback((location: SelectedBaseLocation | null): void => {
+    setSelectedLocation(location);
+    setForm((prev) => ({
+      ...prev,
+      baseLatitude: location ? String(location.latitude) : '',
+      baseLongitude: location ? String(location.longitude) : '',
+      baseAddress: location?.address ?? '',
+    }));
+  }, []);
+
+  const applyCurrentLocation = useCallback(
+    async (location: Location.LocationObject) => {
+      const nextRegion: Region = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.03,
+        longitudeDelta: 0.03,
+      };
+
+      setMapRegion(nextRegion);
+      setLocationMessage('');
+      setSubmitError('');
+      setIsLocationServicesDisabled(false);
+
+      const reverse = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      const formattedAddress = formatAddressFromReverseGeocode(reverse[0]);
+
+      const nextLocation: SelectedBaseLocation = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        address: formattedAddress || 'Current location',
+        source: 'device',
+      };
+      mapRef.current?.animateToRegion?.(nextRegion, 350);
+      suppressAutocompleteRef.current = true;
+      setAddressQuery(nextLocation.address ?? '');
+      applySelectedLocation(nextLocation);
+    },
+    [applySelectedLocation],
+  );
+
+  const loadCurrentLocation = useCallback(async (requestPermission: boolean) => {
     setIsGettingLocation(true);
 
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
+      const permission = requestPermission
+        ? await Location.requestForegroundPermissionsAsync()
+        : await Location.getForegroundPermissionsAsync();
+
       if (permission.status !== Location.PermissionStatus.GRANTED) {
-        setSubmitError('Location permission denied. You can enter coordinates manually.');
+        setIsLocationServicesDisabled(false);
+        setLocationMessage(
+          'Location permission denied. You can still select a location on the map.',
+        );
         return;
       }
 
-      const position = await Location.getCurrentPositionAsync({});
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-
-      let baseAddress = form.baseAddress;
-      try {
-        const geocode = await Location.reverseGeocodeAsync({ latitude, longitude });
-        const first = geocode[0];
-        if (first) {
-          const parts = [first.name, first.street, first.city, first.region, first.country].filter(Boolean);
-          if (parts.length > 0) {
-            baseAddress = parts.join(', ');
-          }
-        }
-      } catch {
-        // Keep coordinates even if reverse geocoding fails.
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        setIsLocationServicesDisabled(true);
+        setLocationMessage(
+          'Location services are off. Turn GPS on to use your current location, or select a location on the map.',
+        );
+        return;
       }
 
-      setForm((prev) => ({
-        ...prev,
-        baseLatitude: String(latitude),
-        baseLongitude: String(longitude),
-        baseAddress,
-      }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to get current location.';
-      setSubmitError(message);
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.BestForNavigation,
+        mayShowUserSettingsDialog: true,
+        timeInterval: 1000,
+        distanceInterval: 1,
+      });
+
+      await applyCurrentLocation(current);
+    } catch {
+      setIsLocationServicesDisabled(false);
+      setLocationMessage(
+        'Unable to access current location. You can still select a location manually.',
+      );
     } finally {
       setIsGettingLocation(false);
     }
+  }, [applyCurrentLocation]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      void loadCurrentLocation(true);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [loadCurrentLocation]);
+
+  useEffect(() => {
+    if (!isLocationServicesDisabled) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      void loadCurrentLocation(false);
+    }, 2500);
+
+    return () => clearInterval(intervalId);
+  }, [isLocationServicesDisabled, loadCurrentLocation]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void loadCurrentLocation(false);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [loadCurrentLocation]);
+
+  const applyBaseLocationSelection = useCallback(
+    async (
+      latitude: number,
+      longitude: number,
+      address?: string,
+      placeId?: string,
+      source?: SelectedBaseLocation['source'],
+    ): Promise<void> => {
+      let resolvedAddress = address?.trim() || '';
+
+      if (!resolvedAddress) {
+        try {
+          const reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
+          resolvedAddress = formatAddressFromReverseGeocode(reverse[0]);
+        } catch {
+          // Keep coordinates even if reverse geocoding fails.
+        }
+      }
+
+      const nextLocation: SelectedBaseLocation = {
+        latitude,
+        longitude,
+        address: resolvedAddress || undefined,
+        placeId,
+        source,
+      };
+
+      suppressAutocompleteRef.current = true;
+      setAddressQuery(nextLocation.address ?? '');
+      const nextRegion = buildRegion(latitude, longitude);
+      setMapRegion(nextRegion);
+      mapRef.current?.animateToRegion?.(nextRegion, 350);
+      applySelectedLocation(nextLocation);
+      setPlaceSuggestions([]);
+      setSearchMessage(
+        nextLocation.address ? `Pinned: ${nextLocation.address}` : 'Selected base location.',
+      );
+    },
+    [applySelectedLocation],
+  );
+
+  useEffect(() => {
+    if (suppressAutocompleteRef.current) {
+      suppressAutocompleteRef.current = false;
+      return;
+    }
+
+    const query = addressQuery.trim();
+
+    if (!query) return;
+
+    if (!HAS_GOOGLE_MAPS_API_KEY) {
+      return;
+    }
+
+    let isCancelled = false;
+    const timeoutId = setTimeout(() => {
+      const loadSuggestions = async (): Promise<void> => {
+        setIsSearchingPlaces(true);
+        try {
+          const suggestions = await searchPlacesAutocomplete(query);
+          if (isCancelled) return;
+          setPlaceSuggestions(suggestions);
+          setSearchMessage(
+            suggestions.length === 0 ? 'No matching places found.' : 'Choose a suggested address.',
+          );
+        } catch (error) {
+          if (isCancelled) return;
+          setPlaceSuggestions([]);
+          setSearchMessage(
+            error instanceof Error ? error.message : 'Places search failed. Please try again.',
+          );
+        } finally {
+          if (!isCancelled) {
+            setIsSearchingPlaces(false);
+          }
+        }
+      };
+
+      void loadSuggestions();
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [addressQuery]);
+
+  const onSuggestionPress = useCallback(async (suggestion: PlaceAutocompleteSuggestion) => {
+    setIsSearchingPlaces(true);
+    setSearchMessage('');
+
+    try {
+      const place = await resolvePlaceSuggestion(suggestion);
+      await applyBaseLocationSelection(
+        place.latitude,
+        place.longitude,
+        place.address,
+        place.placeId,
+        'search',
+      );
+    } catch (error) {
+      setSearchMessage(
+        error instanceof Error ? error.message : 'Places search failed. Please try again.',
+      );
+    } finally {
+      setIsSearchingPlaces(false);
+    }
+  }, [applyBaseLocationSelection]);
+
+  const onSearchSubmit = useCallback(async () => {
+    const query = addressQuery.trim();
+
+    if (!query) {
+      setSearchMessage('Type an address first to search places.');
+      return;
+    }
+
+    if (!HAS_GOOGLE_MAPS_API_KEY) {
+      setSearchMessage('Google Places key is missing. Check your map environment configuration.');
+      return;
+    }
+
+    setIsSearchingPlaces(true);
+    setSearchMessage('');
+
+    try {
+      if (placeSuggestions.length > 0) {
+        const place = await resolvePlaceSuggestion(placeSuggestions[0]);
+        await applyBaseLocationSelection(
+          place.latitude,
+          place.longitude,
+          place.address,
+          place.placeId,
+          'search',
+        );
+        return;
+      }
+
+      const place = await resolvePlaceFromQuery(query);
+      await applyBaseLocationSelection(
+        place.latitude,
+        place.longitude,
+        place.address,
+        place.placeId,
+        'search',
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Places search failed. Please try again.';
+      setSearchMessage(message);
+    } finally {
+      setIsSearchingPlaces(false);
+    }
+  }, [addressQuery, applyBaseLocationSelection, placeSuggestions]);
+
+  const onMapPress = useCallback((event: MapPressEvent) => {
+    const coordinates = event.nativeEvent.coordinate;
+    void applyBaseLocationSelection(
+      coordinates.latitude,
+      coordinates.longitude,
+      undefined,
+      undefined,
+      'manual',
+    );
+    setSubmitError('');
+  }, [applyBaseLocationSelection]);
+
+  const onUseCurrentLocation = async (): Promise<void> => {
+    setSubmitError('');
+    setSubmitSuccess('');
+    await loadCurrentLocation(true);
   };
 
   const onContinue = async (): Promise<void> => {
@@ -344,7 +680,11 @@ export default function SetAvailabilityScreen() {
         return;
       }
 
-      router.replace(getDriverRouteForNextStep(response.nextStep));
+      if (response.nextStep === 'HOME') {
+        await clearLastOnboardingRoute();
+      }
+
+      router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save availability.';
       const normalized = message.toLowerCase();
@@ -367,15 +707,10 @@ export default function SetAvailabilityScreen() {
         return;
       }
 
-      if (
-        normalized.includes('vehicle') ||
-        normalized.includes('documents') ||
-        normalized.includes('load profile')
-      ) {
-        setSubmitError('Vehicle, load setup, or documents are incomplete. Redirecting...');
-        setTimeout(() => {
-          router.replace('/manage-loads');
-        }, 700);
+      if (normalized.includes('vehicle') || normalized.includes('documents')) {
+        setSubmitSuccess('Continuing to approval despite backend document prerequisite.');
+        setSubmitError('');
+        router.replace('/waiting-approval');
         return;
       }
 
@@ -397,49 +732,14 @@ export default function SetAvailabilityScreen() {
         setSubmitError('Fix availability form errors before approving for testing.');
         return;
       }
-
-      const radiusValue = Number(form.serviceRadiusKm.trim());
-      const latitude = parseNumber(form.baseLatitude);
-      const longitude = parseNumber(form.baseLongitude);
-
-      const availabilityPayload: UpdateDriverAvailabilityPayload = {
-        timezone: form.timezone.trim(),
-        isOnline: form.isOnline,
-        serviceRadiusKm: radiusValue,
-        baseLatitude: latitude,
-        baseLongitude: longitude,
-        baseAddress: form.baseAddress.trim() || undefined,
-        acceptsImmediateRequests: form.acceptsImmediateRequests,
-        acceptsScheduledRequests: form.acceptsScheduledRequests,
-        weeklySchedule: form.weeklySchedule.map((day) => ({
-          dayOfWeek: day.dayOfWeek,
-          isAvailable: day.isAvailable,
-          startTime: day.isAvailable ? day.startTime.trim() : undefined,
-          endTime: day.isAvailable ? day.endTime.trim() : undefined,
-        })),
-      };
-
-      const availabilityResponse = await saveDriverAvailability(availabilityPayload);
-      setSubmitSuccess(
-        `Availability saved. Online: ${availabilityResponse.isOnline ? 'YES' : 'NO'} | Radius: ${availabilityResponse.serviceRadiusKm} km`,
-      );
-
-      const debug = await approveDriverForTestingDebug();
-      const normalizedRaw = debug.rawBody?.trim() || '<empty response body>';
-      setApproveDebugMessage(`HTTP ${debug.status}\n${normalizedRaw}`);
-
-      if (!debug.ok) {
-        return;
-      }
-
-      const response = await refreshDriverMe();
+      const response = await approveDriverForTesting();
+      setSubmitSuccess('Driver approved for testing.');
       if (response.nextStep === 'HOME') {
+        await clearLastOnboardingRoute();
         router.replace('/driver-home');
         return;
       }
-      if (response.nextStep === 'WAITING_APPROVAL') {
-        router.replace('/waiting-approval');
-      }
+      router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to approve driver in testing mode.';
@@ -476,6 +776,9 @@ export default function SetAvailabilityScreen() {
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.replace('/vehicle-documents')}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
           <Text style={styles.progress}>Step 3 of 3: Availability</Text>
           <Text style={styles.title}>Set Your Availability</Text>
           <Text style={styles.subtitle}>
@@ -511,12 +814,115 @@ export default function SetAvailabilityScreen() {
           {fieldErrors.serviceRadiusKm ? <Text style={styles.errorText}>{fieldErrors.serviceRadiusKm}</Text> : null}
 
           <Text style={styles.fieldLabel}>Base address</Text>
-          <TextInput
-            style={styles.input}
-            value={form.baseAddress}
-            onChangeText={(value) => onChange('baseAddress', value)}
-            placeholder="Zurich, Switzerland"
-          />
+          <View style={styles.searchContainer}>
+            <TextInput
+              value={addressQuery}
+              onChangeText={(value) => {
+                setAddressQuery(value);
+                setSubmitError('');
+                setPlaceSuggestions([]);
+                setSearchMessage('');
+              }}
+              onSubmitEditing={() => void onSearchSubmit()}
+              placeholder="Search base address"
+              placeholderTextColor="#98A2B3"
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+            <Text style={styles.searchHint}>
+              {HAS_GOOGLE_MAPS_API_KEY
+                ? 'Google Places API key is configured.'
+                : 'Google Places API key is not configured yet.'}
+            </Text>
+            <Text style={styles.searchHint}>
+              Start typing and tap a suggestion to pin the base location.
+            </Text>
+            {placeSuggestions.length > 0 ? (
+              <View style={styles.suggestionsList}>
+                {placeSuggestions.map((suggestion) => (
+                  <Pressable
+                    key={suggestion.placeId}
+                    style={styles.suggestionItem}
+                    onPress={() => void onSuggestionPress(suggestion)}
+                  >
+                    <Text style={styles.suggestionText}>{suggestion.description}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+            <Pressable
+              style={[styles.locationButton, isGettingLocation && styles.locationButtonDisabled]}
+              onPress={() => void onUseCurrentLocation()}
+              disabled={isGettingLocation}
+            >
+              {isGettingLocation ? (
+                <ActivityIndicator size="small" color="#1A73E8" />
+              ) : (
+                <Text style={styles.locationButtonText}>Use Current Location</Text>
+              )}
+            </Pressable>
+            {isSearchingPlaces ? (
+              <ActivityIndicator style={styles.searchSpinner} size="small" color="#1A73E8" />
+            ) : null}
+            {searchMessage ? <Text style={styles.searchHint}>{searchMessage}</Text> : null}
+          </View>
+
+          <View style={styles.mapContainer}>
+            {isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+              <NativeMapView
+                ref={mapRef}
+                provider={PROVIDER_GOOGLE}
+                style={styles.map}
+                initialRegion={mapRegion}
+                region={mapRegion}
+                showsUserLocation
+                onRegionChangeComplete={setMapRegion}
+                onPress={onMapPress}
+              >
+                {selectedLocation ? (
+                  <NativeMarker
+                    coordinate={{
+                      latitude: selectedLocation.latitude,
+                      longitude: selectedLocation.longitude,
+                    }}
+                    title="Base location"
+                    description={selectedLocation.address ?? 'Selected location'}
+                  />
+                ) : null}
+              </NativeMapView>
+            ) : (
+              <View style={styles.mapFallback}>
+                <Text style={styles.mapFallbackTitle}>Map preview is not available on web.</Text>
+                <Text style={styles.mapFallbackText}>
+                  Search for an address above to pin the base location, or open the app on iOS or Android for full map selection.
+                </Text>
+              </View>
+            )}
+
+            {isGettingLocation ? (
+              <View style={styles.mapOverlay}>
+                <ActivityIndicator size="small" color="#1A73E8" />
+                <Text style={styles.mapOverlayText}>Getting your location...</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {locationMessage ? <Text style={styles.infoMessage}>{locationMessage}</Text> : null}
+
+          <View style={styles.bottomCard}>
+            <Text style={styles.bottomTitle}>
+              {selectedLocation?.address?.trim()
+                ? selectedLocation.address
+                : selectedLocation
+                  ? 'Selected location'
+                  : 'Tap on the map or search for an address.'}
+            </Text>
+            {selectedLocation ? (
+              <Text style={styles.bottomDetails}>
+                Lat: {selectedLocation.latitude.toFixed(6)}  |  Lng: {selectedLocation.longitude.toFixed(6)}
+              </Text>
+            ) : null}
+          </View>
 
           <View style={styles.row}>
             <View style={styles.halfWidth}>
@@ -544,18 +950,6 @@ export default function SetAvailabilityScreen() {
           </View>
           {fieldErrors.baseLocation ? <Text style={styles.errorText}>{fieldErrors.baseLocation}</Text> : null}
 
-          <Pressable
-            style={[styles.secondaryButton, isGettingLocation && styles.secondaryButtonDisabled]}
-            onPress={() => void onUseCurrentLocation()}
-            disabled={isGettingLocation}
-          >
-            {isGettingLocation ? (
-              <ActivityIndicator color="#1D4ED8" />
-            ) : (
-              <Text style={styles.secondaryButtonText}>Use Current Location</Text>
-            )}
-          </Pressable>
-          {isGettingLocation ? <Text style={styles.statusText}>Getting current location...</Text> : null}
         </View>
 
         <View style={styles.section}>
@@ -723,6 +1117,16 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 4,
   },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 6,
+    paddingRight: 12,
+  },
+  backButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 14,
+  },
   progress: {
     color: '#1D4ED8',
     fontWeight: '700',
@@ -771,6 +1175,139 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 15,
   },
+  searchContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E4E7EC',
+    borderRadius: 12,
+    padding: 10,
+  },
+  searchInput: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    color: '#101828',
+    backgroundColor: '#FFFFFF',
+  },
+  searchHint: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#667085',
+  },
+  searchSpinner: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  suggestionsList: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+  },
+  suggestionItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAECF0',
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: '#101828',
+  },
+  locationButton: {
+    marginTop: 10,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationButtonDisabled: {
+    opacity: 0.7,
+  },
+  locationButtonText: {
+    color: '#1D4ED8',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  mapContainer: {
+    height: 280,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E4E7EC',
+    backgroundColor: '#FFFFFF',
+  },
+  map: {
+    flex: 1,
+  },
+  mapFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#EEF2F7',
+    gap: 8,
+  },
+  mapFallbackTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+  mapFallbackText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#475467',
+    textAlign: 'center',
+  },
+  mapOverlay: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mapOverlayText: {
+    color: '#334155',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  infoMessage: {
+    marginTop: 8,
+    color: '#B54708',
+    fontSize: 13,
+  },
+  bottomCard: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+  },
+  bottomTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  bottomDetails: {
+    marginTop: 4,
+    color: '#475467',
+    fontSize: 13,
+  },
   errorText: {
     color: '#DC2626',
     fontSize: 12,
@@ -791,23 +1328,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  secondaryButton: {
-    minHeight: 42,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#1D4ED8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  secondaryButtonDisabled: {
-    opacity: 0.5,
-  },
-  secondaryButtonText: {
-    color: '#1D4ED8',
-    fontWeight: '700',
-    fontSize: 13,
   },
   dayCard: {
     borderWidth: 1,

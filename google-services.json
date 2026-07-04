@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "99488624757",
+    "project_id": "transpo-24",
+    "storage_bucket": "transpo-24.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99488624757:android:89e40efa721b80039e083c",
+        "android_client_info": {
+          "package_name": "com.transpo24.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCq5WWVH3Ul3ln8g9nTHnXw57lqltXDu5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99488624757:android:19c8f142020f06ac9e083c",
+        "android_client_info": {
+          "package_name": "com.transpo24.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCq5WWVH3Ul3ln8g9nTHnXw57lqltXDu5Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

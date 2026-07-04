@@ -1,72 +1,116 @@
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter, type Href } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import {
-  createMyDriverVehicle,
-  uploadMyDriverVehicleDocuments,
-} from '@/lib/api';
-import { getDriverRouteForNextStep } from '@/lib/driver-onboarding';
 import { useAuth } from '@/context/auth-context';
+import { persistLastOnboardingRoute } from '@/lib/auth-storage';
+import {
+  createDriverVehicle,
+  getDriverDocumentsStatus,
+  getDriverVehicles,
+  getDriverVehicle,
+  submitDriverDocumentsForReview,
+  updateDriverVehicle,
+  uploadDriverVehicleDocuments,
+} from '@/lib/api';
+import {
+  VEHICLE_MODELS_BY_BRAND_AND_TYPE,
+  type VehicleBrand,
+  type VehicleModelType,
+} from '@/lib/vehicle-catalog';
 import type {
+  CreateDriverVehicleForm,
   CreateDriverVehiclePayload,
-  DriverVehicleCondition,
-  DriverVehicleDocumentType,
-  DriverVehicleForm,
-  DriverVehiclePhotoType,
+  DriverVehicle,
+  DriverVehicleDocumentsResponse,
   LocalDocumentAsset,
+  VehicleCondition,
   VehicleType,
 } from '@/types/auth';
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
 const VEHICLE_TYPE_OPTIONS: { label: string; value: VehicleType }[] = [
-  { label: 'Open car carrier', value: 'OPEN_CAR_CARRIER' },
+  { label: 'Open car carrier / open flatbed', value: 'OPEN_CAR_CARRIER' },
   { label: 'Enclosed carrier', value: 'ENCLOSED_CARRIER' },
-  { label: 'Small truck', value: 'SMALL_TRUCK' },
-  { label: 'Medium truck', value: 'MEDIUM_TRUCK' },
+  { label: 'Small Truck', value: 'SMALL_TRUCK' },
+  { label: 'Medium Truck', value: 'MEDIUM_TRUCK' },
   { label: 'Pickup', value: 'PICKUP' },
   { label: 'Van', value: 'VAN' },
-  { label: 'Tow truck', value: 'TOW_TRUCK' },
+  { label: 'Tow Truck', value: 'TOW_TRUCK' },
   { label: 'Motorcycle', value: 'MOTORCYCLE' },
 ];
 
-const VEHICLE_CONDITION_OPTIONS: {
-  label: string;
-  value: DriverVehicleCondition;
-}[] = [
+const VEHICLE_CONDITION_OPTIONS: { label: string; value: VehicleCondition }[] = [
   { label: 'Excellent', value: 'EXCELLENT' },
   { label: 'Good', value: 'GOOD' },
-  { label: 'Needs maintenance', value: 'NEEDS_MAINTENANCE' },
+  { label: 'Needs Maintenance', value: 'NEEDS_MAINTENANCE' },
 ];
 
-interface VehicleUploadForm {
-  frontPhoto?: LocalDocumentAsset;
-  rearPhoto?: LocalDocumentAsset;
-  sidePhoto?: LocalDocumentAsset;
-  licensePlatePhoto?: LocalDocumentAsset;
-  registrationFrontDocument?: LocalDocumentAsset;
-  registrationBackDocument?: LocalDocumentAsset;
-  insuranceDocument?: LocalDocumentAsset;
+const OTHER_OPTION = 'OTHER';
+
+function createTestVehicleFormDefaults(): CreateDriverVehicleForm {
+  const nextYear = new Date();
+  nextYear.setFullYear(nextYear.getFullYear() + 1);
+  const defaultExpiryDate = nextYear.toISOString().slice(0, 10);
+
+  return {
+    vehicleType: 'PICKUP',
+    brand: 'Toyota',
+    model: 'Hilux',
+    year: String(new Date().getFullYear()),
+    licensePlateNumber: 'TEST-1234',
+    condition: 'EXCELLENT',
+    insuranceExpiryDate: defaultExpiryDate,
+    registrationExpiryDate: defaultExpiryDate,
+  };
 }
 
-function parsePositiveNumber(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
-  return parsed;
+type DateFieldKey = 'insuranceExpiryDate' | 'registrationExpiryDate';
+type SelectorField = 'vehicleType' | 'brand' | 'model' | 'condition' | 'year';
+
+interface SelectorOption {
+  label: string;
+  value: string;
+}
+
+function toVehicleModelType(vehicleType: VehicleType | ''): VehicleModelType | null {
+  return vehicleType ? (vehicleType as VehicleModelType) : null;
+}
+
+function getBrandsForVehicleType(vehicleType: VehicleType | ''): VehicleBrand[] {
+  const modelType = toVehicleModelType(vehicleType);
+  if (!modelType) return [];
+
+  return (Object.keys(VEHICLE_MODELS_BY_BRAND_AND_TYPE) as VehicleBrand[]).filter(
+    (brand) => VEHICLE_MODELS_BY_BRAND_AND_TYPE[brand][modelType].length > 0,
+  );
+}
+
+function getModelsForVehicleSelection(
+  vehicleType: VehicleType | '',
+  brand: string,
+): readonly string[] {
+  const modelType = toVehicleModelType(vehicleType);
+  if (!modelType || !brand || !(brand in VEHICLE_MODELS_BY_BRAND_AND_TYPE)) return [];
+
+  return VEHICLE_MODELS_BY_BRAND_AND_TYPE[brand as VehicleBrand][modelType];
 }
 
 function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
@@ -80,133 +124,508 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
   };
 }
 
+function formatDate(value: string): string {
+  if (!value) return 'Select date';
+  return value;
+}
+
+function readAssetLabel(asset?: LocalDocumentAsset, fallback?: string | null): string {
+  if (asset?.fileName?.trim()) return asset.fileName;
+  if (fallback) {
+    const withoutQuery = fallback.split('?')[0] ?? fallback;
+    const filename = withoutQuery.split('/').filter(Boolean).pop();
+    if (filename) {
+      try {
+        return decodeURIComponent(filename);
+      } catch {
+        return filename;
+      }
+    }
+    return 'Uploaded file';
+  }
+  return 'No file selected';
+}
+
+function normalizeDateValue(value: string): Date {
+  if (!value) return new Date();
+  return new Date(value);
+}
+
+function createSeedImageAsset(
+  sourceUrl: string | null | undefined,
+  fallbackName: string,
+): LocalDocumentAsset | undefined {
+  if (!sourceUrl) return undefined;
+
+  return {
+    uri: sourceUrl,
+    fileName: sourceUrl.split('?')[0]?.split('/').filter(Boolean).pop() || fallbackName,
+    mimeType: 'image/jpeg',
+  };
+}
+
+function formatSelectorLabel(value: string, options: SelectorOption[]): string {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
 export default function VehicleInformationScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ vehicleId?: string; flow?: string }>();
+  const vehicleId =
+    typeof params.vehicleId === 'string' && params.vehicleId.trim() ? params.vehicleId : undefined;
+  const flow = params.flow === 'management' ? 'management' : 'onboarding';
   const { signOut } = useAuth();
+  const testDefaults = useMemo(() => createTestVehicleFormDefaults(), []);
 
-  const [vehicleForm, setVehicleForm] = useState<DriverVehicleForm>({
-    vehicleType: '',
-    make: '',
-    model: '',
-    year: '',
-    plateNumber: '',
-    condition: '',
-    color: '',
-    capacityKg: '',
-    lengthCm: '',
-    widthCm: '',
-    heightCm: '',
-    hasTrailer: false,
-  });
-  const [uploads, setUploads] = useState<VehicleUploadForm>({});
-  const [isSavingVehicle, setIsSavingVehicle] = useState<boolean>(false);
-  const [activeUploadKey, setActiveUploadKey] = useState<
-    keyof VehicleUploadForm | null
-  >(null);
+  const [vehicleForm, setVehicleForm] = useState<CreateDriverVehicleForm>(testDefaults);
+  const [existingVehicle, setExistingVehicle] = useState<DriverVehicle | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(Boolean(vehicleId));
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
+  const [activeDateField, setActiveDateField] = useState<DateFieldKey | null>(null);
+  const [activeSelectorField, setActiveSelectorField] = useState<SelectorField | null>(null);
+  const [selectorSearch, setSelectorSearch] = useState<string>('');
+  const [brandOtherValue, setBrandOtherValue] = useState<string>('');
+  const [modelOtherValue, setModelOtherValue] = useState<string>('');
+  const [brandSelection, setBrandSelection] = useState<string>('');
+  const [modelSelection, setModelSelection] = useState<string>('');
+
+  const isEditing = Boolean(vehicleId);
+
+  useEffect(() => {
+    if (flow !== 'onboarding') return;
+
+    const route = vehicleId
+      ? `/vehicle-information?vehicleId=${encodeURIComponent(vehicleId)}&flow=onboarding`
+      : '/vehicle-information?flow=onboarding';
+    void persistLastOnboardingRoute(route);
+  }, [flow, vehicleId]);
+
+  const loadVehicle = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      const documentsStatus = flow === 'onboarding' ? await getDriverDocumentsStatus() : null;
+      const uploadedSeedUrl =
+        documentsStatus?.uploadedDocuments.find((document) => document.mimeType.startsWith('image/'))
+          ?.url ?? null;
+
+      let resolvedVehicleId = vehicleId;
+
+      if (!resolvedVehicleId && flow === 'onboarding') {
+        const vehicles = await getDriverVehicles();
+        const latestVehicle = [...vehicles]
+          .sort(
+            (left, right) =>
+              new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime(),
+          )[0];
+        resolvedVehicleId = latestVehicle?.id;
+      }
+
+      if (!resolvedVehicleId) {
+        setExistingVehicle(null);
+        setVehicleForm({
+          ...testDefaults,
+          frontPhoto: createSeedImageAsset(uploadedSeedUrl, 'vehicle-front-photo.jpg'),
+          rearPhoto: createSeedImageAsset(uploadedSeedUrl, 'vehicle-rear-photo.jpg'),
+          sidePhoto: createSeedImageAsset(uploadedSeedUrl, 'vehicle-side-photo.jpg'),
+          licensePlatePhoto: createSeedImageAsset(
+            uploadedSeedUrl,
+            'vehicle-license-plate-photo.jpg',
+          ),
+          registrationFrontDocument: createSeedImageAsset(
+            uploadedSeedUrl,
+            'vehicle-registration-front.jpg',
+          ),
+          registrationBackDocument: createSeedImageAsset(
+            uploadedSeedUrl,
+            'vehicle-registration-back.jpg',
+          ),
+          insuranceDocument: createSeedImageAsset(
+            uploadedSeedUrl,
+            'vehicle-insurance-document.jpg',
+          ),
+        });
+        setBrandSelection(testDefaults.brand);
+        setBrandOtherValue('');
+        setModelSelection(testDefaults.model);
+        setModelOtherValue('');
+        return;
+      }
+
+      const vehicle = await getDriverVehicle(resolvedVehicleId);
+      setExistingVehicle(vehicle);
+      const seedAsset = createSeedImageAsset(uploadedSeedUrl, 'test-vehicle-image.jpg');
+      setVehicleForm({
+        vehicleType: vehicle.vehicleType,
+        brand: vehicle.brand,
+        model: vehicle.model,
+        year: String(vehicle.year),
+        licensePlateNumber: vehicle.licensePlateNumber,
+        condition: vehicle.condition,
+        frontPhoto: vehicle.frontPhotoUrl ? undefined : seedAsset,
+        rearPhoto: vehicle.rearPhotoUrl ? undefined : seedAsset,
+        sidePhoto: vehicle.sidePhotoUrl ? undefined : seedAsset,
+        licensePlatePhoto: vehicle.licensePlatePhotoUrl ? undefined : seedAsset,
+        registrationFrontDocument: vehicle.registrationFrontDocumentUrl ? undefined : seedAsset,
+        registrationBackDocument: vehicle.registrationBackDocumentUrl ? undefined : seedAsset,
+        insuranceDocument: vehicle.insuranceDocumentUrl ? undefined : seedAsset,
+        insuranceExpiryDate:
+          vehicle.insuranceExpiryDate?.slice(0, 10) ?? testDefaults.insuranceExpiryDate,
+        registrationExpiryDate:
+          vehicle.registrationExpiryDate?.slice(0, 10) ?? testDefaults.registrationExpiryDate,
+      });
+      const brandOptions = getBrandsForVehicleType(vehicle.vehicleType);
+      const matchedBrand = brandOptions.includes(vehicle.brand as VehicleBrand);
+      setBrandSelection(matchedBrand ? vehicle.brand : OTHER_OPTION);
+      setBrandOtherValue(matchedBrand ? '' : vehicle.brand);
+      const modelOptions = matchedBrand
+        ? getModelsForVehicleSelection(vehicle.vehicleType, vehicle.brand)
+        : [];
+      const matchedModel = modelOptions.includes(vehicle.model);
+      setModelSelection(matchedModel ? vehicle.model : OTHER_OPTION);
+      setModelOtherValue(matchedModel ? '' : vehicle.model);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to load vehicle information.';
+      setLoadError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [flow, testDefaults, vehicleId]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      void loadVehicle();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [loadVehicle]);
 
   const fieldErrors = useMemo(() => {
     const errors: Record<string, string> = {};
     const currentYear = new Date().getFullYear();
 
+    const validateImageAsset = (
+      asset: LocalDocumentAsset | undefined,
+      fieldKey: string,
+      label: string,
+      fallbackUrl?: string | null,
+    ): void => {
+      if (!asset && !fallbackUrl) return;
+      if (!asset) return;
+
+      const mime = asset.mimeType ?? '';
+      if (!IMAGE_ALLOWED_TYPES.has(mime)) {
+        errors[fieldKey] = `${label} must be JPEG, PNG, or WEBP.`;
+        return;
+      }
+      if (asset.fileSize && asset.fileSize > MAX_IMAGE_BYTES) {
+        errors[fieldKey] = `${label} must be 5 MB or smaller.`;
+      }
+    };
+
     if (!vehicleForm.vehicleType) errors.vehicleType = 'Vehicle type is required.';
-    if (!vehicleForm.make.trim()) errors.make = 'Brand is required.';
-    if (!vehicleForm.model.trim()) errors.model = 'Model is required.';
+    if (!vehicleForm.brand.trim()) {
+      errors.brand = 'Vehicle brand is required.';
+    } else if (
+      brandSelection !== OTHER_OPTION &&
+      vehicleForm.vehicleType &&
+      !getBrandsForVehicleType(vehicleForm.vehicleType).includes(vehicleForm.brand as VehicleBrand)
+    ) {
+      errors.brand = 'Vehicle brand must match the selected vehicle type.';
+    }
+    if (brandSelection === OTHER_OPTION && !brandOtherValue.trim()) {
+      errors.brandOther = 'Type the vehicle brand.';
+    }
+    if (!vehicleForm.model.trim()) {
+      errors.model = 'Vehicle model is required.';
+    } else if (
+      modelSelection !== OTHER_OPTION &&
+      brandSelection !== OTHER_OPTION &&
+      !getModelsForVehicleSelection(vehicleForm.vehicleType, vehicleForm.brand).includes(
+        vehicleForm.model,
+      )
+    ) {
+      errors.model = 'Vehicle model must match the selected vehicle type and brand.';
+    }
+    if (modelSelection === OTHER_OPTION && !modelOtherValue.trim()) {
+      errors.modelOther = 'Type the vehicle model.';
+    }
+
     if (!vehicleForm.year.trim()) {
-      errors.year = 'Year is required.';
+      errors.year = 'Vehicle year is required.';
     } else {
-      const yearNumber = Number(vehicleForm.year);
-      if (!Number.isInteger(yearNumber)) {
-        errors.year = 'Year must be a number.';
-      } else if (yearNumber < 1980 || yearNumber > currentYear + 1) {
-        errors.year = `Year must be between 1980 and ${currentYear + 1}.`;
+      const year = Number(vehicleForm.year);
+      if (!Number.isInteger(year)) {
+        errors.year = 'Vehicle year must be a number.';
+      } else if (year < 1980 || year > currentYear + 1) {
+        errors.year = `Vehicle year must be between 1980 and ${currentYear + 1}.`;
       }
     }
-    if (!vehicleForm.plateNumber.trim()) {
-      errors.plateNumber = 'Plate number is required.';
+
+    if (!vehicleForm.licensePlateNumber.trim()) {
+      errors.licensePlateNumber = 'License plate number is required.';
     }
+
     if (!vehicleForm.condition) {
       errors.condition = 'Vehicle condition is required.';
     }
 
-    const numericOptionalFields: { key: keyof DriverVehicleForm; label: string }[] = [
-      { key: 'capacityKg', label: 'Capacity (kg)' },
-      { key: 'lengthCm', label: 'Length (cm)' },
-      { key: 'widthCm', label: 'Width (cm)' },
-      { key: 'heightCm', label: 'Height (cm)' },
-    ];
+    validateImageAsset(
+      vehicleForm.frontPhoto,
+      'frontPhoto',
+      'Front photo',
+      existingVehicle?.frontPhotoUrl,
+    );
+    validateImageAsset(
+      vehicleForm.rearPhoto,
+      'rearPhoto',
+      'Rear photo',
+      existingVehicle?.rearPhotoUrl,
+    );
+    validateImageAsset(
+      vehicleForm.sidePhoto,
+      'sidePhoto',
+      'Side photo',
+      existingVehicle?.sidePhotoUrl,
+    );
+    validateImageAsset(
+      vehicleForm.licensePlatePhoto,
+      'licensePlatePhoto',
+      'License plate photo',
+      existingVehicle?.licensePlatePhotoUrl,
+    );
 
-    numericOptionalFields.forEach((field) => {
-      const rawValue = vehicleForm[field.key];
-      const raw = typeof rawValue === 'string' ? rawValue : '';
-      if (!raw.trim()) return;
-      if (parsePositiveNumber(raw) === undefined) {
-        errors[field.key] = `${field.label} must be a positive number.`;
+    validateImageAsset(
+      vehicleForm.registrationFrontDocument,
+      'registrationFrontDocument',
+      'Registration card front side',
+      existingVehicle?.registrationFrontDocumentUrl,
+    );
+    validateImageAsset(
+      vehicleForm.registrationBackDocument,
+      'registrationBackDocument',
+      'Registration card back side',
+      existingVehicle?.registrationBackDocumentUrl,
+    );
+    validateImageAsset(
+      vehicleForm.insuranceDocument,
+      'insuranceDocument',
+      'Insurance document',
+      existingVehicle?.insuranceDocumentUrl,
+    );
+
+    const validateDate = (value: string, key: DateFieldKey, label: string): void => {
+      if (!value.trim()) return;
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        errors[key] = `${label} must be a valid date.`;
+        return;
       }
-    });
 
-    if (!uploads.frontPhoto) errors.frontPhoto = 'Front photo is required.';
-    if (!uploads.rearPhoto) errors.rearPhoto = 'Rear photo is required.';
-    if (!uploads.sidePhoto) errors.sidePhoto = 'Side photo is required.';
-    if (!uploads.licensePlatePhoto) errors.licensePlatePhoto = 'Plate photo is required.';
-    if (!uploads.registrationFrontDocument) {
-      errors.registrationFrontDocument = 'Registration front side is required.';
-    }
-    if (!uploads.registrationBackDocument) {
-      errors.registrationBackDocument = 'Registration back side is required.';
-    }
-    if (!uploads.insuranceDocument) {
-      errors.insuranceDocument = 'Insurance document is required.';
-    }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      parsed.setHours(0, 0, 0, 0);
+      if (parsed.getTime() < today.getTime()) {
+        errors[key] = `${label} must not be in the past.`;
+      }
+    };
+
+    validateDate(vehicleForm.insuranceExpiryDate, 'insuranceExpiryDate', 'Insurance expiry date');
+    validateDate(
+      vehicleForm.registrationExpiryDate,
+      'registrationExpiryDate',
+      'Registration expiry date',
+    );
 
     return errors;
-  }, [uploads, vehicleForm]);
+  }, [
+    brandOtherValue,
+    brandSelection,
+    existingVehicle,
+    modelOtherValue,
+    modelSelection,
+    vehicleForm,
+  ]);
+
+  const vehicleTypeSelectorOptions = useMemo<SelectorOption[]>(
+    () => VEHICLE_TYPE_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
+    [],
+  );
+
+  const yearSelectorOptions = useMemo<SelectorOption[]>(() => {
+    const currentYear = new Date().getFullYear() + 1;
+    return Array.from({ length: currentYear - 1979 }, (_, index) => {
+      const year = String(currentYear - index);
+      return { label: year, value: year };
+    });
+  }, []);
+
+  const brandSelectorOptions = useMemo<SelectorOption[]>(
+    () => [
+      ...getBrandsForVehicleType(vehicleForm.vehicleType).map((brand) => ({
+        label: brand,
+        value: brand,
+      })),
+      { label: 'Other', value: OTHER_OPTION },
+    ],
+    [vehicleForm.vehicleType],
+  );
+
+  const modelSelectorOptions = useMemo<SelectorOption[]>(() => {
+    const options =
+      brandSelection && brandSelection !== OTHER_OPTION
+        ? getModelsForVehicleSelection(vehicleForm.vehicleType, brandSelection)
+        : [];
+
+    return [
+      ...options.map((model) => ({ label: model, value: model })),
+      { label: 'Other', value: OTHER_OPTION },
+    ];
+  }, [brandSelection, vehicleForm.vehicleType]);
+
+  const conditionSelectorOptions = useMemo<SelectorOption[]>(
+    () => VEHICLE_CONDITION_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
+    [],
+  );
+
+  const activeSelectorOptions = useMemo<SelectorOption[]>(() => {
+    switch (activeSelectorField) {
+      case 'vehicleType':
+        return vehicleTypeSelectorOptions;
+      case 'brand':
+        return brandSelectorOptions;
+      case 'model':
+        return modelSelectorOptions;
+      case 'condition':
+        return conditionSelectorOptions;
+      case 'year':
+        return yearSelectorOptions;
+      default:
+        return [];
+    }
+  }, [
+    activeSelectorField,
+    brandSelectorOptions,
+    conditionSelectorOptions,
+    modelSelectorOptions,
+    vehicleTypeSelectorOptions,
+    yearSelectorOptions,
+  ]);
+
+  const filteredSelectorOptions = useMemo<SelectorOption[]>(() => {
+    const normalizedSearch = selectorSearch.trim().toLowerCase();
+    if (!normalizedSearch) return activeSelectorOptions;
+
+    return activeSelectorOptions.filter((option) =>
+      option.label.toLowerCase().includes(normalizedSearch),
+    );
+  }, [activeSelectorOptions, selectorSearch]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
-  const isBusy = isSavingVehicle || Boolean(activeUploadKey);
 
-  const onVehicleChange = <K extends keyof DriverVehicleForm>(
+  const onVehicleChange = <K extends keyof CreateDriverVehicleForm>(
     key: K,
-    value: DriverVehicleForm[K],
+    value: CreateDriverVehicleForm[K],
   ): void => {
     setVehicleForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const onUploadChange = <K extends keyof VehicleUploadForm>(
-    key: K,
-    value?: VehicleUploadForm[K],
-  ): void => {
-    setUploads((prev) => ({ ...prev, [key]: value }));
+  const openSelector = (field: SelectorField): void => {
+    setActiveSelectorField(field);
+    setSelectorSearch('');
   };
 
-  const chooseImageSource = (
-    key: keyof VehicleUploadForm,
-    title: string,
-  ): void => {
-    if (isBusy) return;
-
-    Alert.alert(title, 'Choose how you want to provide this file.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Take photo',
-        onPress: () => {
-          void captureImage(key);
-        },
-      },
-      {
-        text: 'Choose photo',
-        onPress: () => {
-          void pickImage(key);
-        },
-      },
-    ]);
+  const closeSelector = (): void => {
+    setActiveSelectorField(null);
+    setSelectorSearch('');
   };
 
-  const pickImage = async (key: keyof VehicleUploadForm): Promise<void> => {
+  const onSelectVehicleType = (value: string): void => {
+    const nextVehicleType = value as VehicleType;
+    const nextBrandOptions = getBrandsForVehicleType(nextVehicleType);
+    const currentBrandIsValid =
+      brandSelection === OTHER_OPTION ||
+      nextBrandOptions.includes(brandSelection as VehicleBrand);
+    const nextBrandSelection = currentBrandIsValid ? brandSelection : '';
+    const nextBrandValue =
+      nextBrandSelection === OTHER_OPTION
+        ? brandOtherValue.trim()
+        : nextBrandSelection;
+    const nextModelOptions = getModelsForVehicleSelection(nextVehicleType, nextBrandValue);
+    const currentModelIsValid =
+      modelSelection === OTHER_OPTION || nextModelOptions.includes(modelSelection);
+
+    onVehicleChange('vehicleType', nextVehicleType);
+    if (!currentBrandIsValid) {
+      setBrandSelection('');
+      setBrandOtherValue('');
+      onVehicleChange('brand', '');
+    }
+    if (!currentModelIsValid || !currentBrandIsValid) {
+      setModelSelection('');
+      setModelOtherValue('');
+      onVehicleChange('model', '');
+    }
+    closeSelector();
+  };
+
+  const onSelectBrand = (value: string): void => {
+    setBrandSelection(value);
+    setModelSelection('');
+    setModelOtherValue('');
+
+    if (value === OTHER_OPTION) {
+      onVehicleChange('brand', brandOtherValue.trim());
+      onVehicleChange('model', '');
+    } else {
+      onVehicleChange('brand', value);
+      onVehicleChange('model', '');
+    }
+
+    closeSelector();
+  };
+
+  const onSelectModel = (value: string): void => {
+    setModelSelection(value);
+    if (value === OTHER_OPTION) {
+      onVehicleChange('model', modelOtherValue.trim());
+    } else {
+      onVehicleChange('model', value);
+    }
+    closeSelector();
+  };
+
+  const onSelectCondition = (value: string): void => {
+    onVehicleChange('condition', value as VehicleCondition);
+    closeSelector();
+  };
+
+  const onSelectYear = (value: string): void => {
+    onVehicleChange('year', value);
+    closeSelector();
+  };
+
+  const pickImage = async (
+    key:
+      | 'frontPhoto'
+      | 'rearPhoto'
+      | 'sidePhoto'
+      | 'licensePlatePhoto'
+      | 'registrationFrontDocument'
+      | 'registrationBackDocument'
+      | 'insuranceDocument',
+  ): Promise<void> => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Photo library permission is required to select images.');
+      setSubmitError('Media library permission is required to select images.');
       return;
     }
 
@@ -219,86 +638,126 @@ export default function VehicleInformationScreen() {
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    onUploadChange(key, toAssetFromImagePicker(asset));
+    onVehicleChange(key, toAssetFromImagePicker(asset));
   };
 
-  const captureImage = async (key: keyof VehicleUploadForm): Promise<void> => {
+  const takeVehicleDocumentImage = async (
+    key:
+      | 'frontPhoto'
+      | 'rearPhoto'
+      | 'sidePhoto'
+      | 'licensePlatePhoto'
+      | 'registrationFrontDocument'
+      | 'registrationBackDocument'
+      | 'insuranceDocument',
+  ): Promise<void> => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to capture images.');
+      setSubmitError('Camera permission is required to take images.');
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
-      quality: 0.9,
+      quality: 1,
     });
 
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    onUploadChange(key, toAssetFromImagePicker(asset));
+    onVehicleChange(key, toAssetFromImagePicker(asset));
   };
 
-  const onSaveVehicle = async (): Promise<void> => {
-    if (!isFormValid || isBusy) return;
+  const buildPayload = (): CreateDriverVehiclePayload => ({
+    vehicleType: vehicleForm.vehicleType as VehicleType,
+    brand: vehicleForm.brand.trim(),
+    model: vehicleForm.model.trim(),
+    year: Number(vehicleForm.year),
+    licensePlateNumber: vehicleForm.licensePlateNumber.trim(),
+    condition: vehicleForm.condition as VehicleCondition,
+    insuranceExpiryDate: vehicleForm.insuranceExpiryDate || undefined,
+    registrationExpiryDate: vehicleForm.registrationExpiryDate || undefined,
+  });
 
+  const saveVehicle = async (submitForReview: boolean): Promise<void> => {
+    Keyboard.dismiss();
+    setHasAttemptedSubmit(true);
+
+    if (!isFormValid || isSaving || isSubmittingReview) return;
+
+    if (submitForReview) {
+      setIsSubmittingReview(true);
+    } else {
+      setIsSaving(true);
+    }
     setSubmitError('');
     setSubmitSuccess('');
-    setIsSavingVehicle(true);
-
-    const payload: CreateDriverVehiclePayload = {
-      vehicleType: vehicleForm.vehicleType as VehicleType,
-      make: vehicleForm.make.trim(),
-      model: vehicleForm.model.trim(),
-      year: Number(vehicleForm.year),
-      plateNumber: vehicleForm.plateNumber.trim(),
-      condition: vehicleForm.condition as DriverVehicleCondition,
-      color: vehicleForm.color.trim() || undefined,
-      capacityKg: parsePositiveNumber(vehicleForm.capacityKg),
-      lengthCm: parsePositiveNumber(vehicleForm.lengthCm),
-      widthCm: parsePositiveNumber(vehicleForm.widthCm),
-      heightCm: parsePositiveNumber(vehicleForm.heightCm),
-      hasTrailer: vehicleForm.hasTrailer,
-    };
 
     try {
-      const created = await createMyDriverVehicle(payload);
-      const vehicleId = created.vehicle.id;
+      const payload = buildPayload();
+      const vehicle = isEditing && vehicleId
+        ? await updateDriverVehicle(vehicleId, payload)
+        : await createDriverVehicle(payload);
+      let documentResponse: DriverVehicleDocumentsResponse | null = null;
 
-      setActiveUploadKey('frontPhoto');
-      const uploaded = await uploadMyDriverVehicleDocuments(vehicleId, {
-        frontPhoto: uploads.frontPhoto as LocalDocumentAsset,
-        rearPhoto: uploads.rearPhoto as LocalDocumentAsset,
-        sidePhoto: uploads.sidePhoto as LocalDocumentAsset,
-        licensePlatePhoto: uploads.licensePlatePhoto as LocalDocumentAsset,
-        registrationFrontDocument: uploads.registrationFrontDocument as LocalDocumentAsset,
-        registrationBackDocument: uploads.registrationBackDocument as LocalDocumentAsset,
-        insuranceDocument: uploads.insuranceDocument as LocalDocumentAsset,
-      });
+      const shouldUploadDocuments =
+        Boolean(vehicleForm.frontPhoto) ||
+        Boolean(vehicleForm.rearPhoto) ||
+        Boolean(vehicleForm.sidePhoto) ||
+        Boolean(vehicleForm.licensePlatePhoto) ||
+        Boolean(vehicleForm.registrationFrontDocument) ||
+        Boolean(vehicleForm.registrationBackDocument) ||
+        Boolean(vehicleForm.insuranceDocument) ||
+        vehicleForm.insuranceExpiryDate !== (existingVehicle?.insuranceExpiryDate?.slice(0, 10) ?? '') ||
+        vehicleForm.registrationExpiryDate !==
+          (existingVehicle?.registrationExpiryDate?.slice(0, 10) ?? '');
 
-      setSubmitSuccess('Vehicle saved successfully.');
-      if (uploaded.nextStep === 'ADD_VEHICLE_DOCUMENTS') {
-        router.replace({
-          pathname: '/vehicle-load',
-          params: { vehicleId },
+      if (shouldUploadDocuments) {
+        documentResponse = await uploadDriverVehicleDocuments(vehicle.id, {
+          frontPhoto: vehicleForm.frontPhoto,
+          rearPhoto: vehicleForm.rearPhoto,
+          sidePhoto: vehicleForm.sidePhoto,
+          licensePlatePhoto: vehicleForm.licensePlatePhoto,
+          registrationFrontDocument: vehicleForm.registrationFrontDocument,
+          registrationBackDocument: vehicleForm.registrationBackDocument,
+          insuranceDocument: vehicleForm.insuranceDocument,
+          insuranceExpiryDate: vehicleForm.insuranceExpiryDate || undefined,
+          registrationExpiryDate: vehicleForm.registrationExpiryDate || undefined,
         });
+      }
+
+      if (submitForReview && flow === 'onboarding') {
+        await submitDriverDocumentsForReview();
+        setSubmitSuccess('Vehicle saved and submitted for review.');
+        setTimeout(() => {
+          router.replace('/waiting-approval');
+        }, 500);
         return;
       }
 
-      router.replace(
-        uploaded.nextStep === 'HOME' || uploaded.nextStep === 'WAITING_APPROVAL'
-          ? ('/my-vehicles' as Href)
-          : getDriverRouteForNextStep(uploaded.nextStep),
-      );
+      setSubmitSuccess(isEditing ? 'Vehicle updated successfully.' : 'Vehicle saved successfully.');
+      setTimeout(() => {
+        if (flow === 'management') {
+          if (isEditing) {
+            router.replace('/my-vehicles');
+          } else {
+            router.replace(
+              `/load-capacity?vehicleId=${vehicle.id}&flow=management&returnTo=manage-load-capacities`,
+            );
+          }
+        } else {
+          const nextStep = documentResponse?.nextStep ?? 'WAITING_APPROVAL';
+          router.replace(
+            `/load-capacity?vehicleId=${vehicle.id}&flow=onboarding&nextStep=${nextStep}`,
+          );
+        }
+      }, 500);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save vehicle.';
       const normalized = message.toLowerCase();
 
-      if (normalized.includes('plate')) {
-        setSubmitError('Plate number is already in use.');
-      } else if (
+      if (
         normalized.includes('invalid or expired token') ||
         normalized.includes('authorization') ||
         normalized.includes('unauthorized')
@@ -306,282 +765,473 @@ export default function VehicleInformationScreen() {
         await signOut();
         router.replace('/');
         return;
-      } else {
-        setSubmitError(message);
       }
+
+      setSubmitError(message);
     } finally {
-      setActiveUploadKey(null);
-      setIsSavingVehicle(false);
+      setIsSaving(false);
+      setIsSubmittingReview(false);
     }
   };
+
+  const onSaveVehicle = async (): Promise<void> => {
+    await saveVehicle(false);
+  };
+
+  const onSubmitForReview = async (): Promise<void> => {
+    await saveVehicle(true);
+  };
+
+  const renderUploadCard = ({
+    field,
+    label,
+    helper,
+    remoteUrl,
+    onPick,
+    onTakeImage,
+  }: {
+    field:
+      | 'frontPhoto'
+      | 'rearPhoto'
+      | 'sidePhoto'
+      | 'licensePlatePhoto'
+      | 'registrationFrontDocument'
+      | 'registrationBackDocument'
+      | 'insuranceDocument';
+    label: string;
+    helper: string;
+    remoteUrl?: string | null;
+    onPick: () => Promise<void>;
+    onTakeImage: () => Promise<void>;
+  }) => {
+    const localAsset = vehicleForm[field];
+    const previewUri = localAsset?.uri || remoteUrl;
+    return (
+      <View style={styles.docRow}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <Text style={styles.helper}>{helper}</Text>
+        {previewUri ? (
+          <Image
+            source={{ uri: previewUri }}
+            style={styles.onboardingPreview}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.documentPlaceholder}>
+            <Text style={styles.fileName}>
+              {readAssetLabel(localAsset, remoteUrl)}
+            </Text>
+          </View>
+        )}
+        {localAsset ? <Text style={styles.fileName}>{localAsset.fileName ?? 'Selected file'}</Text> : null}
+        {hasAttemptedSubmit && fieldErrors[field] ? (
+          <Text style={styles.errorText}>{fieldErrors[field]}</Text>
+        ) : null}
+        <View style={styles.docButtonsRow}>
+          <Pressable style={styles.uploadButtonSmall} onPress={() => void onPick()}>
+            <Text style={styles.uploadButtonText}>
+              {localAsset || remoteUrl ? 'Replace' : 'Select'}
+            </Text>
+          </Pressable>
+          <Pressable style={styles.uploadButtonSmall} onPress={() => void onTakeImage()}>
+            <Text style={styles.uploadButtonText}>Take image</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1D4ED8" />
+        <Text style={styles.loadingText}>Loading vehicle information...</Text>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>{loadError}</Text>
+        <Pressable style={styles.primaryButton} onPress={() => void loadVehicle()}>
+          <Text style={styles.primaryButtonText}>Retry</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
         <View style={styles.header}>
-          <Text style={styles.progress}>Vehicle Management</Text>
-          <Text style={styles.title}>Add Vehicle</Text>
+          <Text style={styles.progress}>
+            {flow === 'management' ? 'Vehicle Management' : 'Step 3 of 3: Vehicle Information'}
+          </Text>
+          <Text style={styles.title}>{isEditing ? 'Edit Vehicle' : 'Add Vehicle'}</Text>
           <Text style={styles.subtitle}>
-            Add at least one complete vehicle to start receiving requests.
+            Save the vehicle details, photos, and documents required for transport requests.
           </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vehicle Details</Text>
+          <Text style={styles.requiredLabel}>Required fields are marked *</Text>
 
-          <Text style={styles.fieldLabel}>Vehicle type</Text>
-          <View style={styles.optionWrap}>
-            {VEHICLE_TYPE_OPTIONS.map((option) => {
-              const selected = vehicleForm.vehicleType === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  style={[styles.optionChip, selected && styles.optionChipSelected]}
-                  onPress={() => onVehicleChange('vehicleType', option.value)}
-                >
-                  <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {fieldErrors.vehicleType ? <Text style={styles.errorText}>{fieldErrors.vehicleType}</Text> : null}
-
-          <Text style={styles.fieldLabel}>Brand</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Brand"
-            value={vehicleForm.make}
-            onChangeText={(value) => onVehicleChange('make', value)}
-          />
-          {fieldErrors.make ? <Text style={styles.errorText}>{fieldErrors.make}</Text> : null}
-
-          <Text style={styles.fieldLabel}>Model</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Model"
-            value={vehicleForm.model}
-            onChangeText={(value) => onVehicleChange('model', value)}
-          />
-          {fieldErrors.model ? <Text style={styles.errorText}>{fieldErrors.model}</Text> : null}
-
-          <Text style={styles.fieldLabel}>Year</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Year"
-            keyboardType="number-pad"
-            value={vehicleForm.year}
-            onChangeText={(value) => onVehicleChange('year', value)}
-          />
-          {fieldErrors.year ? <Text style={styles.errorText}>{fieldErrors.year}</Text> : null}
-
-          <Text style={styles.fieldLabel}>Plate number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Plate number"
-            value={vehicleForm.plateNumber}
-            onChangeText={(value) => onVehicleChange('plateNumber', value)}
-          />
-          {fieldErrors.plateNumber ? (
-            <Text style={styles.errorText}>{fieldErrors.plateNumber}</Text>
+          <Text style={styles.fieldLabel}>Vehicle type *</Text>
+          <Pressable style={styles.selectorField} onPress={() => openSelector('vehicleType')}>
+            <Text style={vehicleForm.vehicleType ? styles.selectorValue : styles.selectorPlaceholder}>
+              {vehicleForm.vehicleType
+                ? formatSelectorLabel(vehicleForm.vehicleType, vehicleTypeSelectorOptions)
+                : 'Select vehicle type'}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.vehicleType ? (
+            <Text style={styles.errorText}>{fieldErrors.vehicleType}</Text>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Vehicle condition</Text>
-          <View style={styles.optionWrap}>
-            {VEHICLE_CONDITION_OPTIONS.map((option) => {
-              const selected = vehicleForm.condition === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  style={[styles.optionChip, selected && styles.optionChipSelected]}
-                  onPress={() => onVehicleChange('condition', option.value)}
-                >
-                  <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {fieldErrors.condition ? (
+          <Text style={styles.fieldLabel}>Vehicle brand *</Text>
+          <Pressable
+            style={[styles.selectorField, !vehicleForm.vehicleType && styles.selectorFieldDisabled]}
+            onPress={() => {
+              if (!vehicleForm.vehicleType) return;
+              openSelector('brand');
+            }}
+          >
+            <Text style={vehicleForm.brand ? styles.selectorValue : styles.selectorPlaceholder}>
+              {vehicleForm.vehicleType
+                ? vehicleForm.brand || 'Select vehicle brand'
+                : 'Select vehicle type first'}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.brand ? (
+            <Text style={styles.errorText}>{fieldErrors.brand}</Text>
+          ) : null}
+          {brandSelection === OTHER_OPTION ? (
+            <>
+              <Text style={styles.fieldLabel}>Other vehicle brand *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Type vehicle brand"
+                value={brandOtherValue}
+                onChangeText={(value) => {
+                  setBrandOtherValue(value);
+                  onVehicleChange('brand', value);
+                }}
+              />
+              {hasAttemptedSubmit && fieldErrors.brandOther ? (
+                <Text style={styles.errorText}>{fieldErrors.brandOther}</Text>
+              ) : null}
+            </>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>Vehicle model *</Text>
+          <Pressable
+            style={[styles.selectorField, !vehicleForm.brand && styles.selectorFieldDisabled]}
+            onPress={() => {
+              if (!vehicleForm.brand) return;
+              openSelector('model');
+            }}
+          >
+            <Text style={vehicleForm.model ? styles.selectorValue : styles.selectorPlaceholder}>
+              {vehicleForm.brand ? vehicleForm.model || 'Select vehicle model' : 'Select vehicle brand first'}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.model ? (
+            <Text style={styles.errorText}>{fieldErrors.model}</Text>
+          ) : null}
+          {modelSelection === OTHER_OPTION ? (
+            <>
+              <Text style={styles.fieldLabel}>Other vehicle model *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Type vehicle model"
+                value={modelOtherValue}
+                onChangeText={(value) => {
+                  setModelOtherValue(value);
+                  onVehicleChange('model', value);
+                }}
+              />
+              {hasAttemptedSubmit && fieldErrors.modelOther ? (
+                <Text style={styles.errorText}>{fieldErrors.modelOther}</Text>
+              ) : null}
+            </>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>Vehicle year *</Text>
+          <Pressable style={styles.selectorField} onPress={() => openSelector('year')}>
+            <Text style={vehicleForm.year ? styles.dateValue : styles.datePlaceholder}>
+              {vehicleForm.year || 'Select vehicle year'}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.year ? (
+            <Text style={styles.errorText}>{fieldErrors.year}</Text>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>License plate number *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="License plate number"
+            value={vehicleForm.licensePlateNumber}
+            onChangeText={(value) => onVehicleChange('licensePlateNumber', value)}
+          />
+          {hasAttemptedSubmit && fieldErrors.licensePlateNumber ? (
+            <Text style={styles.errorText}>{fieldErrors.licensePlateNumber}</Text>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>Vehicle condition *</Text>
+          <Pressable style={styles.selectorField} onPress={() => openSelector('condition')}>
+            <Text style={vehicleForm.condition ? styles.selectorValue : styles.selectorPlaceholder}>
+              {vehicleForm.condition
+                ? formatSelectorLabel(vehicleForm.condition, conditionSelectorOptions)
+                : 'Select vehicle condition'}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.condition ? (
             <Text style={styles.errorText}>{fieldErrors.condition}</Text>
           ) : null}
-
-          <Text style={styles.fieldLabel}>Color</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Color"
-            value={vehicleForm.color}
-            onChangeText={(value) => onVehicleChange('color', value)}
-          />
-
-          <Text style={styles.fieldLabel}>Capacity (kg)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Capacity (kg)"
-            keyboardType="decimal-pad"
-            value={vehicleForm.capacityKg}
-            onChangeText={(value) => onVehicleChange('capacityKg', value)}
-          />
-
-          <Text style={styles.fieldLabel}>Length (cm)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Length (cm)"
-            keyboardType="decimal-pad"
-            value={vehicleForm.lengthCm}
-            onChangeText={(value) => onVehicleChange('lengthCm', value)}
-          />
-
-          <Text style={styles.fieldLabel}>Width (cm)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Width (cm)"
-            keyboardType="decimal-pad"
-            value={vehicleForm.widthCm}
-            onChangeText={(value) => onVehicleChange('widthCm', value)}
-          />
-
-          <Text style={styles.fieldLabel}>Height (cm)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Height (cm)"
-            keyboardType="decimal-pad"
-            value={vehicleForm.heightCm}
-            onChangeText={(value) => onVehicleChange('heightCm', value)}
-          />
-
-          <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>Has trailer</Text>
-            <Switch
-              value={vehicleForm.hasTrailer}
-              onValueChange={(value) => onVehicleChange('hasTrailer', value)}
-            />
-          </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vehicle Photos</Text>
-          {renderUploadCard(
-            'Front photo',
-            'Upload the front photo of the vehicle.',
-            'FRONT',
-            uploads.frontPhoto,
-            'frontPhoto',
-          )}
-          {renderUploadCard(
-            'Rear photo',
-            'Upload the rear photo of the vehicle.',
-            'REAR',
-            uploads.rearPhoto,
-            'rearPhoto',
-          )}
-          {renderUploadCard(
-            'Side photo',
-            'Upload the side photo of the vehicle.',
-            'SIDE',
-            uploads.sidePhoto,
-            'sidePhoto',
-          )}
-          {renderUploadCard(
-            'Plate photo',
-            'Upload a clear photo of the plate number.',
-            'PLATE',
-            uploads.licensePlatePhoto,
-            'licensePlatePhoto',
-          )}
+          {renderUploadCard({
+            field: 'frontPhoto',
+            label: 'Front photo',
+            helper: 'Select or take a clear image showing the front of the vehicle.',
+            remoteUrl: existingVehicle?.frontPhotoUrl,
+            onPick: () => pickImage('frontPhoto'),
+            onTakeImage: () => takeVehicleDocumentImage('frontPhoto'),
+          })}
+          {renderUploadCard({
+            field: 'rearPhoto',
+            label: 'Rear photo',
+            helper: 'Select or take a clear image showing the rear of the vehicle.',
+            remoteUrl: existingVehicle?.rearPhotoUrl,
+            onPick: () => pickImage('rearPhoto'),
+            onTakeImage: () => takeVehicleDocumentImage('rearPhoto'),
+          })}
+          {renderUploadCard({
+            field: 'sidePhoto',
+            label: 'Side photo',
+            helper: 'Select or take a clear side-view image of the vehicle.',
+            remoteUrl: existingVehicle?.sidePhotoUrl,
+            onPick: () => pickImage('sidePhoto'),
+            onTakeImage: () => takeVehicleDocumentImage('sidePhoto'),
+          })}
+          {renderUploadCard({
+            field: 'licensePlatePhoto',
+            label: 'License plate photo',
+            helper: 'Make sure the plate number is fully readable.',
+            remoteUrl: existingVehicle?.licensePlatePhotoUrl,
+            onPick: () => pickImage('licensePlatePhoto'),
+            onTakeImage: () => takeVehicleDocumentImage('licensePlatePhoto'),
+          })}
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vehicle Documents</Text>
-          {renderDocumentCard(
-            'Registration front side',
-            'Upload the registration document/card front side.',
-            'REGISTRATION_FRONT',
-            uploads.registrationFrontDocument,
-            'registrationFrontDocument',
-          )}
-          {renderDocumentCard(
-            'Registration back side',
-            'Upload the registration document/card back side.',
-            'REGISTRATION_BACK',
-            uploads.registrationBackDocument,
-            'registrationBackDocument',
-          )}
-          {renderDocumentCard(
-            'Insurance document',
-            'Upload a valid insurance document.',
-            'INSURANCE',
-            uploads.insuranceDocument,
-            'insuranceDocument',
-          )}
+          {renderUploadCard({
+            field: 'registrationFrontDocument',
+            label: 'Registration card front side',
+            helper: 'Select or take a clear image of the front side of the vehicle registration card.',
+            remoteUrl: existingVehicle?.registrationFrontDocumentUrl,
+            onPick: () => pickImage('registrationFrontDocument'),
+            onTakeImage: () => takeVehicleDocumentImage('registrationFrontDocument'),
+          })}
+          {renderUploadCard({
+            field: 'registrationBackDocument',
+            label: 'Registration card back side',
+            helper: 'Select or take a clear image of the back side of the vehicle registration card.',
+            remoteUrl: existingVehicle?.registrationBackDocumentUrl,
+            onPick: () => pickImage('registrationBackDocument'),
+            onTakeImage: () => takeVehicleDocumentImage('registrationBackDocument'),
+          })}
+          {renderUploadCard({
+            field: 'insuranceDocument',
+            label: 'Insurance document',
+            helper: 'Select or take a clear image of the valid vehicle insurance document.',
+            remoteUrl: existingVehicle?.insuranceDocumentUrl,
+            onPick: () => pickImage('insuranceDocument'),
+            onTakeImage: () => takeVehicleDocumentImage('insuranceDocument'),
+          })}
+
+          <Text style={styles.fieldLabel}>Insurance expiry date</Text>
+          <Pressable
+            style={styles.dateField}
+            onPress={() => setActiveDateField('insuranceExpiryDate')}
+          >
+            <Text style={vehicleForm.insuranceExpiryDate ? styles.dateValue : styles.datePlaceholder}>
+              {formatDate(vehicleForm.insuranceExpiryDate)}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.insuranceExpiryDate ? (
+            <Text style={styles.errorText}>{fieldErrors.insuranceExpiryDate}</Text>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>Registration expiry date</Text>
+          <Pressable
+            style={styles.dateField}
+            onPress={() => setActiveDateField('registrationExpiryDate')}
+          >
+            <Text
+              style={
+                vehicleForm.registrationExpiryDate ? styles.dateValue : styles.datePlaceholder
+              }
+            >
+              {formatDate(vehicleForm.registrationExpiryDate)}
+            </Text>
+          </Pressable>
+          {hasAttemptedSubmit && fieldErrors.registrationExpiryDate ? (
+            <Text style={styles.errorText}>{fieldErrors.registrationExpiryDate}</Text>
+          ) : null}
         </View>
 
+        {existingVehicle?.status === 'REJECTED' && existingVehicle.rejectionReason ? (
+          <Text style={styles.errorText}>
+            Rejection reason: {existingVehicle.rejectionReason}
+          </Text>
+        ) : null}
+        {existingVehicle?.status === 'PENDING_REVIEW' ? (
+          <Text style={styles.infoText}>Your vehicle is pending approval.</Text>
+        ) : null}
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
         <Pressable
-          style={[styles.saveButton, (!isFormValid || isBusy) && styles.buttonDisabled]}
-          disabled={!isFormValid || isBusy}
+          style={[styles.primaryButton, (isSaving || isSubmittingReview) && styles.buttonDisabled]}
+          disabled={isSaving || isSubmittingReview}
           onPress={() => void onSaveVehicle()}
         >
-          {isSavingVehicle ? (
+          {isSaving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.saveButtonText}>Save Vehicle</Text>
+            <Text style={styles.primaryButtonText}>
+              {flow === 'management'
+                ? isEditing
+                  ? 'Save Changes'
+                  : 'Save Vehicle'
+                : 'Save Vehicle'}
+            </Text>
           )}
         </Pressable>
+        {flow === 'onboarding' ? (
+          <Pressable
+            style={[styles.secondaryButton, (isSaving || isSubmittingReview) && styles.buttonDisabled]}
+            disabled={isSaving || isSubmittingReview}
+            onPress={() => void onSubmitForReview()}
+          >
+            {isSubmittingReview ? (
+              <ActivityIndicator color="#1D4ED8" />
+            ) : (
+              <Text style={styles.secondaryButtonText}>Submit for Review</Text>
+            )}
+          </Pressable>
+        ) : null}
       </ScrollView>
+
+      {activeDateField ? (
+        <ExpoDateTimePicker
+          mode="date"
+          presentation="dialog"
+          value={normalizeDateValue(vehicleForm[activeDateField])}
+          minimumDate={new Date()}
+          onValueChange={(_event, selectedDate) => {
+            if (selectedDate) {
+              onVehicleChange(activeDateField, selectedDate.toISOString().slice(0, 10));
+            }
+            setActiveDateField(null);
+          }}
+          onDismiss={() => setActiveDateField(null)}
+        />
+      ) : null}
+      {activeDateField ? (
+        <Pressable style={styles.dateDismissButton} onPress={() => setActiveDateField(null)}>
+          <Text style={styles.dateDismissText}>Done</Text>
+        </Pressable>
+      ) : null}
+      <Modal
+        visible={Boolean(activeSelectorField)}
+        animationType="slide"
+        transparent
+        onRequestClose={closeSelector}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalBackdrop} onPress={closeSelector} />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {activeSelectorField === 'vehicleType'
+                  ? 'Select vehicle type'
+                  : activeSelectorField === 'brand'
+                    ? 'Select vehicle brand'
+                    : activeSelectorField === 'model'
+                      ? 'Select vehicle model'
+                      : activeSelectorField === 'year'
+                        ? 'Select vehicle year'
+                      : 'Select vehicle condition'}
+              </Text>
+              <Pressable onPress={closeSelector}>
+                <Text style={styles.modalCloseText}>Close</Text>
+              </Pressable>
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search"
+              value={selectorSearch}
+              onChangeText={setSelectorSearch}
+            />
+            <ScrollView contentContainerStyle={styles.selectorList}>
+              {filteredSelectorOptions.map((option) => (
+                <Pressable
+                  key={option.value}
+                  style={styles.selectorOption}
+                  onPress={() => {
+                    if (activeSelectorField === 'vehicleType') {
+                      onSelectVehicleType(option.value);
+                    } else if (activeSelectorField === 'brand') {
+                      onSelectBrand(option.value);
+                    } else if (activeSelectorField === 'model') {
+                      onSelectModel(option.value);
+                    } else if (activeSelectorField === 'condition') {
+                      onSelectCondition(option.value);
+                    } else if (activeSelectorField === 'year') {
+                      onSelectYear(option.value);
+                    }
+                  }}
+                >
+                  <Text style={styles.selectorOptionText}>{option.label}</Text>
+                </Pressable>
+              ))}
+              {filteredSelectorOptions.length === 0 ? (
+                <Text style={styles.emptySelectorText}>No matching options found.</Text>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
-
-  function renderUploadCard(
-    label: string,
-    description: string,
-    _type: DriverVehiclePhotoType,
-    asset: LocalDocumentAsset | undefined,
-    key: keyof VehicleUploadForm,
-  ): React.ReactNode {
-    return (
-      <View style={styles.uploadCard}>
-        <Text style={styles.fieldLabel}>{label}</Text>
-        <Text style={styles.helper}>{description}</Text>
-        {asset ? <Image source={{ uri: asset.uri }} style={styles.preview} /> : null}
-        {asset?.fileName ? <Text style={styles.fileName}>{asset.fileName}</Text> : null}
-        <Pressable
-          style={styles.uploadButton}
-          disabled={isBusy}
-          onPress={() => chooseImageSource(key, label)}
-        >
-          <Text style={styles.uploadButtonText}>{asset ? 'Replace' : 'Add'}</Text>
-        </Pressable>
-        {fieldErrors[key] ? <Text style={styles.errorText}>{fieldErrors[key]}</Text> : null}
-      </View>
-    );
-  }
-
-  function renderDocumentCard(
-    label: string,
-    description: string,
-    _type: DriverVehicleDocumentType,
-    asset: LocalDocumentAsset | undefined,
-    key: keyof VehicleUploadForm,
-  ): React.ReactNode {
-    return renderUploadCard(label, description, 'FRONT', asset, key);
-  }
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 20,
+  },
+  loadingText: { color: '#475569' },
   content: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    gap: 12,
-    paddingBottom: 32,
+    paddingBottom: 40,
+    gap: 14,
   },
   header: { gap: 4 },
   progress: { color: '#1D4ED8', fontWeight: '700', fontSize: 13 },
@@ -591,68 +1241,192 @@ const styles = StyleSheet.create({
   section: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
   },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  requiredLabel: { color: '#64748B', fontSize: 12 },
   fieldLabel: { color: '#334155', fontSize: 13, fontWeight: '600' },
   input: {
     borderWidth: 1,
     borderColor: '#D0D5DD',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 15,
     color: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
+  selectorField: {
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+  },
+  selectorFieldDisabled: {
+    opacity: 0.5,
+  },
+  selectorPlaceholder: { color: '#94A3B8', fontSize: 15 },
+  selectorValue: { color: '#0F172A', fontSize: 15 },
   optionWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   optionChip: {
     borderWidth: 1,
     borderColor: '#D0D5DD',
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   optionChipSelected: { borderColor: '#1D4ED8', backgroundColor: '#DBEAFE' },
-  optionText: { color: '#334155', fontSize: 12 },
+  optionText: { color: '#334155', fontSize: 12, fontWeight: '500' },
   optionTextSelected: { color: '#1D4ED8', fontWeight: '700' },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  uploadCard: {
+  docRow: {
     borderWidth: 1,
     borderColor: '#E2E8F0',
     borderRadius: 10,
     padding: 10,
     gap: 6,
   },
-  preview: {
+  docButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  onboardingPreview: {
     width: '100%',
     height: 180,
     borderRadius: 8,
     backgroundColor: '#E2E8F0',
   },
   fileName: { color: '#475569', fontSize: 12 },
-  uploadButton: {
-    minHeight: 40,
+  documentPlaceholder: {
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderStyle: 'dashed',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+  },
+  dateField: {
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+  },
+  datePlaceholder: { color: '#94A3B8', fontSize: 15 },
+  dateValue: { color: '#0F172A', fontSize: 15 },
+  primaryButton: {
+    minHeight: 50,
+    borderRadius: 12,
+    backgroundColor: '#1D4ED8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  secondaryButton: {
+    minHeight: 50,
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1D4ED8',
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  uploadButtonSmall: {
+    flex: 1,
+    minHeight: 38,
     borderRadius: 8,
     backgroundColor: '#1D4ED8',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  uploadButtonText: { color: '#FFFFFF', fontWeight: '700' },
-  saveButton: {
-    minHeight: 50,
-    borderRadius: 10,
-    backgroundColor: '#1D4ED8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  uploadButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
   buttonDisabled: { opacity: 0.5 },
-  errorText: { color: '#DC2626', fontSize: 12 },
-  successText: { color: '#15803D', fontSize: 12 },
+  errorText: { color: '#B91C1C', fontSize: 13 },
+  successText: { color: '#166534', fontSize: 13, fontWeight: '600' },
+  infoText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
+  dateDismissButton: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#0F172A',
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  dateDismissText: { color: '#FFFFFF', fontWeight: '700' },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  modalSheet: {
+    maxHeight: '75%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    gap: 12,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  modalCloseText: {
+    color: '#1D4ED8',
+    fontWeight: '700',
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: '#D0D5DD',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
+  },
+  selectorList: {
+    gap: 8,
+    paddingBottom: 18,
+  },
+  selectorOption: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+  selectorOptionText: {
+    color: '#0F172A',
+    fontSize: 15,
+  },
+  emptySelectorText: {
+    color: '#64748B',
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
 });

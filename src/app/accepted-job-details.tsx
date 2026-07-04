@@ -3,29 +3,20 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Linking,
-  Platform,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
-import {
-  connectSocket,
-  joinTripRoom,
-  leaveTripRoom,
-  onAdditionalChargeAdded,
-  onItemDelivered,
-  onItemPickedUp,
-  onTripStatusUpdated,
-} from '@/services/socketService';
 import type { DriverAcceptedJobDetailsResponse } from '@/types/auth';
-import { calculateDistanceMeters } from '@/utils/pickupValidation';
 
 function formatDate(value: string | null): string {
   if (!value) return 'N/A';
@@ -57,97 +48,26 @@ function hasValidCoordinates(latitude: number | null, longitude: number | null):
   );
 }
 
-function formatVehicleCondition(condition: string | null): string {
-  if (!condition) return 'N/A';
-  return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
-}
-
-function formatRequestStatus(status: string): string {
-  return status.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
-}
-
-function toProgressStages(status: string): Array<{ label: string; state: 'done' | 'current' | 'upcoming' }> {
-  const order = [
-    'DRIVER_ASSIGNED',
-    'DRIVER_GOING_TO_PICKUP',
-    'DRIVER_ARRIVED_PICKUP',
-    'ITEM_PICKED_UP',
-    'DRIVER_GOING_TO_DROPOFF',
-    'DELIVERED',
-  ] as const;
-
-  const labels: Record<(typeof order)[number], string> = {
-    DRIVER_ASSIGNED: 'Accept Request',
-    DRIVER_GOING_TO_PICKUP: 'On the Way to Pickup',
-    DRIVER_ARRIVED_PICKUP: 'Arrived at Location',
-    ITEM_PICKED_UP: 'Picked Up',
-    DRIVER_GOING_TO_DROPOFF: 'On the Way to Delivery',
-    DELIVERED: 'Delivered',
-  };
-
-  const normalizedStatus =
-    status === 'ACCEPTED'
-      ? 'DRIVER_ASSIGNED'
-      : status === 'PICKUP_IN_PROGRESS' || status === 'IN_TRANSIT'
-      ? 'DRIVER_GOING_TO_DROPOFF'
-      : status === 'COMPLETED'
-      ? 'DELIVERED'
-      : status;
-
-  const currentIndex = order.indexOf(normalizedStatus as (typeof order)[number]);
-
-  return order.map((item, index) => ({
-    label: labels[item],
-    state:
-      currentIndex === -1
-        ? index === 0
-          ? 'current'
-          : 'upcoming'
-        : index < currentIndex
-        ? 'done'
-        : index === currentIndex
-        ? 'current'
-        : 'upcoming',
-  }));
-}
-
-function getNextAction(status: string): {
-  label: string;
-  route: '/go-to-pickup' | '/pickup-item' | '/deliver-item';
-  enabled: boolean;
-} {
-  switch (status) {
-    case 'ACCEPTED':
-      return { label: 'Accept Request', route: '/go-to-pickup', enabled: true };
-    case 'DRIVER_ASSIGNED':
-      return { label: 'Accept Request', route: '/go-to-pickup', enabled: true };
-    case 'DRIVER_GOING_TO_PICKUP':
-      return { label: 'On the Way to Pickup', route: '/go-to-pickup', enabled: true };
-    case 'DRIVER_ARRIVED_PICKUP':
-      return { label: 'Picked Up', route: '/pickup-item', enabled: true };
-    case 'ITEM_PICKED_UP':
-    case 'PICKUP_IN_PROGRESS':
-    case 'IN_TRANSIT':
-    case 'DRIVER_GOING_TO_DROPOFF':
-      return { label: 'On the Way to Delivery', route: '/deliver-item', enabled: true };
-    case 'DELIVERED':
-    case 'COMPLETED':
-      return { label: 'Delivered', route: '/deliver-item', enabled: false };
-    default:
-      return { label: 'Waiting for next step', route: '/go-to-pickup', enabled: false };
-  }
+function resolveAssetUrl(url: string): string {
+  return resolveBackendAssetUrl(url);
 }
 
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
-  const { accessToken, signOut } = useAuth();
+  const { signOut } = useAuth();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
 
   const [details, setDetails] = useState<DriverAcceptedJobDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
+  const [activeMapLocation, setActiveMapLocation] = useState<{
+    title: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId.trim()) {
@@ -184,110 +104,41 @@ export default function AcceptedJobDetailsScreen() {
     void loadDetails();
   }, [loadDetails]);
 
-  useEffect(() => {
-    if (!accessToken || !requestId.trim()) return;
-
-    try {
-      connectSocket(accessToken);
-      joinTripRoom(requestId);
-    } catch {
-      return;
-    }
-
-    const unsubscribeStatus = onTripStatusUpdated((payload) => {
-      if (payload.tripId !== requestId) return;
-      setStatusMessage(`Status updated to ${formatRequestStatus(payload.status)}.`);
-      if (payload.status === 'DELIVERED') {
-        router.replace({
-          pathname: '/driver-trip-completed',
-          params: { tripId: requestId, deliveredAt: payload.updatedAt },
-        });
-        return;
-      }
-      void loadDetails();
-    });
-
-    const unsubscribePickedUp = onItemPickedUp((payload) => {
-      if (payload.tripId !== requestId) return;
-      setStatusMessage('Pickup confirmed successfully.');
-      void loadDetails();
-    });
-
-    const unsubscribeDelivered = onItemDelivered((payload) => {
-      if (payload.tripId !== requestId) return;
-      router.replace({
-        pathname: '/driver-trip-completed',
-        params: { tripId: requestId, deliveredAt: payload.deliveredAt },
-      });
-    });
-
-    const unsubscribeAdditionalCharge = onAdditionalChargeAdded((payload) => {
-      if (payload.requestId !== requestId) return;
-      setStatusMessage(
-        `Additional expense submitted: ${formatMoney(payload.walletDeduction.amount, payload.walletDeduction.currency)} will be deducted from the customer wallet.`,
-      );
-    });
-
-    return () => {
-      unsubscribeStatus();
-      unsubscribePickedUp();
-      unsubscribeDelivered();
-      unsubscribeAdditionalCharge();
-      leaveTripRoom(requestId);
-    };
-  }, [accessToken, loadDetails, requestId, router]);
-
-  const nextAction = useMemo(
-    () => (details ? getNextAction(String(details.requestStatus)) : null),
-    [details],
-  );
-
-  const progressStages = useMemo(
-    () => (details ? toProgressStages(String(details.requestStatus)) : []),
-    [details],
-  );
-
-  const canSubmitExpense = useMemo(() => {
+  const canGoToPickup = useMemo(() => {
     if (!details) return false;
-    return !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(String(details.requestStatus));
-  }, [details]);
-
-  const tripDistanceLabel = useMemo(() => {
-    if (!details) return 'Distance unavailable';
-    if (
-      !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) ||
-      !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)
-    ) {
-      return 'Distance unavailable';
-    }
-
-    const distanceMeters = calculateDistanceMeters(
-      { latitude: details.pickup.latitude as number, longitude: details.pickup.longitude as number },
-      { latitude: details.dropoff.latitude as number, longitude: details.dropoff.longitude as number },
+    return (
+      details.requestStatus === 'ACCEPTED' ||
+      details.requestStatus === 'DRIVER_ASSIGNED' ||
+      details.requestStatus === 'DRIVER_GOING_TO_PICKUP' ||
+      details.requestStatus === 'DRIVER_ARRIVED_PICKUP'
     );
-
-    return `${(distanceMeters / 1000).toFixed(1)} km`;
   }, [details]);
 
-  const openMap = async (latitude: number | null, longitude: number | null): Promise<void> => {
+  const canGoToDropoff = useMemo(() => {
+    if (!details) return false;
+    const requestStatus = String(details.requestStatus);
+    return (
+      requestStatus === 'ITEM_PICKED_UP' ||
+      requestStatus === 'DRIVER_GOING_TO_DROPOFF'
+    );
+  }, [details]);
+
+  const openMap = (
+    title: string,
+    address: string | null,
+    latitude: number | null,
+    longitude: number | null,
+  ): void => {
     if (!hasValidCoordinates(latitude, longitude)) {
       return;
     }
 
-    const latValue = latitude as number;
-    const lngValue = longitude as number;
-    const lat = latValue.toFixed(6);
-    const lng = lngValue.toFixed(6);
-    const url = Platform.select({
-      ios: `http://maps.apple.com/?ll=${lat},${lng}`,
-      android: `geo:${lat},${lng}?q=${lat},${lng}`,
-      default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+    setActiveMapLocation({
+      title,
+      address: address?.trim() || 'Address unavailable',
+      latitude: latitude as number,
+      longitude: longitude as number,
     });
-
-    if (!url) return;
-    const canOpen = await Linking.canOpenURL(url);
-    if (!canOpen) return;
-    await Linking.openURL(url);
   };
 
   if (isLoading) {
@@ -318,51 +169,12 @@ export default function AcceptedJobDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.successHeader}>
-          <Text style={styles.title}>Active Request</Text>
-          <Text style={styles.subtitle}>Review the job details and continue the next required execution step.</Text>
+          <Text style={styles.title}>Your offer was accepted</Text>
+          <Text style={styles.subtitle}>Review the job details and get ready for pickup.</Text>
           <Text style={styles.offerPrice}>
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
           <Text style={styles.metaText}>Accepted at: {formatDate(details.acceptedAt)}</Text>
-          <Text style={styles.walletNotice}>
-            The amount has been reserved from the customer wallet.
-          </Text>
-          {statusMessage ? <Text style={styles.statusNotice}>{statusMessage}</Text> : null}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Request Summary</Text>
-          <Text style={styles.metaText}>Service: {details.service?.nameEn || details.service?.key || 'Transport request'}</Text>
-          <Text style={styles.metaText}>Pickup: {details.pickup.address || 'Address unavailable'}</Text>
-          <Text style={styles.metaText}>Dropoff: {details.dropoff.address || 'Address unavailable'}</Text>
-          <Text style={styles.metaText}>Distance: {tripDistanceLabel}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Request Progress</Text>
-          <Text style={styles.progressLabel}>Current status: {formatRequestStatus(String(details.requestStatus))}</Text>
-          <Text style={styles.metaText}>Next action: {nextAction?.label || 'N/A'}</Text>
-          <View style={styles.progressList}>
-            {progressStages.map((stage) => (
-              <View key={stage.label} style={styles.progressRow}>
-                <View
-                  style={[
-                    styles.progressDot,
-                    stage.state === 'done' && styles.progressDotDone,
-                    stage.state === 'current' && styles.progressDotCurrent,
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.progressText,
-                    stage.state === 'current' && styles.progressTextCurrent,
-                  ]}
-                >
-                  {stage.label}
-                </Text>
-              </View>
-            ))}
-          </View>
         </View>
 
         <View style={styles.card}>
@@ -375,17 +187,6 @@ export default function AcceptedJobDetailsScreen() {
             Rating:{' '}
             {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
           </Text>
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() =>
-              router.push({
-                pathname: '/request-chat',
-                params: { requestId: details.requestId },
-              })
-            }
-          >
-            <Text style={styles.secondaryButtonText}>Chat with Customer</Text>
-          </Pressable>
         </View>
 
         <View style={styles.card}>
@@ -417,7 +218,9 @@ export default function AcceptedJobDetailsScreen() {
               styles.secondaryButton,
               !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) && styles.disabledButton,
             ]}
-            onPress={() => void openMap(details.pickup.latitude, details.pickup.longitude)}
+            onPress={() =>
+              openMap('Pickup Location', details.pickup.address, details.pickup.latitude, details.pickup.longitude)
+            }
             disabled={!hasValidCoordinates(details.pickup.latitude, details.pickup.longitude)}
           >
             <Text style={styles.secondaryButtonText}>Open Pickup in Maps</Text>
@@ -435,7 +238,9 @@ export default function AcceptedJobDetailsScreen() {
               styles.secondaryButton,
               !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude) && styles.disabledButton,
             ]}
-            onPress={() => void openMap(details.dropoff.latitude, details.dropoff.longitude)}
+            onPress={() =>
+              openMap('Dropoff Location', details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
+            }
             disabled={!hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)}
           >
             <Text style={styles.secondaryButtonText}>Open Dropoff in Maps</Text>
@@ -462,14 +267,6 @@ export default function AcceptedJobDetailsScreen() {
               .join(' / ') || 'N/A'}
           </Text>
           <Text style={styles.metaText}>Condition: {details.itemDetails.condition || 'N/A'}</Text>
-          {details.vehicleDetails?.condition ? (
-            <Text style={styles.metaText}>
-              Vehicle condition: {formatVehicleCondition(details.vehicleDetails.condition)}
-            </Text>
-          ) : null}
-          {details.vehicleDetails?.conditionNotes ? (
-            <Text style={styles.metaText}>Condition notes: {details.vehicleDetails.conditionNotes}</Text>
-          ) : null}
           <Text style={styles.metaText}>
             Weight: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : 'N/A'}
           </Text>
@@ -493,39 +290,78 @@ export default function AcceptedJobDetailsScreen() {
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
-                <Image key={photo.id} source={{ uri: photo.url }} style={styles.photo} />
+                <Pressable key={photo.id} onPress={() => setExpandedPhotoUrl(resolveAssetUrl(photo.url))}>
+                  <Image source={{ uri: resolveAssetUrl(photo.url) }} style={styles.photo} />
+                </Pressable>
               ))}
             </ScrollView>
           )}
         </View>
-
-        {canSubmitExpense ? (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Additional Expenses</Text>
-            <Text style={styles.metaText}>
-              Submit unexpected costs with an invoice or receipt photo. This amount will be deducted from the customer&apos;s wallet.
-            </Text>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() =>
-                router.push((`/additional-expense?requestId=${encodeURIComponent(details.requestId)}`) as never)
-              }
-            >
-              <Text style={styles.secondaryButtonText}>Submit Expense</Text>
-            </Pressable>
-          </View>
-        ) : null}
       </ScrollView>
+
+      <Modal visible={Boolean(expandedPhotoUrl)} transparent animationType="fade" onRequestClose={() => setExpandedPhotoUrl('')}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setExpandedPhotoUrl('')}>
+          {expandedPhotoUrl ? <Image source={{ uri: expandedPhotoUrl }} style={styles.expandedPhoto} resizeMode="contain" /> : null}
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={Boolean(activeMapLocation)}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setActiveMapLocation(null)}
+      >
+        <View style={styles.mapModalBackdrop}>
+          <View style={styles.mapModalCard}>
+            {activeMapLocation ? (
+              <>
+                <View style={styles.mapModalHeader}>
+                  <View style={styles.mapModalHeaderText}>
+                    <Text style={styles.mapModalTitle}>{activeMapLocation.title}</Text>
+                    <Text style={styles.mapModalAddress}>{activeMapLocation.address}</Text>
+                  </View>
+                  <Pressable style={styles.mapCloseButton} onPress={() => setActiveMapLocation(null)}>
+                    <Text style={styles.mapCloseButtonText}>Close</Text>
+                  </Pressable>
+                </View>
+
+                <MapView
+                  style={styles.map}
+                  initialRegion={{
+                    latitude: activeMapLocation.latitude,
+                    longitude: activeMapLocation.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                >
+                  <Marker
+                    coordinate={{
+                      latitude: activeMapLocation.latitude,
+                      longitude: activeMapLocation.longitude,
+                    }}
+                    title={activeMapLocation.title}
+                    description={activeMapLocation.address}
+                  />
+                </MapView>
+
+                <Text style={styles.mapCoordinates}>
+                  {activeMapLocation.latitude.toFixed(6)}, {activeMapLocation.longitude.toFixed(6)}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.footer}>
         <Pressable
           style={[
             styles.primaryActionButton,
-            !nextAction?.enabled && styles.disabledButton,
+            !canGoToPickup && !canGoToDropoff && styles.disabledButton,
           ]}
           onPress={() =>
             router.push({
-              pathname: nextAction?.route || '/go-to-pickup',
+              pathname: canGoToDropoff ? '/deliver-item' : '/go-to-pickup',
               params: {
                 tripId: details.requestId,
                 pickupLatitude: String(details.pickup.latitude ?? ''),
@@ -537,10 +373,10 @@ export default function AcceptedJobDetailsScreen() {
               },
             })
           }
-          disabled={!nextAction?.enabled}
+          disabled={!canGoToPickup && !canGoToDropoff}
         >
           <Text style={styles.primaryActionButtonText}>
-            {nextAction?.label || 'Waiting for next step'}
+            {canGoToDropoff ? 'Go to Dropoff Location' : 'Go to Pickup Location'}
           </Text>
         </Pressable>
       </View>
@@ -611,50 +447,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#14532D',
   },
-  walletNotice: {
-    color: '#166534',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  statusNotice: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  progressLabel: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  progressList: {
-    marginTop: 6,
-    gap: 6,
-  },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: '#CBD5E1',
-  },
-  progressDotDone: {
-    backgroundColor: '#16A34A',
-  },
-  progressDotCurrent: {
-    backgroundColor: '#2563EB',
-  },
-  progressText: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  progressTextCurrent: {
-    color: '#0F172A',
-    fontWeight: '700',
-  },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
@@ -695,6 +487,76 @@ const styles = StyleSheet.create({
     height: 90,
     borderRadius: 8,
     backgroundColor: '#E2E8F0',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  expandedPhoto: {
+    width: '100%',
+    height: '100%',
+  },
+  mapModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'flex-end',
+  },
+  mapModalCard: {
+    minHeight: '68%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+  },
+  mapModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  mapModalHeaderText: {
+    flex: 1,
+    gap: 4,
+  },
+  mapModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  mapModalAddress: {
+    fontSize: 13,
+    color: '#475569',
+  },
+  mapCloseButton: {
+    minHeight: 36,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapCloseButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+  map: {
+    flex: 1,
+    minHeight: 320,
+  },
+  mapCoordinates: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 12,
+    color: '#475569',
   },
   footer: {
     position: 'absolute',

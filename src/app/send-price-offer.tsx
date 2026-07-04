@@ -53,10 +53,6 @@ function parseOptionalIsoDate(rawValue: string): Date | null {
   return parsed;
 }
 
-function formatVehicleCondition(condition: string): string {
-  if (!condition.trim()) return 'N/A';
-  return condition.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (char) => char.toUpperCase());
-}
 export default function SendPriceOfferScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -64,9 +60,6 @@ export default function SendPriceOfferScreen() {
 
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
   const serviceName = typeof params.serviceName === 'string' ? params.serviceName : '';
-  const vehicleCondition = typeof params.vehicleCondition === 'string' ? params.vehicleCondition : '';
-  const vehicleConditionNotes =
-    typeof params.vehicleConditionNotes === 'string' ? params.vehicleConditionNotes : '';
   const pickupAddress = typeof params.pickupAddress === 'string' ? params.pickupAddress : '';
   const dropoffAddress = typeof params.dropoffAddress === 'string' ? params.dropoffAddress : '';
   const scheduledPickupAt = typeof params.scheduledPickupAt === 'string' ? params.scheduledPickupAt : null;
@@ -220,12 +213,6 @@ export default function SendPriceOfferScreen() {
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Request Summary</Text>
             {serviceName ? <Text style={styles.valueText}>Service: {serviceName}</Text> : null}
-            {vehicleCondition ? (
-              <Text style={styles.valueText}>Vehicle condition: {formatVehicleCondition(vehicleCondition)}</Text>
-            ) : null}
-            {vehicleConditionNotes ? (
-              <Text style={styles.valueText}>Condition notes: {vehicleConditionNotes}</Text>
-            ) : null}
             {pickupAddress ? <Text style={styles.valueText}>Pickup: {pickupAddress}</Text> : null}
             {dropoffAddress ? <Text style={styles.valueText}>Dropoff: {dropoffAddress}</Text> : null}
             <Text style={styles.valueText}>Schedule: {formatDateTime(scheduledPickupAt)}</Text>

@@ -1,7 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 
+import { getBackendSocketUrl } from '@/config/backend';
 import type {
-  AdditionalExpenseResponse,
   DriverArrivedPickupConfirmedPayload,
   ItemPickedUpPayload,
   ItemDeliveredPayload,
@@ -9,8 +9,6 @@ import type {
   DriverLocationUpdatePayload,
   DriverLocationUpdatedPayload,
   OfferAcceptedPayload,
-  OfferRejectedPayload,
-  RequestNewPayload,
   TripStatusUpdatedPayload,
 } from '@/types/trip.types';
 
@@ -24,7 +22,10 @@ export type SocketDebugPongPayload = {
   note: string | null;
 };
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL?.trim();
+export type RequestDeletedPayload = {
+  requestId: string;
+};
+
 let socket: Socket | null = null;
 let currentToken: string | null = null;
 
@@ -35,10 +36,7 @@ type SocketAckResponse = {
 };
 
 function ensureSocketUrl(): string {
-  if (!SOCKET_URL) {
-    throw new Error('EXPO_PUBLIC_SOCKET_URL is missing. Please set it in your environment.');
-  }
-  return SOCKET_URL;
+  return getBackendSocketUrl();
 }
 
 function getSocket(): Socket {
@@ -142,18 +140,13 @@ export function onOfferAccepted(callback: (payload: OfferAcceptedPayload) => voi
   return () => instance.off('offerAccepted', callback);
 }
 
-export function onRequestNew(callback: (payload: RequestNewPayload) => void): () => void {
+export function onRequestDeleted(
+  callback: (payload: RequestDeletedPayload) => void,
+): () => void {
   const instance = getSocket();
-  instance.off('requestNew', callback);
-  instance.on('requestNew', callback);
-  return () => instance.off('requestNew', callback);
-}
-
-export function onOfferRejected(callback: (payload: OfferRejectedPayload) => void): () => void {
-  const instance = getSocket();
-  instance.off('offerRejected', callback);
-  instance.on('offerRejected', callback);
-  return () => instance.off('offerRejected', callback);
+  instance.off('requestDeleted', callback);
+  instance.on('requestDeleted', callback);
+  return () => instance.off('requestDeleted', callback);
 }
 
 export function onDriverLocationUpdated(
@@ -199,15 +192,6 @@ export function onItemDelivered(
   instance.off('itemDelivered', callback);
   instance.on('itemDelivered', callback);
   return () => instance.off('itemDelivered', callback);
-}
-
-export function onAdditionalChargeAdded(
-  callback: (payload: AdditionalExpenseResponse) => void,
-): () => void {
-  const instance = getSocket();
-  instance.off('additionalChargeAdded', callback);
-  instance.on('additionalChargeAdded', callback);
-  return () => instance.off('additionalChargeAdded', callback);
 }
 
 export function onSocketDisconnect(callback: (reason: string) => void): () => void {

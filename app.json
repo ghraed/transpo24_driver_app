@@ -18,7 +18,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.driver_mobile"
+      "package": "com.anonymous.driver_mobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -29,9 +32,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow driver_mobile to access your photo library for document uploads.",
-          "cameraPermission": "Allow driver_mobile to use your camera for document uploads.",
-          "microphonePermission": false
+          "photosPermission": "Allow Driver Mobile to access your photos so you can select driver documents.",
+          "cameraPermission": "Allow Driver Mobile to access your camera so you can take clear driver document photos."
         }
       ],
       [
@@ -44,11 +46,18 @@
           }
         }
       ],
+      "expo-notifications",
       "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9adb6313-42fb-4399-b3ea-6e040805a8a4"
+      }
     }
   }
 }

@@ -87,10 +87,6 @@ export function validateDeliverItemRequest(payload: DeliverItemRequest): string 
     return 'Proof image URL must be a valid URL.';
   }
 
-  if (!payload.proofPhotos?.length && !(payload.proofImageUrl?.trim().length ?? 0)) {
-    return 'At least one delivery photo is required.';
-  }
-
   return null;
 }
 
@@ -161,7 +157,6 @@ export function validateDeliverItemResponse(payload: unknown): DeliverItemRespon
     deliveredAt,
     deliveryNotes,
     deliveryProofImageUrl,
-    deliveryProofPhotos,
     nextStep,
   } = payload;
 
@@ -182,37 +177,6 @@ export function validateDeliverItemResponse(payload: unknown): DeliverItemRespon
   if (deliveryProofImageUrl !== null && typeof deliveryProofImageUrl !== 'string') {
     return null;
   }
-  if (!Array.isArray(deliveryProofPhotos)) {
-    return null;
-  }
-
-  const mappedProofPhotos = deliveryProofPhotos
-    .map((photo) => {
-      if (!isRecord(photo)) return null;
-      const { id, type, url, mimeType, sizeBytes, sortOrder, createdAt } = photo;
-      if (
-        typeof id !== 'string' ||
-        type !== 'DELIVERY' ||
-        typeof url !== 'string' ||
-        typeof mimeType !== 'string' ||
-        typeof sizeBytes !== 'number' ||
-        typeof sortOrder !== 'number' ||
-        typeof createdAt !== 'string'
-      ) {
-        return null;
-      }
-
-      return {
-        id,
-        type: 'DELIVERY' as const,
-        url,
-        mimeType,
-        sizeBytes,
-        sortOrder,
-        createdAt,
-      };
-    })
-    .filter((photo): photo is NonNullable<typeof photo> => photo !== null);
 
   return {
     tripId,
@@ -222,7 +186,6 @@ export function validateDeliverItemResponse(payload: unknown): DeliverItemRespon
     deliveredAt,
     deliveryNotes: deliveryNotes ?? null,
     deliveryProofImageUrl: deliveryProofImageUrl ?? null,
-    deliveryProofPhotos: mappedProofPhotos,
     nextStep: 'VIEW_EARNINGS_AND_RATINGS',
   };
 }
