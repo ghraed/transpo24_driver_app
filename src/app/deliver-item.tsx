@@ -3,10 +3,15 @@ import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import MapViewDirections from 'react-native-maps-directions';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  NativeMapView,
+  NativeMapViewDirections,
+  NativeMarker,
+  PROVIDER_GOOGLE,
+  isNativeMapRuntimeAvailable,
+} from '@/components/native-maps';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
 import { deliverItem, startDelivery } from '@/services/tripService';
@@ -462,8 +467,9 @@ export default function DeliverItemScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.mapContainer}>
-        {mapsApiKey ? (
-          <MapView
+        {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+          <NativeMapView
+            provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
               latitude: driverLocation?.latitude ?? dropoffLocation.latitude,
@@ -473,17 +479,17 @@ export default function DeliverItemScreen() {
             }}
           >
             {driverLocation ? (
-              <Marker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+              <NativeMarker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
                 <Text style={styles.driverMarkerIcon}>🚗</Text>
-              </Marker>
+              </NativeMarker>
             ) : null}
-            <Marker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
+            <NativeMarker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
               <View style={styles.destinationXMarker}>
                 <Text style={styles.destinationXText}>X</Text>
               </View>
-            </Marker>
-            {driverLocation ? (
-              <MapViewDirections
+            </NativeMarker>
+            {driverLocation && NativeMapViewDirections ? (
+              <NativeMapViewDirections
                 origin={driverLocation}
                 destination={dropoffLocation}
                 apikey={mapsApiKey}
@@ -491,7 +497,7 @@ export default function DeliverItemScreen() {
                 strokeColor="#0EA5E9"
               />
             ) : null}
-          </MapView>
+          </NativeMapView>
         ) : (
           <View style={styles.centeredMapState}>
             <Text style={styles.warningText}>

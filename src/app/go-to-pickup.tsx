@@ -1,11 +1,17 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import MapViewDirections from 'react-native-maps-directions';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  NativeMapView,
+  NativeMapViewDirections,
+  NativeMarker,
+  PROVIDER_GOOGLE,
+  isNativeMapRuntimeAvailable,
+} from '@/components/native-maps';
+import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { useAuth } from '@/context/auth-context';
 import {
   connectSocket,
@@ -59,12 +65,7 @@ export default function GoToPickupScreen() {
   }>();
 
   const tripId = typeof params.tripId === 'string' ? params.tripId : '';
-  const mapsApiKey =
-    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
-    (Platform.OS === 'ios'
-      ? process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim()
-      : process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim()) ||
-    '';
+  const mapsApiKey = GOOGLE_MAPS_API_KEY?.trim() || '';
 
   const pickupLocation = useMemo<AddressedLocation | null>(() => {
     const latitude = parseNumber(params.pickupLatitude);
@@ -389,8 +390,9 @@ export default function GoToPickupScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.mapContainer}>
-        {driverLocation ? (
-          <MapView
+        {driverLocation && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+          <NativeMapView
+            provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
               latitude: driverLocation.latitude,
@@ -399,26 +401,32 @@ export default function GoToPickupScreen() {
               longitudeDelta: 0.03,
             }}
           >
-            <Marker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+            <NativeMarker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
               <Text style={styles.driverMarkerIcon}>🚗</Text>
-            </Marker>
-            <Marker coordinate={pickupLocation} title="Pickup" anchor={{ x: 0.5, y: 0.5 }}>
+            </NativeMarker>
+            <NativeMarker coordinate={pickupLocation} title="Pickup" anchor={{ x: 0.5, y: 0.5 }}>
               <View style={styles.pickupMarker}>
                 <Text style={styles.pickupMarkerText}>P</Text>
               </View>
-            </Marker>
-            <MapViewDirections
-              origin={driverLocation}
-              destination={pickupLocation}
-              apikey={mapsApiKey}
-              strokeWidth={4}
-              strokeColor="#0EA5E9"
-            />
-          </MapView>
-        ) : (
+            </NativeMarker>
+            {mapsApiKey && NativeMapViewDirections ? (
+              <NativeMapViewDirections
+                origin={driverLocation}
+                destination={pickupLocation}
+                apikey={mapsApiKey}
+                strokeWidth={4}
+                strokeColor="#0EA5E9"
+              />
+            ) : null}
+          </NativeMapView>
+        ) : isNativeMapRuntimeAvailable ? (
           <View style={styles.centeredMapState}>
             <ActivityIndicator size="large" color="#2563EB" />
             <Text style={styles.helperText}>Getting live location...</Text>
+          </View>
+        ) : (
+          <View style={styles.centeredMapState}>
+            <Text style={styles.helperText}>Map preview is unavailable on this platform.</Text>
           </View>
         )}
       </View>

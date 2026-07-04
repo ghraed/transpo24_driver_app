@@ -10,9 +10,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  NativeMapView,
+  NativeMarker,
+  PROVIDER_GOOGLE,
+  isNativeMapRuntimeAvailable,
+} from '@/components/native-maps';
 import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
@@ -325,24 +330,31 @@ export default function AcceptedJobDetailsScreen() {
                   </Pressable>
                 </View>
 
-                <MapView
-                  style={styles.map}
-                  initialRegion={{
-                    latitude: activeMapLocation.latitude,
-                    longitude: activeMapLocation.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                >
-                  <Marker
-                    coordinate={{
+                {isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+                  <NativeMapView
+                    provider={PROVIDER_GOOGLE}
+                    style={styles.map}
+                    initialRegion={{
                       latitude: activeMapLocation.latitude,
                       longitude: activeMapLocation.longitude,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
                     }}
-                    title={activeMapLocation.title}
-                    description={activeMapLocation.address}
-                  />
-                </MapView>
+                  >
+                    <NativeMarker
+                      coordinate={{
+                        latitude: activeMapLocation.latitude,
+                        longitude: activeMapLocation.longitude,
+                      }}
+                      title={activeMapLocation.title}
+                      description={activeMapLocation.address}
+                    />
+                  </NativeMapView>
+                ) : (
+                  <View style={styles.mapFallback}>
+                    <Text style={styles.mapFallbackText}>Map preview is unavailable on this platform.</Text>
+                  </View>
+                )}
 
                 <Text style={styles.mapCoordinates}>
                   {activeMapLocation.latitude.toFixed(6)}, {activeMapLocation.longitude.toFixed(6)}
@@ -551,6 +563,17 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     minHeight: 320,
+  },
+  mapFallback: {
+    minHeight: 320,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 16,
+  },
+  mapFallbackText: {
+    color: '#475569',
+    textAlign: 'center',
   },
   mapCoordinates: {
     paddingHorizontal: 16,

@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,9 +12,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  NativeMapView,
+  NativeMarker,
+  PROVIDER_GOOGLE,
+  isNativeMapRuntimeAvailable,
+} from '@/components/native-maps';
+import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { onItemPickedUp, onTripStatusUpdated } from '@/services/socketService';
 import { pickupItem } from '@/services/tripService';
 import type { LocalDocumentAsset } from '@/types/auth';
@@ -79,12 +84,7 @@ export default function PickupItemScreen() {
   const params = useLocalSearchParams<PickupParams>();
 
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
-  const mapsApiKey =
-    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
-    (Platform.OS === 'ios'
-      ? process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim()
-      : process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim()) ||
-    '';
+  const mapsApiKey = GOOGLE_MAPS_API_KEY?.trim() || '';
 
   const pickupLocation = useMemo<AddressedLocation | null>(() => {
     const latitude = parseNumber(params.pickupLatitude);
@@ -386,27 +386,34 @@ export default function PickupItemScreen() {
 
         {mapsApiKey ? (
           <View style={styles.mapCard}>
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: driverLocation?.latitude ?? pickupLocation.latitude,
-                longitude: driverLocation?.longitude ?? pickupLocation.longitude,
-                latitudeDelta: 0.02,
-                longitudeDelta: 0.02,
-              }}
-            >
-              <Marker coordinate={pickupLocation} title="Pickup" />
-              <Marker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
-                <View style={styles.destinationXMarker}>
-                  <Text style={styles.destinationXText}>X</Text>
-                </View>
-              </Marker>
-              {driverLocation ? (
-                <Marker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
-                  <Text style={styles.driverMarkerIcon}>🚗</Text>
-                </Marker>
-              ) : null}
-            </MapView>
+            {isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+              <NativeMapView
+                provider={PROVIDER_GOOGLE}
+                style={styles.map}
+                initialRegion={{
+                  latitude: driverLocation?.latitude ?? pickupLocation.latitude,
+                  longitude: driverLocation?.longitude ?? pickupLocation.longitude,
+                  latitudeDelta: 0.02,
+                  longitudeDelta: 0.02,
+                }}
+              >
+                <NativeMarker coordinate={pickupLocation} title="Pickup" />
+                <NativeMarker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
+                  <View style={styles.destinationXMarker}>
+                    <Text style={styles.destinationXText}>X</Text>
+                  </View>
+                </NativeMarker>
+                {driverLocation ? (
+                  <NativeMarker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+                    <Text style={styles.driverMarkerIcon}>🚗</Text>
+                  </NativeMarker>
+                ) : null}
+              </NativeMapView>
+            ) : (
+              <View style={styles.mapFallback}>
+                <Text style={styles.mapFallbackText}>Map preview is unavailable on this platform.</Text>
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.card}>
@@ -534,6 +541,17 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapFallback: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 16,
+  },
+  mapFallbackText: {
+    color: '#475569',
+    textAlign: 'center',
   },
   title: {
     fontSize: 22,
