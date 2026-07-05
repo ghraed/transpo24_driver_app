@@ -517,14 +517,17 @@ export default function DeliverItemScreen() {
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}
         </Text>
 
+        <Text style={styles.sectionTitle}>Delivery Notes (Optional)</Text>
         <TextInput
-          style={styles.input}
-          placeholder="Delivery notes (optional)"
+          style={styles.textArea}
+          placeholder="Package delivered to recipient."
           value={notes}
           onChangeText={setNotes}
           multiline
+          numberOfLines={4}
           maxLength={500}
         />
+        <Text style={styles.hintText}>{notes.trim().length}/500</Text>
         <Text style={styles.subText}>Proof Photos</Text>
         <Text style={styles.helperText}>
           Select multiple images from the gallery or capture more photos with the camera. Max {MAX_PROOF_PHOTOS}.
@@ -663,8 +666,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  input: {
-    minHeight: 44,
+  sectionTitle: {
+    color: '#0F172A',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  textArea: {
+    minHeight: 96,
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 10,
@@ -672,6 +680,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     color: '#0F172A',
+    textAlignVertical: 'top',
+  },
+  hintText: {
+    color: '#64748B',
+    fontSize: 12,
   },
   proofCard: {
     gap: 8,

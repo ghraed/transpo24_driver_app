@@ -1,4 +1,6 @@
 import type { ConfigContext } from 'expo/config';
+import { AndroidConfig, withAndroidManifest } from 'expo/config-plugins';
+import type { ExpoConfig } from 'expo/config';
 
 const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ?? '';
 const MAPS_IOS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY ?? '';
@@ -17,7 +19,7 @@ export default ({ config }: ConfigContext) => {
     return true;
   });
 
-  return {
+  const expoConfig = {
     ...config,
     ios: {
       ...config.ios,
@@ -46,5 +48,14 @@ export default ({ config }: ConfigContext) => {
         },
       ],
     ],
-  };
+  } as ExpoConfig;
+
+  return withAndroidManifest(expoConfig, (manifestConfig) => {
+    const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(
+      manifestConfig.modResults,
+    );
+
+    mainApplication.$['android:usesCleartextTraffic'] = 'true';
+    return manifestConfig;
+  });
 };

@@ -25,6 +25,11 @@ type ApiErrorResponse = {
   message?: string | string[];
 };
 
+type XhrResponsePayload = {
+  status: number;
+  responseText: string;
+};
+
 type ReactNativeFormDataFile = {
   uri: string;
   name: string;
@@ -69,6 +74,39 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function uploadFormDataWithXhr(
+  endpoint: string,
+  formData: FormData,
+  token?: string,
+): Promise<XhrResponsePayload> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PATCH', endpoint);
+
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    xhr.onload = () => {
+      resolve({
+        status: xhr.status,
+        responseText: xhr.responseText ?? '',
+      });
+    };
+
+    xhr.onerror = () => {
+      reject(createBackendReachabilityError(endpoint));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error(`Request timed out while uploading to ${endpoint}.`));
+    };
+
+    xhr.timeout = REQUEST_TIMEOUT_MS;
+    xhr.send(formData);
+  });
 }
 
 function toNetworkError(endpoint: string, error: unknown): Error {
@@ -136,11 +174,8 @@ function appendFormDataAsset(
   fallbackName: string,
   fallbackMimeType: string,
 ): void {
-  appendFormDataFile(
-    formData,
-    fieldName,
-    toFormDataFile(asset, fallbackName, fallbackMimeType),
-  );
+  const file = toFormDataFile(asset, fallbackName, fallbackMimeType);
+  appendFormDataFile(formData, fieldName, file);
 }
 
 function appendFormDataAssets(
@@ -174,15 +209,19 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-async function getMultipartAuthHeaders(): Promise<Record<string, string>> {
+async function uploadMultipartPatch(
+  endpoint: string,
+  formData: FormData,
+): Promise<Response> {
   const token = await readAccessToken();
-  const headers: Record<string, string> = {};
+  const xhrResponse = await uploadFormDataWithXhr(endpoint, formData, token ?? undefined);
 
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
+  return new Response(xhrResponse.responseText, {
+    status: xhrResponse.status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 }
 
 export async function pickupItem(
@@ -212,11 +251,7 @@ export async function pickupItem(
       if (payload.notes?.trim()) formData.append('notes', payload.notes.trim());
       if (payload.proofImageUrl?.trim()) formData.append('proofImageUrl', payload.proofImageUrl.trim());
       appendFormDataAssets(formData, 'photos', proofPhotos, 'pickup-proof', 'image/jpeg');
-      response = await fetchWithTimeout(endpoint, {
-        method: 'PATCH',
-        headers: await getMultipartAuthHeaders(),
-        body: formData,
-      });
+      response = await uploadMultipartPatch(endpoint, formData);
     } else {
       response = await fetchWithTimeout(endpoint, {
         method: 'PATCH',
@@ -301,11 +336,7 @@ export async function deliverItem(
       if (payload.notes?.trim()) formData.append('notes', payload.notes.trim());
       if (payload.proofImageUrl?.trim()) formData.append('proofImageUrl', payload.proofImageUrl.trim());
       appendFormDataAssets(formData, 'photos', proofPhotos, 'delivery-proof', 'image/jpeg');
-      response = await fetchWithTimeout(endpoint, {
-        method: 'PATCH',
-        headers: await getMultipartAuthHeaders(),
-        body: formData,
-      });
+      response = await uploadMultipartPatch(endpoint, formData);
     } else {
       response = await fetchWithTimeout(endpoint, {
         method: 'PATCH',

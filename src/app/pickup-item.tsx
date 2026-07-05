@@ -277,7 +277,7 @@ export default function PickupItemScreen() {
     appendProofPhotos([toAssetFromImagePicker(asset)]);
   };
 
-  const onConfirmPickup = async (): Promise<void> => {
+  const onConfirmPickup = async (skipDistanceCheck = false): Promise<void> => {
     setSubmitError('');
 
     if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
@@ -309,7 +309,9 @@ export default function PickupItemScreen() {
     }
 
     const canSendLocation =
-      latestLocation ? canConfirmPickup(latestLocation, pickupLocation) : false;
+      latestLocation
+        ? skipDistanceCheck || canConfirmPickup(latestLocation, pickupLocation)
+        : false;
 
     const payload: PickupItemRequest = {
       notes: notes.trim() || undefined,
@@ -318,9 +320,13 @@ export default function PickupItemScreen() {
       longitude: canSendLocation ? latestLocation?.longitude : undefined,
     };
 
-    if (latestLocation && !canSendLocation) {
+    if (skipDistanceCheck) {
       setLocationMessage(
-        'GPS shows you are farther than 150m from pickup. Sending confirmation without coordinates.'
+        'Testing mode: pickup confirmation sent without the 150m distance check.',
+      );
+    } else if (latestLocation && !canSendLocation) {
+      setLocationMessage(
+        'GPS shows you are farther than 150m from pickup. Sending confirmation without coordinates.',
       );
     }
 
@@ -499,8 +505,25 @@ export default function PickupItemScreen() {
           </Text>
         </Pressable>
 
+        <Pressable
+          style={[styles.testingButton, actionButtonDisabled && styles.disabledButton]}
+          disabled={actionButtonDisabled}
+          onPress={() => void onConfirmPickup(true)}
+        >
+          <Text style={styles.actionButtonText}>
+            {isLoadingLocation
+              ? 'Getting location...'
+              : isSubmitting
+                ? 'Confirming pickup...'
+                : 'Confirm Item Pickup (Skip Distance Check)'}
+          </Text>
+        </Pressable>
+
         <Text style={styles.footerHint}>
           Pickup confirmation is allowed within {PICKUP_CONFIRM_RADIUS_METERS} meters when location is available.
+        </Text>
+        <Text style={styles.footerHint}>
+          Testing button bypasses the 150m frontend distance check and sends the latest coordinates when available.
         </Text>
       </ScrollView>
 
@@ -672,6 +695,14 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 12,
     backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  testingButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#D97706',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
