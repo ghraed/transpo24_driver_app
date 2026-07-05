@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
 const { spawnSync } = require('node:child_process');
+const { reversePort } = require('./setup-adb-reverse');
 
 const forwardedArgs = process.argv.slice(2);
 
-const adbReverse = spawnSync('adb', ['reverse', 'tcp:3000', 'tcp:3000'], {
-  stdio: 'inherit',
-});
-
-if (adbReverse.status !== 0) {
-  process.exit(adbReverse.status ?? 1);
+try {
+  reversePort(3000);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : 'Unknown adb reverse error.');
+  process.exit(1);
 }
 
 const expoRunAndroid = spawnSync('npx', ['expo', 'run:android', ...forwardedArgs], {

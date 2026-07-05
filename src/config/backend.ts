@@ -8,11 +8,49 @@ const PLACEHOLDER_HOSTS = new Set([
   '0.0.0.0',
 ]);
 
+export interface BackendConnectionTarget {
+  label: string;
+  url: string;
+  note?: string;
+}
+
+const BACKEND_CONNECTION_TARGETS: readonly BackendConnectionTarget[] = [
+  {
+    label: 'Android USB device',
+    url: 'http://127.0.0.1:3000',
+    note: 'use adb reverse',
+  },
+  {
+    label: 'Android emulator',
+    url: 'http://10.0.2.2:3000',
+  },
+  {
+    label: 'iOS simulator',
+    url: 'http://localhost:3000',
+  },
+  {
+    label: 'Physical device over Wi-Fi',
+    url: 'your computer LAN IP',
+  },
+] as const;
+
 function normalizeHttpUrl(rawValue: string): string {
   const trimmed = rawValue.trim();
   return /^https?:\/\//i.test(trimmed) || !/^[a-z0-9.-]+:\d+($|\/)/i.test(trimmed)
     ? trimmed
     : `http://${trimmed}`;
+}
+
+function formatBackendConnectionTargets(): string {
+  return BACKEND_CONNECTION_TARGETS.map((target) =>
+    `${target.label}: ${target.url}${target.note ? ` (${target.note})` : ''}`,
+  ).join(', ');
+}
+
+export function createBackendReachabilityError(endpoint: string, envName = 'EXPO_PUBLIC_API_URL'): Error {
+  return new Error(
+    `Cannot reach backend at ${endpoint}. Verify ${envName} and backend network access. ${formatBackendConnectionTargets()}.`,
+  );
 }
 
 function parseHttpUrl(envName: string, rawValue: string): URL {
@@ -22,7 +60,7 @@ function parseHttpUrl(envName: string, rawValue: string): URL {
     parsed = new URL(candidate);
   } catch {
     throw new Error(
-      `${envName}="${rawValue}" is invalid. Use a full backend URL such as http://192.168.1.10:3000.`,
+      `${envName}="${rawValue}" is invalid. Use a full backend URL such as http://127.0.0.1:3000 or http://192.168.1.10:3000.`,
     );
   }
 
@@ -39,8 +77,7 @@ function parseHttpUrl(envName: string, rawValue: string): URL {
   if (!parsed.hostname || (PLACEHOLDER_HOSTS.has(hostname) && !allowsAndroidUsbLoopback)) {
     throw new Error(
       `${envName}="${rawValue}" is not a usable backend host. ` +
-        'Use your computer LAN IP, for example http://192.168.1.10:3000. ' +
-        'For Android USB debugging, you can use http://127.0.0.1:3000 with adb reverse.',
+        `${formatBackendConnectionTargets()}.`,
     );
   }
 
@@ -49,7 +86,7 @@ function parseHttpUrl(envName: string, rawValue: string): URL {
 }
 
 function readBackendEnvValue(baseName: 'API_URL' | 'SOCKET_URL'): string | undefined {
-  if (Platform.OS === 'android') {
+  if (__DEV__ && Platform.OS === 'android') {
     const androidOverride = process.env[`EXPO_PUBLIC_ANDROID_${baseName}`]?.trim();
     if (androidOverride) {
       return androidOverride;

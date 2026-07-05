@@ -43,8 +43,10 @@
   },
   "scripts": {
     "start": "expo start",
+    "adb:reverse": "node ./scripts/setup-adb-reverse.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "node ./scripts/run-android.js",
+    "android:usb": "node ./scripts/run-android.js --port=8082",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"

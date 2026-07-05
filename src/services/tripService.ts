@@ -1,5 +1,5 @@
 import { readAccessToken } from '@/lib/auth-storage';
-import { getBackendApiBaseUrl } from '@/config/backend';
+import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
 import type {
   DeliverItemRequest,
   DeliverItemResponse,
@@ -85,12 +85,17 @@ function toNetworkError(endpoint: string, error: unknown): Error {
     if (
       message.includes('network request failed') ||
       message.includes('failed to fetch') ||
-      message.includes('connectexception')
+      message.includes('connectexception') ||
+      message.includes('connection refused') ||
+      message.includes('failed to connect') ||
+      message.includes('connection reset') ||
+      message.includes('unexpected end of stream') ||
+      message.includes('end of stream') ||
+      message.includes('eofexception') ||
+      message.includes('unable to resolve host') ||
+      message.includes('cleartext')
     ) {
-      return new Error(
-        `Cannot reach backend at ${endpoint}. Verify EXPO_PUBLIC_API_URL and backend network access. ` +
-          'Android emulator: use http://10.0.2.2:3000, Android USB device: use http://127.0.0.1:3000 with adb reverse, iOS simulator: http://localhost:3000, physical device over Wi-Fi: use your computer LAN IP.',
-      );
+      return createBackendReachabilityError(endpoint);
     }
   }
 
