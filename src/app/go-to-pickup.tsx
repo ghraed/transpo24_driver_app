@@ -446,6 +446,18 @@ export default function GoToPickupScreen() {
         {arrivalError ? <Text style={styles.errorText}>{arrivalError}</Text> : null}
 
         <Pressable
+          style={styles.secondaryActionButton}
+          onPress={() =>
+            router.push({
+              pathname: '/trip-expenses',
+              params: { tripId },
+            })
+          }
+        >
+          <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
+        </Pressable>
+
+        <Pressable
           style={[styles.actionButton, !canArriveNow && styles.disabledButton]}
           disabled={!canArriveNow || isSubmittingArrival || Boolean(locationError)}
           onPress={onArrivedPress}
@@ -525,6 +537,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  secondaryActionButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   disabledButton: {
     backgroundColor: '#94A3B8',
   },
@@ -532,6 +553,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 15,
+  },
+  secondaryActionButtonText: {
+    color: '#334155',
+    fontWeight: '700',
+    fontSize: 14,
   },
   radiusText: {
     color: '#64748B',

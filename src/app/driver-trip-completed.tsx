@@ -13,6 +13,9 @@ export default function DriverTripCompletedScreen() {
   const params = useLocalSearchParams<CompletedParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId : 'N/A';
   const deliveredAt = typeof params.deliveredAt === 'string' ? params.deliveredAt : null;
+  const releaseAt = deliveredAt
+    ? new Date(new Date(deliveredAt).getTime() + 24 * 60 * 60 * 1000)
+    : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,6 +26,15 @@ export default function DriverTripCompletedScreen() {
         <Text style={styles.meta}>
           Delivered At: {deliveredAt ? new Date(deliveredAt).toLocaleString() : 'N/A'}
         </Text>
+        <View style={styles.noticeCard}>
+          <Text style={styles.noticeTitle}>Payout Information</Text>
+          <Text style={styles.noticeText}>
+            Your payment will be transferred to your in-app wallet within 24 hours, minus the app commission.
+          </Text>
+          <Text style={styles.noticeMeta}>
+            Expected wallet release: {releaseAt ? releaseAt.toLocaleString() : 'Within 24 hours'}
+          </Text>
+        </View>
         <Pressable style={styles.button} onPress={() => router.replace('/driver-home')}>
           <Text style={styles.buttonText}>Back to Driver Home</Text>
         </Pressable>
@@ -56,6 +68,29 @@ const styles = StyleSheet.create({
   },
   meta: {
     color: '#475569',
+  },
+  noticeCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 12,
+    gap: 6,
+  },
+  noticeTitle: {
+    color: '#1D4ED8',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  noticeText: {
+    color: '#1E3A8A',
+    fontSize: 13,
+  },
+  noticeMeta: {
+    color: '#1D4ED8',
+    fontSize: 12,
+    fontWeight: '600',
   },
   button: {
     marginTop: 8,

@@ -1,6 +1,8 @@
 import { readAccessToken } from '@/lib/auth-storage';
 import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
 import type {
+  AdditionalExpenseResponse,
+  CreateAdditionalExpensePayload,
   DeliverItemRequest,
   DeliverItemResponse,
   PickupItemRequest,
@@ -78,12 +80,13 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
 
 function uploadFormDataWithXhr(
   endpoint: string,
+  method: 'PATCH' | 'POST',
   formData: FormData,
   token?: string,
 ): Promise<XhrResponsePayload> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PATCH', endpoint);
+    xhr.open(method, endpoint);
 
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -214,7 +217,32 @@ async function uploadMultipartPatch(
   formData: FormData,
 ): Promise<Response> {
   const token = await readAccessToken();
-  const xhrResponse = await uploadFormDataWithXhr(endpoint, formData, token ?? undefined);
+  const xhrResponse = await uploadFormDataWithXhr(
+    endpoint,
+    'PATCH',
+    formData,
+    token ?? undefined,
+  );
+
+  return new Response(xhrResponse.responseText, {
+    status: xhrResponse.status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+async function uploadMultipartPost(
+  endpoint: string,
+  formData: FormData,
+): Promise<Response> {
+  const token = await readAccessToken();
+  const xhrResponse = await uploadFormDataWithXhr(
+    endpoint,
+    'POST',
+    formData,
+    token ?? undefined,
+  );
 
   return new Response(xhrResponse.responseText, {
     status: xhrResponse.status,
@@ -357,6 +385,147 @@ export async function deliverItem(
 
   if (!validated) {
     throw new Error('Invalid deliver item response received from backend.');
+  }
+
+  return validated;
+}
+
+function validateAdditionalExpensePayload(
+  payload: CreateAdditionalExpensePayload,
+): string | null {
+  if (!Number.isFinite(payload.amount) || payload.amount <= 0) {
+    return 'Expense amount must be greater than 0.';
+  }
+
+  if (!payload.reason.trim()) {
+    return 'Expense reason is required.';
+  }
+
+  if (!payload.invoicePhoto.uri.trim()) {
+    return 'Invoice or receipt photo is required.';
+  }
+
+  return null;
+}
+
+function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResponse | null {
+  if (typeof payload !== 'object' || payload === null) {
+    return null;
+  }
+
+  const candidate = payload as Record<string, unknown>;
+  const invoice = candidate.invoice;
+  const walletDeduction = candidate.walletDeduction;
+
+  if (
+    typeof candidate.id !== 'string' ||
+    typeof candidate.requestId !== 'string' ||
+    typeof candidate.driverId !== 'string' ||
+    typeof candidate.customerId !== 'string' ||
+    typeof candidate.amount !== 'number' ||
+    typeof candidate.currency !== 'string' ||
+    typeof candidate.reason !== 'string' ||
+    typeof candidate.invoiceUrl !== 'string' ||
+    typeof candidate.status !== 'string' ||
+    typeof candidate.createdAt !== 'string' ||
+    typeof candidate.updatedAt !== 'string' ||
+    typeof invoice !== 'object' ||
+    invoice === null ||
+    typeof walletDeduction !== 'object' ||
+    walletDeduction === null
+  ) {
+    return null;
+  }
+
+  const invoiceRecord = invoice as Record<string, unknown>;
+  const walletRecord = walletDeduction as Record<string, unknown>;
+
+  if (
+    (invoiceRecord.originalFilename !== null &&
+      invoiceRecord.originalFilename !== undefined &&
+      typeof invoiceRecord.originalFilename !== 'string') ||
+    (invoiceRecord.mimeType !== null &&
+      invoiceRecord.mimeType !== undefined &&
+      typeof invoiceRecord.mimeType !== 'string') ||
+    (invoiceRecord.sizeBytes !== null &&
+      invoiceRecord.sizeBytes !== undefined &&
+      typeof invoiceRecord.sizeBytes !== 'number') ||
+    typeof walletRecord.amount !== 'number' ||
+    typeof walletRecord.currency !== 'string' ||
+    walletRecord.transactionType !== 'ADDITIONAL_CHARGE'
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    requestId: candidate.requestId,
+    driverId: candidate.driverId,
+    customerId: candidate.customerId,
+    amount: candidate.amount,
+    currency: candidate.currency,
+    reason: candidate.reason,
+    equipmentType: typeof candidate.equipmentType === 'string' ? candidate.equipmentType : null,
+    invoiceUrl: candidate.invoiceUrl,
+    invoice: {
+      originalFilename:
+        typeof invoiceRecord.originalFilename === 'string'
+          ? invoiceRecord.originalFilename
+          : null,
+      mimeType: typeof invoiceRecord.mimeType === 'string' ? invoiceRecord.mimeType : null,
+      sizeBytes: typeof invoiceRecord.sizeBytes === 'number' ? invoiceRecord.sizeBytes : null,
+    },
+    walletDeduction: {
+      amount: walletRecord.amount,
+      currency: walletRecord.currency,
+      transactionType: 'ADDITIONAL_CHARGE',
+    },
+    status: candidate.status,
+    createdAt: candidate.createdAt,
+    updatedAt: candidate.updatedAt,
+  };
+}
+
+export async function createAdditionalExpense(
+  tripId: string,
+  payload: CreateAdditionalExpensePayload,
+): Promise<AdditionalExpenseResponse> {
+  if (!isValidTripId(tripId)) {
+    throw new Error('Invalid trip id.');
+  }
+
+  const validationError = validateAdditionalExpensePayload(payload);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const endpoint = `${getApiBaseUrl()}/driver/requests/${encodeURIComponent(tripId.trim())}/additional-charges`;
+  const formData = new FormData();
+  formData.append('amount', String(payload.amount));
+  formData.append('reason', payload.reason.trim());
+
+  if (payload.equipmentType?.trim()) {
+    formData.append('equipmentType', payload.equipmentType.trim());
+  }
+
+  appendFormDataAsset(formData, 'invoice', payload.invoicePhoto, 'expense-invoice.jpg', 'image/jpeg');
+
+  let response: Response;
+  try {
+    response = await uploadMultipartPost(endpoint, formData);
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to submit additional expense.');
+  }
+
+  const rawResponse = (await response.json()) as unknown;
+  const validated = parseAdditionalExpenseResponse(rawResponse);
+
+  if (!validated) {
+    throw new Error('Invalid additional expense response received from backend.');
   }
 
   return validated;

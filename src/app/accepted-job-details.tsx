@@ -57,6 +57,44 @@ function resolveAssetUrl(url: string): string {
   return resolveBackendAssetUrl(url);
 }
 
+function getProgressLabel(status: DriverAcceptedJobDetailsResponse['requestStatus']): string {
+  switch (status) {
+    case 'ACCEPTED':
+    case 'DRIVER_ASSIGNED':
+      return 'Accept Request';
+    case 'DRIVER_GOING_TO_PICKUP':
+      return 'On the Way to Pickup';
+    case 'DRIVER_ARRIVED_PICKUP':
+      return 'Arrived at Location';
+    case 'ITEM_PICKED_UP':
+      return 'Picked Up';
+    case 'DRIVER_GOING_TO_DROPOFF':
+      return 'On the Way to Delivery';
+    case 'DELIVERED':
+      return 'Delivered';
+    default:
+      return status.replaceAll('_', ' ');
+  }
+}
+
+function getNextActionLabel(status: DriverAcceptedJobDetailsResponse['requestStatus']): string | null {
+  switch (status) {
+    case 'ACCEPTED':
+    case 'DRIVER_ASSIGNED':
+    case 'DRIVER_GOING_TO_PICKUP':
+      return 'On the Way to Pickup';
+    case 'DRIVER_ARRIVED_PICKUP':
+      return 'Picked Up';
+    case 'ITEM_PICKED_UP':
+    case 'DRIVER_GOING_TO_DROPOFF':
+      return 'On the Way to Delivery';
+    case 'DELIVERED':
+      return 'Delivered';
+    default:
+      return null;
+  }
+}
+
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
@@ -128,6 +166,21 @@ export default function AcceptedJobDetailsScreen() {
     );
   }, [details]);
 
+  const currentStageLabel = useMemo(
+    () => (details ? getProgressLabel(details.requestStatus) : ''),
+    [details],
+  );
+
+  const nextActionLabel = useMemo(
+    () => (details ? getNextActionLabel(details.requestStatus) : null),
+    [details],
+  );
+
+  const canOpenExpenses = useMemo(() => {
+    if (!details) return false;
+    return !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(details.requestStatus);
+  }, [details]);
+
   const openMap = (
     title: string,
     address: string | null,
@@ -180,6 +233,14 @@ export default function AcceptedJobDetailsScreen() {
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
           <Text style={styles.metaText}>Accepted at: {formatDate(details.acceptedAt)}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Request Progress</Text>
+          <Text style={styles.progressBadge}>{currentStageLabel}</Text>
+          <Text style={styles.metaText}>
+            Next action: {nextActionLabel ?? 'No next action available right now.'}
+          </Text>
         </View>
 
         <View style={styles.card}>
@@ -367,6 +428,20 @@ export default function AcceptedJobDetailsScreen() {
 
       <View style={styles.footer}>
         <Pressable
+          style={[styles.secondaryFooterButton, !canOpenExpenses && styles.disabledButton]}
+          onPress={() =>
+            router.push({
+              pathname: '/trip-expenses',
+              params: {
+                tripId: details.requestId,
+              },
+            })
+          }
+          disabled={!canOpenExpenses}
+        >
+          <Text style={styles.secondaryFooterButtonText}>Additional Expenses</Text>
+        </Pressable>
+        <Pressable
           style={[
             styles.primaryActionButton,
             !canGoToPickup && !canGoToDropoff && styles.disabledButton,
@@ -471,6 +546,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#0F172A',
+  },
+  progressBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#DBEAFE',
+    color: '#1D4ED8',
+    fontSize: 12,
+    fontWeight: '700',
   },
   metaText: {
     fontSize: 13,
@@ -586,11 +671,26 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: '#F8FAFC',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
+  },
+  secondaryFooterButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryFooterButtonText: {
+    color: '#334155',
+    fontSize: 14,
+    fontWeight: '700',
   },
   primaryActionButton: {
     minHeight: 48,

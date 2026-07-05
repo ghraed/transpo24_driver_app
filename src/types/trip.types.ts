@@ -14,6 +14,13 @@ export type TripStatus =
   | "COMPLETED"
   | "CANCELLED";
 
+export type RequestExecutionStatus =
+  | "DRIVER_GOING_TO_PICKUP"
+  | "DRIVER_ARRIVED_PICKUP"
+  | "ITEM_PICKED_UP"
+  | "DRIVER_GOING_TO_DROPOFF"
+  | "DELIVERED";
+
 export type GeoLocation = {
   latitude: number;
   longitude: number;
@@ -139,4 +146,58 @@ export type ItemDeliveredPayload = {
   deliveredAt: string;
   deliveryNotes: string | null;
   deliveryProofImageUrl: string | null;
+};
+
+export type RequestProofPhotoResponse = {
+  id: string;
+  type: "PICKUP" | "DELIVERY";
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  sortOrder: number;
+  createdAt: string;
+};
+
+export type AdditionalExpenseFormValues = {
+  amount: string;
+  reason: string;
+  equipmentType: string;
+  invoicePhoto: LocalDocumentAsset | null;
+};
+
+export type CreateAdditionalExpensePayload = {
+  amount: number;
+  reason: string;
+  equipmentType?: string;
+  invoicePhoto: LocalDocumentAsset;
+};
+
+export type AdditionalExpenseResponse = {
+  id: string;
+  requestId: string;
+  driverId: string;
+  customerId: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  equipmentType: string | null;
+  invoiceUrl: string;
+  invoice: {
+    originalFilename: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+  };
+  walletDeduction: {
+    amount: number;
+    currency: string;
+    transactionType: "ADDITIONAL_CHARGE";
+  };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DriverPayoutSummary = {
+  releaseAt: string;
+  message: string;
 };

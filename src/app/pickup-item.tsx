@@ -284,6 +284,10 @@ export default function PickupItemScreen() {
       setSubmitError('Invalid trip data. Please reopen this trip from Accepted Jobs.');
       return;
     }
+    if (proofPhotos.length === 0) {
+      setSubmitError('At least one pickup proof photo is required.');
+      return;
+    }
 
     let latestLocation = driverLocation;
 
@@ -490,6 +494,18 @@ export default function PickupItemScreen() {
         </View>
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
+
+        <Pressable
+          style={styles.secondaryActionButton}
+          onPress={() =>
+            router.push({
+              pathname: '/trip-expenses',
+              params: { tripId },
+            })
+          }
+        >
+          <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
+        </Pressable>
 
         <Pressable
           style={[styles.actionButton, actionButtonDisabled && styles.disabledButton]}
@@ -699,6 +715,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 4,
   },
+  secondaryActionButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
   testingButton: {
     minHeight: 48,
     borderRadius: 12,
@@ -714,6 +740,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 15,
+  },
+  secondaryActionButtonText: {
+    color: '#334155',
+    fontWeight: '700',
+    fontSize: 14,
   },
   errorText: {
     color: '#B91C1C',

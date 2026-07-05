@@ -369,6 +369,10 @@ export default function DeliverItemScreen() {
       setSubmitError('Invalid trip data. Please reopen this trip from Accepted Jobs.');
       return;
     }
+    if (proofPhotos.length === 0) {
+      setSubmitError('At least one delivery proof photo is required.');
+      return;
+    }
     if (!driverLocation || !isValidGeoLocation(driverLocation)) {
       setSubmitError('Current location is required to confirm delivery.');
       return;
@@ -591,6 +595,18 @@ export default function DeliverItemScreen() {
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
         <Pressable
+          style={styles.secondaryActionButton}
+          onPress={() =>
+            router.push({
+              pathname: '/trip-expenses',
+              params: { tripId },
+            })
+          }
+        >
+          <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
+        </Pressable>
+
+        <Pressable
           style={[styles.actionButton, actionDisabled && styles.disabledButton]}
           disabled={actionDisabled}
           onPress={onConfirmDelivery}
@@ -772,6 +788,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  secondaryActionButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   disabledButton: {
     backgroundColor: '#94A3B8',
   },
@@ -779,6 +804,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 15,
+  },
+  secondaryActionButtonText: {
+    color: '#334155',
+    fontWeight: '700',
+    fontSize: 14,
   },
   driverMarkerIcon: {
     fontSize: 28,

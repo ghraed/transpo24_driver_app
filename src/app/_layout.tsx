@@ -131,6 +131,7 @@ function AppNavigator() {
       <Stack.Screen name="go-to-pickup" options={{ title: 'Go to Pickup Location' }} />
       <Stack.Screen name="pickup-item" options={{ title: 'Pickup Item' }} />
       <Stack.Screen name="deliver-item" options={{ title: 'Deliver Item' }} />
+      <Stack.Screen name="trip-expenses" options={{ title: 'Additional Expenses' }} />
       <Stack.Screen name="driver-trip-completed" options={{ title: 'Trip Completed' }} />
       <Stack.Screen name="socket-debug" options={{ title: 'Socket Debug' }} />
       <Stack.Screen name="review-request-details" options={{ title: 'Request Details' }} />
