@@ -1414,3 +1414,139 @@ export async function getDriverAcceptedJobDetails(
     'Failed to parse accepted job details response.',
   );
 }
+
+export interface StripeConnectStatusResponse {
+  stripeAccountId: string | null;
+  detailsSubmitted: boolean;
+  payoutsEnabled: boolean;
+  accountStatus: string | null;
+}
+
+export interface StripeConnectAccountResponse {
+  stripeAccountId: string;
+  onboardingUrl: string;
+  detailsSubmitted: boolean;
+  payoutsEnabled: boolean;
+}
+
+export interface StripeConnectSyncResponse {
+  detailsSubmitted: boolean;
+  payoutsEnabled: boolean;
+  accountStatus: string;
+}
+
+export async function getStripeConnectStatus(): Promise<StripeConnectStatusResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/status`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load Stripe Connect status.');
+  }
+
+  return parseJsonResponse<StripeConnectStatusResponse>(
+    response,
+    'Failed to parse Stripe Connect status response.',
+  );
+}
+
+export async function createStripeConnectAccount(): Promise<StripeConnectAccountResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/account`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to create Stripe Connect account.');
+  }
+
+  return parseJsonResponse<StripeConnectAccountResponse>(
+    response,
+    'Failed to parse Stripe Connect account response.',
+  );
+}
+
+export async function syncStripeConnectAccount(): Promise<StripeConnectSyncResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/sync`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to sync Stripe Connect account.');
+  }
+
+  return parseJsonResponse<StripeConnectSyncResponse>(
+    response,
+    'Failed to parse Stripe Connect sync response.',
+  );
+}
+
+export async function getStripeConnectDashboardLink(): Promise<{ url: string }> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/dashboard-link`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load Stripe dashboard link.');
+  }
+
+  return parseJsonResponse<{ url: string }>(
+    response,
+    'Failed to parse Stripe dashboard link response.',
+  );
+}
+
+export interface RetryTransferResponse {
+  transferred: boolean;
+  stripeTransferId: string | null;
+  reason: string | null;
+}
+
+export async function retryTransferForTrip(tripId: string): Promise<RetryTransferResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/retry-transfer/${tripId}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to retry transfer.');
+  }
+
+  return parseJsonResponse<RetryTransferResponse>(
+    response,
+    'Failed to parse retry transfer response.',
+  );
+}

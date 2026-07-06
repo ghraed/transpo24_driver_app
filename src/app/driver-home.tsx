@@ -256,6 +256,10 @@ export default function DriverHomeScreen() {
           <Text style={styles.acceptedJobsButtonText}>My Vehicles</Text>
         </Pressable>
 
+        <Pressable style={styles.vehiclesButton} onPress={() => router.push('/stripe-connect' as Href)}>
+          <Text style={styles.acceptedJobsButtonText}>Stripe Connect (Payouts)</Text>
+        </Pressable>
+
         {isLoadingVehicles ? (
           <View style={styles.vehicleHintRow}>
             <ActivityIndicator size="small" color="#1D4ED8" />
