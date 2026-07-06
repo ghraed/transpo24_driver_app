@@ -111,6 +111,8 @@ export default function DeliverItemScreen() {
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
+  const mapRef = useRef<any>(null);
+  const hasFittedToCoordinatesRef = useRef<boolean>(false);
   const isTripValid = isValidTripId(tripId);
   const hasValidPickup = Boolean(pickupLocation && isValidGeoLocation(pickupLocation));
   const hasValidDropoff = Boolean(dropoffLocation && isValidGeoLocation(dropoffLocation));
@@ -319,6 +321,25 @@ export default function DeliverItemScreen() {
     };
   }, [isInvalidRoute, router, tripId]);
 
+  // Auto-fit map to show both driver and dropoff when driver location first arrives
+  useEffect(() => {
+    if (!driverLocation || !dropoffLocation || hasFittedToCoordinatesRef.current) return;
+    hasFittedToCoordinatesRef.current = true;
+    const timer = setTimeout(() => {
+      mapRef.current?.fitToCoordinates(
+        [
+          { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
+          { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude },
+        ],
+        {
+          edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
+          animated: true,
+        },
+      );
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [driverLocation, dropoffLocation]);
+
   const appendProofPhotos = (assets: LocalDocumentAsset[]): void => {
     setProofPhotos((current) => [...current, ...assets].slice(0, MAX_PROOF_PHOTOS));
   };
@@ -473,6 +494,7 @@ export default function DeliverItemScreen() {
       <View style={styles.mapContainer}>
         {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
           <NativeMapView
+            ref={mapRef}
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
