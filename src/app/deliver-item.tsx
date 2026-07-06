@@ -30,6 +30,11 @@ import {
 const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
 const MAX_PROOF_PHOTOS = 8;
+const TEST_FAKE_LOCATIONS: GeoLocation[] = [
+  { latitude: 33.8938, longitude: 35.5018 }, // Beirut area
+  { latitude: 33.8950, longitude: 35.5030 }, // Near dropoff
+  { latitude: 33.8960, longitude: 35.5040 }, // Closer
+];
 
 type DeliverItemParams = {
   tripId?: string;
@@ -113,6 +118,7 @@ export default function DeliverItemScreen() {
   const lastEmitAtRef = useRef<number>(0);
   const mapRef = useRef<any>(null);
   const hasFittedToCoordinatesRef = useRef<boolean>(false);
+  const fakeLocationIndexRef = useRef<number>(0);
   const isTripValid = isValidTripId(tripId);
   const hasValidPickup = Boolean(pickupLocation && isValidGeoLocation(pickupLocation));
   const hasValidDropoff = Boolean(dropoffLocation && isValidGeoLocation(dropoffLocation));
@@ -326,16 +332,27 @@ export default function DeliverItemScreen() {
     if (!driverLocation || !dropoffLocation || hasFittedToCoordinatesRef.current) return;
     hasFittedToCoordinatesRef.current = true;
     const timer = setTimeout(() => {
-      mapRef.current?.fitToCoordinates(
-        [
-          { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
-          { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude },
-        ],
-        {
-          edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
-          animated: true,
-        },
-      );
+      const distance = calculateDistanceMeters(driverLocation, dropoffLocation);
+      if (distance < 10) {
+        // Driver and dropoff are at the same location - just center on it
+        mapRef.current?.animateToRegion({
+          latitude: dropoffLocation.latitude,
+          longitude: dropoffLocation.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }, 300);
+      } else {
+        mapRef.current?.fitToCoordinates(
+          [
+            { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
+            { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude },
+          ],
+          {
+            edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
+            animated: true,
+          },
+        );
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [driverLocation, dropoffLocation]);
@@ -382,6 +399,27 @@ export default function DeliverItemScreen() {
     const asset = result.assets[0];
     if (!asset) return;
     appendProofPhotos([toAssetFromImagePicker(asset)]);
+  };
+
+  // TESTING ONLY: Simulates movement to dropoff for testing without physical GPS.
+  const onSendFakeLocationPress = (): void => {
+    if (!dropoffLocation) return;
+    const fakeLocations: GeoLocation[] = [
+      { latitude: 33.8938, longitude: 35.5018 },
+      { latitude: dropoffLocation.latitude + 0.001, longitude: dropoffLocation.longitude + 0.001 },
+      { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude },
+    ];
+    const nextLocation = fakeLocations[fakeLocationIndexRef.current % fakeLocations.length];
+    fakeLocationIndexRef.current += 1;
+    setDriverLocation(nextLocation);
+    setIsLoadingLocation(false);
+    emitDriverLocationUpdate({
+      tripId,
+      latitude: nextLocation.latitude,
+      longitude: nextLocation.longitude,
+    });
+    lastEmitLocationRef.current = nextLocation;
+    lastEmitAtRef.current = Date.now();
   };
 
   const onConfirmDelivery = async (): Promise<void> => {
@@ -643,6 +681,9 @@ export default function DeliverItemScreen() {
                   : 'Confirm Delivery'}
           </Text>
         </Pressable>
+        <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
+          <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -849,5 +890,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
+  },
+  testButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    backgroundColor: '#FFFBEB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testButtonText: {
+    color: '#92400E',
+    fontWeight: '700',
+    fontSize: 13,
   },
 });
