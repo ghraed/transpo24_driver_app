@@ -152,8 +152,8 @@ export default function StripeConnectScreen() {
           {isReady ? (
             <View style={styles.readyCard}>
               <Text style={styles.readyText}>
-                ✅ Your Stripe Connect account is ready! Earnings will be transferred
-                automatically when deliveries are confirmed.
+                ✅ Your Stripe Connect account can receive payouts. When a delivery is
+                confirmed, held funds can be released to your connected payout account.
               </Text>
             </View>
           ) : (
