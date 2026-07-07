@@ -2,8 +2,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 
 import {
   NativeMapView,
@@ -112,6 +113,8 @@ export default function DeliverItemScreen() {
   const [submitError, setSubmitError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [routeBlockedMessage, setRouteBlockedMessage] = useState<string>('');
+  const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
+  const { height: windowHeight } = useWindowDimensions();
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
@@ -529,7 +532,7 @@ export default function DeliverItemScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.mapContainer}>
+      <View style={[styles.mapContainer, { height: isMapFullscreen ? windowHeight : windowHeight * 0.5 }]}>
         {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
           <NativeMapView
             ref={mapRef}
@@ -569,9 +572,28 @@ export default function DeliverItemScreen() {
             </Text>
           </View>
         )}
+        <Pressable
+          style={styles.mapToggleButton}
+          onPress={() => setIsMapFullscreen((value) => !value)}
+        >
+          <SymbolView
+            name={{
+              ios: isMapFullscreen ? 'arrow.down.right.and.arrow.up.left' : 'arrow.up.left.and.arrow.down.right',
+              android: isMapFullscreen ? 'fullscreen_exit' : 'fullscreen',
+              web: isMapFullscreen ? 'fullscreen_exit' : 'fullscreen',
+            }}
+            size={20}
+            weight="bold"
+            tintColor="#FFFFFF"
+          />
+        </Pressable>
       </View>
 
-      <View style={styles.bottomCard}>
+      <ScrollView
+        style={[styles.bottomScroll, isMapFullscreen && styles.hidden]}
+        contentContainerStyle={styles.bottomCard}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Deliver Item</Text>
         <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
         <Text style={styles.subText}>Trip ID: {tripId}</Text>
@@ -666,25 +688,27 @@ export default function DeliverItemScreen() {
           <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
         </Pressable>
 
-        <Pressable
-          style={[styles.actionButton, actionDisabled && styles.disabledButton]}
-          disabled={actionDisabled}
-          onPress={onConfirmDelivery}
-        >
-          <Text style={styles.actionButtonText}>
-            {isLoadingLocation
-              ? 'Getting location...'
-              : tooFarFromDropoff
-                ? 'Too far from dropoff'
-                : isSubmitting
-                  ? 'Confirming delivery...'
-                  : 'Confirm Delivery'}
-          </Text>
-        </Pressable>
         <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
           <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
         </Pressable>
-      </View>
+      </ScrollView>
+
+      <Pressable
+        style={[styles.floatingSubmitButton, actionDisabled && styles.disabledButton, isMapFullscreen && styles.hidden]}
+        disabled={actionDisabled}
+        onPress={onConfirmDelivery}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <SymbolView
+            name={{ ios: 'arrow.forward', android: 'arrow_forward', web: 'arrow_forward' }}
+            size={24}
+            weight="bold"
+            tintColor="#FFFFFF"
+          />
+        )}
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -695,10 +719,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   mapContainer: {
-    flex: 1,
+  },
+  hidden: {
+    display: 'none',
   },
   map: {
     flex: 1,
+  },
+  mapToggleButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+    elevation: 10,
   },
   centeredMapState: {
     flex: 1,
@@ -713,6 +752,9 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#F8FAFC',
   },
+  bottomScroll: {
+    flex: 1,
+  },
   bottomCard: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 16,
@@ -721,6 +763,24 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     padding: 16,
     gap: 8,
+    paddingBottom: 96,
+  },
+  floatingSubmitButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 20,
   },
   row: {
     flexDirection: 'row',
