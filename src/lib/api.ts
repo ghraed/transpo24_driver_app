@@ -51,31 +51,93 @@ function getApiBaseUrl(): string {
 
 function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): string {
   if (Array.isArray(errorData.message)) {
-    return errorData.message[0] ?? fallback;
+    return normalizeBackendErrorMessage(errorData.message[0] ?? fallback, fallback);
   }
-  return errorData.message ?? fallback;
+  return normalizeBackendErrorMessage(errorData.message ?? fallback, fallback);
+}
+
+function normalizeBackendErrorMessage(message: string, fallback: string): string {
+  const normalized = message.trim();
+  if (!normalized) return fallback;
+
+  if (/no such customer/i.test(normalized)) {
+    return 'Customer payment profile was not found. The payment action could not be completed. Please try again after the customer refreshes their payment method.';
+  }
+
+  return normalized;
 }
 
 function tryParseJson<T>(rawText: string): T {
   return JSON.parse(rawText) as T;
 }
 
+function looksLikeJsonPayload(rawText: string): boolean {
+  const normalized = rawText.trim();
+  return (
+    normalized.startsWith('{') ||
+    normalized.startsWith('[') ||
+    normalized.startsWith('"') ||
+    normalized === 'null' ||
+    normalized === 'true' ||
+    normalized === 'false' ||
+    /^-?\d/.test(normalized)
+  );
+}
+
+function extractJsonPayloadCandidate(rawText: string): string | null {
+  const normalized = rawText.trim();
+  if (!normalized) return null;
+
+  const objectStart = normalized.indexOf('{');
+  const objectEnd = normalized.lastIndexOf('}');
+  if (objectStart >= 0 && objectEnd > objectStart) {
+    return normalized.slice(objectStart, objectEnd + 1);
+  }
+
+  const arrayStart = normalized.indexOf('[');
+  const arrayEnd = normalized.lastIndexOf(']');
+  if (arrayStart >= 0 && arrayEnd > arrayStart) {
+    return normalized.slice(arrayStart, arrayEnd + 1);
+  }
+
+  const stringStart = normalized.indexOf('"');
+  const stringEnd = normalized.lastIndexOf('"');
+  if (stringStart >= 0 && stringEnd > stringStart) {
+    return normalized.slice(stringStart, stringEnd + 1);
+  }
+
+  return null;
+}
+
 function sanitizeMalformedJson(rawText: string): string {
-  return rawText
+  const sanitized = rawText
     .replace(/^\uFEFF/, '')
+    .replace(/^\s*,+\s*/, '')
     .replace(/,\s*,+/g, ',')
-    .replace(/,\s*([}\]])/g, '$1');
+    .replace(/,\s*([}\]])/g, '$1')
+    .replace(/;\s*$/, '')
+    .trim();
+
+  return extractJsonPayloadCandidate(sanitized) ?? sanitized;
 }
 
 function parsePossiblyMalformedJson<T>(rawText: string): T {
   try {
-    return tryParseJson<T>(rawText);
+    const parsed = tryParseJson<unknown>(rawText);
+    if (typeof parsed === 'string' && looksLikeJsonPayload(parsed)) {
+      return parsePossiblyMalformedJson<T>(parsed);
+    }
+    return parsed as T;
   } catch {
     const sanitized = sanitizeMalformedJson(rawText);
     if (sanitized === rawText) {
       throw new Error('JSON_PARSE_FAILED');
     }
-    return tryParseJson<T>(sanitized);
+    const parsed = tryParseJson<unknown>(sanitized);
+    if (typeof parsed === 'string' && looksLikeJsonPayload(parsed)) {
+      return parsePossiblyMalformedJson<T>(parsed);
+    }
+    return parsed as T;
   }
 }
 
@@ -89,7 +151,7 @@ async function parseError(response: Response, fallback: string): Promise<Error> 
       const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
       return new Error(normalizeErrorMessage(errorData, fallback));
     } catch {
-      return new Error(rawText);
+      return new Error(normalizeBackendErrorMessage(rawText, fallback));
     }
   } catch {
     return new Error(fallback);
@@ -106,6 +168,58 @@ async function parseJsonResponse<T>(response: Response, fallback: string): Promi
     return parsePossiblyMalformedJson<T>(rawText);
   } catch {
     throw new Error(`${fallback} (received non-JSON response)`);
+  }
+}
+
+function extractBooleanField(rawText: string, fieldName: string): boolean | null {
+  const match = rawText.match(new RegExp(`"${fieldName}"\\s*:\\s*(true|false)`, 'i'));
+  if (!match) return null;
+  return match[1]?.toLowerCase() === 'true';
+}
+
+function extractStringField(rawText: string, fieldName: string): string | null {
+  const match = rawText.match(new RegExp(`"${fieldName}"\\s*:\\s*"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"`, 'i'));
+  if (!match?.[1]) return null;
+
+  try {
+    return JSON.parse(`"${match[1]}"`) as string;
+  } catch {
+    return match[1];
+  }
+}
+
+async function parseStripeConnectAccountResponse(
+  response: Response,
+  fallback: string,
+): Promise<StripeConnectAccountResponse> {
+  const rawText = await response.text();
+  if (!rawText) {
+    throw new Error(fallback);
+  }
+
+  try {
+    return parsePossiblyMalformedJson<StripeConnectAccountResponse>(rawText);
+  } catch {
+    const stripeAccountId = extractStringField(rawText, 'stripeAccountId');
+    const onboardingUrl = extractStringField(rawText, 'onboardingUrl');
+    const detailsSubmitted = extractBooleanField(rawText, 'detailsSubmitted');
+    const payoutsEnabled = extractBooleanField(rawText, 'payoutsEnabled');
+
+    if (
+      stripeAccountId &&
+      onboardingUrl &&
+      typeof detailsSubmitted === 'boolean' &&
+      typeof payoutsEnabled === 'boolean'
+    ) {
+      return {
+        stripeAccountId,
+        onboardingUrl,
+        detailsSubmitted,
+        payoutsEnabled,
+      };
+    }
+
+    throw new Error(`${fallback} (received malformed Stripe Connect account payload)`);
   }
 }
 
@@ -1473,7 +1587,7 @@ export async function createStripeConnectAccount(): Promise<StripeConnectAccount
     throw await parseError(response, 'Failed to create Stripe Connect account.');
   }
 
-  return parseJsonResponse<StripeConnectAccountResponse>(
+  return parseStripeConnectAccountResponse(
     response,
     'Failed to parse Stripe Connect account response.',
   );

@@ -1,5 +1,5 @@
-import { useRouter, type Href } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DriverPayoutStatusCard } from '@/components/driver-payout-status-card';
 import { useAuth } from '@/context/auth-context';
 import {
   getDriverAvailability,
+  getDriverAcceptedJobs,
   getDriverVehicles,
   sendCustomerTestNotification,
   updateDriverOnlineStatus,
@@ -20,7 +22,7 @@ import {
 import { clearLastOnboardingRoute } from '@/lib/auth-storage';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
-import type { DriverAvailabilityResponse } from '@/types/auth';
+import type { DriverAvailabilityResponse, DriverAcceptedJobSummary } from '@/types/auth';
 import { validateOfferAcceptedPayload } from '@/utils/locationValidation';
 
 function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse): boolean {
@@ -39,6 +41,34 @@ function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse)
   return availability.weeklySchedule.some((day) => day.isAvailable);
 }
 
+function formatMoney(price: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(price);
+  } catch {
+    return `${price.toFixed(2)} ${currency}`;
+  }
+}
+
+function pickLatestPayoutCandidate(jobs: DriverAcceptedJobSummary[]): DriverAcceptedJobSummary | null {
+  const deliveredJobs = jobs.filter(
+    (job) => job.requestStatus === 'DELIVERED' || job.requestStatus === 'COMPLETED',
+  );
+
+  if (deliveredJobs.length === 0) {
+    return null;
+  }
+
+  return [...deliveredJobs].sort((left, right) => {
+    const leftTime = left.acceptedAt ? new Date(left.acceptedAt).getTime() : 0;
+    const rightTime = right.acceptedAt ? new Date(right.acceptedAt).getTime() : 0;
+    return rightTime - leftTime;
+  })[0] ?? null;
+}
+
 export default function DriverHomeScreen() {
   const testCustomerEmail = 'raed.ghanim.2014@gmail.com';
   const router = useRouter();
@@ -52,6 +82,8 @@ export default function DriverHomeScreen() {
   const [requiresAvailabilitySetup, setRequiresAvailabilitySetup] = useState<boolean>(false);
   const [isSendingTestNotification, setIsSendingTestNotification] = useState<boolean>(false);
   const [testNotificationMessage, setTestNotificationMessage] = useState<string>('');
+  const [acceptedJobs, setAcceptedJobs] = useState<DriverAcceptedJobSummary[]>([]);
+  const [payoutJobsError, setPayoutJobsError] = useState<string>('');
 
   useEffect(() => {
     void clearLastOnboardingRoute();
@@ -146,6 +178,26 @@ export default function DriverHomeScreen() {
     };
   }, []);
 
+  const loadAcceptedJobs = useCallback(async (): Promise<void> => {
+    setPayoutJobsError('');
+
+    try {
+      const response = await getDriverAcceptedJobs();
+      setAcceptedJobs(response.jobs ?? []);
+    } catch (error) {
+      setAcceptedJobs([]);
+      setPayoutJobsError(
+        error instanceof Error ? error.message : 'Failed to load payout-eligible jobs.',
+      );
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadAcceptedJobs();
+    }, [loadAcceptedJobs]),
+  );
+
   const onToggleAvailability = async (nextValue: boolean): Promise<void> => {
     if (isLoadingAvailability || isUpdatingAvailability) return;
     if (requiresAvailabilitySetup) {
@@ -174,6 +226,11 @@ export default function DriverHomeScreen() {
       setIsUpdatingAvailability(false);
     }
   };
+
+  const latestPayoutJob = useMemo(
+    () => pickLatestPayoutCandidate(acceptedJobs),
+    [acceptedJobs],
+  );
 
   const onSignOut = async (): Promise<void> => {
     await signOut();
@@ -243,6 +300,41 @@ export default function DriverHomeScreen() {
             <Text style={styles.availabilityErrorText}>{availabilityError}</Text>
           ) : null}
         </View>
+
+        <DriverPayoutStatusCard
+          title="Payout Status"
+          tripId={latestPayoutJob?.requestId}
+          requestStatus={latestPayoutJob?.requestStatus}
+          amountLabel={
+            latestPayoutJob
+              ? formatMoney(
+                  latestPayoutJob.acceptedOffer.price,
+                  latestPayoutJob.acceptedOffer.currency,
+                )
+              : null
+          }
+          onOpenStripeConnect={() => router.push('/stripe-connect' as Href)}
+        />
+
+        {latestPayoutJob ? (
+          <Pressable
+            style={styles.payoutJobButton}
+            onPress={() =>
+              router.push({
+                pathname: '/accepted-job-details',
+                params: { requestId: latestPayoutJob.requestId },
+              })
+            }
+          >
+            <Text style={styles.payoutJobButtonText}>Open Latest Payout Job</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.payoutHintText}>
+            No delivered trip is waiting for payout release right now.
+          </Text>
+        )}
+
+        {payoutJobsError ? <Text style={styles.availabilityErrorText}>{payoutJobsError}</Text> : null}
 
         <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
           <Text style={styles.requestsButtonText}>Available Requests</Text>
@@ -404,6 +496,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   vehicleHintText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
+  payoutJobButton: {
+    minHeight: 42,
+    borderRadius: 10,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payoutJobButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  payoutHintText: {
+    color: '#475569',
+    fontSize: 13,
+  },
   testNotificationMessage: {
     color: '#475569',
     fontSize: 13,

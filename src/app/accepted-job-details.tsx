@@ -18,6 +18,7 @@ import {
   PROVIDER_GOOGLE,
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
+import { DriverPayoutStatusCard } from '@/components/driver-payout-status-card';
 import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
@@ -242,6 +243,14 @@ export default function AcceptedJobDetailsScreen() {
             Next action: {nextActionLabel ?? 'No next action available right now.'}
           </Text>
         </View>
+
+        <DriverPayoutStatusCard
+          title="Trip Payout Status"
+          tripId={details.requestId}
+          requestStatus={details.requestStatus}
+          amountLabel={formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
+          onOpenStripeConnect={() => router.push('/stripe-connect')}
+        />
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Customer Summary</Text>
