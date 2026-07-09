@@ -42,6 +42,7 @@ export interface DriverChatRoomsResponse {
 }
 
 export interface ChatRoomMessagesResponse {
+  room?: ChatRoom;
   messages: ChatMessage[];
   page: number;
   limit: number;
@@ -63,8 +64,17 @@ export interface MarkChatMessagesReadResponse {
 }
 
 export interface ChatMessageCreatedEventPayload {
-  roomId: string;
-  message: ChatMessage;
+  roomId?: string;
+  message?: ChatMessage;
+  chatRoomId?: string;
+  senderId?: string;
+  senderRole?: ChatSenderRole;
+  type?: ChatMessageType;
+  body?: string | null;
+  attachmentUrl?: string | null;
+  createdAt?: string;
+  readAt?: string | null;
+  id?: string;
 }
 
 export interface ChatMessageReadEventPayload {

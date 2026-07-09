@@ -10,6 +10,7 @@ type DriverChatButtonProps = {
   initialChatRoom?: ChatRoom | null;
   label?: string;
   fullWidth?: boolean;
+  showUnavailableState?: boolean;
 };
 
 export function DriverChatButton({
@@ -17,6 +18,7 @@ export function DriverChatButton({
   initialChatRoom,
   label = 'Chat with client',
   fullWidth = true,
+  showUnavailableState = false,
 }: DriverChatButtonProps) {
   const router = useRouter();
   const {
@@ -26,7 +28,7 @@ export function DriverChatButton({
     refreshChatRoom,
   } = useDriverChatRoom(transportRequestId, initialChatRoom);
 
-  if (!chatRoom && !chatRoomError && !isLoadingChatRoom) {
+  if (!chatRoom && !chatRoomError && !isLoadingChatRoom && !showUnavailableState) {
     return null;
   }
 
@@ -62,6 +64,10 @@ export function DriverChatButton({
           <Pressable style={styles.retryButton} onPress={() => void refreshChatRoom()}>
             <Text style={styles.retryButtonText}>Retry chat</Text>
           </Pressable>
+        </View>
+      ) : showUnavailableState ? (
+        <View style={styles.unavailableButton}>
+          <Text style={styles.unavailableButtonText}>Chat unavailable</Text>
         </View>
       ) : null}
     </View>
@@ -131,6 +137,19 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#334155',
     fontSize: 13,
+    fontWeight: '700',
+  },
+  unavailableButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unavailableButtonText: {
+    color: '#64748B',
+    fontSize: 14,
     fontWeight: '700',
   },
 });

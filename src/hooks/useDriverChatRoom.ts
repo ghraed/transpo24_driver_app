@@ -15,6 +15,7 @@ function isMissingChatRoomError(message: string): boolean {
   const normalized = message.toLowerCase();
   return (
     normalized.includes('not found') ||
+    normalized.includes('cannot get') ||
     normalized.includes('no chat room') ||
     normalized.includes('chat unavailable') ||
     normalized.includes('unauthorized')

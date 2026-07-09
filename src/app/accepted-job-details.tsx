@@ -439,6 +439,12 @@ export default function AcceptedJobDetailsScreen() {
       </Modal>
 
       <View style={styles.footer}>
+        <DriverChatButton
+          transportRequestId={details.requestId}
+          initialChatRoom={details.chatRoom}
+          label="Chat with client"
+          showUnavailableState
+        />
         <Pressable
           style={[styles.secondaryFooterButton, !canOpenExpenses && styles.disabledButton]}
           onPress={() =>
@@ -453,11 +459,6 @@ export default function AcceptedJobDetailsScreen() {
         >
           <Text style={styles.secondaryFooterButtonText}>Additional Expenses</Text>
         </Pressable>
-        <DriverChatButton
-          transportRequestId={details.requestId}
-          initialChatRoom={details.chatRoom}
-          label="Chat with client"
-        />
         <Pressable
           style={[
             styles.primaryActionButton,
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 120,
+    paddingBottom: 190,
     gap: 12,
   },
   successHeader: {

@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 
 import { getBackendSocketUrl } from '@/config/backend';
 import type {
+  ChatMessage,
   ChatMessageCreatedEventPayload,
   ChatMessageReadEventPayload,
   SendChatMessagePayload,
@@ -45,6 +46,18 @@ type ChatJoinAckResponse = {
   roomId?: string;
   status?: string;
 };
+
+function isWrappedSendChatMessageResponse(
+  response: SendChatMessageResponse | ChatMessage,
+): response is SendChatMessageResponse {
+  return (
+    typeof response === 'object' &&
+    response !== null &&
+    'message' in response &&
+    typeof response.message === 'object' &&
+    response.message !== null
+  );
+}
 
 function ensureSocketUrl(): string {
   return getBackendSocketUrl();
@@ -181,18 +194,23 @@ export function sendChatMessageWithAck(
         roomId,
         body: payload.body,
       },
-      (error: Error | null, response?: SendChatMessageResponse) => {
+      (error: Error | null, response?: SendChatMessageResponse | ChatMessage) => {
         if (error) {
           reject(new Error(error.message || 'chat.message.send timed out.'));
           return;
         }
 
-        if (!response?.message) {
+        if (!response) {
           reject(new Error('chat.message.send ack payload is invalid.'));
           return;
         }
 
-        resolve(response);
+        if (isWrappedSendChatMessageResponse(response)) {
+          resolve(response);
+          return;
+        }
+
+        resolve({ message: response });
       },
     );
   });

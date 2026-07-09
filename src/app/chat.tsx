@@ -71,6 +71,46 @@ function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMes
   });
 }
 
+function normalizeIncomingChatMessage(payload: {
+  message?: ChatMessage;
+  chatRoomId?: string;
+  senderId?: string;
+  senderRole?: ChatMessage['senderRole'];
+  type?: ChatMessage['type'];
+  body?: string | null;
+  attachmentUrl?: string | null;
+  createdAt?: string;
+  readAt?: string | null;
+  id?: string;
+}): ChatMessage | null {
+  if (payload.message) {
+    return payload.message;
+  }
+
+  if (
+    typeof payload.id !== 'string' ||
+    typeof payload.chatRoomId !== 'string' ||
+    typeof payload.senderId !== 'string' ||
+    typeof payload.senderRole !== 'string' ||
+    typeof payload.type !== 'string' ||
+    typeof payload.createdAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: payload.id,
+    chatRoomId: payload.chatRoomId,
+    senderId: payload.senderId,
+    senderRole: payload.senderRole,
+    type: payload.type,
+    body: payload.body ?? null,
+    attachmentUrl: payload.attachmentUrl ?? null,
+    createdAt: payload.createdAt,
+    readAt: payload.readAt ?? null,
+  };
+}
+
 function isUnauthorizedTokenError(message: string): boolean {
   const normalized = message.toLowerCase();
   return (
@@ -141,7 +181,7 @@ export default function ChatScreen() {
       }
 
       const response = await getDriverChatMessages(resolvedRoom.id, FIRST_PAGE, PAGE_SIZE);
-      setChatRoom(resolvedRoom);
+      setChatRoom(response.room ?? resolvedRoom);
       setMessages(mergeMessages([], response.messages ?? []));
       setPage(response.page ?? FIRST_PAGE);
       setHasMore(Boolean(response.hasMore));
@@ -281,11 +321,13 @@ export default function ChatScreen() {
           if (!isActive) return;
 
           unsubscribeCreated = onChatMessageCreated((payload) => {
-            const incomingRoomId = payload.message?.chatRoomId || payload.roomId;
+            const nextMessage = normalizeIncomingChatMessage(payload);
+            const incomingRoomId = nextMessage?.chatRoomId || payload.roomId || payload.chatRoomId;
             if (incomingRoomId !== chatRoom.id) return;
-            setMessages((current) => mergeMessages(current, [payload.message]));
+            if (!nextMessage) return;
+            setMessages((current) => mergeMessages(current, [nextMessage]));
             setChatRoom((current) =>
-              current ? { ...current, lastMessage: payload.message } : current,
+              current ? { ...current, lastMessage: nextMessage } : current,
             );
           });
 
