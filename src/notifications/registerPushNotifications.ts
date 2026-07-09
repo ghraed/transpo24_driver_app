@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 import { registerPushToken } from '@/lib/api';
 import type { RegisterPushTokenPayload } from '@/notifications/types';
 
-const ANDROID_CHANNEL_ID = 'default';
+const ANDROID_CHANNEL_ID = 'transport_jobs';
 const DRIVER_APP_CONTEXT = 'DRIVER';
 
 let hasInitializedNotifications = false;
@@ -50,7 +50,7 @@ async function ensureAndroidChannel(): Promise<void> {
   }
 
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-    name: 'Default',
+    name: 'Transport Jobs',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#2563EB',

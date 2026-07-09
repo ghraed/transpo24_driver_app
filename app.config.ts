@@ -4,6 +4,10 @@ import type { ExpoConfig } from 'expo/config';
 
 const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ?? '';
 const MAPS_IOS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY ?? '';
+const ANDROID_GOOGLE_SERVICES_FILE =
+  process.env.EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE?.trim() ||
+  process.env.EXPO_ANDROID_GOOGLE_SERVICES_FILE?.trim() ||
+  './google-services.json';
 
 export default ({ config }: ConfigContext) => {
   const existingPlugins = Array.isArray(config.plugins) ? config.plugins : [];
@@ -30,6 +34,9 @@ export default ({ config }: ConfigContext) => {
     },
     android: {
       ...config.android,
+      ...(ANDROID_GOOGLE_SERVICES_FILE
+        ? { googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE }
+        : {}),
       config: {
         ...config.android?.config,
         googleMaps: {

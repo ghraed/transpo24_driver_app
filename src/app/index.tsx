@@ -13,6 +13,7 @@ import {
 } from '@/lib/auth-storage';
 import { resetUsersForTesting } from '@/lib/api';
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
+import { registerDriverPushNotifications } from '@/notifications/registerPushNotifications';
 
 export default function DriverLoginScreen() {
   const router = useRouter();
@@ -53,6 +54,13 @@ export default function DriverLoginScreen() {
         email: normalizedEmail,
         password: normalizedPassword,
       });
+
+      try {
+        await registerDriverPushNotifications();
+      } catch (pushError) {
+        console.warn('Driver push registration failed after login.', pushError);
+      }
+
       const savedRoute = await readLastOnboardingRoute();
       const targetRoute = resolveDriverEntryRoute(nextStep, savedRoute);
 

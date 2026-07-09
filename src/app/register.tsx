@@ -17,6 +17,7 @@ import { useAuth } from '@/context/auth-context';
 import { clearLastOnboardingRoute } from '@/lib/auth-storage';
 import { COUNTRY_OPTIONS } from '@/lib/country-city-options';
 import { nextStepToRoute } from '@/lib/onboarding-route';
+import { registerDriverPushNotifications } from '@/notifications/registerPushNotifications';
 import type { RegisterDriverPayload } from '@/types/auth';
 
 interface RegisterFormState {
@@ -196,6 +197,13 @@ export default function DriverRegisterScreen() {
 
     try {
       const response = await registerNewDriver(payload);
+
+      try {
+        await registerDriverPushNotifications();
+      } catch (pushError) {
+        console.warn('Driver push registration failed after registration.', pushError);
+      }
+
       if (response.nextStep === 'HOME') {
         await clearLastOnboardingRoute();
       }
