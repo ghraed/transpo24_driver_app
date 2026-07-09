@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DriverChatButton } from '@/components/driver-chat-button';
 import {
   NativeMapView,
   NativeMapViewDirections,
@@ -456,6 +457,7 @@ export default function GoToPickupScreen() {
         >
           <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
         </Pressable>
+        <DriverChatButton transportRequestId={tripId} />
 
         <Pressable
           style={[styles.actionButton, !canArriveNow && styles.disabledButton]}

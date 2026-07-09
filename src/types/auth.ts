@@ -1,3 +1,5 @@
+import type { ChatRoom } from './chat';
+
 export type UserRole = 'CUSTOMER' | 'DRIVER' | 'COUNTRY_PARTNER' | 'MASTER_ADMIN';
 
 export type DriverStatus =
@@ -651,6 +653,7 @@ export interface DriverAcceptedJobSummary {
     description: string | null;
   };
   acceptedOffer: AcceptedOffer;
+  chatRoom?: ChatRoom | null;
   nextStep: 'GO_TO_PICKUP';
 }
 

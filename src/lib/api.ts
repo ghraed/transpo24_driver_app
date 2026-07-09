@@ -32,6 +32,14 @@ import type {
   VehicleLoadCapacity,
   VehicleLoadCapacityPayload,
 } from '@/types/auth';
+import type {
+  ChatRoom,
+  ChatRoomMessagesResponse,
+  DriverChatRoomsResponse,
+  MarkChatMessagesReadResponse,
+  SendChatMessagePayload,
+  SendChatMessageResponse,
+} from '@/types/chat';
 
 interface ApiErrorResponse {
   message?: string | string[];
@@ -1526,6 +1534,159 @@ export async function getDriverAcceptedJobDetails(
   return parseJsonResponse<DriverAcceptedJobDetailsResponse>(
     response,
     'Failed to parse accepted job details response.',
+  );
+}
+
+export async function getDriverChatRoomByTransportRequestId(
+  transportRequestId: string,
+): Promise<ChatRoom> {
+  const endpoint = `${getApiBaseUrl()}/driver/chat-rooms/by-request/${encodeURIComponent(transportRequestId)}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load chat room.');
+  }
+
+  return parseJsonResponse<ChatRoom>(
+    response,
+    'Failed to parse chat room response.',
+  );
+}
+
+export async function getDriverChatRoom(
+  chatRoomId: string,
+): Promise<ChatRoom> {
+  const endpoint = `${getApiBaseUrl()}/driver/chat-rooms/${encodeURIComponent(chatRoomId)}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load chat room.');
+  }
+
+  return parseJsonResponse<ChatRoom>(
+    response,
+    'Failed to parse chat room response.',
+  );
+}
+
+export async function getDriverChatRooms(): Promise<DriverChatRoomsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/chat-rooms`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load chat rooms.');
+  }
+
+  const rooms = await parseJsonResponse<DriverChatRoomsResponse['rooms']>(
+    response,
+    'Failed to parse chat rooms response.',
+  );
+
+  return { rooms };
+}
+
+export async function getDriverChatMessages(
+  chatRoomId: string,
+  page = 1,
+  limit = 30,
+): Promise<ChatRoomMessagesResponse> {
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  const endpoint = `${getApiBaseUrl()}/driver/chat-rooms/${encodeURIComponent(chatRoomId)}/messages?${searchParams.toString()}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load chat messages.');
+  }
+
+  return parseJsonResponse<ChatRoomMessagesResponse>(
+    response,
+    'Failed to parse chat messages response.',
+  );
+}
+
+export async function sendDriverChatMessage(
+  chatRoomId: string,
+  payload: SendChatMessagePayload,
+): Promise<SendChatMessageResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/chat-rooms/${encodeURIComponent(chatRoomId)}/messages`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to send chat message.');
+  }
+
+  return parseJsonResponse<SendChatMessageResponse>(
+    response,
+    'Failed to parse send chat message response.',
+  );
+}
+
+export async function markDriverChatRoomMessagesRead(
+  chatRoomId: string,
+): Promise<MarkChatMessagesReadResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/chat-rooms/${encodeURIComponent(chatRoomId)}/read`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to mark chat messages as read.');
+  }
+
+  return parseJsonResponse<MarkChatMessagesReadResponse>(
+    response,
+    'Failed to parse mark chat read response.',
   );
 }
 

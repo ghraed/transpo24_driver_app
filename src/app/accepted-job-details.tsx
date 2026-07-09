@@ -1,5 +1,5 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DriverChatButton } from '@/components/driver-chat-button';
 import {
   NativeMapView,
   NativeMarker,
@@ -144,9 +145,11 @@ export default function AcceptedJobDetailsScreen() {
     }
   }, [requestId, router, signOut]);
 
-  useEffect(() => {
-    void loadDetails();
-  }, [loadDetails]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadDetails();
+    }, [loadDetails]),
+  );
 
   const canGoToPickup = useMemo(() => {
     if (!details) return false;
@@ -450,6 +453,11 @@ export default function AcceptedJobDetailsScreen() {
         >
           <Text style={styles.secondaryFooterButtonText}>Additional Expenses</Text>
         </Pressable>
+        <DriverChatButton
+          transportRequestId={details.requestId}
+          initialChatRoom={details.chatRoom}
+          label="Chat with client"
+        />
         <Pressable
           style={[
             styles.primaryActionButton,

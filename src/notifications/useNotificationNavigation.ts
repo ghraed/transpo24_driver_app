@@ -22,6 +22,18 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
         };
       }
       return null;
+    case 'CHAT_MESSAGE':
+      if (typeof data.chatRoomId === 'string' && data.chatRoomId.trim()) {
+        return {
+          pathname: '/chat',
+          params: {
+            chatRoomId: data.chatRoomId,
+            transportRequestId:
+              typeof data.transportRequestId === 'string' ? data.transportRequestId : '',
+          },
+        } as unknown as Href;
+      }
+      return null;
     default:
       return null;
   }

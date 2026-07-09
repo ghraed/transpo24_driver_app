@@ -6,6 +6,7 @@ import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
+import { DriverChatButton } from '@/components/driver-chat-button';
 import {
   NativeMapView,
   NativeMapViewDirections,
@@ -31,12 +32,6 @@ import {
 const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
 const MAX_PROOF_PHOTOS = 8;
-const TEST_FAKE_LOCATIONS: GeoLocation[] = [
-  { latitude: 33.8938, longitude: 35.5018 }, // Beirut area
-  { latitude: 33.8950, longitude: 35.5030 }, // Near dropoff
-  { latitude: 33.8960, longitude: 35.5040 }, // Closer
-];
-
 type DeliverItemParams = {
   tripId?: string;
   pickupLatitude?: string;
@@ -598,6 +593,7 @@ export default function DeliverItemScreen() {
         <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
         <Text style={styles.subText}>Trip ID: {tripId}</Text>
         <Text style={styles.subText}>Pickup: {pickupLocation.address || 'Pickup address unavailable'}</Text>
+        <DriverChatButton transportRequestId={tripId} />
         <Text style={styles.distanceText}>
           Distance remaining:{' '}
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}

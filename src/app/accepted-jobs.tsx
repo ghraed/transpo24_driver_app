@@ -12,8 +12,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
-import { getDriverAcceptedJobs } from '@/lib/api';
+import { getDriverAcceptedJobs, getDriverChatRooms } from '@/lib/api';
 import type { DriverAcceptedJobSummary } from '@/types/auth';
+import type { ChatRoom } from '@/types/chat';
 
 function formatDate(value: string | null): string {
   if (!value) return 'N/A';
@@ -38,6 +39,7 @@ export default function AcceptedJobsScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
   const [jobs, setJobs] = useState<DriverAcceptedJobSummary[]>([]);
+  const [chatRoomsByRequestId, setChatRoomsByRequestId] = useState<Record<string, ChatRoom>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -52,8 +54,16 @@ export default function AcceptedJobsScreen() {
 
       setError('');
       try {
-        const response = await getDriverAcceptedJobs();
+        const [response, chatRoomsResponse] = await Promise.all([
+          getDriverAcceptedJobs(),
+          getDriverChatRooms().catch(() => ({ rooms: [] })),
+        ]);
         setJobs(response.jobs ?? []);
+        setChatRoomsByRequestId(
+          Object.fromEntries(
+            (chatRoomsResponse.rooms ?? []).map((room) => [room.transportRequestId, room]),
+          ),
+        );
       } catch (requestError) {
         const message = requestError instanceof Error ? requestError.message : 'Failed to load accepted jobs.';
         const normalized = message.toLowerCase();
@@ -121,41 +131,55 @@ export default function AcceptedJobsScreen() {
             <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadJobs(true)} />
           }
         >
-          {jobs.map((job) => (
-            <Pressable
-              key={job.requestId}
-              style={styles.card}
-              onPress={() =>
-                router.push({
-                  pathname: '/accepted-job-details',
-                  params: { requestId: job.requestId },
-                })
-              }
-            >
-              <View style={styles.cardTopRow}>
-                <Text style={styles.serviceText}>{job.service?.nameEn || job.service?.key || 'Service'}</Text>
-                <View style={styles.acceptedBadge}>
-                  <Text style={styles.acceptedBadgeText}>Accepted</Text>
-                </View>
-              </View>
-              <Text style={styles.itemText}>{job.item.title || job.item.type || 'Transport item'}</Text>
-              <Text style={styles.metaText}>Pickup: {job.pickup.address || 'Address unavailable'}</Text>
-              <Text style={styles.metaText}>Dropoff: {job.dropoff.address || 'Address unavailable'}</Text>
-              <Text style={styles.metaText}>
-                {job.schedule.isImmediate
-                  ? 'Immediate pickup'
-                  : `Scheduled: ${formatDate(job.schedule.scheduledPickupAt)}`}
-              </Text>
-              <Text style={styles.metaText}>
-                Offer: {formatMoney(job.acceptedOffer.price, job.acceptedOffer.currency)}
-              </Text>
-              <Text style={styles.metaText}>Accepted at: {formatDate(job.acceptedAt)}</Text>
+          {jobs.map((job) => {
+            const jobChatRoom = chatRoomsByRequestId[job.requestId];
+            const unreadCount = typeof jobChatRoom?.unreadCount === 'number' ? jobChatRoom.unreadCount : 0;
 
-              <View style={styles.cardButton}>
-                <Text style={styles.cardButtonText}>View Job</Text>
-              </View>
-            </Pressable>
-          ))}
+            return (
+              <Pressable
+                key={job.requestId}
+                style={styles.card}
+                onPress={() =>
+                  router.push({
+                    pathname: '/accepted-job-details',
+                    params: { requestId: job.requestId },
+                  })
+                }
+              >
+                <View style={styles.cardTopRow}>
+                  <Text style={styles.serviceText}>{job.service?.nameEn || job.service?.key || 'Service'}</Text>
+                  <View style={styles.cardTopMeta}>
+                    {unreadCount > 0 ? (
+                      <View style={styles.chatBadge}>
+                        <Text style={styles.chatBadgeText}>
+                          {unreadCount > 99 ? '99+ new' : `${unreadCount} new`}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <View style={styles.acceptedBadge}>
+                      <Text style={styles.acceptedBadgeText}>Accepted</Text>
+                    </View>
+                  </View>
+                </View>
+                <Text style={styles.itemText}>{job.item.title || job.item.type || 'Transport item'}</Text>
+                <Text style={styles.metaText}>Pickup: {job.pickup.address || 'Address unavailable'}</Text>
+                <Text style={styles.metaText}>Dropoff: {job.dropoff.address || 'Address unavailable'}</Text>
+                <Text style={styles.metaText}>
+                  {job.schedule.isImmediate
+                    ? 'Immediate pickup'
+                    : `Scheduled: ${formatDate(job.schedule.scheduledPickupAt)}`}
+                </Text>
+                <Text style={styles.metaText}>
+                  Offer: {formatMoney(job.acceptedOffer.price, job.acceptedOffer.currency)}
+                </Text>
+                <Text style={styles.metaText}>Accepted at: {formatDate(job.acceptedAt)}</Text>
+
+                <View style={styles.cardButton}>
+                  <Text style={styles.cardButtonText}>View Job</Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -236,6 +260,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  cardTopMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   serviceText: {
     fontSize: 16,
     fontWeight: '600',
@@ -252,6 +281,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#166534',
+  },
+  chatBadge: {
+    backgroundColor: '#E0F2FE',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  chatBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0369A1',
   },
   itemText: {
     fontSize: 15,

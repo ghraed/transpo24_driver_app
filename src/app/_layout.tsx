@@ -124,6 +124,7 @@ function AppNavigator() {
       <Stack.Screen name="driver-home" options={{ title: 'Driver Home' }} />
       <Stack.Screen name="receive-requests" options={{ title: 'Available Requests' }} />
       <Stack.Screen name="accepted-jobs" options={{ title: 'Accepted Jobs' }} />
+      <Stack.Screen name="chat" options={{ title: 'Chat with Client' }} />
       <Stack.Screen
         name="accepted-job-details"
         options={{ title: 'Accepted Job Details' }}

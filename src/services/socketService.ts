@@ -2,6 +2,12 @@ import { io, type Socket } from 'socket.io-client';
 
 import { getBackendSocketUrl } from '@/config/backend';
 import type {
+  ChatMessageCreatedEventPayload,
+  ChatMessageReadEventPayload,
+  SendChatMessagePayload,
+  SendChatMessageResponse,
+} from '@/types/chat';
+import type {
   DriverArrivedPickupConfirmedPayload,
   ItemPickedUpPayload,
   ItemDeliveredPayload,
@@ -33,6 +39,11 @@ type SocketAckResponse = {
   tripId?: string;
   room?: string;
   message?: string;
+};
+
+type ChatJoinAckResponse = {
+  roomId?: string;
+  status?: string;
 };
 
 function ensureSocketUrl(): string {
@@ -116,6 +127,97 @@ export function joinTripRoomWithAck(
 export function leaveTripRoom(tripId: string): void {
   if (!socket) return;
   socket.emit('leaveTripRoom', { tripId });
+}
+
+export function isSocketConnected(): boolean {
+  return Boolean(socket?.connected);
+}
+
+export function joinChatRoom(roomId: string): void {
+  getSocket().emit('chat.join', { roomId });
+}
+
+export function joinChatRoomWithAck(
+  roomId: string,
+  timeoutMs = 5000,
+): Promise<{ roomId: string }> {
+  const instance = getSocket();
+  return new Promise((resolve, reject) => {
+    instance.timeout(timeoutMs).emit(
+      'chat.join',
+      { roomId },
+      (error: Error | null, response?: ChatJoinAckResponse) => {
+        if (error) {
+          reject(new Error(error.message || 'chat.join timed out.'));
+          return;
+        }
+
+        if (!response || typeof response.roomId !== 'string') {
+          reject(new Error('chat.join ack payload is invalid.'));
+          return;
+        }
+
+        resolve({ roomId: response.roomId });
+      },
+    );
+  });
+}
+
+export function leaveChatRoom(roomId: string): void {
+  if (!socket) return;
+  socket.emit('chat.leave', { roomId });
+}
+
+export function sendChatMessageWithAck(
+  roomId: string,
+  payload: SendChatMessagePayload,
+  timeoutMs = 5000,
+): Promise<SendChatMessageResponse> {
+  const instance = getSocket();
+  return new Promise((resolve, reject) => {
+    instance.timeout(timeoutMs).emit(
+      'chat.message.send',
+      {
+        roomId,
+        body: payload.body,
+      },
+      (error: Error | null, response?: SendChatMessageResponse) => {
+        if (error) {
+          reject(new Error(error.message || 'chat.message.send timed out.'));
+          return;
+        }
+
+        if (!response?.message) {
+          reject(new Error('chat.message.send ack payload is invalid.'));
+          return;
+        }
+
+        resolve(response);
+      },
+    );
+  });
+}
+
+export function emitChatTyping(roomId: string, isTyping: boolean): void {
+  getSocket().emit('chat.typing', { roomId, isTyping });
+}
+
+export function onChatMessageCreated(
+  callback: (payload: ChatMessageCreatedEventPayload) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('chat.message.created', callback);
+  instance.on('chat.message.created', callback);
+  return () => instance.off('chat.message.created', callback);
+}
+
+export function onChatMessageRead(
+  callback: (payload: ChatMessageReadEventPayload) => void,
+): () => void {
+  const instance = getSocket();
+  instance.off('chat.message.read', callback);
+  instance.on('chat.message.read', callback);
+  return () => instance.off('chat.message.read', callback);
 }
 
 export function emitDriverLocationUpdate(payload: DriverLocationUpdatePayload): void {

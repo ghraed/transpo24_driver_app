@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DriverChatButton } from '@/components/driver-chat-button';
 import {
   NativeMapView,
   NativeMarker,
@@ -377,6 +378,7 @@ export default function PickupItemScreen() {
           <Text style={styles.title}>Pickup Item</Text>
           <Text style={styles.subTitle}>Confirm that you received the package from the customer.</Text>
           <Text style={styles.metaText}>Trip ID: {tripId}</Text>
+          <DriverChatButton transportRequestId={tripId} />
         </View>
 
         <View style={styles.card}>
