@@ -13,6 +13,8 @@ import {
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { isTerminalRequestStatus } from '@/lib/request-status';
 import { useAuth } from '@/context/auth-context';
 import {
   connectSocket,
@@ -96,6 +98,7 @@ export default function GoToPickupScreen() {
   const [socketError, setSocketError] = useState<string>('');
   const [arrivalError, setArrivalError] = useState<string>('');
   const [isSubmittingArrival, setIsSubmittingArrival] = useState<boolean>(false);
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
 
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
@@ -132,6 +135,38 @@ export default function GoToPickupScreen() {
 
       if (!accessToken) {
         setLocationError('Missing authentication token. Please login again.');
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      try {
+        const details = await getDriverAcceptedJobDetails(validTripId);
+        if (!active) return;
+
+        setRequestStatus(details.requestStatus);
+
+        if (isTerminalRequestStatus(details.requestStatus)) {
+          router.replace('/accepted-jobs');
+          return;
+        }
+
+        if (
+          ![
+            'ACCEPTED',
+            'DRIVER_ASSIGNED',
+            'DRIVER_GOING_TO_PICKUP',
+            'DRIVER_ARRIVED_PICKUP',
+          ].includes(details.requestStatus)
+        ) {
+          router.replace({
+            pathname: '/accepted-job-details',
+            params: { requestId: validTripId },
+          });
+          return;
+        }
+      } catch (error) {
+        if (!active) return;
+        setLocationError(error instanceof Error ? error.message : 'Failed to load trip status.');
         setIsLoadingLocation(false);
         return;
       }
@@ -457,7 +492,7 @@ export default function GoToPickupScreen() {
         >
           <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
         </Pressable>
-        <DriverChatButton transportRequestId={tripId} />
+        <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
 
         <Pressable
           style={[styles.actionButton, !canArriveNow && styles.disabledButton]}

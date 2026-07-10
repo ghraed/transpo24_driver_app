@@ -125,6 +125,10 @@ function isChatAccessError(message: string): boolean {
   return normalized.includes('not found') || normalized.includes('unauthorized');
 }
 
+function isAccessibleChatRoom(room: ChatRoom | null): room is ChatRoom {
+  return Boolean(room && room.status === 'ACTIVE');
+}
+
 export default function ChatScreen() {
   const router = useRouter();
   const { accessToken, signOut, user } = useAuth();
@@ -180,7 +184,21 @@ export default function ChatScreen() {
         }
       }
 
+      if (!isAccessibleChatRoom(resolvedRoom)) {
+        setChatRoom(null);
+        setMessages([]);
+        setScreenError('This chat is closed and no longer accessible.');
+        return;
+      }
+
       const response = await getDriverChatMessages(resolvedRoom.id, FIRST_PAGE, PAGE_SIZE);
+      if (!isAccessibleChatRoom(response.room ?? resolvedRoom)) {
+        setChatRoom(null);
+        setMessages([]);
+        setScreenError('This chat is closed and no longer accessible.');
+        return;
+      }
+
       setChatRoom(response.room ?? resolvedRoom);
       setMessages(mergeMessages([], response.messages ?? []));
       setPage(response.page ?? FIRST_PAGE);
@@ -261,13 +279,8 @@ export default function ChatScreen() {
       return;
     }
 
-    if (!chatRoom) {
-      setSendError('Chat room is not available yet.');
-      return;
-    }
-
-    if (chatRoom.status !== 'ACTIVE') {
-      setSendError('This chat is closed. You can still view previous messages.');
+    if (!isAccessibleChatRoom(chatRoom)) {
+      setSendError('This chat is closed and no longer accessible.');
       return;
     }
 
@@ -298,7 +311,7 @@ export default function ChatScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (!accessToken || !chatRoom?.id) {
+      if (!accessToken || !chatRoom?.id || !isAccessibleChatRoom(chatRoom)) {
         return undefined;
       }
 
@@ -381,11 +394,11 @@ export default function ChatScreen() {
         appStateSubscription?.remove();
         leaveChatRoom(chatRoom.id);
       };
-    }, [accessToken, applyReadEvent, chatRoom?.id, markRead]),
+    }, [accessToken, applyReadEvent, chatRoom, markRead]),
   );
 
   const canSend = useMemo(() => {
-    return Boolean(chatRoom && chatRoom.status === 'ACTIVE' && inputValue.trim()) && !isSending;
+    return Boolean(isAccessibleChatRoom(chatRoom) && inputValue.trim()) && !isSending;
   }, [chatRoom, inputValue, isSending]);
 
   const currentUserId = user?.id ?? '';
@@ -429,7 +442,7 @@ export default function ChatScreen() {
   if (!chatRoom) {
     return (
       <SafeAreaView style={styles.centeredState}>
-        <Text style={styles.stateText}>No chat room is available for this job yet.</Text>
+        <Text style={styles.stateText}>{screenError || 'No chat room is available for this job.'}</Text>
       </SafeAreaView>
     );
   }
@@ -442,17 +455,10 @@ export default function ChatScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Chat with client</Text>
-          <Text style={styles.subtitle}>
-            {chatRoom.status === 'ACTIVE' ? 'Private room for this accepted job.' : 'Chat is closed.'}
-          </Text>
+          <Text style={styles.subtitle}>Private room for this accepted job.</Text>
         </View>
 
         {socketNotice ? <Text style={styles.warningText}>{socketNotice}</Text> : null}
-        {chatRoom.status !== 'ACTIVE' ? (
-          <View style={styles.closedBanner}>
-            <Text style={styles.closedBannerText}>This chat is closed. Previous messages remain visible.</Text>
-          </View>
-        ) : null}
 
         <FlatList
           data={messages}
@@ -484,11 +490,11 @@ export default function ChatScreen() {
 
         <View style={styles.inputRow}>
           <TextInput
-            style={[styles.input, chatRoom.status !== 'ACTIVE' && styles.inputDisabled]}
-            placeholder={chatRoom.status === 'ACTIVE' ? 'Type a message' : 'Chat closed'}
+            style={styles.input}
+            placeholder="Type a message"
             value={inputValue}
             onChangeText={setInputValue}
-            editable={chatRoom.status === 'ACTIVE' && !isSending}
+            editable={!isSending}
             multiline
             maxLength={1000}
           />

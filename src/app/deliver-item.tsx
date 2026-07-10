@@ -15,6 +15,7 @@ import {
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { isTerminalRequestStatus } from '@/lib/request-status';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
 import { deliverItem, startDelivery } from '@/services/tripService';
 import type { LocalDocumentAsset } from '@/types/auth';
@@ -109,6 +110,7 @@ export default function DeliverItemScreen() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [routeBlockedMessage, setRouteBlockedMessage] = useState<string>('');
   const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
   const { height: windowHeight } = useWindowDimensions();
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
@@ -150,6 +152,33 @@ export default function DeliverItemScreen() {
       if (isInvalidRoute) {
         setIsLoadingLocation(false);
         setIsStartingDelivery(false);
+        return;
+      }
+
+      try {
+        const details = await getDriverAcceptedJobDetails(tripId);
+        if (!active) return;
+
+        setRequestStatus(details.requestStatus);
+        if (isTerminalRequestStatus(details.requestStatus)) {
+          router.replace(buildCompletedRoute(tripId, new Date().toISOString()));
+          return;
+        }
+
+        if (
+          details.requestStatus !== 'ITEM_PICKED_UP' &&
+          details.requestStatus !== 'DRIVER_GOING_TO_DROPOFF'
+        ) {
+          setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
+          setIsStartingDelivery(false);
+          setIsLoadingLocation(false);
+          return;
+        }
+      } catch (error) {
+        if (!active) return;
+        setSubmitError(error instanceof Error ? error.message : 'Failed to load trip status.');
+        setIsStartingDelivery(false);
+        setIsLoadingLocation(false);
         return;
       }
 
@@ -593,7 +622,7 @@ export default function DeliverItemScreen() {
         <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
         <Text style={styles.subText}>Trip ID: {tripId}</Text>
         <Text style={styles.subText}>Pickup: {pickupLocation.address || 'Pickup address unavailable'}</Text>
-        <DriverChatButton transportRequestId={tripId} />
+        <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
         <Text style={styles.distanceText}>
           Distance remaining:{' '}
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}

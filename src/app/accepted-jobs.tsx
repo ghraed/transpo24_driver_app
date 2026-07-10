@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { isActiveAcceptedJobStatus } from '@/lib/request-status';
 import { getDriverAcceptedJobs, getDriverChatRooms } from '@/lib/api';
 import type { DriverAcceptedJobSummary } from '@/types/auth';
 import type { ChatRoom } from '@/types/chat';
@@ -58,10 +59,15 @@ export default function AcceptedJobsScreen() {
           getDriverAcceptedJobs(),
           getDriverChatRooms().catch(() => ({ rooms: [] })),
         ]);
-        setJobs(response.jobs ?? []);
+        const activeJobs = (response.jobs ?? []).filter((job) =>
+          isActiveAcceptedJobStatus(job.requestStatus),
+        );
+        setJobs(activeJobs);
         setChatRoomsByRequestId(
           Object.fromEntries(
-            (chatRoomsResponse.rooms ?? []).map((room) => [room.transportRequestId, room]),
+            (chatRoomsResponse.rooms ?? [])
+              .filter((room) => activeJobs.some((job) => job.requestId === room.transportRequestId))
+              .map((room) => [room.transportRequestId, room]),
           ),
         );
       } catch (requestError) {
@@ -119,9 +125,9 @@ export default function AcceptedJobsScreen() {
         </View>
       ) : !hasJobs ? (
         <View style={styles.centeredState}>
-          <Text style={styles.stateText}>No accepted jobs yet.</Text>
+          <Text style={styles.stateText}>No active accepted jobs.</Text>
           <Text style={styles.hintText}>
-            When customers accept your offers, jobs will appear here.
+            Delivered and completed requests are removed from this screen.
           </Text>
         </View>
       ) : (

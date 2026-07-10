@@ -22,6 +22,8 @@ import {
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { isTerminalRequestStatus } from '@/lib/request-status';
 import { onItemPickedUp, onTripStatusUpdated } from '@/services/socketService';
 import { pickupItem } from '@/services/tripService';
 import type { LocalDocumentAsset } from '@/types/auth';
@@ -116,6 +118,7 @@ export default function PickupItemScreen() {
   const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string>('');
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
 
   const isTripValid = isValidTripId(tripId);
   const hasValidPickup = Boolean(pickupLocation && isValidGeoLocation(pickupLocation));
@@ -145,12 +148,49 @@ export default function PickupItemScreen() {
   }, [driverLocation, notes]);
 
   const isInvalidRoute = !isTripValid || !hasValidPickup || !hasValidDropoff;
+  const deliverParams = useMemo(
+    () =>
+      pickupLocation && dropoffLocation
+        ? toDeliverRouteParams(tripId, pickupLocation, dropoffLocation)
+        : null,
+    [dropoffLocation, pickupLocation, tripId],
+  );
 
   useEffect(() => {
     let active = true;
 
     const setupLocation = async (): Promise<void> => {
       if (isInvalidRoute) {
+        setIsLoadingLocation(false);
+        return;
+      }
+
+      try {
+        const details = await getDriverAcceptedJobDetails(tripId);
+        if (!active) return;
+
+        setRequestStatus(details.requestStatus);
+
+        if (isTerminalRequestStatus(details.requestStatus)) {
+          router.replace('/accepted-jobs');
+          return;
+        }
+
+        if (details.requestStatus === 'ITEM_PICKED_UP' && deliverParams) {
+          router.replace({ pathname: '/deliver-item', params: deliverParams });
+          return;
+        }
+
+        if (details.requestStatus !== 'DRIVER_ARRIVED_PICKUP') {
+          router.replace({
+            pathname: '/accepted-job-details',
+            params: { requestId: tripId },
+          });
+          return;
+        }
+      } catch (error) {
+        if (!active) return;
+        setSubmitError(error instanceof Error ? error.message : 'Failed to load trip status.');
         setIsLoadingLocation(false);
         return;
       }
@@ -203,13 +243,12 @@ export default function PickupItemScreen() {
 
     void setupLocation();
 
-    if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
+    if (isInvalidRoute || !pickupLocation || !dropoffLocation || !deliverParams) {
       return () => {
         active = false;
       };
     }
 
-    const deliverParams = toDeliverRouteParams(tripId, pickupLocation, dropoffLocation);
     let offTripStatus: (() => void) | null = null;
     let offItemPickedUp: (() => void) | null = null;
 
@@ -232,7 +271,7 @@ export default function PickupItemScreen() {
       offTripStatus?.();
       offItemPickedUp?.();
     };
-  }, [dropoffLocation, isInvalidRoute, pickupLocation, router, tripId]);
+  }, [deliverParams, dropoffLocation, isInvalidRoute, pickupLocation, router, tripId]);
 
   const appendProofPhotos = (assets: LocalDocumentAsset[]): void => {
     setProofPhotos((current) => [...current, ...assets].slice(0, MAX_PROOF_PHOTOS));
@@ -378,7 +417,7 @@ export default function PickupItemScreen() {
           <Text style={styles.title}>Pickup Item</Text>
           <Text style={styles.subTitle}>Confirm that you received the package from the customer.</Text>
           <Text style={styles.metaText}>Trip ID: {tripId}</Text>
-          <DriverChatButton transportRequestId={tripId} />
+          <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
         </View>
 
         <View style={styles.card}>

@@ -22,6 +22,7 @@ import {
 import { DriverPayoutStatusCard } from '@/components/driver-payout-status-card';
 import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
+import { isTerminalRequestStatus } from '@/lib/request-status';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import type { DriverAcceptedJobDetailsResponse } from '@/types/auth';
 
@@ -182,7 +183,7 @@ export default function AcceptedJobDetailsScreen() {
 
   const canOpenExpenses = useMemo(() => {
     if (!details) return false;
-    return !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(details.requestStatus);
+    return !isTerminalRequestStatus(details.requestStatus);
   }, [details]);
 
   const openMap = (
@@ -232,7 +233,11 @@ export default function AcceptedJobDetailsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.successHeader}>
           <Text style={styles.title}>Your offer was accepted</Text>
-          <Text style={styles.subtitle}>Review the job details and get ready for pickup.</Text>
+          <Text style={styles.subtitle}>
+            {isTerminalRequestStatus(details.requestStatus)
+              ? 'This request is completed and read-only.'
+              : 'Review the job details and get ready for pickup.'}
+          </Text>
           <Text style={styles.offerPrice}>
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
@@ -444,6 +449,7 @@ export default function AcceptedJobDetailsScreen() {
           initialChatRoom={details.chatRoom}
           label="Chat with client"
           showUnavailableState
+          requestStatus={details.requestStatus}
         />
         <Pressable
           style={[styles.secondaryFooterButton, !canOpenExpenses && styles.disabledButton]}

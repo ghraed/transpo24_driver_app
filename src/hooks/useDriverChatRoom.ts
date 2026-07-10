@@ -25,12 +25,20 @@ function isMissingChatRoomError(message: string): boolean {
 export function useDriverChatRoom(
   transportRequestId: string,
   initialChatRoom?: ChatRoom | null,
+  enabled = true,
 ): UseDriverChatRoomResult {
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(initialChatRoom ?? null);
   const [isLoadingChatRoom, setIsLoadingChatRoom] = useState<boolean>(false);
   const [chatRoomError, setChatRoomError] = useState<string>('');
 
   const refreshChatRoom = useCallback(async (): Promise<void> => {
+    if (!enabled) {
+      setChatRoom(null);
+      setChatRoomError('');
+      setIsLoadingChatRoom(false);
+      return;
+    }
+
     if (!transportRequestId.trim()) {
       setChatRoom(null);
       setChatRoomError('Missing transport request id.');
@@ -54,7 +62,7 @@ export function useDriverChatRoom(
     } finally {
       setIsLoadingChatRoom(false);
     }
-  }, [transportRequestId]);
+  }, [enabled, transportRequestId]);
 
   useFocusEffect(
     useCallback(() => {

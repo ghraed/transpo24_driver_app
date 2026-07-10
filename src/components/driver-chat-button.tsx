@@ -2,7 +2,9 @@ import { useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { isTerminalRequestStatus } from '@/lib/request-status';
 import { useDriverChatRoom } from '@/hooks/useDriverChatRoom';
+import type { RequestStatus } from '@/types/auth';
 import type { ChatRoom } from '@/types/chat';
 
 type DriverChatButtonProps = {
@@ -11,6 +13,7 @@ type DriverChatButtonProps = {
   label?: string;
   fullWidth?: boolean;
   showUnavailableState?: boolean;
+  requestStatus?: RequestStatus | string | null;
 };
 
 export function DriverChatButton({
@@ -19,14 +22,16 @@ export function DriverChatButton({
   label = 'Chat with client',
   fullWidth = true,
   showUnavailableState = false,
+  requestStatus,
 }: DriverChatButtonProps) {
   const router = useRouter();
+  const chatDisabled = isTerminalRequestStatus(requestStatus);
   const {
     chatRoom,
     isLoadingChatRoom,
     chatRoomError,
     refreshChatRoom,
-  } = useDriverChatRoom(transportRequestId, initialChatRoom);
+  } = useDriverChatRoom(transportRequestId, initialChatRoom, !chatDisabled);
 
   if (!chatRoom && !chatRoomError && !isLoadingChatRoom && !showUnavailableState) {
     return null;
@@ -34,7 +39,7 @@ export function DriverChatButton({
 
   return (
     <View style={[styles.container, fullWidth && styles.fullWidth]}>
-      {chatRoom ? (
+      {chatRoom && !chatDisabled ? (
         <Pressable
           style={styles.button}
           onPress={() =>
@@ -67,7 +72,9 @@ export function DriverChatButton({
         </View>
       ) : showUnavailableState ? (
         <View style={styles.unavailableButton}>
-          <Text style={styles.unavailableButtonText}>Chat unavailable</Text>
+          <Text style={styles.unavailableButtonText}>
+            {chatDisabled ? 'Chat closed after delivery' : 'Chat unavailable'}
+          </Text>
         </View>
       ) : null}
     </View>
