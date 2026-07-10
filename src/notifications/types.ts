@@ -4,6 +4,9 @@ export type PushNotificationType =
   | 'NEW_TRANSPORT_REQUEST'
   | 'NEW_DRIVER_OFFER'
   | 'CHAT_MESSAGE'
+  | 'ITEM_PICKED_UP'
+  | 'ITEM_DELIVERED'
+  | 'TRIP_FUNDS_TRANSFERRED'
   | string;
 
 export interface RegisterPushTokenPayload {

@@ -34,6 +34,20 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
         } as unknown as Href;
       }
       return null;
+    case 'TRIP_FUNDS_TRANSFERRED':
+      if (typeof data.tripId === 'string' && data.tripId.trim()) {
+        return {
+          pathname: '/driver-trip-completed',
+          params: { tripId: data.tripId },
+        } as unknown as Href;
+      }
+      if (typeof data.requestId === 'string' && data.requestId.trim()) {
+        return {
+          pathname: '/driver-trip-completed',
+          params: { tripId: data.requestId },
+        } as unknown as Href;
+      }
+      return null;
     default:
       return null;
   }
