@@ -1,8 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, BackHandler, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
@@ -102,6 +102,7 @@ export default function DeliverItemScreen() {
 
   const [driverLocation, setDriverLocation] = useState<GeoLocation | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false);
   const [isStartingDelivery, setIsStartingDelivery] = useState<boolean>(true);
   const [notes, setNotes] = useState<string>('');
   const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
@@ -145,6 +146,107 @@ export default function DeliverItemScreen() {
     return validateDeliverItemRequest(payload);
   }, [driverLocation, notes]);
 
+  const onBackToHome = (): void => {
+    router.replace('/driver-home');
+  };
+
+  const ensureDriverGoingToDropoff = useCallback(async (): Promise<void> => {
+    if (requestStatus === 'DRIVER_GOING_TO_DROPOFF') {
+      return;
+    }
+
+    try {
+      const response = await startDelivery(tripId);
+      setRequestStatus(response.status);
+      setRouteBlockedMessage('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start delivery.';
+      const normalizedMessage = message.toLowerCase();
+
+      if (
+        normalizedMessage.includes('already') ||
+        normalizedMessage.includes('driver_going_to_dropoff')
+      ) {
+        setRequestStatus('DRIVER_GOING_TO_DROPOFF');
+        setRouteBlockedMessage('');
+        return;
+      }
+
+      throw error;
+    }
+  }, [requestStatus, tripId]);
+
+  const refreshDriverLocation = useCallback(async (showLoader = false): Promise<GeoLocation | null> => {
+    if (showLoader) {
+      setIsRefreshingLocation(true);
+    }
+
+    setLocationMessage('');
+
+    try {
+      const permission = await Location.getForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
+        setLocationMessage('Location permission denied. Enable location to continue delivery confirmation.');
+        return null;
+      }
+
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        setLocationMessage('GPS unavailable. Please enable location services.');
+        return null;
+      }
+
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
+
+      const currentLocation: GeoLocation = {
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+      };
+
+      if (!isValidGeoLocation(currentLocation)) {
+        setLocationMessage('Unable to get a valid driver location. Please try again.');
+        return null;
+      }
+
+      setDriverLocation(currentLocation);
+      emitDriverLocationUpdate({
+        tripId,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        heading: typeof current.coords.heading === 'number' ? current.coords.heading : undefined,
+        speed: typeof current.coords.speed === 'number' ? current.coords.speed : undefined,
+        accuracy: typeof current.coords.accuracy === 'number' ? current.coords.accuracy : undefined,
+      });
+      lastEmitLocationRef.current = currentLocation;
+      lastEmitAtRef.current = Date.now();
+      return currentLocation;
+    } catch (error) {
+      setLocationMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to get current location. Please verify GPS availability.',
+      );
+      return null;
+    } finally {
+      if (showLoader) {
+        setIsRefreshingLocation(false);
+      }
+    }
+  }, [tripId]);
+
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBackToHome();
+      return true;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [router]);
+
   useEffect(() => {
     let active = true;
 
@@ -183,7 +285,7 @@ export default function DeliverItemScreen() {
       }
 
       try {
-        await startDelivery(tripId);
+        await ensureDriverGoingToDropoff();
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to start delivery.';
         const normalizedMessage = message.toLowerCase();
@@ -255,28 +357,8 @@ export default function DeliverItemScreen() {
       }
 
       try {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Highest,
-        });
+        await refreshDriverLocation();
         if (!active) return;
-
-        const currentLocation: GeoLocation = {
-          latitude: current.coords.latitude,
-          longitude: current.coords.longitude,
-        };
-        if (isValidGeoLocation(currentLocation)) {
-          setDriverLocation(currentLocation);
-          emitDriverLocationUpdate({
-            tripId,
-            latitude: currentLocation.latitude,
-            longitude: currentLocation.longitude,
-            heading: typeof current.coords.heading === 'number' ? current.coords.heading : undefined,
-            speed: typeof current.coords.speed === 'number' ? current.coords.speed : undefined,
-            accuracy: typeof current.coords.accuracy === 'number' ? current.coords.accuracy : undefined,
-          });
-          lastEmitLocationRef.current = currentLocation;
-          lastEmitAtRef.current = Date.now();
-        }
 
         const subscription = await Location.watchPositionAsync(
           {
@@ -352,7 +434,7 @@ export default function DeliverItemScreen() {
         locationSubscriptionRef.current = null;
       }
     };
-  }, [isInvalidRoute, router, tripId]);
+  }, [ensureDriverGoingToDropoff, isInvalidRoute, refreshDriverLocation, router, tripId]);
 
   // Auto-fit map to show both driver and dropoff when driver location first arrives
   useEffect(() => {
@@ -432,7 +514,7 @@ export default function DeliverItemScreen() {
   const onSendFakeLocationPress = (): void => {
     if (!dropoffLocation) return;
     const fakeLocations: GeoLocation[] = [
-      { latitude: 33.8938, longitude: 35.5018 },
+      { latitude: 33.396067, longitude: 35.673211 },
       { latitude: dropoffLocation.latitude + 0.001, longitude: dropoffLocation.longitude + 0.001 },
       { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude },
     ];
@@ -502,7 +584,23 @@ export default function DeliverItemScreen() {
 
     setIsSubmitting(true);
     try {
-      const response = await deliverItem(tripId, payload);
+      await ensureDriverGoingToDropoff();
+      let response: Awaited<ReturnType<typeof deliverItem>>;
+      try {
+        response = await deliverItem(tripId, payload);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to confirm delivery.';
+        const normalizedMessage = message.toLowerCase();
+        if (
+          normalizedMessage.includes('trip status must be driver_going_to_dropoff before confirming delivery')
+        ) {
+          await ensureDriverGoingToDropoff();
+          response = await deliverItem(tripId, payload);
+        } else {
+          throw error;
+        }
+      }
+
       router.replace(buildCompletedRoute(tripId, response.deliveredAt));
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : 'Failed to confirm delivery.');
@@ -556,6 +654,17 @@ export default function DeliverItemScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen
+        options={{
+          gestureEnabled: false,
+          headerBackVisible: false,
+          headerLeft: () => (
+            <Pressable hitSlop={12} onPress={onBackToHome}>
+              <Text style={styles.headerBackText}>Back</Text>
+            </Pressable>
+          ),
+        }}
+      />
       <View style={[styles.mapContainer, { height: isMapFullscreen ? windowHeight : windowHeight * 0.5 }]}>
         {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
           <NativeMapView
@@ -627,6 +736,15 @@ export default function DeliverItemScreen() {
           Distance remaining:{' '}
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}
         </Text>
+        <Pressable
+          style={[styles.secondaryActionButton, isRefreshingLocation && styles.disabledSecondaryActionButton]}
+          onPress={() => void refreshDriverLocation(true)}
+          disabled={isRefreshingLocation}
+        >
+          <Text style={styles.secondaryActionButtonText}>
+            {isRefreshingLocation ? 'Refreshing location...' : 'Refresh Driver Location'}
+          </Text>
+        </Pressable>
 
         <Text style={styles.sectionTitle}>Delivery Notes (Optional)</Text>
         <TextInput
@@ -817,6 +935,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
   },
+  headerBackText: {
+    color: '#2563EB',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   addressText: {
     color: '#334155',
     fontSize: 14,
@@ -944,6 +1067,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  disabledSecondaryActionButton: {
+    opacity: 0.7,
   },
   disabledButton: {
     backgroundColor: '#94A3B8',

@@ -12,6 +12,22 @@ function toPushNotificationData(data: Notifications.NotificationContentInput['da
   return data as PushNotificationData;
 }
 
+function resolveTripId(data: PushNotificationData): string | null {
+  if (typeof data.tripId === 'string' && data.tripId.trim()) {
+    return data.tripId;
+  }
+
+  if (typeof data.requestId === 'string' && data.requestId.trim()) {
+    return data.requestId;
+  }
+
+  if (typeof data.transportRequestId === 'string' && data.transportRequestId.trim()) {
+    return data.transportRequestId;
+  }
+
+  return null;
+}
+
 function resolveNotificationRoute(data: PushNotificationData): Href | null {
   switch (data.type) {
     case 'NEW_TRANSPORT_REQUEST':
@@ -35,19 +51,19 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
       }
       return null;
     case 'TRIP_FUNDS_TRANSFERRED':
-      if (typeof data.tripId === 'string' && data.tripId.trim()) {
+    case 'ITEM_DELIVERED':
+    case 'TRIP_COMPLETED':
+    case 'CLIENT_PAYMENT_COMPLETED':
+    case 'PAYMENT_COMPLETED': {
+      const tripId = resolveTripId(data);
+      if (tripId) {
         return {
           pathname: '/driver-trip-completed',
-          params: { tripId: data.tripId },
-        } as unknown as Href;
-      }
-      if (typeof data.requestId === 'string' && data.requestId.trim()) {
-        return {
-          pathname: '/driver-trip-completed',
-          params: { tripId: data.requestId },
+          params: { tripId },
         } as unknown as Href;
       }
       return null;
+    }
     default:
       return null;
   }
