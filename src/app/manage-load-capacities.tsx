@@ -212,11 +212,7 @@ export default function ManageLoadCapacitiesScreen() {
                       : 'Not defined'}
                 </Text>
                 <Text style={styles.metaText}>
-                  Working schedule:{' '}
-                  {capacity?.workingSchedule?.filter((day) => day.isAvailable).length ??
-                  vehicle.workingSchedule?.filter((day) => day.isAvailable).length
-                    ? `${capacity?.workingSchedule?.filter((day) => day.isAvailable).length ?? vehicle.workingSchedule?.filter((day) => day.isAvailable).length} day(s) available`
-                    : 'Not defined'}
+                  Availability: managed from the Set Availability screen
                 </Text>
 
                 <View style={styles.actionRow}>

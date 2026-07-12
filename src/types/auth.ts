@@ -359,7 +359,7 @@ export interface VehicleLoadCapacityPayload {
   cargoHeightM?: number;
   dimensionsAreStandard?: boolean;
   allowedCargoTypes: VehicleCargoType[];
-  workingSchedule: WorkingDaySchedule[];
+  workingSchedule?: WorkingDaySchedule[];
   isDefault?: boolean;
 }
 
