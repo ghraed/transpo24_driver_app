@@ -17,16 +17,16 @@ export interface BackendConnectionTarget {
 const BACKEND_CONNECTION_TARGETS: readonly BackendConnectionTarget[] = [
   {
     label: 'Android USB device',
-    url: 'http://127.0.0.1:3000',
+    url: 'http://127.0.0.1:3001',
     note: 'use adb reverse',
   },
   {
     label: 'Android emulator',
-    url: 'http://10.0.2.2:3000',
+    url: 'http://10.0.2.2:3001',
   },
   {
     label: 'iOS simulator',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:3001',
   },
   {
     label: 'Physical device over Wi-Fi',
@@ -60,7 +60,7 @@ function parseHttpUrl(envName: string, rawValue: string): URL {
     parsed = new URL(candidate);
   } catch {
     throw new Error(
-      `${envName}="${rawValue}" is invalid. Use a full backend URL such as http://127.0.0.1:3000 or http://192.168.1.10:3000.`,
+      `${envName}="${rawValue}" is invalid. Use a full backend URL such as http://127.0.0.1:3001 or http://192.168.1.10:3001.`,
     );
   }
 

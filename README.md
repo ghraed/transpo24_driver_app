@@ -16,6 +16,14 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+   For a physical Android device over USB with `EXPO_PUBLIC_API_URL=http://127.0.0.1:3001`, use:
+
+   ```bash
+   npm run start:android:usb
+   ```
+
+   That configures `adb reverse` first so the device can reach the backend on your computer.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

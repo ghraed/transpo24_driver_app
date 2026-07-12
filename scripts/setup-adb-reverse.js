@@ -2,7 +2,7 @@
 
 const { spawnSync } = require('node:child_process');
 
-const BACKEND_PORT = 3000;
+const BACKEND_PORT = 3001;
 
 function runAdbCommand(args) {
   return spawnSync('adb', args, {

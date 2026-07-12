@@ -6,7 +6,7 @@ const { reversePort } = require('./setup-adb-reverse');
 const forwardedArgs = process.argv.slice(2);
 
 try {
-  reversePort(3000);
+  reversePort(3001);
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'Unknown adb reverse error.');
   process.exit(1);

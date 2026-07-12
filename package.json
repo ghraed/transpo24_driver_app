@@ -43,6 +43,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "start:android:usb": "node ./scripts/setup-adb-reverse.js && expo start --dev-client",
     "adb:reverse": "node ./scripts/setup-adb-reverse.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "node ./scripts/run-android.js",

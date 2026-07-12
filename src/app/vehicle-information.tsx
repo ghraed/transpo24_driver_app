@@ -18,13 +18,17 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
-import { persistLastOnboardingRoute } from '@/lib/auth-storage';
+import {
+  clearVehicleInformationDraft,
+  persistLastOnboardingRoute,
+  persistVehicleInformationDraft,
+  readVehicleInformationDraft,
+} from '@/lib/auth-storage';
 import {
   createDriverVehicle,
-  getDriverDocumentsStatus,
+  deleteDriverVehicle,
   getDriverVehicles,
   getDriverVehicle,
-  submitDriverDocumentsForReview,
   updateDriverVehicle,
   uploadDriverVehicleDocuments,
 } from '@/lib/api';
@@ -151,21 +155,21 @@ function normalizeDateValue(value: string): Date {
   return new Date(value);
 }
 
-function createSeedImageAsset(
-  sourceUrl: string | null | undefined,
-  fallbackName: string,
-): LocalDocumentAsset | undefined {
-  if (!sourceUrl) return undefined;
-
-  return {
-    uri: sourceUrl,
-    fileName: sourceUrl.split('?')[0]?.split('/').filter(Boolean).pop() || fallbackName,
-    mimeType: 'image/jpeg',
-  };
-}
-
 function formatSelectorLabel(value: string, options: SelectorOption[]): string {
   return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function buildRollbackPayload(vehicle: DriverVehicle): CreateDriverVehiclePayload {
+  return {
+    vehicleType: vehicle.vehicleType,
+    brand: vehicle.brand,
+    model: vehicle.model,
+    year: vehicle.year,
+    licensePlateNumber: vehicle.licensePlateNumber,
+    condition: vehicle.condition,
+    insuranceExpiryDate: vehicle.insuranceExpiryDate ?? undefined,
+    registrationExpiryDate: vehicle.registrationExpiryDate ?? undefined,
+  };
 }
 
 export default function VehicleInformationScreen() {
@@ -181,7 +185,6 @@ export default function VehicleInformationScreen() {
   const [existingVehicle, setExistingVehicle] = useState<DriverVehicle | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(vehicleId));
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
@@ -193,6 +196,7 @@ export default function VehicleInformationScreen() {
   const [modelOtherValue, setModelOtherValue] = useState<string>('');
   const [brandSelection, setBrandSelection] = useState<string>('');
   const [modelSelection, setModelSelection] = useState<string>('');
+  const [hasHydratedDraft, setHasHydratedDraft] = useState<boolean>(false);
 
   const isEditing = Boolean(vehicleId);
 
@@ -210,11 +214,8 @@ export default function VehicleInformationScreen() {
     setLoadError('');
 
     try {
-      const documentsStatus = flow === 'onboarding' ? await getDriverDocumentsStatus() : null;
-      const uploadedSeedUrl =
-        documentsStatus?.uploadedDocuments.find((document) => document.mimeType.startsWith('image/'))
-          ?.url ?? null;
-
+      const draftRaw = flow === 'onboarding' ? await readVehicleInformationDraft() : null;
+      const draft = draftRaw ? (JSON.parse(draftRaw) as CreateDriverVehicleForm) : null;
       let resolvedVehicleId = vehicleId;
 
       if (!resolvedVehicleId && flow === 'onboarding') {
@@ -229,75 +230,71 @@ export default function VehicleInformationScreen() {
 
       if (!resolvedVehicleId) {
         setExistingVehicle(null);
-        setVehicleForm({
+        const nextForm = {
           ...testDefaults,
-          frontPhoto: createSeedImageAsset(uploadedSeedUrl, 'vehicle-front-photo.jpg'),
-          rearPhoto: createSeedImageAsset(uploadedSeedUrl, 'vehicle-rear-photo.jpg'),
-          sidePhoto: createSeedImageAsset(uploadedSeedUrl, 'vehicle-side-photo.jpg'),
-          licensePlatePhoto: createSeedImageAsset(
-            uploadedSeedUrl,
-            'vehicle-license-plate-photo.jpg',
-          ),
-          registrationFrontDocument: createSeedImageAsset(
-            uploadedSeedUrl,
-            'vehicle-registration-front.jpg',
-          ),
-          registrationBackDocument: createSeedImageAsset(
-            uploadedSeedUrl,
-            'vehicle-registration-back.jpg',
-          ),
-          insuranceDocument: createSeedImageAsset(
-            uploadedSeedUrl,
-            'vehicle-insurance-document.jpg',
-          ),
-        });
-        setBrandSelection(testDefaults.brand);
-        setBrandOtherValue('');
-        setModelSelection(testDefaults.model);
-        setModelOtherValue('');
+          ...draft,
+        };
+        setVehicleForm(nextForm);
+        const nextBrandOptions = getBrandsForVehicleType(nextForm.vehicleType);
+        const matchedBrand = nextBrandOptions.includes(nextForm.brand as VehicleBrand);
+        setBrandSelection(matchedBrand ? nextForm.brand : nextForm.brand ? OTHER_OPTION : '');
+        setBrandOtherValue(matchedBrand ? '' : nextForm.brand);
+        const nextModelOptions = matchedBrand
+          ? getModelsForVehicleSelection(nextForm.vehicleType, nextForm.brand)
+          : [];
+        const matchedModel = nextModelOptions.includes(nextForm.model);
+        setModelSelection(matchedModel ? nextForm.model : nextForm.model ? OTHER_OPTION : '');
+        setModelOtherValue(matchedModel ? '' : nextForm.model);
         return;
       }
 
       const vehicle = await getDriverVehicle(resolvedVehicleId);
       setExistingVehicle(vehicle);
-      const seedAsset = createSeedImageAsset(uploadedSeedUrl, 'test-vehicle-image.jpg');
-      setVehicleForm({
+      const baseForm: CreateDriverVehicleForm = {
         vehicleType: vehicle.vehicleType,
         brand: vehicle.brand,
         model: vehicle.model,
         year: String(vehicle.year),
         licensePlateNumber: vehicle.licensePlateNumber,
         condition: vehicle.condition,
-        frontPhoto: vehicle.frontPhotoUrl ? undefined : seedAsset,
-        rearPhoto: vehicle.rearPhotoUrl ? undefined : seedAsset,
-        sidePhoto: vehicle.sidePhotoUrl ? undefined : seedAsset,
-        licensePlatePhoto: vehicle.licensePlatePhotoUrl ? undefined : seedAsset,
-        registrationFrontDocument: vehicle.registrationFrontDocumentUrl ? undefined : seedAsset,
-        registrationBackDocument: vehicle.registrationBackDocumentUrl ? undefined : seedAsset,
-        insuranceDocument: vehicle.insuranceDocumentUrl ? undefined : seedAsset,
+        frontPhoto: undefined,
+        rearPhoto: undefined,
+        sidePhoto: undefined,
+        licensePlatePhoto: undefined,
+        registrationFrontDocument: undefined,
+        registrationBackDocument: undefined,
+        insuranceDocument: undefined,
         insuranceExpiryDate:
           vehicle.insuranceExpiryDate?.slice(0, 10) ?? testDefaults.insuranceExpiryDate,
         registrationExpiryDate:
           vehicle.registrationExpiryDate?.slice(0, 10) ?? testDefaults.registrationExpiryDate,
-      });
-      const brandOptions = getBrandsForVehicleType(vehicle.vehicleType);
-      const matchedBrand = brandOptions.includes(vehicle.brand as VehicleBrand);
-      setBrandSelection(matchedBrand ? vehicle.brand : OTHER_OPTION);
-      setBrandOtherValue(matchedBrand ? '' : vehicle.brand);
+      };
+      const nextForm = draft ? { ...baseForm, ...draft } : baseForm;
+      setVehicleForm(nextForm);
+      const brandOptions = getBrandsForVehicleType(nextForm.vehicleType);
+      const matchedBrand = brandOptions.includes(nextForm.brand as VehicleBrand);
+      setBrandSelection(matchedBrand ? nextForm.brand : nextForm.brand ? OTHER_OPTION : '');
+      setBrandOtherValue(matchedBrand ? '' : nextForm.brand);
       const modelOptions = matchedBrand
-        ? getModelsForVehicleSelection(vehicle.vehicleType, vehicle.brand)
+        ? getModelsForVehicleSelection(nextForm.vehicleType, nextForm.brand)
         : [];
-      const matchedModel = modelOptions.includes(vehicle.model);
-      setModelSelection(matchedModel ? vehicle.model : OTHER_OPTION);
-      setModelOtherValue(matchedModel ? '' : vehicle.model);
+      const matchedModel = modelOptions.includes(nextForm.model);
+      setModelSelection(matchedModel ? nextForm.model : nextForm.model ? OTHER_OPTION : '');
+      setModelOtherValue(matchedModel ? '' : nextForm.model);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to load vehicle information.';
       setLoadError(message);
     } finally {
+      setHasHydratedDraft(true);
       setIsLoading(false);
     }
   }, [flow, testDefaults, vehicleId]);
+
+  useEffect(() => {
+    if (flow !== 'onboarding' || !hasHydratedDraft) return;
+    void persistVehicleInformationDraft(JSON.stringify(vehicleForm));
+  }, [flow, hasHydratedDraft, vehicleForm]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -680,25 +677,32 @@ export default function VehicleInformationScreen() {
     registrationExpiryDate: vehicleForm.registrationExpiryDate || undefined,
   });
 
-  const saveVehicle = async (submitForReview: boolean): Promise<void> => {
+  const saveVehicle = async (): Promise<void> => {
     Keyboard.dismiss();
     setHasAttemptedSubmit(true);
 
-    if (!isFormValid || isSaving || isSubmittingReview) return;
+    if (!isFormValid || isSaving) return;
 
-    if (submitForReview) {
-      setIsSubmittingReview(true);
-    } else {
-      setIsSaving(true);
-    }
+    setIsSaving(true);
     setSubmitError('');
     setSubmitSuccess('');
 
+    let savedVehicle: DriverVehicle | null = null;
+    let shouldRollbackCreatedVehicle = false;
+
     try {
       const payload = buildPayload();
-      const vehicle = isEditing && vehicleId
-        ? await updateDriverVehicle(vehicleId, payload)
+      const targetVehicleId =
+        isEditing && vehicleId
+          ? vehicleId
+          : flow === 'onboarding' && existingVehicle?.id
+            ? existingVehicle.id
+            : undefined;
+      const vehicle = targetVehicleId
+        ? await updateDriverVehicle(targetVehicleId, payload)
         : await createDriverVehicle(payload);
+      savedVehicle = vehicle;
+      shouldRollbackCreatedVehicle = !targetVehicleId;
       let documentResponse: DriverVehicleDocumentsResponse | null = null;
 
       const shouldUploadDocuments =
@@ -727,13 +731,8 @@ export default function VehicleInformationScreen() {
         });
       }
 
-      if (submitForReview && flow === 'onboarding') {
-        await submitDriverDocumentsForReview();
-        setSubmitSuccess('Vehicle saved and submitted for review.');
-        setTimeout(() => {
-          router.replace('/waiting-approval');
-        }, 500);
-        return;
+      if (flow === 'onboarding') {
+        await clearVehicleInformationDraft();
       }
 
       setSubmitSuccess(isEditing ? 'Vehicle updated successfully.' : 'Vehicle saved successfully.');
@@ -747,13 +746,31 @@ export default function VehicleInformationScreen() {
             );
           }
         } else {
-          const nextStep = documentResponse?.nextStep ?? 'WAITING_APPROVAL';
-          router.replace(
-            `/load-capacity?vehicleId=${vehicle.id}&flow=onboarding&nextStep=${nextStep}`,
-          );
+          router.replace(`/load-capacity?vehicleId=${vehicle.id}&flow=onboarding`);
         }
       }, 500);
     } catch (error) {
+      if (savedVehicle) {
+        try {
+          if (shouldRollbackCreatedVehicle) {
+            await deleteDriverVehicle(savedVehicle.id);
+          } else if (existingVehicle) {
+            await updateDriverVehicle(savedVehicle.id, buildRollbackPayload(existingVehicle));
+          }
+        } catch (rollbackError) {
+          const rollbackMessage =
+            rollbackError instanceof Error
+              ? rollbackError.message
+              : 'Rollback failed after the vehicle save error.';
+          setSubmitError(
+            `${error instanceof Error ? error.message : 'Failed to save vehicle.'} ` +
+              `The vehicle rollback also failed: ${rollbackMessage}`,
+          );
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const message = error instanceof Error ? error.message : 'Failed to save vehicle.';
       const normalized = message.toLowerCase();
 
@@ -770,16 +787,11 @@ export default function VehicleInformationScreen() {
       setSubmitError(message);
     } finally {
       setIsSaving(false);
-      setIsSubmittingReview(false);
     }
   };
 
   const onSaveVehicle = async (): Promise<void> => {
-    await saveVehicle(false);
-  };
-
-  const onSubmitForReview = async (): Promise<void> => {
-    await saveVehicle(true);
+    await saveVehicle();
   };
 
   const renderUploadCard = ({
@@ -869,7 +881,7 @@ export default function VehicleInformationScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
         <View style={styles.header}>
           <Text style={styles.progress}>
-            {flow === 'management' ? 'Vehicle Management' : 'Step 3 of 3: Vehicle Information'}
+            {flow === 'management' ? 'Vehicle Management' : 'Step 2 of 3: Vehicle Information'}
           </Text>
           <Text style={styles.title}>{isEditing ? 'Edit Vehicle' : 'Add Vehicle'}</Text>
           <Text style={styles.subtitle}>
@@ -1101,8 +1113,8 @@ export default function VehicleInformationScreen() {
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
         <Pressable
-          style={[styles.primaryButton, (isSaving || isSubmittingReview) && styles.buttonDisabled]}
-          disabled={isSaving || isSubmittingReview}
+          style={[styles.primaryButton, isSaving && styles.buttonDisabled]}
+          disabled={isSaving}
           onPress={() => void onSaveVehicle()}
         >
           {isSaving ? (
@@ -1113,23 +1125,10 @@ export default function VehicleInformationScreen() {
                 ? isEditing
                   ? 'Save Changes'
                   : 'Save Vehicle'
-                : 'Save Vehicle'}
+                : 'Next'}
             </Text>
           )}
         </Pressable>
-        {flow === 'onboarding' ? (
-          <Pressable
-            style={[styles.secondaryButton, (isSaving || isSubmittingReview) && styles.buttonDisabled]}
-            disabled={isSaving || isSubmittingReview}
-            onPress={() => void onSubmitForReview()}
-          >
-            {isSubmittingReview ? (
-              <ActivityIndicator color="#1D4ED8" />
-            ) : (
-              <Text style={styles.secondaryButtonText}>Submit for Review</Text>
-            )}
-          </Pressable>
-        ) : null}
       </ScrollView>
 
       {activeDateField ? (

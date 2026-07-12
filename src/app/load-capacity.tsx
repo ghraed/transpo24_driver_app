@@ -15,14 +15,20 @@ import {
 
 import { useAuth } from '@/context/auth-context';
 import {
-  getDriverMe,
+  getDriverDocumentsStatus,
+  getDriverVehicles,
   getDriverVehicle,
   getVehicleLoadCapacity,
   saveVehicleLoadCapacity,
+  submitDriverDocumentsForReview,
 } from '@/lib/api';
 import {
+  clearLoadCapacityDraft,
   clearLastOnboardingRoute,
+  clearOnboardingDocumentsStatus,
   persistLastOnboardingRoute,
+  persistLoadCapacityDraft,
+  readLoadCapacityDraft,
 } from '@/lib/auth-storage';
 import {
   CARGO_TYPE_OPTIONS,
@@ -35,6 +41,7 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
 import type {
+  DriverDocumentType,
   DriverVehicle,
   VehicleCargoType,
   VehicleLoadCapacity,
@@ -51,6 +58,57 @@ interface CapacityFormState {
   allowedCargoTypes: VehicleCargoType[];
   workingSchedule: WorkingDaySchedule[];
   isDefault: boolean;
+}
+
+function hasValidWorkingSchedule(workingSchedule: WorkingDaySchedule[]): boolean {
+  return ensureFullWorkingSchedule(workingSchedule).some(
+    (day) =>
+      day.isAvailable &&
+      day.timeRanges.some(
+        (range) => range.startTime.trim().length > 0 && range.endTime.trim().length > 0,
+      ),
+  );
+}
+
+const REQUIRED_VEHICLE_DOCUMENT_TYPES: DriverDocumentType[] = [
+  'VEHICLE_FRONT_PHOTO',
+  'VEHICLE_REAR_PHOTO',
+  'VEHICLE_SIDE_PHOTO',
+  'VEHICLE_LICENSE_PLATE_PHOTO',
+  'VEHICLE_REGISTRATION_FRONT',
+  'VEHICLE_REGISTRATION_BACK',
+  'VEHICLE_INSURANCE_DOCUMENT',
+];
+
+function hasCompleteVehicleDocuments(vehicle: DriverVehicle): boolean {
+  const eligibleTypes = new Set(
+    (vehicle.documents ?? [])
+      .filter((document) => document.status !== 'REJECTED')
+      .map((document) => document.type),
+  );
+
+  return REQUIRED_VEHICLE_DOCUMENT_TYPES.every((type) => eligibleTypes.has(type));
+}
+
+function hasCompleteLoadCapacityProfile(vehicle: DriverVehicle): boolean {
+  if (!vehicle.allowedCargoTypes?.length || !hasValidWorkingSchedule(vehicle.workingSchedule ?? [])) {
+    return false;
+  }
+
+  if (isCarCarrierVehicleType(vehicle.vehicleType)) {
+    return true;
+  }
+
+  return Boolean(
+    vehicle.capacityKg &&
+      vehicle.capacityKg > 0 &&
+      vehicle.lengthCm &&
+      vehicle.lengthCm > 0 &&
+      vehicle.widthCm &&
+      vehicle.widthCm > 0 &&
+      vehicle.heightCm &&
+      vehicle.heightCm > 0,
+  );
 }
 
 function toNumericInput(value?: number | null): string {
@@ -149,6 +207,7 @@ export default function LoadCapacityScreen() {
   const [loadError, setLoadError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
+  const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
 
   useEffect(() => {
     if (flow !== 'onboarding' || !vehicleId) return;
@@ -171,6 +230,8 @@ export default function LoadCapacityScreen() {
 
     try {
       const currentVehicle = await getDriverVehicle(vehicleId);
+      const draftRaw = flow === 'onboarding' ? await readLoadCapacityDraft() : null;
+      const draft = draftRaw ? (JSON.parse(draftRaw) as CapacityFormState) : null;
       let capacity: VehicleLoadCapacity | null = null;
 
       try {
@@ -184,7 +245,10 @@ export default function LoadCapacityScreen() {
 
       setVehicle(currentVehicle);
       setExistingCapacity(capacity);
-      setForm(buildFormState(currentVehicle, capacity));
+      const nextForm = draft
+        ? { ...buildFormState(currentVehicle, capacity), ...draft }
+        : buildFormState(currentVehicle, capacity);
+      setForm(nextForm);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load vehicle capacity.';
       const normalized = message.toLowerCase();
@@ -195,9 +259,15 @@ export default function LoadCapacityScreen() {
       }
       setLoadError(message);
     } finally {
+      setHasHydratedDraft(true);
       setIsLoading(false);
     }
   }, [router, signOut, vehicleId]);
+
+  useEffect(() => {
+    if (flow !== 'onboarding' || !hasHydratedDraft || !form) return;
+    void persistLoadCapacityDraft(JSON.stringify(form));
+  }, [flow, form, hasHydratedDraft]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -246,6 +316,10 @@ export default function LoadCapacityScreen() {
       errors.allowedCargoTypes = 'Select at least one allowed cargo type.';
     }
 
+    if (!hasValidWorkingSchedule(form.workingSchedule)) {
+      errors.workingSchedule = 'At least one working day with a valid time range is required.';
+    }
+
     return errors;
   }, [form, isCarCarrier, vehicle]);
 
@@ -279,6 +353,33 @@ export default function LoadCapacityScreen() {
     setSubmitSuccess('');
 
     try {
+      const previousSnapshot: VehicleLoadCapacityPayload = {
+        name: existingCapacity?.name ?? vehicle.loadProfileName ?? undefined,
+        maxLoadKg:
+          existingCapacity?.maxLoadKg ?? vehicle.capacityKg ?? undefined,
+        cargoLengthM:
+          existingCapacity?.cargoLengthM ??
+          (vehicle.lengthCm !== null && vehicle.lengthCm !== undefined
+            ? Number((vehicle.lengthCm / 100).toFixed(2))
+            : undefined),
+        cargoWidthM:
+          existingCapacity?.cargoWidthM ??
+          (vehicle.widthCm !== null && vehicle.widthCm !== undefined
+            ? Number((vehicle.widthCm / 100).toFixed(2))
+            : undefined),
+        cargoHeightM:
+          existingCapacity?.cargoHeightM ??
+          (vehicle.heightCm !== null && vehicle.heightCm !== undefined
+            ? Number((vehicle.heightCm / 100).toFixed(2))
+            : undefined),
+        dimensionsAreStandard:
+          existingCapacity?.dimensionsAreStandard ?? Boolean(vehicle.dimensionsAreStandard),
+        allowedCargoTypes: existingCapacity?.allowedCargoTypes ?? vehicle.allowedCargoTypes ?? [],
+        workingSchedule: ensureFullWorkingSchedule(
+          existingCapacity?.workingSchedule ?? vehicle.workingSchedule ?? [],
+        ),
+        isDefault: existingCapacity?.isDefault ?? Boolean(vehicle.isDefaultLoadProfile),
+      };
       const payload: VehicleLoadCapacityPayload = {
         name: form.name.trim() || undefined,
         maxLoadKg: parsePositiveNumber(form.maxLoadKg),
@@ -302,41 +403,48 @@ export default function LoadCapacityScreen() {
 
       const response = await saveVehicleLoadCapacity(vehicleId, payload);
       setExistingCapacity(response);
-      setSubmitSuccess(existingCapacity ? 'Load capacity updated successfully.' : 'Load capacity saved successfully.');
+      if (flow === 'onboarding') {
+        try {
+          const [documentsStatus, refreshedVehicle, refreshedVehicles] = await Promise.all([
+            getDriverDocumentsStatus(),
+            getDriverVehicle(vehicleId),
+            getDriverVehicles(),
+          ]);
+          const reviewVehicle =
+            refreshedVehicles.find((candidate) => candidate.id === vehicleId) ?? refreshedVehicle;
 
-      setTimeout(() => {
-        void (async () => {
-          try {
-            if (flow === 'onboarding') {
-              const driverState = await getDriverMe();
-              if (driverState.nextStep === 'HOME') {
-                await clearLastOnboardingRoute();
-                router.replace('/driver-home');
-                return;
-              }
-
-              const nextRoute =
-                driverState.nextStep === 'WAITING_APPROVAL'
-                  ? '/waiting-approval'
-                  : '/set-availability';
-              await persistLastOnboardingRoute(nextRoute);
-              router.replace(nextRoute);
-              return;
-            }
-
-            router.replace(returnTo);
-          } catch (error) {
-            const message =
-              error instanceof Error ? error.message : 'Failed to refresh onboarding state.';
-            const normalized = message.toLowerCase();
-            if (normalized.includes('unauthorized') || normalized.includes('token')) {
-              await signOut();
-              router.replace('/');
-              return;
-            }
-            setSubmitError(message);
+          if (documentsStatus.missingDocuments.length > 0) {
+            throw new Error(`Missing required documents: ${documentsStatus.missingDocuments.join(', ')}.`);
           }
-        })();
+
+          if (!hasCompleteVehicleDocuments(reviewVehicle)) {
+            throw new Error('The selected vehicle does not have all required documents.');
+          }
+
+          if (!hasCompleteLoadCapacityProfile(refreshedVehicle)) {
+            throw new Error('The selected vehicle does not have a complete load-capacity profile.');
+          }
+
+          await submitDriverDocumentsForReview();
+          await Promise.all([
+            clearLoadCapacityDraft(),
+            clearLastOnboardingRoute(),
+            clearOnboardingDocumentsStatus(),
+          ]);
+          setSubmitSuccess('Submitted for review successfully.');
+          setTimeout(() => {
+            router.replace('/waiting-approval');
+          }, 500);
+          return;
+        } catch (error) {
+          await saveVehicleLoadCapacity(vehicleId, previousSnapshot);
+          throw error;
+        }
+      }
+
+      setSubmitSuccess(existingCapacity ? 'Load capacity updated successfully.' : 'Load capacity saved successfully.');
+      setTimeout(() => {
+        router.replace(returnTo);
       }, 500);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save load capacity.';
@@ -486,6 +594,10 @@ export default function LoadCapacityScreen() {
           ) : null}
         </View>
 
+        {fieldErrors.workingSchedule ? (
+          <Text style={styles.errorText}>{fieldErrors.workingSchedule}</Text>
+        ) : null}
+
         <View style={styles.section}>
           <View style={styles.defaultRow}>
             <View style={styles.defaultTextWrap}>
@@ -515,7 +627,11 @@ export default function LoadCapacityScreen() {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.primaryButtonText}>
-              {existingCapacity ? 'Save Capacity Changes' : 'Save Load Capacity'}
+              {flow === 'onboarding'
+                ? 'Submit for Review'
+                : existingCapacity
+                  ? 'Save Capacity Changes'
+                  : 'Save Load Capacity'}
             </Text>
           )}
         </Pressable>

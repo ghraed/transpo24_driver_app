@@ -768,11 +768,16 @@ export async function deleteDriverVehicle(vehicleId: string): Promise<DriverVehi
     throw await parseError(response, 'Failed to deactivate driver vehicle.');
   }
 
-  const data = await parseJsonResponse<DriverVehicleDocumentsResponse>(
+  const data = await parseJsonResponse<DriverVehicleDocumentsResponse | DriverVehicle>(
     response,
     'Failed to parse deactivate vehicle response.',
   );
-  return normalizeDriverVehicle(data.vehicle);
+
+  if ('vehicle' in data && data.vehicle) {
+    return normalizeDriverVehicle(data.vehicle);
+  }
+
+  return normalizeDriverVehicle(data as DriverVehicle);
 }
 
 export async function activateDriverVehicle(vehicleId: string): Promise<DriverVehicle> {

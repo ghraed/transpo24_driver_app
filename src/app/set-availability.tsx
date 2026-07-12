@@ -148,8 +148,6 @@ export default function SetAvailabilityScreen() {
     driver,
     refreshDriverAvailability,
     saveDriverAvailability,
-    approveDriverForTesting,
-    refreshDriverMe,
     signOut,
   } = useAuth();
 
@@ -168,11 +166,9 @@ export default function SetAvailabilityScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isGettingLocation, setIsGettingLocation] = useState<boolean>(false);
-  const [isApprovingForTesting, setIsApprovingForTesting] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
-  const [approveDebugMessage, setApproveDebugMessage] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<SelectedBaseLocation | null>(null);
   const [addressQuery, setAddressQuery] = useState<string>('');
   const [mapRegion, setMapRegion] = useState<Region>(DEFAULT_MAP_REGION);
@@ -720,35 +716,6 @@ export default function SetAvailabilityScreen() {
     }
   };
 
-  const onApproveForTesting = async (): Promise<void> => {
-    if (isApprovingForTesting) return;
-    setSubmitError('');
-    setSubmitSuccess('');
-    setApproveDebugMessage('');
-    setIsApprovingForTesting(true);
-
-    try {
-      if (!isFormValid) {
-        setSubmitError('Fix availability form errors before approving for testing.');
-        return;
-      }
-      const response = await approveDriverForTesting();
-      setSubmitSuccess('Driver approved for testing.');
-      if (response.nextStep === 'HOME') {
-        await clearLastOnboardingRoute();
-        router.replace('/driver-home');
-        return;
-      }
-      router.replace(nextStepToRoute(response.nextStep));
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to approve driver in testing mode.';
-      setSubmitError(message);
-    } finally {
-      setIsApprovingForTesting(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -1044,30 +1011,6 @@ export default function SetAvailabilityScreen() {
           <Text style={styles.helper}>
             You can save availability now. Going online may be enabled after account approval.
           </Text>
-          <Pressable
-            style={[styles.testingApproveButton, isApprovingForTesting && styles.primaryButtonDisabled]}
-            onPress={() => void onApproveForTesting()}
-            disabled={isApprovingForTesting}
-          >
-            {isApprovingForTesting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.testingApproveButtonText}>Approve Driver (Testing)</Text>
-            )}
-          </Pressable>
-          <Text style={styles.workflowNoteTitle}>Real production workflow:</Text>
-          <Text style={styles.workflowNoteText}>
-            1) Driver completes profile. 2) Driver submits vehicle and required documents. 3) Admin/operations reviews documents. 4) Admin approves driver. 5) Driver can go online and receive requests.
-          </Text>
-          <Text style={styles.workflowNoteText}>
-            Testing mode: this red button skips admin review and marks the driver as approved.
-          </Text>
-          {approveDebugMessage ? (
-            <View style={styles.debugBox}>
-              <Text style={styles.debugTitle}>Temporary approve debug response:</Text>
-              <Text style={styles.debugText}>{approveDebugMessage}</Text>
-            </View>
-          ) : null}
         </View>
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}

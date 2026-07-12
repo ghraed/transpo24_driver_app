@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -257,142 +258,148 @@ export default function DriverHomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Driver Home</Text>
-        <Text style={styles.subtitle}>Welcome {driver?.firstName || user?.email || 'Driver'}.</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Driver Home</Text>
+          <Text style={styles.subtitle}>Welcome {driver?.firstName || user?.email || 'Driver'}.</Text>
 
-        <View style={styles.availabilityCard}>
-          <View style={styles.availabilityHeader}>
-            <View style={styles.availabilityCopy}>
-              <Text style={styles.availabilityTitle}>Set Availability</Text>
-              <Text style={styles.availabilitySubtitle}>
-                {isLoadingAvailability
-                  ? 'Loading online status...'
-                  : isOnline
-                    ? 'You are online and can receive matching requests.'
-                    : 'You are offline and will not receive new requests.'}
-              </Text>
+          <View style={styles.availabilityCard}>
+            <View style={styles.availabilityHeader}>
+              <View style={styles.availabilityCopy}>
+                <Text style={styles.availabilityTitle}>Set Availability</Text>
+                <Text style={styles.availabilitySubtitle}>
+                  {isLoadingAvailability
+                    ? 'Loading online status...'
+                    : isOnline
+                      ? 'You are online and can receive matching requests.'
+                      : 'You are offline and will not receive new requests.'}
+                </Text>
+              </View>
+              {isLoadingAvailability ? (
+                <ActivityIndicator size="small" color="#1D4ED8" />
+              ) : (
+                <Switch
+                  value={isOnline}
+                  onValueChange={(value) => void onToggleAvailability(value)}
+                  disabled={isUpdatingAvailability}
+                  trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                  thumbColor={isOnline ? '#1D4ED8' : '#FFFFFF'}
+                />
+              )}
             </View>
-            {isLoadingAvailability ? (
-              <ActivityIndicator size="small" color="#1D4ED8" />
-            ) : (
-              <Switch
-                value={isOnline}
-                onValueChange={(value) => void onToggleAvailability(value)}
-                disabled={isUpdatingAvailability}
-                trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-                thumbColor={isOnline ? '#1D4ED8' : '#FFFFFF'}
-              />
-            )}
+            {isUpdatingAvailability ? (
+              <Text style={styles.availabilityHint}>Updating availability...</Text>
+            ) : null}
+            {requiresAvailabilitySetup ? (
+              <Pressable
+                style={styles.setupAvailabilityButton}
+                onPress={() => router.push(nextStepToRoute('SET_AVAILABILITY'))}
+              >
+                <Text style={styles.setupAvailabilityButtonText}>Complete Availability Setup</Text>
+              </Pressable>
+            ) : null}
+            {availabilityError ? (
+              <Text style={styles.availabilityErrorText}>{availabilityError}</Text>
+            ) : null}
           </View>
-          {isUpdatingAvailability ? (
-            <Text style={styles.availabilityHint}>Updating availability...</Text>
-          ) : null}
-          {requiresAvailabilitySetup ? (
-            <Pressable
-              style={styles.setupAvailabilityButton}
-              onPress={() => router.push(nextStepToRoute('SET_AVAILABILITY'))}
-            >
-              <Text style={styles.setupAvailabilityButtonText}>Complete Availability Setup</Text>
-            </Pressable>
-          ) : null}
-          {availabilityError ? (
-            <Text style={styles.availabilityErrorText}>{availabilityError}</Text>
-          ) : null}
-        </View>
 
-        <DriverPayoutStatusCard
-          title="Payout Status"
-          tripId={latestPayoutJob?.requestId}
-          requestStatus={latestPayoutJob?.requestStatus}
-          amountLabel={
-            latestPayoutJob
-              ? formatMoney(
-                  latestPayoutJob.acceptedOffer.price,
-                  latestPayoutJob.acceptedOffer.currency,
-                )
-              : null
-          }
-          onOpenStripeConnect={() => router.push('/stripe-connect' as Href)}
-        />
-
-        {latestPayoutJob ? (
-          <Pressable
-            style={styles.payoutJobButton}
-            onPress={() =>
-              router.push({
-                pathname: '/accepted-job-details',
-                params: { requestId: latestPayoutJob.requestId },
-              })
+          <DriverPayoutStatusCard
+            title="Payout Status"
+            tripId={latestPayoutJob?.requestId}
+            requestStatus={latestPayoutJob?.requestStatus}
+            amountLabel={
+              latestPayoutJob
+                ? formatMoney(
+                    latestPayoutJob.acceptedOffer.price,
+                    latestPayoutJob.acceptedOffer.currency,
+                  )
+                : null
             }
-          >
-            <Text style={styles.payoutJobButtonText}>Open Latest Payout Job</Text>
+            onOpenStripeConnect={() => router.push('/stripe-connect' as Href)}
+          />
+
+          {latestPayoutJob ? (
+            <Pressable
+              style={styles.payoutJobButton}
+              onPress={() =>
+                router.push({
+                  pathname: '/accepted-job-details',
+                  params: { requestId: latestPayoutJob.requestId },
+                })
+              }
+            >
+              <Text style={styles.payoutJobButtonText}>Open Latest Payout Job</Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.payoutHintText}>
+              No delivered trip is waiting for payout release right now.
+            </Text>
+          )}
+
+          {payoutJobsError ? <Text style={styles.availabilityErrorText}>{payoutJobsError}</Text> : null}
+
+          <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
+            <Text style={styles.requestsButtonText}>Available Requests</Text>
           </Pressable>
-        ) : (
-          <Text style={styles.payoutHintText}>
-            No delivered trip is waiting for payout release right now.
-          </Text>
-        )}
 
-        {payoutJobsError ? <Text style={styles.availabilityErrorText}>{payoutJobsError}</Text> : null}
+          <Pressable style={styles.acceptedJobsButton} onPress={() => router.push('/accepted-jobs')}>
+            <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
+          </Pressable>
 
-        <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
-          <Text style={styles.requestsButtonText}>Available Requests</Text>
-        </Pressable>
+          <Pressable style={styles.vehiclesButton} onPress={() => router.push('/my-vehicles')}>
+            <Text style={styles.acceptedJobsButtonText}>My Vehicles</Text>
+          </Pressable>
 
-        <Pressable style={styles.acceptedJobsButton} onPress={() => router.push('/accepted-jobs')}>
-          <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
-        </Pressable>
+          <Pressable
+            style={styles.vehiclesButton}
+            onPress={() => router.push('/stripe-connect' as Href)}
+          >
+            <Text style={styles.acceptedJobsButtonText}>Stripe Connect (Payouts)</Text>
+          </Pressable>
 
-        <Pressable style={styles.vehiclesButton} onPress={() => router.push('/my-vehicles')}>
-          <Text style={styles.acceptedJobsButtonText}>My Vehicles</Text>
-        </Pressable>
+          {isLoadingVehicles ? (
+            <View style={styles.vehicleHintRow}>
+              <ActivityIndicator size="small" color="#1D4ED8" />
+              <Text style={styles.vehicleHintText}>Checking your vehicle status...</Text>
+            </View>
+          ) : !hasVehicles ? (
+            <Text style={styles.vehicleHintText}>
+              Add at least one vehicle to start receiving requests.
+            </Text>
+          ) : null}
 
-        <Pressable style={styles.vehiclesButton} onPress={() => router.push('/stripe-connect' as Href)}>
-          <Text style={styles.acceptedJobsButtonText}>Stripe Connect (Payouts)</Text>
-        </Pressable>
+          <Pressable style={styles.debugButton} onPress={() => router.push('/socket-debug' as Href)}>
+            <Text style={styles.acceptedJobsButtonText}>Socket Debug</Text>
+          </Pressable>
 
-        {isLoadingVehicles ? (
-          <View style={styles.vehicleHintRow}>
-            <ActivityIndicator size="small" color="#1D4ED8" />
-            <Text style={styles.vehicleHintText}>Checking your vehicle status...</Text>
-          </View>
-        ) : !hasVehicles ? (
-          <Text style={styles.vehicleHintText}>
-            Add at least one vehicle to start receiving requests.
-          </Text>
-        ) : null}
+          <Pressable
+            style={styles.testNotificationButton}
+            onPress={() => void onSendTestNotification()}
+            disabled={isSendingTestNotification}
+          >
+            <Text style={styles.acceptedJobsButtonText}>
+              {isSendingTestNotification
+                ? 'Sending Test Notification...'
+                : 'Send Test Notification to Raed'}
+            </Text>
+          </Pressable>
 
-        <Pressable style={styles.debugButton} onPress={() => router.push('/socket-debug' as Href)}>
-          <Text style={styles.acceptedJobsButtonText}>Socket Debug</Text>
-        </Pressable>
+          {testNotificationMessage ? (
+            <Text style={styles.testNotificationMessage}>{testNotificationMessage}</Text>
+          ) : null}
 
-        <Pressable
-          style={styles.testNotificationButton}
-          onPress={() => void onSendTestNotification()}
-          disabled={isSendingTestNotification}
-        >
-          <Text style={styles.acceptedJobsButtonText}>
-            {isSendingTestNotification
-              ? 'Sending Test Notification...'
-              : 'Send Test Notification to Raed'}
-          </Text>
-        </Pressable>
-
-        {testNotificationMessage ? (
-          <Text style={styles.testNotificationMessage}>{testNotificationMessage}</Text>
-        ) : null}
-
-        <Pressable style={styles.button} onPress={() => void onSignOut()}>
-          <Text style={styles.buttonText}>Logout</Text>
-        </Pressable>
-      </View>
+          <Pressable style={styles.button} onPress={() => void onSignOut()}>
+            <Text style={styles.buttonText}>Logout</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF', padding: 20 },
+  scrollContent: { paddingBottom: 24 },
   card: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
   subtitle: { color: '#475569' },
