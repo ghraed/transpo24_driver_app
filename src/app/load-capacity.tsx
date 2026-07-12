@@ -32,6 +32,7 @@ import {
 } from '@/lib/auth-storage';
 import {
   CARGO_TYPE_OPTIONS,
+  DAY_LABELS,
   createDefaultWorkingSchedule,
   ensureFullWorkingSchedule,
   formatCargoTypes,
@@ -41,6 +42,7 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
 import type {
+  DayOfWeek,
   DriverDocumentType,
   DriverVehicle,
   VehicleCargoType,
@@ -345,6 +347,58 @@ export default function LoadCapacityScreen() {
     });
   };
 
+  const onWorkingDayToggle = (dayOfWeek: DayOfWeek, isAvailable: boolean): void => {
+    setForm((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        workingSchedule: current.workingSchedule.map((day) =>
+          day.dayOfWeek === dayOfWeek
+            ? {
+                ...day,
+                isAvailable,
+                timeRanges: isAvailable
+                  ? day.timeRanges.length > 0
+                    ? day.timeRanges
+                    : [{ startTime: '08:00', endTime: '18:00' }]
+                  : [],
+              }
+            : day,
+        ),
+      };
+    });
+  };
+
+  const onWorkingRangeChange = (
+    dayOfWeek: DayOfWeek,
+    field: 'startTime' | 'endTime',
+    value: string,
+  ): void => {
+    setForm((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        workingSchedule: current.workingSchedule.map((day) => {
+          if (day.dayOfWeek !== dayOfWeek) return day;
+
+          const nextRanges =
+            day.timeRanges.length > 0
+              ? day.timeRanges.map((range, index) =>
+                  index === 0 ? { ...range, [field]: value } : range,
+                )
+              : [{ startTime: field === 'startTime' ? value : '', endTime: field === 'endTime' ? value : '' }];
+
+          return {
+            ...day,
+            timeRanges: nextRanges,
+          };
+        }),
+      };
+    });
+  };
+
   const onSave = async (): Promise<void> => {
     if (!vehicleId || !vehicle || !form || !isFormValid || isSaving) return;
 
@@ -594,9 +648,71 @@ export default function LoadCapacityScreen() {
           ) : null}
         </View>
 
-        {fieldErrors.workingSchedule ? (
-          <Text style={styles.errorText}>{fieldErrors.workingSchedule}</Text>
-        ) : null}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Working Schedule</Text>
+          <Text style={styles.helperText}>
+            Set at least one available day with working hours. These values are saved with the load
+            profile and used during admin review.
+          </Text>
+
+          {form.workingSchedule.map((day) => {
+            const primaryRange = day.timeRanges[0] ?? { startTime: '', endTime: '' };
+
+            return (
+              <View key={day.dayOfWeek} style={styles.dayCard}>
+                <View style={styles.dayHeader}>
+                  <View style={styles.dayTitleWrap}>
+                    <Text style={styles.dayTitle}>{DAY_LABELS[day.dayOfWeek]}</Text>
+                    <Text style={styles.helperText}>
+                      {day.isAvailable ? 'Available' : 'Unavailable'}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={day.isAvailable}
+                    onValueChange={(value) => onWorkingDayToggle(day.dayOfWeek, value)}
+                    trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
+                    thumbColor={day.isAvailable ? '#1D4ED8' : '#F8FAFC'}
+                  />
+                </View>
+
+                {day.isAvailable ? (
+                  <View style={styles.timeRangesWrap}>
+                    <View style={styles.timeRangeRow}>
+                      <View style={styles.timeFieldWrap}>
+                        <Text style={styles.smallLabel}>Start (HH:mm)</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={primaryRange.startTime}
+                          onChangeText={(value) =>
+                            onWorkingRangeChange(day.dayOfWeek, 'startTime', value)
+                          }
+                          placeholder="08:00"
+                          autoCapitalize="none"
+                        />
+                      </View>
+                      <View style={styles.timeFieldWrap}>
+                        <Text style={styles.smallLabel}>End (HH:mm)</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={primaryRange.endTime}
+                          onChangeText={(value) =>
+                            onWorkingRangeChange(day.dayOfWeek, 'endTime', value)
+                          }
+                          placeholder="18:00"
+                          autoCapitalize="none"
+                        />
+                      </View>
+                    </View>
+                  </View>
+                ) : null}
+              </View>
+            );
+          })}
+
+          {fieldErrors.workingSchedule ? (
+            <Text style={styles.errorText}>{fieldErrors.workingSchedule}</Text>
+          ) : null}
+        </View>
 
         <View style={styles.section}>
           <View style={styles.defaultRow}>
