@@ -515,6 +515,7 @@ export default function ChatScreen() {
     const translatedText = translatedMessages[item.id];
     const isShowingTranslation = Boolean(expandedTranslations[item.id] && translatedText);
     const isTranslating = Boolean(translatingMessageIds[item.id]);
+    const displayedBody = isShowingTranslation ? translatedText : item.body;
 
     return (
       <View style={[styles.messageRow, isDriverMessage ? styles.messageRowRight : styles.messageRowLeft]}>
@@ -523,7 +524,9 @@ export default function ChatScreen() {
           onPress={() => void translateMessage(item)}
           disabled={!item.body || isTranslating}
         >
-          {item.body ? <Text style={[styles.messageText, isDriverMessage && styles.driverMessageText]}>{item.body}</Text> : null}
+          {displayedBody ? (
+            <Text style={[styles.messageText, isDriverMessage && styles.driverMessageText]}>{displayedBody}</Text>
+          ) : null}
           {isTranslating ? (
             <Text style={[styles.translationHint, isDriverMessage && styles.driverTranslationHint]}>
               {t('Translating...')}
@@ -536,9 +539,11 @@ export default function ChatScreen() {
                   language: LANGUAGE_CONFIGS[language].nativeLabel,
                 })}
               </Text>
-              <Text style={[styles.translationText, isDriverMessage && styles.driverTranslationText]}>
-                {translatedText}
-              </Text>
+              {item.body ? (
+                <Text style={[styles.translationText, isDriverMessage && styles.driverTranslationText]}>
+                  {item.body}
+                </Text>
+              ) : null}
             </View>
           ) : null}
           <Text style={[styles.messageTime, isDriverMessage && styles.driverMessageTime]}>

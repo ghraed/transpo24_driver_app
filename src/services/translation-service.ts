@@ -75,7 +75,6 @@ export async function translateDynamicText({
   text,
   targetLanguage,
   sourceLanguage = DEFAULT_LANGUAGE,
-  context,
 }: TranslateTextRequest): Promise<string> {
   const trimmed = text.trim();
   if (!trimmed || targetLanguage === sourceLanguage) {
@@ -93,7 +92,6 @@ export async function translateDynamicText({
       text: trimmed,
       sourceLanguage,
       targetLanguage,
-      context,
     });
     const translated = readSingleTranslation(response, text);
     if (translated.trim()) {
@@ -133,25 +131,35 @@ export async function translateDynamicBatch({
 
   try {
     const response = await postJson<{
-      translations?: { key: string; translatedText?: string; translation?: string }[];
-      items?: { key: string; translatedText?: string; translation?: string }[];
+      translations?: { originalText?: string; translatedText?: string; translation?: string }[];
+      items?: { originalText?: string; translatedText?: string; translation?: string }[];
     }>('/translations/batch', {
-      items: missingItems,
+      texts: missingItems.map((item) => item.text),
       sourceLanguage,
       targetLanguage,
     });
 
     const entries = response.translations ?? response.items ?? [];
+    const pendingByText = new Map<string, string[]>();
+
+    for (const item of missingItems) {
+      const existingKeys = pendingByText.get(item.text) ?? [];
+      existingKeys.push(item.key);
+      pendingByText.set(item.text, existingKeys);
+    }
 
     for (const entry of entries) {
-      if (!entry?.key) continue;
       const translated = entry.translatedText ?? entry.translation;
+      const originalText = entry.originalText;
+      if (!originalText?.trim()) continue;
       if (!translated?.trim()) continue;
-      results[entry.key] = translated;
-      const original = missingItems.find((item) => item.key === entry.key)?.text;
-      if (original) {
-        await setCachedTranslation(buildCacheKey(sourceLanguage, targetLanguage, original), translated);
+
+      const keys = pendingByText.get(originalText) ?? [];
+      for (const key of keys) {
+        results[key] = translated;
       }
+
+      await setCachedTranslation(buildCacheKey(sourceLanguage, targetLanguage, originalText), translated);
     }
 
     return results;
