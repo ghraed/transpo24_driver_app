@@ -1,5 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -100,6 +101,7 @@ function resolveTransferDetails(
 
 export default function DriverTripCompletedScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<CompletedParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
   const deliveredAt = typeof params.deliveredAt === 'string' ? params.deliveredAt : null;
@@ -166,21 +168,21 @@ export default function DriverTripCompletedScreen() {
         } catch (error) {
           setTransferResult(null);
           setTransferError(
-            error instanceof Error ? error.message : 'Failed to release held trip funds.',
+            error instanceof Error ? error.message : t('Failed to release held trip funds.'),
           );
         } finally {
           setIsReleasing(false);
         }
       } catch (error) {
         setScreenError(
-          error instanceof Error ? error.message : 'Failed to load payout workflow.',
+          error instanceof Error ? error.message : t('Failed to load payout workflow.'),
         );
       } finally {
         setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [hasValidTripId, tripId],
+    [hasValidTripId, t, tripId],
   );
 
   useFocusEffect(
@@ -206,31 +208,37 @@ export default function DriverTripCompletedScreen() {
     isReleasing,
   );
   const payoutDetails = resolveTransferDetails(stripeStatus, transferResult);
+  const payoutDetailsText =
+    transferResult?.transferred && transferResult.stripeTransferId
+      ? t('Transfer reference: {{value}}', { value: transferResult.stripeTransferId })
+      : transferResult?.reason?.trim()
+        ? transferResult.reason.trim()
+        : t(payoutDetails);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Trip Delivered</Text>
-        <Text style={styles.subtitle}>Delivery confirmed successfully.</Text>
-        <Text style={styles.meta}>Trip ID: {hasValidTripId ? tripId : 'N/A'}</Text>
-        <Text style={styles.meta}>Delivered At: {formatTimestamp(deliveredAt)}</Text>
+        <Text style={styles.title}>{t('Trip Delivered')}</Text>
+        <Text style={styles.subtitle}>{t('Delivery confirmed successfully.')}</Text>
+        <Text style={styles.meta}>{t('Trip ID: {{value}}', { value: hasValidTripId ? tripId : 'N/A' })}</Text>
+        <Text style={styles.meta}>{t('Delivered At: {{value}}', { value: formatTimestamp(deliveredAt) })}</Text>
 
         <View style={styles.noticeCard}>
-          <Text style={styles.noticeTitle}>Held Funds Release</Text>
+          <Text style={styles.noticeTitle}>{t('Held Funds Release')}</Text>
           {isLoading ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color="#1D4ED8" />
-              <Text style={styles.loadingText}>Checking Stripe payout status...</Text>
+              <Text style={styles.loadingText}>{t('Checking Stripe payout status...')}</Text>
             </View>
           ) : (
             <>
-              <Text style={styles.noticeText}>{payoutHeadline}</Text>
-              <Text style={styles.noticeMeta}>{payoutDetails}</Text>
+              <Text style={styles.noticeText}>{t(payoutHeadline)}</Text>
+              <Text style={styles.noticeMeta}>{payoutDetailsText}</Text>
               <Text style={styles.statusMeta}>
-                Stripe payouts enabled: {stripeStatus?.payoutsEnabled ? 'Yes' : 'No'}
+                {t('Stripe payouts enabled')}: {stripeStatus?.payoutsEnabled ? t('Yes') : t('No')}
               </Text>
               <Text style={styles.statusMeta}>
-                Stripe account status: {normalizeAccountStatus(stripeStatus?.accountStatus ?? null)}
+                {t('Stripe account status')}: {normalizeAccountStatus(stripeStatus?.accountStatus ?? null)}
               </Text>
             </>
           )}
@@ -240,7 +248,7 @@ export default function DriverTripCompletedScreen() {
         {transferError ? <Text style={styles.errorText}>{transferError}</Text> : null}
         {!hasValidTripId ? (
           <Text style={styles.errorText}>
-            This trip id is invalid, so the app cannot request payout release safely.
+            {t('This trip id is invalid, so the app cannot request payout release safely.')}
           </Text>
         ) : null}
 
@@ -250,7 +258,7 @@ export default function DriverTripCompletedScreen() {
               style={styles.secondaryButton}
               onPress={() => router.push('/stripe-connect' as Href)}
             >
-              <Text style={styles.secondaryButtonText}>Open Stripe Connect</Text>
+              <Text style={styles.secondaryButtonText}>{t('Open Stripe Connect')}</Text>
             </Pressable>
           ) : null}
 
@@ -263,7 +271,7 @@ export default function DriverTripCompletedScreen() {
               {isReleasing ? (
                 <ActivityIndicator size="small" color="#1D4ED8" />
               ) : (
-                <Text style={styles.secondaryButtonText}>Release Held Funds</Text>
+                <Text style={styles.secondaryButtonText}>{t('Release Held Funds')}</Text>
               )}
             </Pressable>
           ) : null}
@@ -276,12 +284,12 @@ export default function DriverTripCompletedScreen() {
             {isRefreshing ? (
               <ActivityIndicator size="small" color="#1D4ED8" />
             ) : (
-              <Text style={styles.secondaryButtonText}>Refresh Payout Status</Text>
+              <Text style={styles.secondaryButtonText}>{t('Refresh Payout Status')}</Text>
             )}
           </Pressable>
 
           <Pressable style={styles.button} onPress={() => router.replace('/driver-home')}>
-            <Text style={styles.buttonText}>Back to Driver Home</Text>
+            <Text style={styles.buttonText}>{t('Back to Driver Home')}</Text>
           </Pressable>
         </View>
       </View>

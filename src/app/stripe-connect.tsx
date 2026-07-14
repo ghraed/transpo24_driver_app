@@ -1,5 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Linking,
@@ -20,6 +21,7 @@ import {
 
 export default function StripeConnectScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [status, setStatus] = useState<StripeConnectStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -34,11 +36,11 @@ export default function StripeConnectScreen() {
       const data = await getStripeConnectStatus();
       setStatus(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load Stripe Connect status.');
+      setError(err instanceof Error ? err.message : t('Failed to load Stripe Connect status.'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Auto-sync with Stripe when the screen gains focus (e.g. returning from
   // onboarding redirect). This picks up the latest account status from Stripe.
@@ -73,7 +75,7 @@ export default function StripeConnectScreen() {
       // Sync after returning from onboarding
       await loadStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create Stripe Connect account.');
+      setError(err instanceof Error ? err.message : t('Failed to create Stripe Connect account.'));
     } finally {
       setIsCreating(false);
     }
@@ -86,7 +88,7 @@ export default function StripeConnectScreen() {
       await syncStripeConnectAccount();
       await loadStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sync Stripe Connect account.');
+      setError(err instanceof Error ? err.message : t('Failed to sync Stripe Connect account.'));
     } finally {
       setIsSyncing(false);
     }
@@ -101,7 +103,7 @@ export default function StripeConnectScreen() {
         await Linking.openURL(result.url);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to open Stripe dashboard.');
+      setError(err instanceof Error ? err.message : t('Failed to open Stripe dashboard.'));
     } finally {
       setIsOpeningDashboard(false);
     }
@@ -113,38 +115,38 @@ export default function StripeConnectScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Stripe Connect</Text>
+        <Text style={styles.title}>{t('Stripe Connect')}</Text>
         <Text style={styles.subtitle}>
-          Set up your payout account to receive earnings directly to your bank account.
+          {t('Set up your payout account to receive earnings directly to your bank account.')}
         </Text>
       </View>
 
       {isLoading ? (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.loadingText}>{t('Loading')}</Text>
         </View>
       ) : (
         <View style={styles.content}>
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Account Created</Text>
+              <Text style={styles.statusLabel}>{t('Account Created')}</Text>
               <Text style={hasAccount ? styles.statusYes : styles.statusNo}>
-                {hasAccount ? 'Yes' : 'No'}
+                {hasAccount ? t('Yes') : t('No')}
               </Text>
             </View>
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Details Submitted</Text>
+              <Text style={styles.statusLabel}>{t('Details Submitted')}</Text>
               <Text
                 style={status?.detailsSubmitted ? styles.statusYes : styles.statusNo}
               >
-                {status?.detailsSubmitted ? 'Yes' : 'No'}
+                {status?.detailsSubmitted ? t('Yes') : t('No')}
               </Text>
             </View>
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Payouts Enabled</Text>
+              <Text style={styles.statusLabel}>{t('Payouts Enabled')}</Text>
               <Text style={isReady ? styles.statusYes : styles.statusNo}>
-                {isReady ? 'Yes' : 'No'}
+                {isReady ? t('Yes') : t('No')}
               </Text>
             </View>
           </View>
@@ -152,15 +154,13 @@ export default function StripeConnectScreen() {
           {isReady ? (
             <View style={styles.readyCard}>
               <Text style={styles.readyText}>
-                ✅ Your Stripe Connect account can receive payouts. When a delivery is
-                confirmed, held funds can be released to your connected payout account.
+                {t('Your Stripe Connect account can receive payouts. When a delivery is confirmed, held funds can be released to your connected payout account.')}
               </Text>
             </View>
           ) : (
             <View style={styles.warningCard}>
               <Text style={styles.warningText}>
-                ⚠️ You need to complete Stripe Connect onboarding to receive payouts.
-                Without this, your earnings will be held as pending.
+                {t('You need to complete Stripe Connect onboarding to receive payouts. Without this, your earnings will be held as pending.')}
               </Text>
             </View>
           )}
@@ -176,7 +176,7 @@ export default function StripeConnectScreen() {
               {isCreating ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.actionButtonText}>Create Stripe Account</Text>
+                <Text style={styles.actionButtonText}>{t('Create Stripe Account')}</Text>
               )}
             </Pressable>
           ) : !isReady ? (
@@ -188,7 +188,7 @@ export default function StripeConnectScreen() {
               {isCreating ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.actionButtonText}>Complete Onboarding</Text>
+                <Text style={styles.actionButtonText}>{t('Complete Onboarding')}</Text>
               )}
             </Pressable>
           ) : null}
@@ -202,7 +202,7 @@ export default function StripeConnectScreen() {
               {isSyncing ? (
                 <ActivityIndicator size="small" color="#2563EB" />
               ) : (
-                <Text style={styles.secondaryButtonText}>Refresh Status</Text>
+                <Text style={styles.secondaryButtonText}>{t('Refresh status')}</Text>
               )}
             </Pressable>
           ) : null}
@@ -216,13 +216,13 @@ export default function StripeConnectScreen() {
               {isOpeningDashboard ? (
                 <ActivityIndicator size="small" color="#0F172A" />
               ) : (
-                <Text style={styles.dashboardButtonText}>View Stripe Dashboard</Text>
+                <Text style={styles.dashboardButtonText}>{t('View Stripe Dashboard')}</Text>
               )}
             </Pressable>
           ) : null}
 
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
         </View>
       )}

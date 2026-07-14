@@ -1,5 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -100,6 +101,7 @@ function getNextActionLabel(status: DriverAcceptedJobDetailsResponse['requestSta
 
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
@@ -117,7 +119,7 @@ export default function AcceptedJobDetailsScreen() {
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId.trim()) {
-      setError('Missing request ID.');
+      setError(t('Missing request ID.'));
       setIsLoading(false);
       return;
     }
@@ -129,7 +131,7 @@ export default function AcceptedJobDetailsScreen() {
       const response = await getDriverAcceptedJobDetails(requestId);
       setDetails(response);
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'Failed to load accepted job details.';
+      const message = requestError instanceof Error ? requestError.message : t('Failed to load accepted job details.');
       const normalized = message.toLowerCase();
       if (
         normalized.includes('invalid or expired token') ||
@@ -144,7 +146,7 @@ export default function AcceptedJobDetailsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [requestId, router, signOut]);
+  }, [requestId, router, signOut, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -198,7 +200,7 @@ export default function AcceptedJobDetailsScreen() {
 
     setActiveMapLocation({
       title,
-      address: address?.trim() || 'Address unavailable',
+      address: address?.trim() || t('Address unavailable'),
       latitude: latitude as number,
       longitude: longitude as number,
     });
@@ -209,7 +211,7 @@ export default function AcceptedJobDetailsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.stateText}>Loading accepted job...</Text>
+          <Text style={styles.stateText}>{t('Loading accepted job...')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -219,9 +221,9 @@ export default function AcceptedJobDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredState}>
-          <Text style={styles.errorText}>{error || 'Accepted job not found.'}</Text>
+          <Text style={styles.errorText}>{error || t('Accepted job not found.')}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadDetails()}>
-            <Text style={styles.primaryButtonText}>Retry</Text>
+            <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -232,28 +234,28 @@ export default function AcceptedJobDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.successHeader}>
-          <Text style={styles.title}>Your offer was accepted</Text>
+          <Text style={styles.title}>{t('Your offer was accepted')}</Text>
           <Text style={styles.subtitle}>
             {isTerminalRequestStatus(details.requestStatus)
-              ? 'This request is completed and read-only.'
-              : 'Review the job details and get ready for pickup.'}
+              ? t('This request is completed and read-only.')
+              : t('Review the job details and get ready for pickup.')}
           </Text>
           <Text style={styles.offerPrice}>
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
-          <Text style={styles.metaText}>Accepted at: {formatDate(details.acceptedAt)}</Text>
+          <Text style={styles.metaText}>{t('Accepted at')}: {formatDate(details.acceptedAt)}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Request Progress</Text>
-          <Text style={styles.progressBadge}>{currentStageLabel}</Text>
+          <Text style={styles.sectionTitle}>{t('Request Progress')}</Text>
+          <Text style={styles.progressBadge}>{t(currentStageLabel)}</Text>
           <Text style={styles.metaText}>
-            Next action: {nextActionLabel ?? 'No next action available right now.'}
+            {t('Next action')}: {nextActionLabel ? t(nextActionLabel) : t('No next action available right now.')}
           </Text>
         </View>
 
         <DriverPayoutStatusCard
-          title="Trip Payout Status"
+          title={t('Trip Payout Status')}
           tripId={details.requestId}
           requestStatus={details.requestStatus}
           amountLabel={formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
@@ -261,40 +263,40 @@ export default function AcceptedJobDetailsScreen() {
         />
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Customer Summary</Text>
-          <Text style={styles.metaText}>Name: {details.customer?.firstName || 'N/A'}</Text>
+          <Text style={styles.sectionTitle}>{t('Customer Summary')}</Text>
+          <Text style={styles.metaText}>{t('Name')}: {details.customer?.firstName || 'N/A'}</Text>
           <Text style={styles.metaText}>
-            Phone: {details.customer?.phone || 'Contact details will appear when pickup starts.'}
+            {t('Phone')}: {details.customer?.phone || t('Contact details will appear when pickup starts.')}
           </Text>
           <Text style={styles.metaText}>
-            Rating:{' '}
+            {t('Rating')}:{' '}
             {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Offer Summary</Text>
+          <Text style={styles.sectionTitle}>{t('Offer Summary')}</Text>
           <Text style={styles.metaText}>
-            Price: {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
+            {t('Price')}: {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
-          <Text style={styles.metaText}>Estimated pickup: {formatDate(details.acceptedOffer.estimatedPickupAt)}</Text>
+          <Text style={styles.metaText}>{t('Estimated pickup')}: {formatDate(details.acceptedOffer.estimatedPickupAt)}</Text>
           <Text style={styles.metaText}>
-            Estimated delivery: {formatDate(details.acceptedOffer.estimatedDeliveryAt)}
+            {t('Estimated delivery')}: {formatDate(details.acceptedOffer.estimatedDeliveryAt)}
           </Text>
           <Text style={styles.metaText}>
-            Estimated duration:{' '}
+            {t('Estimated duration')}:{' '}
             {typeof details.acceptedOffer.estimatedDurationMinutes === 'number'
-              ? `${details.acceptedOffer.estimatedDurationMinutes} minutes`
+              ? t('{{count}} minutes', { count: details.acceptedOffer.estimatedDurationMinutes })
               : 'N/A'}
           </Text>
-          <Text style={styles.metaText}>Message: {details.acceptedOffer.message || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Message')}: {details.acceptedOffer.message || 'N/A'}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Pickup Location</Text>
-          <Text style={styles.metaText}>{details.pickup.address || 'Address unavailable'}</Text>
+          <Text style={styles.sectionTitle}>{t('Pickup Location')}</Text>
+          <Text style={styles.metaText}>{details.pickup.address || t('Address unavailable')}</Text>
           <Text style={styles.metaText}>
-            Coordinates: {details.pickup.latitude ?? '-'}, {details.pickup.longitude ?? '-'}
+            {t('Coordinates')}: {details.pickup.latitude ?? '-'}, {details.pickup.longitude ?? '-'}
           </Text>
           <Pressable
             style={[
@@ -302,19 +304,19 @@ export default function AcceptedJobDetailsScreen() {
               !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) && styles.disabledButton,
             ]}
             onPress={() =>
-              openMap('Pickup Location', details.pickup.address, details.pickup.latitude, details.pickup.longitude)
+              openMap(t('Pickup Location'), details.pickup.address, details.pickup.latitude, details.pickup.longitude)
             }
             disabled={!hasValidCoordinates(details.pickup.latitude, details.pickup.longitude)}
           >
-            <Text style={styles.secondaryButtonText}>Open Pickup in Maps</Text>
+            <Text style={styles.secondaryButtonText}>{t('Open Pickup in Maps')}</Text>
           </Pressable>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Dropoff Location</Text>
-          <Text style={styles.metaText}>{details.dropoff.address || 'Address unavailable'}</Text>
+          <Text style={styles.sectionTitle}>{t('Dropoff Location')}</Text>
+          <Text style={styles.metaText}>{details.dropoff.address || t('Address unavailable')}</Text>
           <Text style={styles.metaText}>
-            Coordinates: {details.dropoff.latitude ?? '-'}, {details.dropoff.longitude ?? '-'}
+            {t('Coordinates')}: {details.dropoff.latitude ?? '-'}, {details.dropoff.longitude ?? '-'}
           </Text>
           <Pressable
             style={[
@@ -322,11 +324,11 @@ export default function AcceptedJobDetailsScreen() {
               !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude) && styles.disabledButton,
             ]}
             onPress={() =>
-              openMap('Dropoff Location', details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
+              openMap(t('Dropoff Location'), details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
             }
             disabled={!hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)}
           >
-            <Text style={styles.secondaryButtonText}>Open Dropoff in Maps</Text>
+            <Text style={styles.secondaryButtonText}>{t('Open Dropoff in Maps')}</Text>
           </Pressable>
         </View>
 
@@ -334,42 +336,42 @@ export default function AcceptedJobDetailsScreen() {
           <Text style={styles.sectionTitle}>Schedule</Text>
           <Text style={styles.metaText}>
             {details.schedule.isImmediate
-              ? 'Immediate pickup'
-              : `Scheduled: ${formatDate(details.schedule.scheduledPickupAt)}`}
+              ? t('Immediate pickup')
+              : t('Scheduled: {{value}}', { value: formatDate(details.schedule.scheduledPickupAt) })}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Item Details</Text>
-          <Text style={styles.metaText}>Title: {details.itemDetails.title || details.item.title || 'N/A'}</Text>
-          <Text style={styles.metaText}>Type: {details.itemDetails.type || 'N/A'}</Text>
-          <Text style={styles.metaText}>Description: {details.itemDetails.description || 'N/A'}</Text>
+          <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
+          <Text style={styles.metaText}>{t('Title')}: {details.itemDetails.title || details.item.title || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Type')}: {details.itemDetails.type || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Description')}: {details.itemDetails.description || 'N/A'}</Text>
           <Text style={styles.metaText}>
-            Brand/Model/Year: {[details.itemDetails.brand, details.itemDetails.model, details.itemDetails.year]
+            {t('Brand/Model/Year')}: {[details.itemDetails.brand, details.itemDetails.model, details.itemDetails.year]
               .filter((value) => value !== null && value !== undefined && value !== '')
               .join(' / ') || 'N/A'}
           </Text>
-          <Text style={styles.metaText}>Condition: {details.itemDetails.condition || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Condition')}: {details.itemDetails.condition || 'N/A'}</Text>
           <Text style={styles.metaText}>
-            Weight: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : 'N/A'}
+            {t('Weight')}: {details.itemDetails.weightKg !== null ? t('{{value}} kg', { value: details.itemDetails.weightKg }) : 'N/A'}
           </Text>
           <Text style={styles.metaText}>
-            Dimensions: {details.itemDetails.dimensions.lengthCm ?? '-'} x{' '}
+            {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x{' '}
             {details.itemDetails.dimensions.widthCm ?? '-'} x {details.itemDetails.dimensions.heightCm ?? '-'} cm
           </Text>
           <Text style={styles.metaText}>
-            Loading help: {details.itemDetails.requiresLoadingHelp ? 'Yes' : 'No'}
+            {t('Loading help')}: {details.itemDetails.requiresLoadingHelp ? t('Yes') : t('No')}
             {details.itemDetails.requiresLoadingHelp && details.itemDetails.loadingWorkersCount
-              ? ` (${details.itemDetails.loadingWorkersCount} workers)`
+              ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount })
               : ''}
           </Text>
-          <Text style={styles.metaText}>Special instructions: {details.itemDetails.specialInstructions || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Special instructions')}: {details.itemDetails.specialInstructions || 'N/A'}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Photos</Text>
+          <Text style={styles.sectionTitle}>{t('Photos')}</Text>
           {details.photos.length === 0 ? (
-            <Text style={styles.metaText}>No photos added.</Text>
+            <Text style={styles.metaText}>{t('No photos added.')}</Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
@@ -404,7 +406,7 @@ export default function AcceptedJobDetailsScreen() {
                     <Text style={styles.mapModalAddress}>{activeMapLocation.address}</Text>
                   </View>
                   <Pressable style={styles.mapCloseButton} onPress={() => setActiveMapLocation(null)}>
-                    <Text style={styles.mapCloseButtonText}>Close</Text>
+                    <Text style={styles.mapCloseButtonText}>{t('Close')}</Text>
                   </Pressable>
                 </View>
 
@@ -430,7 +432,7 @@ export default function AcceptedJobDetailsScreen() {
                   </NativeMapView>
                 ) : (
                   <View style={styles.mapFallback}>
-                    <Text style={styles.mapFallbackText}>Map preview is unavailable on this platform.</Text>
+                    <Text style={styles.mapFallbackText}>{t('Map preview is unavailable on this platform.')}</Text>
                   </View>
                 )}
 
@@ -447,7 +449,7 @@ export default function AcceptedJobDetailsScreen() {
         <DriverChatButton
           transportRequestId={details.requestId}
           initialChatRoom={details.chatRoom}
-          label="Chat with client"
+          label={t('Chat with client')}
           showUnavailableState
           requestStatus={details.requestStatus}
         />
@@ -463,7 +465,7 @@ export default function AcceptedJobDetailsScreen() {
           }
           disabled={!canOpenExpenses}
         >
-          <Text style={styles.secondaryFooterButtonText}>Additional Expenses</Text>
+          <Text style={styles.secondaryFooterButtonText}>{t('Additional Expenses')}</Text>
         </Pressable>
         <Pressable
           style={[
@@ -487,7 +489,7 @@ export default function AcceptedJobDetailsScreen() {
           disabled={!canGoToPickup && !canGoToDropoff}
         >
           <Text style={styles.primaryActionButtonText}>
-            {canGoToDropoff ? 'Go to Dropoff Location' : 'Go to Pickup Location'}
+            {canGoToDropoff ? t('Go to Dropoff Location') : t('Go to Pickup Location')}
           </Text>
         </Pressable>
       </View>

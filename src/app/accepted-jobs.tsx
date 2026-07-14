@@ -1,5 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Pressable,
@@ -38,6 +39,7 @@ function formatMoney(price: number, currency: string): string {
 
 export default function AcceptedJobsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const [jobs, setJobs] = useState<DriverAcceptedJobSummary[]>([]);
   const [chatRoomsByRequestId, setChatRoomsByRequestId] = useState<Record<string, ChatRoom>>({});
@@ -71,7 +73,7 @@ export default function AcceptedJobsScreen() {
           ),
         );
       } catch (requestError) {
-        const message = requestError instanceof Error ? requestError.message : 'Failed to load accepted jobs.';
+        const message = requestError instanceof Error ? requestError.message : t('Failed to load accepted jobs.');
         const normalized = message.toLowerCase();
         if (
           normalized.includes('invalid or expired token') ||
@@ -88,7 +90,7 @@ export default function AcceptedJobsScreen() {
         setIsRefreshing(false);
       }
     },
-    [router, signOut],
+    [router, signOut, t],
   );
 
   useFocusEffect(
@@ -107,27 +109,27 @@ export default function AcceptedJobsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Accepted Jobs</Text>
-        <Text style={styles.subtitle}>Jobs where the customer accepted your offer.</Text>
+        <Text style={styles.title}>{t('Accepted Jobs')}</Text>
+        <Text style={styles.subtitle}>{t('Jobs where the customer accepted your offer.')}</Text>
       </View>
 
       {isLoading ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.stateText}>Loading accepted jobs...</Text>
+          <Text style={styles.stateText}>{t('Loading accepted jobs...')}</Text>
         </View>
       ) : error ? (
         <View style={styles.centeredState}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadJobs()}>
-            <Text style={styles.primaryButtonText}>Retry</Text>
+            <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
           </Pressable>
         </View>
       ) : !hasJobs ? (
         <View style={styles.centeredState}>
-          <Text style={styles.stateText}>No active accepted jobs.</Text>
+          <Text style={styles.stateText}>{t('No active accepted jobs.')}</Text>
           <Text style={styles.hintText}>
-            Delivered and completed requests are removed from this screen.
+            {t('Delivered and completed requests are removed from this screen.')}
           </Text>
         </View>
       ) : (
@@ -153,35 +155,35 @@ export default function AcceptedJobsScreen() {
                 }
               >
                 <View style={styles.cardTopRow}>
-                  <Text style={styles.serviceText}>{job.service?.nameEn || job.service?.key || 'Service'}</Text>
+                  <Text style={styles.serviceText}>{job.service?.nameEn || job.service?.key || t('Service')}</Text>
                   <View style={styles.cardTopMeta}>
                     {unreadCount > 0 ? (
                       <View style={styles.chatBadge}>
                         <Text style={styles.chatBadgeText}>
-                          {unreadCount > 99 ? '99+ new' : `${unreadCount} new`}
+                          {unreadCount > 99 ? t('99+ new') : t('{{count}} new', { count: unreadCount })}
                         </Text>
                       </View>
                     ) : null}
                     <View style={styles.acceptedBadge}>
-                      <Text style={styles.acceptedBadgeText}>Accepted</Text>
+                      <Text style={styles.acceptedBadgeText}>{t('Accepted')}</Text>
                     </View>
                   </View>
                 </View>
-                <Text style={styles.itemText}>{job.item.title || job.item.type || 'Transport item'}</Text>
-                <Text style={styles.metaText}>Pickup: {job.pickup.address || 'Address unavailable'}</Text>
-                <Text style={styles.metaText}>Dropoff: {job.dropoff.address || 'Address unavailable'}</Text>
+                <Text style={styles.itemText}>{job.item.title || job.item.type || t('Transport item')}</Text>
+                <Text style={styles.metaText}>{t('Pickup')}: {job.pickup.address || t('Address unavailable')}</Text>
+                <Text style={styles.metaText}>{t('Dropoff')}: {job.dropoff.address || t('Address unavailable')}</Text>
                 <Text style={styles.metaText}>
                   {job.schedule.isImmediate
-                    ? 'Immediate pickup'
-                    : `Scheduled: ${formatDate(job.schedule.scheduledPickupAt)}`}
+                    ? t('Immediate pickup')
+                    : t('Scheduled: {{value}}', { value: formatDate(job.schedule.scheduledPickupAt) })}
                 </Text>
                 <Text style={styles.metaText}>
-                  Offer: {formatMoney(job.acceptedOffer.price, job.acceptedOffer.currency)}
+                  {t('Offer')}: {formatMoney(job.acceptedOffer.price, job.acceptedOffer.currency)}
                 </Text>
-                <Text style={styles.metaText}>Accepted at: {formatDate(job.acceptedAt)}</Text>
+                <Text style={styles.metaText}>{t('Accepted at')}: {formatDate(job.acceptedAt)}</Text>
 
                 <View style={styles.cardButton}>
-                  <Text style={styles.cardButtonText}>View Job</Text>
+                  <Text style={styles.cardButtonText}>{t('View Job')}</Text>
                 </View>
               </Pressable>
             );

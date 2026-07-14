@@ -1,5 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   AppState,
@@ -35,6 +36,9 @@ import {
   sendChatMessageWithAck,
   waitForSocketConnection,
 } from '@/services/socketService';
+import { translateDynamicText } from '@/services/translation-service';
+import { LANGUAGE_CONFIGS, SUPPORTED_LANGUAGES, type AppLanguage } from '@/localization/languages';
+import { useAppLanguage } from '@/localization/provider';
 import type { ChatMessage, ChatMessageReadEventPayload, ChatRoom } from '@/types/chat';
 
 const FIRST_PAGE = 1;
@@ -129,8 +133,52 @@ function isAccessibleChatRoom(room: ChatRoom | null): room is ChatRoom {
   return Boolean(room && room.status === 'ACTIVE');
 }
 
+function normalizeComparableText(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function containsArabicCharacters(value: string): boolean {
+  return /[\u0600-\u06FF]/.test(value);
+}
+
+function containsSpanishMarkers(value: string): boolean {
+  return /[ñáéíóúü¡¿]/i.test(value);
+}
+
+function containsFrenchMarkers(value: string): boolean {
+  return /[àâæçéèêëîïôœùûüÿ]/i.test(value);
+}
+
+function containsGermanMarkers(value: string): boolean {
+  return /[äöüß]/i.test(value);
+}
+
+function buildSourceLanguageCandidates(text: string, targetLanguage: AppLanguage): AppLanguage[] {
+  const prioritized: AppLanguage[] = [];
+
+  if (containsArabicCharacters(text)) {
+    prioritized.push('ar');
+  } else {
+    if (containsSpanishMarkers(text)) prioritized.push('es');
+    if (containsFrenchMarkers(text)) prioritized.push('fr');
+    if (containsGermanMarkers(text)) prioritized.push('de');
+    prioritized.push('en');
+  }
+
+  for (const language of SUPPORTED_LANGUAGES) {
+    if (language === targetLanguage || prioritized.includes(language)) {
+      continue;
+    }
+    prioritized.push(language);
+  }
+
+  return prioritized.filter((language) => language !== targetLanguage);
+}
+
 export default function ChatScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { language } = useAppLanguage();
   const { accessToken, signOut, user } = useAuth();
   const params = useLocalSearchParams<ChatScreenParams>();
   const initialChatRoomId = typeof params.chatRoomId === 'string' ? params.chatRoomId.trim() : '';
@@ -161,12 +209,21 @@ export default function ChatScreen() {
   const [socketNotice, setSocketNotice] = useState<string>('');
   const [page, setPage] = useState<number>(FIRST_PAGE);
   const [hasMore, setHasMore] = useState<boolean>(false);
+  const [translatedMessages, setTranslatedMessages] = useState<Record<string, string>>({});
+  const [expandedTranslations, setExpandedTranslations] = useState<Record<string, boolean>>({});
+  const [translatingMessageIds, setTranslatingMessageIds] = useState<Record<string, boolean>>({});
   const lastReadAtRef = useRef<string | null>(null);
   const chatRoomRef = useRef<ChatRoom | null>(chatRoom);
 
   React.useEffect(() => {
     chatRoomRef.current = chatRoom;
   }, [chatRoom]);
+
+  useEffect(() => {
+    setTranslatedMessages({});
+    setExpandedTranslations({});
+    setTranslatingMessageIds({});
+  }, [language]);
 
   const resolveRoomAndMessages = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -180,14 +237,14 @@ export default function ChatScreen() {
         } else if (transportRequestId) {
           resolvedRoom = await getDriverChatRoomByTransportRequestId(transportRequestId);
         } else {
-          throw new Error('Missing chat room id or transport request id.');
+          throw new Error(t('Missing chat room id or transport request id.'));
         }
       }
 
       if (!isAccessibleChatRoom(resolvedRoom)) {
         setChatRoom(null);
         setMessages([]);
-        setScreenError('This chat is closed and no longer accessible.');
+        setScreenError(t('This chat is closed and no longer accessible.'));
         return;
       }
 
@@ -205,7 +262,7 @@ export default function ChatScreen() {
       setHasMore(Boolean(response.hasMore));
       setSendError('');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load chat.';
+      const message = error instanceof Error ? error.message : t('Failed to load chat.');
       if (isUnauthorizedTokenError(message) && !isChatAccessError(message)) {
         await signOut();
         router.replace('/');
@@ -215,7 +272,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [initialChatRoomId, router, signOut, transportRequestId]);
+  }, [initialChatRoomId, router, signOut, t, transportRequestId]);
 
   const markRead = useCallback(async (roomId: string): Promise<void> => {
     try {
@@ -230,12 +287,12 @@ export default function ChatScreen() {
         ),
       );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to mark messages as read.';
+      const message = error instanceof Error ? error.message : t('Failed to mark messages as read.');
       if (!isChatAccessError(message)) {
         setSocketNotice(message);
       }
     }
-  }, []);
+  }, [t]);
 
   const loadMoreMessages = useCallback(async (): Promise<void> => {
     if (!chatRoom || !hasMore || isLoadingMore) return;
@@ -248,11 +305,11 @@ export default function ChatScreen() {
       setPage(response.page ?? nextPage);
       setHasMore(Boolean(response.hasMore));
     } catch (error) {
-      setScreenError(error instanceof Error ? error.message : 'Failed to load older messages.');
+      setScreenError(error instanceof Error ? error.message : t('Failed to load older messages.'));
     } finally {
       setIsLoadingMore(false);
     }
-  }, [chatRoom, hasMore, isLoadingMore, page]);
+  }, [chatRoom, hasMore, isLoadingMore, page, t]);
 
   const applyReadEvent = useCallback((payload: ChatMessageReadEventPayload): void => {
     if (!payload.readAt) return;
@@ -275,12 +332,12 @@ export default function ChatScreen() {
   const sendMessage = useCallback(async (): Promise<void> => {
     const trimmedBody = inputValue.trim();
     if (!trimmedBody) {
-      setSendError('Enter a message before sending.');
+      setSendError(t('Enter a message before sending.'));
       return;
     }
 
     if (!isAccessibleChatRoom(chatRoom)) {
-      setSendError('This chat is closed and no longer accessible.');
+      setSendError(t('This chat is closed and no longer accessible.'));
       return;
     }
 
@@ -297,11 +354,11 @@ export default function ChatScreen() {
       setMessages((current) => mergeMessages(current, [response.message]));
       setInputValue('');
     } catch (error) {
-      setSendError(error instanceof Error ? error.message : 'Failed to send message.');
+      setSendError(error instanceof Error ? error.message : t('Failed to send message.'));
     } finally {
       setIsSending(false);
     }
-  }, [chatRoom, inputValue]);
+  }, [chatRoom, inputValue, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -350,18 +407,18 @@ export default function ChatScreen() {
           });
 
           unsubscribeDisconnect = onSocketDisconnect(() => {
-            setSocketNotice('Socket disconnected. Reconnecting...');
+            setSocketNotice(t('Socket disconnected. Reconnecting...'));
           });
 
           unsubscribeError = onSocketError((message) => {
-            setSocketNotice(message || 'Socket connection error.');
+            setSocketNotice(message || t('Socket connection error.'));
           });
 
           setSocketNotice('');
           void markRead(chatRoom.id);
         } catch (error) {
           if (!isActive) return;
-          setSocketNotice(error instanceof Error ? error.message : 'Socket connection failed.');
+          setSocketNotice(error instanceof Error ? error.message : t('Socket connection failed.'));
         }
       };
 
@@ -380,7 +437,7 @@ export default function ChatScreen() {
             )
             .then(() => markRead(chatRoom.id))
             .catch((error: unknown) => {
-              setSocketNotice(error instanceof Error ? error.message : 'Failed to reconnect chat.');
+              setSocketNotice(error instanceof Error ? error.message : t('Failed to reconnect chat.'));
             });
         }
       });
@@ -394,27 +451,100 @@ export default function ChatScreen() {
         appStateSubscription?.remove();
         leaveChatRoom(chatRoom.id);
       };
-    }, [accessToken, applyReadEvent, chatRoom, markRead]),
+    }, [accessToken, applyReadEvent, chatRoom, markRead, t]),
   );
 
   const canSend = useMemo(() => {
     return Boolean(isAccessibleChatRoom(chatRoom) && inputValue.trim()) && !isSending;
   }, [chatRoom, inputValue, isSending]);
 
+  const translateMessage = useCallback(async (message: ChatMessage): Promise<void> => {
+    const body = message.body?.trim() ?? '';
+    if (!body) {
+      return;
+    }
+
+    const existingTranslation = translatedMessages[message.id];
+    if (existingTranslation) {
+      setExpandedTranslations((current) => ({
+        ...current,
+        [message.id]: !current[message.id],
+      }));
+      return;
+    }
+
+    setTranslatingMessageIds((current) => ({ ...current, [message.id]: true }));
+
+    try {
+      const candidates = buildSourceLanguageCandidates(body, language);
+      let translated = body;
+
+      for (const sourceLanguage of candidates) {
+        const attempt = await translateDynamicText({
+          text: body,
+          sourceLanguage,
+          targetLanguage: language,
+          context: 'driver chat message',
+        });
+
+        if (normalizeComparableText(attempt) !== normalizeComparableText(body)) {
+          translated = attempt;
+          break;
+        }
+      }
+
+      setTranslatedMessages((current) => ({ ...current, [message.id]: translated }));
+      setExpandedTranslations((current) => ({
+        ...current,
+        [message.id]: normalizeComparableText(translated) !== normalizeComparableText(body),
+      }));
+    } finally {
+      setTranslatingMessageIds((current) => {
+        const next = { ...current };
+        delete next[message.id];
+        return next;
+      });
+    }
+  }, [language, translatedMessages]);
+
   const currentUserId = user?.id ?? '';
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isDriverMessage =
       item.senderRole === 'DRIVER' || (currentUserId ? item.senderId === currentUserId : false);
+    const translatedText = translatedMessages[item.id];
+    const isShowingTranslation = Boolean(expandedTranslations[item.id] && translatedText);
+    const isTranslating = Boolean(translatingMessageIds[item.id]);
 
     return (
       <View style={[styles.messageRow, isDriverMessage ? styles.messageRowRight : styles.messageRowLeft]}>
-        <View style={[styles.messageBubble, isDriverMessage ? styles.driverBubble : styles.clientBubble]}>
+        <Pressable
+          style={[styles.messageBubble, isDriverMessage ? styles.driverBubble : styles.clientBubble]}
+          onPress={() => void translateMessage(item)}
+          disabled={!item.body || isTranslating}
+        >
           {item.body ? <Text style={[styles.messageText, isDriverMessage && styles.driverMessageText]}>{item.body}</Text> : null}
+          {isTranslating ? (
+            <Text style={[styles.translationHint, isDriverMessage && styles.driverTranslationHint]}>
+              {t('Translating...')}
+            </Text>
+          ) : null}
+          {isShowingTranslation ? (
+            <View style={[styles.translationBlock, isDriverMessage && styles.driverTranslationBlock]}>
+              <Text style={[styles.translationLabel, isDriverMessage && styles.driverTranslationLabel]}>
+                {t('Translated to {{language}}', {
+                  language: LANGUAGE_CONFIGS[language].nativeLabel,
+                })}
+              </Text>
+              <Text style={[styles.translationText, isDriverMessage && styles.driverTranslationText]}>
+                {translatedText}
+              </Text>
+            </View>
+          ) : null}
           <Text style={[styles.messageTime, isDriverMessage && styles.driverMessageTime]}>
             {formatTime(item.createdAt)}
           </Text>
-        </View>
+        </Pressable>
       </View>
     );
   };
@@ -423,7 +553,7 @@ export default function ChatScreen() {
     return (
       <SafeAreaView style={styles.centeredState}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.stateText}>Loading chat...</Text>
+        <Text style={styles.stateText}>{t('Loading chat...')}</Text>
       </SafeAreaView>
     );
   }
@@ -433,7 +563,7 @@ export default function ChatScreen() {
       <SafeAreaView style={styles.centeredState}>
         <Text style={styles.errorText}>{screenError}</Text>
         <Pressable style={styles.retryButton} onPress={() => void resolveRoomAndMessages()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('Retry')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -442,7 +572,7 @@ export default function ChatScreen() {
   if (!chatRoom) {
     return (
       <SafeAreaView style={styles.centeredState}>
-        <Text style={styles.stateText}>{screenError || 'No chat room is available for this job.'}</Text>
+        <Text style={styles.stateText}>{screenError || t('No chat room is available for this job.')}</Text>
       </SafeAreaView>
     );
   }
@@ -454,11 +584,16 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Chat with client</Text>
-          <Text style={styles.subtitle}>Private room for this accepted job.</Text>
+          <Text style={styles.title}>{t('Chat with client')}</Text>
+          <Text style={styles.subtitle}>{t('Private room for this accepted job.')}</Text>
         </View>
 
         {socketNotice ? <Text style={styles.warningText}>{socketNotice}</Text> : null}
+        <Text style={styles.translationBanner}>
+          {t('Tap a message to translate it into {{language}}.', {
+            language: LANGUAGE_CONFIGS[language].nativeLabel,
+          })}
+        </Text>
 
         <FlatList
           data={messages}
@@ -473,15 +608,15 @@ export default function ChatScreen() {
                 disabled={isLoadingMore}
               >
                 <Text style={styles.loadMoreButtonText}>
-                  {isLoadingMore ? 'Loading older messages...' : 'Load older messages'}
+                  {isLoadingMore ? t('Loading older messages...') : t('Load older messages')}
                 </Text>
               </Pressable>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.stateText}>No messages yet.</Text>
-              <Text style={styles.emptyHint}>Start the conversation when the client needs an update.</Text>
+              <Text style={styles.stateText}>{t('No messages yet.')}</Text>
+              <Text style={styles.emptyHint}>{t('Start the conversation when the client needs an update.')}</Text>
             </View>
           }
         />
@@ -491,7 +626,7 @@ export default function ChatScreen() {
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
-            placeholder="Type a message"
+            placeholder={t('Type a message')}
             value={inputValue}
             onChangeText={setInputValue}
             editable={!isSending}
@@ -503,7 +638,7 @@ export default function ChatScreen() {
             onPress={() => void sendMessage()}
             disabled={!canSend}
           >
-            <Text style={styles.sendButtonText}>{isSending ? 'Sending...' : 'Send'}</Text>
+            <Text style={styles.sendButtonText}>{isSending ? t('Sending...') : t('Send')}</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -559,6 +694,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 12,
     color: '#92400E',
+    fontSize: 13,
+  },
+  translationBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    color: '#475569',
     fontSize: 13,
   },
   errorText: {
@@ -633,6 +774,41 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     fontSize: 15,
     lineHeight: 20,
+  },
+  translationHint: {
+    color: '#475569',
+    fontSize: 12,
+  },
+  driverTranslationHint: {
+    color: '#CCFBF1',
+  },
+  translationBlock: {
+    marginTop: 2,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#CBD5E1',
+    gap: 4,
+  },
+  driverTranslationBlock: {
+    borderTopColor: 'rgba(204,251,241,0.45)',
+  },
+  translationLabel: {
+    color: '#334155',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  driverTranslationLabel: {
+    color: '#CCFBF1',
+  },
+  translationText: {
+    color: '#0F172A',
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  driverTranslationText: {
+    color: '#FFFFFF',
   },
   driverMessageText: {
     color: '#FFFFFF',

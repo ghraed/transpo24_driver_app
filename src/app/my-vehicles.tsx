@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Pressable,
@@ -29,12 +30,19 @@ import type {
   VehicleReviewStatus,
 } from '@/types/auth';
 
-const STATUS_LABELS: Record<VehicleReviewStatus, string> = {
-  PENDING_REVIEW: 'Pending approval',
-  APPROVED: 'Approved',
-  REJECTED: 'Rejected',
-  INACTIVE: 'Inactive',
-};
+function getStatusLabel(status: VehicleReviewStatus, t: (key: string) => string): string {
+  switch (status) {
+    case 'APPROVED':
+      return t('Approved');
+    case 'REJECTED':
+      return t('Rejected');
+    case 'INACTIVE':
+      return t('Inactive');
+    case 'PENDING_REVIEW':
+    default:
+      return t('Pending approval');
+  }
+}
 
 function getStatusColor(status: VehicleReviewStatus | null): string {
   switch (status) {
@@ -50,14 +58,25 @@ function getStatusColor(status: VehicleReviewStatus | null): string {
   }
 }
 
-const VEHICLE_CONDITION_LABELS: Record<DriverVehicle['condition'], string> = {
-  EXCELLENT: 'Excellent',
-  GOOD: 'Good',
-  NEEDS_MAINTENANCE: 'Needs maintenance',
-};
+function getVehicleConditionLabel(
+  condition: DriverVehicle['condition'],
+  t: (key: string) => string,
+): string {
+  switch (condition) {
+    case 'EXCELLENT':
+      return t('Excellent');
+    case 'GOOD':
+      return t('Good');
+    case 'NEEDS_MAINTENANCE':
+      return t('Needs maintenance');
+    default:
+      return condition;
+  }
+}
 
 export default function MyVehiclesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { signOut } = useAuth();
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
@@ -85,7 +104,7 @@ export default function MyVehiclesScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : 'Failed to load your vehicles and service radius.';
+          : t('Failed to load your vehicles and service radius.');
       const normalized = message.toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
@@ -97,7 +116,7 @@ export default function MyVehiclesScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [router, signOut]);
+  }, [router, signOut, t]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -119,7 +138,7 @@ export default function MyVehiclesScreen() {
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to activate vehicle.',
+        error instanceof Error ? error.message : t('Failed to activate vehicle.'),
       );
     } finally {
       setIsMutatingId(null);
@@ -138,7 +157,7 @@ export default function MyVehiclesScreen() {
       );
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to approve vehicle in testing mode.',
+        error instanceof Error ? error.message : t('Failed to approve vehicle in testing mode.'),
       );
     } finally {
       setIsMutatingId(null);
@@ -154,9 +173,9 @@ export default function MyVehiclesScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.title}>My Vehicles</Text>
+          <Text style={styles.title}>{t('My Vehicles')}</Text>
           <Text style={styles.subtitle}>
-            Add at least one vehicle to start receiving requests.
+            {t('Add at least one vehicle to start receiving requests.')}
           </Text>
         </View>
 
@@ -164,32 +183,32 @@ export default function MyVehiclesScreen() {
           style={styles.primaryButton}
           onPress={() => router.push('/vehicle-information?flow=management')}
         >
-          <Text style={styles.primaryButtonText}>Add New Vehicle</Text>
+          <Text style={styles.primaryButtonText}>{t('Add New Vehicle')}</Text>
         </Pressable>
 
         <View style={styles.availabilityCard}>
           <View style={styles.availabilityHeader}>
             <View style={styles.availabilityCopy}>
-              <Text style={styles.availabilityTitle}>Service Radius</Text>
+              <Text style={styles.availabilityTitle}>{t('Service Radius')}</Text>
               <Text style={styles.availabilitySubtitle}>
-                Requests are matched against this radius from your base location.
+                {t('Requests are matched against this radius from your base location.')}
               </Text>
             </View>
             <Pressable
               style={styles.availabilityButton}
               onPress={() => router.push('/set-availability')}
             >
-              <Text style={styles.availabilityButtonText}>Edit Radius</Text>
+              <Text style={styles.availabilityButtonText}>{t('Edit Radius')}</Text>
             </Pressable>
           </View>
           <Text style={styles.availabilityValue}>
-            {availability ? `${availability.serviceRadiusKm} km` : 'Not set'}
+            {availability ? `${availability.serviceRadiusKm} km` : t('Not set')}
           </Text>
           <Text style={styles.metaText}>
-            Online: {availability?.isOnline ? 'Yes' : 'No'}
+            {t('Online')}: {availability?.isOnline ? t('Yes') : t('No')}
           </Text>
           <Text style={styles.metaText}>
-            Base location:{' '}
+            {t('Base location')}:{' '}
             {availability?.baseAddress?.trim()
               ? availability.baseAddress.trim()
               : availability?.baseLatitude !== null &&
@@ -206,7 +225,7 @@ export default function MyVehiclesScreen() {
             style={styles.secondaryActionButton}
             onPress={() => router.push('/manage-load-capacities')}
           >
-            <Text style={styles.secondaryActionButtonText}>Manage Load Capacities</Text>
+            <Text style={styles.secondaryActionButtonText}>{t('Manage Load Capacities')}</Text>
           </Pressable>
         ) : null}
 
@@ -215,19 +234,19 @@ export default function MyVehiclesScreen() {
         {isLoading ? (
           <View style={styles.centerState}>
             <ActivityIndicator size="large" color="#1D4ED8" />
-            <Text style={styles.helperText}>Loading your vehicles...</Text>
+            <Text style={styles.helperText}>{t('Loading your vehicles...')}</Text>
           </View>
         ) : vehicles.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No vehicles added yet</Text>
+            <Text style={styles.emptyTitle}>{t('No vehicles added yet')}</Text>
             <Text style={styles.helperText}>
-              Add your first vehicle so your account can be ready for transport requests.
+              {t('Add your first vehicle so your account can be ready for transport requests.')}
             </Text>
           </View>
         ) : (
           vehicles.map((vehicle) => {
             const vehicleStatus = vehicle.verificationStatus ?? vehicle.status;
-            const statusLabel = vehicleStatus ? STATUS_LABELS[vehicleStatus] : 'Pending review';
+            const statusLabel = vehicleStatus ? getStatusLabel(vehicleStatus, t) : t('Pending review');
             return (
               <View key={vehicle.id} style={styles.vehicleCard}>
                 <View style={styles.vehicleHeader}>
@@ -252,26 +271,26 @@ export default function MyVehiclesScreen() {
                 </View>
 
                 <Text style={styles.metaText}>
-                  Type: {VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType}
+                  {t('Type')}: {VEHICLE_TYPE_LABELS[vehicle.vehicleType] ?? vehicle.vehicleType}
                 </Text>
                 <Text style={styles.metaText}>
-                  License plate: {vehicle.licensePlateNumber}
+                  {t('License plate')}: {vehicle.licensePlateNumber}
                 </Text>
                 <Text style={styles.metaText}>
-                  Condition: {VEHICLE_CONDITION_LABELS[vehicle.condition] ?? vehicle.condition}
+                  {t('Condition')}: {getVehicleConditionLabel(vehicle.condition, t)}
                 </Text>
-                <Text style={styles.metaText}>Verification: {statusLabel}</Text>
+                <Text style={styles.metaText}>{t('Verification')}: {statusLabel}</Text>
                 <Text style={styles.metaText}>
-                  State: {vehicle.isActive ? 'Active' : 'Inactive'}
+                  {t('State')}: {vehicle.isActive ? t('Active') : t('Inactive')}
                 </Text>
                 <Text style={styles.metaText}>
-                  Load capacity: {getCapacityStatusLabel(vehicle)}
+                  {t('Load capacity')}: {getCapacityStatusLabel(vehicle) === 'Defined' ? t('Defined') : getCapacityStatusLabel(vehicle)}
                 </Text>
                 {getCapacityStatusLabel(vehicle) === 'Defined' ? (
                   <Text style={styles.metaText}>
-                    Capacity summary: {vehicle.loadProfileName?.trim() || 'Vehicle load profile'}
+                    {t('Capacity summary')}: {vehicle.loadProfileName?.trim() || t('Vehicle load profile')}
                     {' • '}
-                    {vehicle.capacityKg ? `${vehicle.capacityKg} kg` : 'Weight optional'}
+                    {vehicle.capacityKg ? `${vehicle.capacityKg} kg` : t('Weight optional')}
                     {' • '}
                     {formatDimensionsSummary(
                       Boolean(vehicle.dimensionsAreStandard),
@@ -288,11 +307,11 @@ export default function MyVehiclesScreen() {
                   </Text>
                 ) : null}
                 {vehicleStatus === 'PENDING_REVIEW' ? (
-                  <Text style={styles.pendingText}>Your vehicle is pending approval.</Text>
+                  <Text style={styles.pendingText}>{t('Your vehicle is pending approval.')}</Text>
                 ) : null}
                 {vehicleStatus === 'REJECTED' && vehicle.rejectionReason ? (
                   <Text style={styles.errorText}>
-                    Rejection reason: {vehicle.rejectionReason}
+                    {t('Rejection reason')}: {vehicle.rejectionReason}
                   </Text>
                 ) : null}
 
@@ -307,8 +326,8 @@ export default function MyVehiclesScreen() {
                   >
                     <Text style={styles.secondaryButtonText}>
                       {getCapacityStatusLabel(vehicle) === 'Defined'
-                        ? 'Edit Capacity'
-                        : 'Define Capacity'}
+                        ? t('Edit Capacity')
+                        : t('Define Capacity')}
                     </Text>
                   </Pressable>
                   <Pressable
@@ -317,7 +336,7 @@ export default function MyVehiclesScreen() {
                       router.push(`/vehicle-information?vehicleId=${vehicle.id}&flow=management`)
                     }
                   >
-                    <Text style={styles.secondaryButtonText}>Edit</Text>
+                    <Text style={styles.secondaryButtonText}>{t('Edit')}</Text>
                   </Pressable>
                   {!vehicle.isActive ? (
                     <Pressable
@@ -331,7 +350,7 @@ export default function MyVehiclesScreen() {
                       {isMutatingId === vehicle.id ? (
                         <ActivityIndicator color="#1D4ED8" />
                       ) : (
-                        <Text style={styles.secondaryButtonText}>Activate</Text>
+                        <Text style={styles.secondaryButtonText}>{t('Activate')}</Text>
                       )}
                     </Pressable>
                   ) : null}
@@ -348,7 +367,7 @@ export default function MyVehiclesScreen() {
                     {isMutatingId === vehicle.id ? (
                       <ActivityIndicator color="#FFFFFF" />
                     ) : (
-                      <Text style={styles.testingButtonText}>Approve Vehicle For Testing</Text>
+                      <Text style={styles.testingButtonText}>{t('Approve Vehicle For Testing')}</Text>
                     )}
                   </Pressable>
                 ) : null}

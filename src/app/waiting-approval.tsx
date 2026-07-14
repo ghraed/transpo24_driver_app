@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { nextStepToRoute } from '@/lib/onboarding-route';
 
 export default function WaitingApprovalScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { driver, refreshDriverMe, signOut } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
@@ -16,24 +18,24 @@ export default function WaitingApprovalScreen() {
   const statusCopy = useMemo(() => {
     if (driver?.status === 'REJECTED') {
       return {
-        title: 'Review Declined',
+        title: t('Review Declined'),
         subtitle:
-          'Your submission was declined by admin review. You can return to the login screen and try again later.',
+          t('Your submission was declined by admin review. You can return to the login screen and try again later.'),
       };
     }
 
     if (driver?.status === 'APPROVED') {
       return {
-        title: 'Approval Updated',
-        subtitle: 'Your account was approved. Refresh to continue to the next step.',
+        title: t('Approval Updated'),
+        subtitle: t('Your account was approved. Refresh to continue to the next step.'),
       };
     }
 
     return {
-      title: 'Waiting Approval',
-      subtitle: 'Your driver account is under admin review.',
+      title: t('Waiting Approval'),
+      subtitle: t('Your driver account is under admin review.'),
     };
-  }, [driver?.status]);
+  }, [driver?.status, t]);
 
   const handleRefreshStatus = async () => {
     if (isRefreshing) return;
@@ -48,7 +50,7 @@ export default function WaitingApprovalScreen() {
       }
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to refresh approval status.',
+        error instanceof Error ? error.message : t('Failed to refresh approval status.'),
       );
     } finally {
       setIsRefreshing(false);
@@ -65,7 +67,7 @@ export default function WaitingApprovalScreen() {
       await signOut();
       router.replace('/');
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to sign out.');
+      setErrorMessage(error instanceof Error ? error.message : t('Failed to sign out.'));
       setIsSigningOut(false);
     }
   };
@@ -75,7 +77,7 @@ export default function WaitingApprovalScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>{statusCopy.title}</Text>
         <Text style={styles.subtitle}>{statusCopy.subtitle}</Text>
-        <Text style={styles.statusText}>Current status: {driver?.status ?? 'PENDING_REVIEW'}</Text>
+        <Text style={styles.statusText}>{t('Current status')}: {driver?.status ?? 'PENDING_REVIEW'}</Text>
 
         <Pressable
           accessibilityRole="button"
@@ -92,7 +94,7 @@ export default function WaitingApprovalScreen() {
           {isRefreshing ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
-            <Text style={styles.primaryButtonText}>Refresh status</Text>
+            <Text style={styles.primaryButtonText}>{t('Refresh status')}</Text>
           )}
         </Pressable>
 
@@ -111,7 +113,7 @@ export default function WaitingApprovalScreen() {
           {isSigningOut ? (
             <ActivityIndicator color="#1D4ED8" size="small" />
           ) : (
-            <Text style={styles.secondaryButtonText}>Back to login</Text>
+            <Text style={styles.secondaryButtonText}>{t('Back to login')}</Text>
           )}
         </Pressable>
 

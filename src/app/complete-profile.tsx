@@ -1,6 +1,7 @@
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -91,6 +92,7 @@ function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
 
 export default function CompleteProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { driver, refreshDriverMe, saveDriverProfile, signOut } = useAuth();
   const testDefaults = useMemo(() => createTestCompleteProfileDefaults(), []);
 
@@ -172,7 +174,7 @@ export default function CompleteProfileScreen() {
       if (driver) {
         applyFormFromProfile(driver);
       } else {
-        const message = error instanceof Error ? error.message : 'Failed to load profile.';
+        const message = error instanceof Error ? error.message : t('Failed to load profile.');
         setLoadError(message);
       }
     } finally {
@@ -192,32 +194,32 @@ export default function CompleteProfileScreen() {
     const errors: Partial<Record<keyof CompleteDriverProfileForm, string>> = {};
 
     if (!form.fullNameOnId.trim() && !(driver?.fullNameOnId?.trim())) {
-      errors.fullNameOnId = 'Full name on ID is required.';
+      errors.fullNameOnId = t('Full name on ID is required.');
     }
     if (!form.idOrResidencyNumber.trim() && !(driver?.idOrResidencyNumberMasked?.trim())) {
-      errors.idOrResidencyNumber = 'ID or residency number is required.';
+      errors.idOrResidencyNumber = t('ID or residency number is required.');
     }
 
     if (!form.dateOfBirth.trim()) {
-      errors.dateOfBirth = 'Date of birth is required.';
+      errors.dateOfBirth = t('Date of birth is required.');
     } else {
       const parsed = new Date(form.dateOfBirth.trim());
       if (Number.isNaN(parsed.getTime())) {
-        errors.dateOfBirth = 'Date of birth must be a valid date (YYYY-MM-DD).';
+        errors.dateOfBirth = t('Date of birth must be a valid date (YYYY-MM-DD).');
       } else if (!isAtLeast18(form.dateOfBirth.trim())) {
-        errors.dateOfBirth = 'Driver must be at least 18 years old.';
+        errors.dateOfBirth = t('Driver must be at least 18 years old.');
       }
     }
 
     if (form.emergencyContactPhone.trim() && !PHONE_PATTERN.test(form.emergencyContactPhone.trim())) {
-      errors.emergencyContactPhone = 'Enter a valid emergency contact phone.';
+      errors.emergencyContactPhone = t('Enter a valid emergency contact phone.');
     }
 
     if (
       form.preferredLanguage.trim() &&
       !PREFERRED_LANGUAGES.has(form.preferredLanguage.trim().toLowerCase())
     ) {
-      errors.preferredLanguage = 'Preferred language must be one of: en, ar, de, fr, it.';
+      errors.preferredLanguage = t('Preferred language must be one of: en, ar, de, fr, it.');
     }
 
     return errors;
@@ -225,6 +227,7 @@ export default function CompleteProfileScreen() {
     driver?.fullNameOnId,
     driver?.idOrResidencyNumberMasked,
     form,
+    t,
   ]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
@@ -280,7 +283,7 @@ export default function CompleteProfileScreen() {
       const response = await saveDriverProfile(payload);
 
       if (response.nextStep === 'COMPLETE_PROFILE') {
-        setSubmitError('Complete the required fields highlighted below.');
+        setSubmitError(t('Complete the required fields highlighted below.'));
         return;
       }
 
@@ -290,7 +293,7 @@ export default function CompleteProfileScreen() {
 
       router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save profile.';
+      const message = error instanceof Error ? error.message : t('Failed to save profile.');
       const normalized = message.toLowerCase();
 
       if (
@@ -304,7 +307,7 @@ export default function CompleteProfileScreen() {
       }
 
       if (normalized.includes('already in use') && normalized.includes('phone')) {
-        setSubmitError('This phone number is already in use.');
+        setSubmitError(t('This phone number is already in use.'));
       } else if (normalized.includes('18')) {
         setSubmitError('Driver must be at least 18 years old.');
       } else {
@@ -343,23 +346,23 @@ export default function CompleteProfileScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/register')}>
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.progress}>Step 1 of 3: Profile</Text>
-          <Text style={styles.title}>Complete Your Profile</Text>
+          <Text style={styles.progress}>{t('Step 1 of 3: Profile')}</Text>
+          <Text style={styles.title}>{t('Complete Your Profile')}</Text>
           <Text style={styles.subtitle}>
-            Add your details so we can verify and prepare your driver account.
+            {t('Add your details so we can verify and prepare your driver account.')}
           </Text>
           <Text style={styles.helper}>
-            Your profile information helps us verify your account and assign suitable transport requests.
+            {t('Your profile information helps us verify your account and assign suitable transport requests.')}
           </Text>
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Full Name On ID</Text>
+          <Text style={styles.label}>{t('Full Name On ID')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Full name on ID"
+            placeholder={t('Full name on ID')}
             value={form.fullNameOnId}
             onChangeText={(value) => onChange('fullNameOnId', value)}
           />
@@ -367,10 +370,10 @@ export default function CompleteProfileScreen() {
         {hasAttemptedSubmit && fieldErrors.fullNameOnId ? <Text style={styles.errorText}>{fieldErrors.fullNameOnId}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>ID Or Residency Number</Text>
+          <Text style={styles.label}>{t('ID Or Residency Number')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="ID or residency number"
+            placeholder={t('ID or residency number')}
             value={form.idOrResidencyNumber}
             onChangeText={(value) => onChange('idOrResidencyNumber', value)}
           />
@@ -378,32 +381,32 @@ export default function CompleteProfileScreen() {
         {hasAttemptedSubmit && fieldErrors.idOrResidencyNumber ? <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Date Of Birth</Text>
+          <Text style={styles.label}>{t('Date Of Birth')}</Text>
           <Pressable style={styles.input} onPress={() => openDatePicker('dateOfBirth')}>
             <Text style={form.dateOfBirth ? styles.inputText : styles.placeholderText}>
-              {form.dateOfBirth || 'Select date of birth'}
+              {form.dateOfBirth || t('Select date of birth')}
             </Text>
           </Pressable>
         </View>
         {hasAttemptedSubmit && fieldErrors.dateOfBirth ? <Text style={styles.errorText}>{fieldErrors.dateOfBirth}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Address Line 1</Text>
-          <TextInput style={styles.input} placeholder="Address line 1" value={form.addressLine1} onChangeText={(value) => onChange('addressLine1', value)} />
+          <Text style={styles.label}>{t('Address Line 1')}</Text>
+          <TextInput style={styles.input} placeholder={t('Address line 1')} value={form.addressLine1} onChangeText={(value) => onChange('addressLine1', value)} />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Address Line 2</Text>
-          <TextInput style={styles.input} placeholder="Address line 2" value={form.addressLine2} onChangeText={(value) => onChange('addressLine2', value)} />
+          <Text style={styles.label}>{t('Address Line 2')}</Text>
+          <TextInput style={styles.input} placeholder={t('Address line 2')} value={form.addressLine2} onChangeText={(value) => onChange('addressLine2', value)} />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Postal Code</Text>
-          <TextInput style={styles.input} placeholder="Postal code" value={form.postalCode} onChangeText={(value) => onChange('postalCode', value)} />
+          <Text style={styles.label}>{t('Postal Code')}</Text>
+          <TextInput style={styles.input} placeholder={t('Postal code')} value={form.postalCode} onChangeText={(value) => onChange('postalCode', value)} />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Preferred Language</Text>
+          <Text style={styles.label}>{t('Preferred Language')}</Text>
           <Pressable
             style={styles.input}
             onPress={() => {
@@ -412,20 +415,20 @@ export default function CompleteProfileScreen() {
             }}
           >
             <Text style={selectedLanguageLabel ? styles.inputText : styles.placeholderText}>
-              {selectedLanguageLabel || 'Select preferred language'}
+              {selectedLanguageLabel || t('Select preferred language')}
             </Text>
           </Pressable>
         </View>
         {hasAttemptedSubmit && fieldErrors.preferredLanguage ? <Text style={styles.errorText}>{fieldErrors.preferredLanguage}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Emergency Contact Name</Text>
-          <TextInput style={styles.input} placeholder="Emergency contact name" value={form.emergencyContactName} onChangeText={(value) => onChange('emergencyContactName', value)} />
+          <Text style={styles.label}>{t('Emergency Contact Name')}</Text>
+          <TextInput style={styles.input} placeholder={t('Emergency contact name')} value={form.emergencyContactName} onChangeText={(value) => onChange('emergencyContactName', value)} />
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Emergency Contact Phone</Text>
-          <TextInput style={styles.input} placeholder="Emergency contact phone" keyboardType="phone-pad" value={form.emergencyContactPhone} onChangeText={(value) => onChange('emergencyContactPhone', value)} />
+          <Text style={styles.label}>{t('Emergency Contact Phone')}</Text>
+          <TextInput style={styles.input} placeholder={t('Emergency contact phone')} keyboardType="phone-pad" value={form.emergencyContactPhone} onChangeText={(value) => onChange('emergencyContactPhone', value)} />
         </View>
         {hasAttemptedSubmit && fieldErrors.emergencyContactPhone ? <Text style={styles.errorText}>{fieldErrors.emergencyContactPhone}</Text> : null}
 
@@ -436,10 +439,10 @@ export default function CompleteProfileScreen() {
           disabled={isSaving}
           onPress={() => void onContinue()}
         >
-          {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.continueButtonText}>Continue to Vehicle & Documents</Text>}
+          {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.continueButtonText}>{t('Continue to Vehicle & Documents')}</Text>}
         </Pressable>
 
-        {isSaving ? <Text style={styles.savingText}>Saving profile...</Text> : null}
+        {isSaving ? <Text style={styles.savingText}>{t('Saving profile...')}</Text> : null}
       </ScrollView>
       <Modal
         visible={isLanguageModalVisible}
@@ -454,15 +457,15 @@ export default function CompleteProfileScreen() {
           />
           <View style={styles.modalSheet}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Preferred Language</Text>
+              <Text style={styles.modalTitle}>{t('Select Preferred Language')}</Text>
               <Pressable onPress={() => setIsLanguageModalVisible(false)}>
-                <Text style={styles.modalCloseText}>Close</Text>
+                <Text style={styles.modalCloseText}>{t('Close')}</Text>
               </Pressable>
             </View>
 
             <TextInput
               style={styles.searchInput}
-              placeholder="Search language"
+              placeholder={t('Search language')}
               placeholderTextColor="#94A3B8"
               value={languageSearch}
               onChangeText={setLanguageSearch}
@@ -482,7 +485,7 @@ export default function CompleteProfileScreen() {
                 </Pressable>
               ))}
               {filteredLanguageOptions.length === 0 ? (
-                <Text style={styles.emptySelectorText}>No matching options found.</Text>
+                <Text style={styles.emptySelectorText}>{t('No matching options found.')}</Text>
               ) : null}
             </ScrollView>
           </View>

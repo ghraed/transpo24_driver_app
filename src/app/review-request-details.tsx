@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
@@ -54,6 +55,7 @@ function resolveAssetUrl(url: string): string {
 
 export default function ReviewRequestDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
 
@@ -65,7 +67,7 @@ export default function ReviewRequestDetailsScreen() {
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId) {
-      setError('Missing request ID.');
+      setError(t('Missing request ID.'));
       setIsLoading(false);
       return;
     }
@@ -77,12 +79,12 @@ export default function ReviewRequestDetailsScreen() {
       const response = await getDriverRequestDetails(requestId);
       setDetails(response);
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'Failed to load request details.';
+      const message = requestError instanceof Error ? requestError.message : t('Failed to load request details.');
       setError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [requestId]);
+  }, [requestId, t]);
 
   useEffect(() => {
     void loadDetails();
@@ -103,10 +105,10 @@ export default function ReviewRequestDetailsScreen() {
   const onIgnore = (): void => {
     if (!requestId || isBusy) return;
 
-    Alert.alert('Ignore this request?', 'You will stop seeing this request in your alerts.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('Ignore this request?'), t('You will stop seeing this request in your alerts.'), [
+      { text: t('Cancel'), style: 'cancel' },
       {
-        text: 'Ignore',
+        text: t('Ignore'),
         style: 'destructive',
         onPress: () => {
           void (async () => {
@@ -117,7 +119,7 @@ export default function ReviewRequestDetailsScreen() {
               router.replace('/receive-requests');
             } catch (requestError) {
               const message =
-                requestError instanceof Error ? requestError.message : 'Failed to ignore this request.';
+                requestError instanceof Error ? requestError.message : t('Failed to ignore this request.');
               setError(message);
             } finally {
               setIsBusy(false);
@@ -147,7 +149,7 @@ export default function ReviewRequestDetailsScreen() {
         },
       });
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'Failed to accept this request.';
+      const message = requestError instanceof Error ? requestError.message : t('Failed to accept this request.');
       setError(message);
     } finally {
       setIsBusy(false);
@@ -159,7 +161,7 @@ export default function ReviewRequestDetailsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.stateText}>Loading request details...</Text>
+          <Text style={styles.stateText}>{t('Loading request details...')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -171,7 +173,7 @@ export default function ReviewRequestDetailsScreen() {
         <View style={styles.centeredState}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadDetails()}>
-            <Text style={styles.primaryButtonText}>Retry</Text>
+            <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -182,7 +184,7 @@ export default function ReviewRequestDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredState}>
-          <Text style={styles.errorText}>Request not found.</Text>
+          <Text style={styles.errorText}>{t('Request not found.')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -193,82 +195,82 @@ export default function ReviewRequestDetailsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Request Details</Text>
-          <Text style={styles.subtitle}>Review the transport request before sending an offer.</Text>
+          <Text style={styles.subtitle}>{t('Review the transport request before sending an offer.')}</Text>
         </View>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         {requestUnavailableMessage ? <Text style={styles.warningText}>{requestUnavailableMessage}</Text> : null}
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Service</Text>
-          <Text style={styles.sectionValue}>{details.service?.nameEn || details.service?.key || 'Service'}</Text>
+          <Text style={styles.sectionTitle}>{t('Service')}</Text>
+          <Text style={styles.sectionValue}>{details.service?.nameEn || details.service?.key || t('Service')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Customer</Text>
+          <Text style={styles.sectionTitle}>{t('Customer')}</Text>
           <Text style={styles.sectionValue}>
-            {details.customer?.firstName || 'Customer details hidden until quote is accepted'}
+            {details.customer?.firstName || t('Customer details hidden until quote is accepted')}
           </Text>
           <Text style={styles.metaText}>
-            Rating: {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
+            {t('Rating')}: {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Pickup</Text>
+          <Text style={styles.sectionTitle}>{t('Pickup')}</Text>
           <Text style={styles.sectionValue}>
             {formatRoute(details.pickup.address, details.pickup.latitude, details.pickup.longitude)}
           </Text>
-          <Text style={styles.sectionTitleAlt}>Dropoff</Text>
+          <Text style={styles.sectionTitleAlt}>{t('Dropoff')}</Text>
           <Text style={styles.sectionValue}>
             {formatRoute(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Schedule</Text>
+          <Text style={styles.sectionTitle}>{t('Schedule')}</Text>
           <Text style={styles.sectionValue}>
             {details.schedule.isImmediate
-              ? 'Immediate pickup'
-              : `Scheduled: ${formatDate(details.schedule.scheduledPickupAt)}`}
+              ? t('Immediate pickup')
+              : t('Scheduled: {{value}}', { value: formatDate(details.schedule.scheduledPickupAt) })}
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Item Details</Text>
-          <Text style={styles.sectionValue}>{details.itemDetails.title || details.itemDetails.type || 'Item'}</Text>
+          <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
+          <Text style={styles.sectionValue}>{details.itemDetails.title || details.itemDetails.type || t('Item')}</Text>
           {details.itemDetails.description ? (
             <Text style={styles.metaText}>{details.itemDetails.description}</Text>
           ) : null}
-          <Text style={styles.metaText}>Type: {details.itemDetails.type || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Type')}: {details.itemDetails.type || 'N/A'}</Text>
           <Text style={styles.metaText}>
-            Brand/Model/Year: {[details.itemDetails.brand, details.itemDetails.model, details.itemDetails.year]
+            {t('Brand/Model/Year')}: {[details.itemDetails.brand, details.itemDetails.model, details.itemDetails.year]
               .filter((value) => value !== null && value !== undefined && value !== '')
               .join(' / ') || 'N/A'}
           </Text>
-          <Text style={styles.metaText}>Condition: {details.itemDetails.condition || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Condition')}: {details.itemDetails.condition || 'N/A'}</Text>
           <Text style={styles.metaText}>
-            Weight: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : 'N/A'}
+            {t('Weight')}: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : 'N/A'}
           </Text>
           <Text style={styles.metaText}>
-            Dimensions: {details.itemDetails.dimensions.lengthCm ?? '-'} x {details.itemDetails.dimensions.widthCm ?? '-'} x{' '}
+            {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x {details.itemDetails.dimensions.widthCm ?? '-'} x{' '}
             {details.itemDetails.dimensions.heightCm ?? '-'} cm
           </Text>
           <Text style={styles.metaText}>
-            Loading help: {details.itemDetails.requiresLoadingHelp ? 'Yes' : 'No'}
+            {t('Loading help')}: {details.itemDetails.requiresLoadingHelp ? t('Yes') : t('No')}
             {details.itemDetails.requiresLoadingHelp && details.itemDetails.loadingWorkersCount
-              ? ` (${details.itemDetails.loadingWorkersCount} workers)`
+              ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount })
               : ''}
           </Text>
           {details.itemDetails.specialInstructions ? (
-            <Text style={styles.metaText}>Special: {details.itemDetails.specialInstructions}</Text>
+            <Text style={styles.metaText}>{t('Special')}: {details.itemDetails.specialInstructions}</Text>
           ) : null}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Photos</Text>
+          <Text style={styles.sectionTitle}>{t('Photos')}</Text>
           {details.photos.length === 0 ? (
-            <Text style={styles.metaText}>No photos added.</Text>
+            <Text style={styles.metaText}>{t('No photos added.')}</Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
@@ -293,7 +295,7 @@ export default function ReviewRequestDetailsScreen() {
           onPress={onIgnore}
           disabled={isBusy}
         >
-          <Text style={styles.secondaryButtonText}>Ignore</Text>
+          <Text style={styles.secondaryButtonText}>{t('Ignore')}</Text>
         </Pressable>
         <Pressable
           style={[styles.primaryActionButton, (!canAccept || isBusy) ? styles.disabledButton : undefined]}
@@ -301,7 +303,7 @@ export default function ReviewRequestDetailsScreen() {
           disabled={!canAccept || isBusy}
         >
           <Text style={styles.primaryActionButtonText}>
-            {isBusy ? 'Please wait...' : 'Accept & Send Offer'}
+            {isBusy ? t('Please wait...') : t('Accept & Send Offer')}
           </Text>
         </Pressable>
       </View>
