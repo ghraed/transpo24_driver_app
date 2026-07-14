@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverPayoutStatusCard } from '@/components/driver-payout-status-card';
@@ -21,6 +22,9 @@ import {
   updateDriverOnlineStatus,
 } from '@/lib/api';
 import { clearLastOnboardingRoute } from '@/lib/auth-storage';
+import { formatCurrency } from '@/localization/format';
+import { LANGUAGE_CONFIGS, SUPPORTED_LANGUAGES } from '@/localization/languages';
+import { useAppLanguage } from '@/localization/provider';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import { connectSocket, disconnectSocket, onOfferAccepted } from '@/services/socketService';
 import type { DriverAvailabilityResponse, DriverAcceptedJobSummary } from '@/types/auth';
@@ -42,18 +46,6 @@ function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse)
   return availability.weeklySchedule.some((day) => day.isAvailable);
 }
 
-function formatMoney(price: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(price);
-  } catch {
-    return `${price.toFixed(2)} ${currency}`;
-  }
-}
-
 function pickLatestPayoutCandidate(jobs: DriverAcceptedJobSummary[]): DriverAcceptedJobSummary | null {
   const deliveredJobs = jobs.filter(
     (job) => job.requestStatus === 'DELIVERED' || job.requestStatus === 'COMPLETED',
@@ -73,18 +65,20 @@ function pickLatestPayoutCandidate(jobs: DriverAcceptedJobSummary[]): DriverAcce
 export default function DriverHomeScreen() {
   const testCustomerEmail = 'raed.ghanim.2014@gmail.com';
   const router = useRouter();
+  const { t } = useTranslation();
+  const { language, isChangingLanguage, setLanguage } = useAppLanguage();
   const { user, driver, signOut, accessToken } = useAuth();
-  const [hasVehicles, setHasVehicles] = useState<boolean>(true);
-  const [isLoadingVehicles, setIsLoadingVehicles] = useState<boolean>(true);
-  const [isOnline, setIsOnline] = useState<boolean>(false);
-  const [isLoadingAvailability, setIsLoadingAvailability] = useState<boolean>(true);
-  const [isUpdatingAvailability, setIsUpdatingAvailability] = useState<boolean>(false);
-  const [availabilityError, setAvailabilityError] = useState<string>('');
-  const [requiresAvailabilitySetup, setRequiresAvailabilitySetup] = useState<boolean>(false);
-  const [isSendingTestNotification, setIsSendingTestNotification] = useState<boolean>(false);
-  const [testNotificationMessage, setTestNotificationMessage] = useState<string>('');
+  const [hasVehicles, setHasVehicles] = useState(true);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
+  const [isOnline, setIsOnline] = useState(false);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(true);
+  const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [requiresAvailabilitySetup, setRequiresAvailabilitySetup] = useState(false);
+  const [isSendingTestNotification, setIsSendingTestNotification] = useState(false);
+  const [testNotificationMessage, setTestNotificationMessage] = useState('');
   const [acceptedJobs, setAcceptedJobs] = useState<DriverAcceptedJobSummary[]>([]);
-  const [payoutJobsError, setPayoutJobsError] = useState<string>('');
+  const [payoutJobsError, setPayoutJobsError] = useState('');
 
   useEffect(() => {
     void clearLastOnboardingRoute();
@@ -140,10 +134,13 @@ export default function DriverHomeScreen() {
       }
     };
 
-    void loadVehicles();
+    const timeoutId = setTimeout(() => {
+      void loadVehicles();
+    }, 0);
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -162,7 +159,7 @@ export default function DriverHomeScreen() {
       } catch (error) {
         if (isMounted) {
           setAvailabilityError(
-            error instanceof Error ? error.message : 'Failed to load availability.',
+            error instanceof Error ? error.message : t('Failed to load availability.'),
           );
         }
       } finally {
@@ -172,12 +169,15 @@ export default function DriverHomeScreen() {
       }
     };
 
-    void loadAvailability();
+    const timeoutId = setTimeout(() => {
+      void loadAvailability();
+    }, 0);
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
     };
-  }, []);
+  }, [t]);
 
   const loadAcceptedJobs = useCallback(async (): Promise<void> => {
     setPayoutJobsError('');
@@ -188,10 +188,10 @@ export default function DriverHomeScreen() {
     } catch (error) {
       setAcceptedJobs([]);
       setPayoutJobsError(
-        error instanceof Error ? error.message : 'Failed to load payout-eligible jobs.',
+        error instanceof Error ? error.message : t('Failed to load payout-eligible jobs.'),
       );
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -202,7 +202,7 @@ export default function DriverHomeScreen() {
   const onToggleAvailability = async (nextValue: boolean): Promise<void> => {
     if (isLoadingAvailability || isUpdatingAvailability) return;
     if (requiresAvailabilitySetup) {
-      setAvailabilityError('Set availability first before changing online status.');
+      setAvailabilityError(t('Set availability first before changing online status.'));
       router.push(nextStepToRoute('SET_AVAILABILITY'));
       return;
     }
@@ -216,7 +216,7 @@ export default function DriverHomeScreen() {
       setRequiresAvailabilitySetup(!hasCompletedAvailabilitySetup(response));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to update online status.';
+        error instanceof Error ? error.message : t('Failed to update online status.');
       setAvailabilityError(message);
 
       if (message.toLowerCase().includes('set availability first')) {
@@ -246,10 +246,12 @@ export default function DriverHomeScreen() {
 
     try {
       const response = await sendCustomerTestNotification(testCustomerEmail);
-      setTestNotificationMessage(`Test notification sent to ${response.email}.`);
+      setTestNotificationMessage(
+        t('Test notification sent to {{email}}.', { email: response.email }),
+      );
     } catch (error) {
       setTestNotificationMessage(
-        error instanceof Error ? error.message : 'Failed to send test notification.',
+        error instanceof Error ? error.message : t('Failed to send test notification.'),
       );
     } finally {
       setIsSendingTestNotification(false);
@@ -260,19 +262,50 @@ export default function DriverHomeScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
-          <Text style={styles.title}>Driver Home</Text>
-          <Text style={styles.subtitle}>Welcome {driver?.firstName || user?.email || 'Driver'}.</Text>
+          <Text style={styles.title}>{t('Driver Home')}</Text>
+          <Text style={styles.subtitle}>
+            {t('Welcome {{name}}.', { name: driver?.firstName || user?.email || t('Driver') })}
+          </Text>
+
+          <View style={styles.languageCard}>
+            <Text style={styles.availabilityTitle}>{t('Language')}</Text>
+            <Text style={styles.availabilitySubtitle}>
+              {t('Current language')}: {LANGUAGE_CONFIGS[language].nativeLabel}
+            </Text>
+            <View style={styles.languageList}>
+              {SUPPORTED_LANGUAGES.map((code) => {
+                const config = LANGUAGE_CONFIGS[code];
+                const selected = code === language;
+
+                return (
+                  <Pressable
+                    key={code}
+                    style={[styles.languageButton, selected && styles.languageButtonSelected]}
+                    onPress={() => void setLanguage(code)}
+                    disabled={isChangingLanguage}
+                  >
+                    <Text style={[styles.languageButtonText, selected && styles.languageButtonTextSelected]}>
+                      {config.nativeLabel}
+                    </Text>
+                    <Text style={[styles.languageButtonMeta, selected && styles.languageButtonTextSelected]}>
+                      {selected ? '✓' : config.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
           <View style={styles.availabilityCard}>
             <View style={styles.availabilityHeader}>
               <View style={styles.availabilityCopy}>
-                <Text style={styles.availabilityTitle}>Set Availability</Text>
+                <Text style={styles.availabilityTitle}>{t('Online status')}</Text>
                 <Text style={styles.availabilitySubtitle}>
                   {isLoadingAvailability
-                    ? 'Loading online status...'
+                    ? t('Loading online status...')
                     : isOnline
-                      ? 'You are online and can receive matching requests.'
-                      : 'You are offline and will not receive new requests.'}
+                      ? t('You are online and can receive matching requests.')
+                      : t('You are offline and will not receive new requests.')}
                 </Text>
               </View>
               {isLoadingAvailability ? (
@@ -288,14 +321,14 @@ export default function DriverHomeScreen() {
               )}
             </View>
             {isUpdatingAvailability ? (
-              <Text style={styles.availabilityHint}>Updating availability...</Text>
+              <Text style={styles.availabilityHint}>{t('Updating availability...')}</Text>
             ) : null}
             {requiresAvailabilitySetup ? (
               <Pressable
                 style={styles.setupAvailabilityButton}
                 onPress={() => router.push(nextStepToRoute('SET_AVAILABILITY'))}
               >
-                <Text style={styles.setupAvailabilityButtonText}>Complete Availability Setup</Text>
+                <Text style={styles.setupAvailabilityButtonText}>{t('Complete Availability Setup')}</Text>
               </Pressable>
             ) : null}
             {availabilityError ? (
@@ -304,12 +337,12 @@ export default function DriverHomeScreen() {
           </View>
 
           <DriverPayoutStatusCard
-            title="Payout Status"
+            title={t('Payout Status')}
             tripId={latestPayoutJob?.requestId}
             requestStatus={latestPayoutJob?.requestStatus}
             amountLabel={
               latestPayoutJob
-                ? formatMoney(
+                ? formatCurrency(
                     latestPayoutJob.acceptedOffer.price,
                     latestPayoutJob.acceptedOffer.currency,
                   )
@@ -328,48 +361,48 @@ export default function DriverHomeScreen() {
                 })
               }
             >
-              <Text style={styles.payoutJobButtonText}>Open Latest Payout Job</Text>
+              <Text style={styles.payoutJobButtonText}>{t('Open Latest Payout Job')}</Text>
             </Pressable>
           ) : (
             <Text style={styles.payoutHintText}>
-              No delivered trip is waiting for payout release right now.
+              {t('No delivered trip is waiting for payout release right now.')}
             </Text>
           )}
 
           {payoutJobsError ? <Text style={styles.availabilityErrorText}>{payoutJobsError}</Text> : null}
 
           <Pressable style={styles.requestsButton} onPress={() => router.push('/receive-requests')}>
-            <Text style={styles.requestsButtonText}>Available Requests</Text>
+            <Text style={styles.requestsButtonText}>{t('Available Requests button')}</Text>
           </Pressable>
 
           <Pressable style={styles.acceptedJobsButton} onPress={() => router.push('/accepted-jobs')}>
-            <Text style={styles.acceptedJobsButtonText}>Accepted Jobs</Text>
+            <Text style={styles.acceptedJobsButtonText}>{t('Accepted Jobs button')}</Text>
           </Pressable>
 
           <Pressable style={styles.vehiclesButton} onPress={() => router.push('/my-vehicles')}>
-            <Text style={styles.acceptedJobsButtonText}>My Vehicles</Text>
+            <Text style={styles.acceptedJobsButtonText}>{t('My Vehicles')}</Text>
           </Pressable>
 
           <Pressable
             style={styles.vehiclesButton}
             onPress={() => router.push('/stripe-connect' as Href)}
           >
-            <Text style={styles.acceptedJobsButtonText}>Stripe Connect (Payouts)</Text>
+            <Text style={styles.acceptedJobsButtonText}>{t('Stripe Connect (Payouts)')}</Text>
           </Pressable>
 
           {isLoadingVehicles ? (
             <View style={styles.vehicleHintRow}>
               <ActivityIndicator size="small" color="#1D4ED8" />
-              <Text style={styles.vehicleHintText}>Checking your vehicle status...</Text>
+              <Text style={styles.vehicleHintText}>{t('Checking your vehicle status...')}</Text>
             </View>
           ) : !hasVehicles ? (
             <Text style={styles.vehicleHintText}>
-              Add at least one vehicle to start receiving requests.
+              {t('Add at least one vehicle to start receiving requests.')}
             </Text>
           ) : null}
 
           <Pressable style={styles.debugButton} onPress={() => router.push('/socket-debug' as Href)}>
-            <Text style={styles.acceptedJobsButtonText}>Socket Debug</Text>
+            <Text style={styles.acceptedJobsButtonText}>{t('Socket Debug')}</Text>
           </Pressable>
 
           <Pressable
@@ -379,8 +412,8 @@ export default function DriverHomeScreen() {
           >
             <Text style={styles.acceptedJobsButtonText}>
               {isSendingTestNotification
-                ? 'Sending Test Notification...'
-                : 'Send Test Notification to Raed'}
+                ? t('Sending Test Notification...')
+                : t('Send Test Notification to Raed')}
             </Text>
           </Pressable>
 
@@ -389,7 +422,7 @@ export default function DriverHomeScreen() {
           ) : null}
 
           <Pressable style={styles.button} onPress={() => void onSignOut()}>
-            <Text style={styles.buttonText}>Logout</Text>
+            <Text style={styles.buttonText}>{t('Logout')}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -403,6 +436,33 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
   subtitle: { color: '#475569' },
+  languageCard: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    gap: 8,
+  },
+  languageList: { gap: 8 },
+  languageButton: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  languageButtonSelected: {
+    borderColor: '#1D4ED8',
+    backgroundColor: '#DBEAFE',
+  },
+  languageButtonText: { color: '#0F172A', fontWeight: '700' },
+  languageButtonMeta: { color: '#475569', fontSize: 12 },
+  languageButtonTextSelected: { color: '#1D4ED8' },
   availabilityCard: {
     marginTop: 8,
     borderWidth: 1,

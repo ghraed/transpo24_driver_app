@@ -3,6 +3,7 @@ import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 const PLACES_AUTOCOMPLETE_ENDPOINT =
   'https://maps.googleapis.com/maps/api/place/autocomplete/json';
 const PLACE_DETAILS_ENDPOINT = 'https://maps.googleapis.com/maps/api/place/details/json';
+const GEOCODE_ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json';
 
 type PlacesAutocompleteResponse = {
   predictions?: {
@@ -22,6 +23,19 @@ type PlaceDetailsResponse = {
         lng: number;
       };
     };
+  };
+  status?: string;
+  error_message?: string;
+};
+
+type GeocodeResponse = {
+  results?: {
+    formatted_address?: string;
+    place_id?: string;
+  }[];
+  plus_code?: {
+    compound_code?: string;
+    global_code?: string;
   };
   status?: string;
   error_message?: string;
@@ -132,4 +146,44 @@ export async function resolvePlaceFromQuery(input: string): Promise<ResolvedPlac
   }
 
   return resolvePlaceSuggestion(suggestions[0]);
+}
+
+export async function reverseGeocodeCoordinates(
+  latitude: number,
+  longitude: number,
+): Promise<ResolvedPlaceLocation | null> {
+  if (!GOOGLE_MAPS_API_KEY) {
+    throw new Error('Google Maps API key is missing.');
+  }
+
+  const params = new URLSearchParams({
+    latlng: `${latitude},${longitude}`,
+    key: GOOGLE_MAPS_API_KEY,
+  });
+
+  const response = await fetch(`${GEOCODE_ENDPOINT}?${params.toString()}`);
+  const payload = (await response.json()) as GeocodeResponse;
+
+  if (!response.ok) {
+    throw new Error(payload.error_message ?? 'Reverse geocoding request failed.');
+  }
+
+  if (payload.status && payload.status !== 'OK' && payload.status !== 'ZERO_RESULTS') {
+    throw new Error(payload.error_message ?? `Reverse geocoding returned ${payload.status}.`);
+  }
+
+  const firstResult = payload.results?.[0];
+  const fallbackAddress = payload.plus_code?.compound_code ?? payload.plus_code?.global_code ?? '';
+  const address = firstResult?.formatted_address ?? fallbackAddress;
+
+  if (!address) {
+    return null;
+  }
+
+  return {
+    latitude,
+    longitude,
+    address,
+    placeId: firstResult?.place_id ?? '',
+  };
 }

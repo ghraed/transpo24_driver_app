@@ -9,44 +9,50 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getDriverRequestAlerts } from '@/lib/api';
-import { connectSocket, onRequestDeleted } from '@/services/socketService';
 import { readAccessToken } from '@/lib/auth-storage';
+import { getDriverRequestAlerts } from '@/lib/api';
+import { formatDateTime, formatDistanceKm } from '@/localization/format';
+import { getRequestStatusLabel } from '@/lib/request-status-display';
+import { connectSocket, onRequestDeleted } from '@/services/socketService';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 
-function formatSchedule(isImmediate: boolean, scheduledPickupAt: string | null): string {
+function formatSchedule(
+  isImmediate: boolean,
+  scheduledPickupAt: string | null,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   if (isImmediate) {
-    return 'Immediate pickup';
+    return t('Immediate pickup');
   }
 
   if (!scheduledPickupAt) {
-    return 'Scheduled pickup';
+    return t('Scheduled pickup');
   }
 
-  const date = new Date(scheduledPickupAt);
-  if (Number.isNaN(date.getTime())) {
-    return 'Scheduled pickup';
-  }
-
-  return date.toLocaleString();
+  return formatDateTime(scheduledPickupAt);
 }
 
-function badgeLabel(alertStatus: DriverRequestAlertSummary['alertStatus']): string {
-  if (alertStatus === 'NEW') return 'New';
-  if (alertStatus === 'SEEN') return 'Seen';
-  if (alertStatus === 'ACCEPTED') return 'Accepted';
-  if (alertStatus === 'IGNORED') return 'Ignored';
-  return 'Expired';
+function badgeLabel(
+  alertStatus: DriverRequestAlertSummary['alertStatus'],
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (alertStatus === 'NEW') return t('New');
+  if (alertStatus === 'SEEN') return t('Seen');
+  if (alertStatus === 'ACCEPTED') return t('Accepted');
+  if (alertStatus === 'IGNORED') return t('Ignored');
+  return t('Expired');
 }
 
 export default function ReceiveRequestAlertsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState('');
 
   const loadAlerts = useCallback(async (refreshing = false): Promise<void> => {
     if (refreshing) {
@@ -60,13 +66,13 @@ export default function ReceiveRequestAlertsScreen() {
       const response = await getDriverRequestAlerts();
       setAlerts(response.alerts ?? []);
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : 'Failed to load alerts.';
+      const message = requestError instanceof Error ? requestError.message : t('Loading requests...');
       setError(message);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -98,28 +104,28 @@ export default function ReceiveRequestAlertsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Available Requests</Text>
+        <Text style={styles.title}>{t('Available Requests')}</Text>
         <Text style={styles.subtitle}>
-          Review new transport requests and choose which ones you want to quote.
+          {t('Review new transport requests and choose which ones you want to quote.')}
         </Text>
       </View>
 
       {isLoading ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.stateText}>Loading requests...</Text>
+          <Text style={styles.stateText}>{t('Loading requests...')}</Text>
         </View>
       ) : error ? (
         <View style={styles.centeredState}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadAlerts()}>
-            <Text style={styles.primaryButtonText}>Retry</Text>
+            <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
           </Pressable>
         </View>
       ) : !hasAlerts ? (
         <View style={styles.centeredState}>
-          <Text style={styles.stateText}>No available requests right now.</Text>
-          <Text style={styles.hintText}>Make sure you are online and your availability is active.</Text>
+          <Text style={styles.stateText}>{t('No available requests right now.')}</Text>
+          <Text style={styles.hintText}>{t('Make sure you are online and your availability is active.')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -140,26 +146,27 @@ export default function ReceiveRequestAlertsScreen() {
               }
             >
               <View style={styles.cardTopRow}>
-                <Text style={styles.serviceText}>{alert.service?.nameEn || alert.service?.key || 'Service'}</Text>
+                <Text style={styles.serviceText}>
+                  {alert.service?.nameEn || alert.service?.key || t('Service')}
+                </Text>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{badgeLabel(alert.alertStatus)}</Text>
+                  <Text style={styles.badgeText}>{badgeLabel(alert.alertStatus, t)}</Text>
                 </View>
               </View>
 
-              <Text style={styles.itemText}>{alert.item.title || alert.item.type || 'Transport request'}</Text>
-              <Text style={styles.routeText}>Pickup: {alert.pickup.address || 'Coordinates unavailable'}</Text>
-              <Text style={styles.routeText}>Dropoff: {alert.dropoff.address || 'Coordinates unavailable'}</Text>
+              <Text style={styles.itemText}>{alert.item.title || alert.item.type || t('Transport request')}</Text>
+              <Text style={styles.routeText}>{t('Pickup')}: {alert.pickup.address || t('Coordinates unavailable')}</Text>
+              <Text style={styles.routeText}>{t('Dropoff')}: {alert.dropoff.address || t('Coordinates unavailable')}</Text>
               <Text style={styles.metaText}>
-                {formatSchedule(alert.schedule.isImmediate, alert.schedule.scheduledPickupAt)}
+                {formatSchedule(alert.schedule.isImmediate, alert.schedule.scheduledPickupAt, t)}
               </Text>
               <Text style={styles.metaText}>
-                {typeof alert.distanceKm === 'number'
-                  ? `Distance: ${alert.distanceKm.toFixed(1)} km`
-                  : 'Distance: Not available'}
+                {t('Distance')}: {typeof alert.distanceKm === 'number' ? formatDistanceKm(alert.distanceKm) : t('Not available')}
               </Text>
+              <Text style={styles.metaText}>{getRequestStatusLabel(alert.requestStatus)}</Text>
 
               <View style={styles.reviewButton}>
-                <Text style={styles.reviewButtonText}>Review Details</Text>
+                <Text style={styles.reviewButtonText}>{t('Review Details')}</Text>
               </View>
             </Pressable>
           ))}
@@ -261,21 +268,20 @@ const styles = StyleSheet.create({
     color: '#1D4ED8',
   },
   itemText: {
-    fontSize: 15,
+    color: '#0F172A',
     fontWeight: '600',
-    color: '#1E293B',
   },
   routeText: {
-    fontSize: 13,
     color: '#334155',
+    fontSize: 13,
   },
   metaText: {
-    fontSize: 12,
     color: '#64748B',
+    fontSize: 12,
   },
   reviewButton: {
-    marginTop: 8,
-    backgroundColor: '#0EA5E9',
+    marginTop: 6,
+    backgroundColor: '#2563EB',
     borderRadius: 10,
     minHeight: 40,
     alignItems: 'center',
@@ -283,7 +289,6 @@ const styles = StyleSheet.create({
   },
   reviewButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: '700',
   },
 });

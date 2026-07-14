@@ -1,9 +1,10 @@
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
-import { isTerminalRequestStatus } from '@/lib/request-status';
 import { useDriverChatRoom } from '@/hooks/useDriverChatRoom';
+import { isTerminalRequestStatus } from '@/lib/request-status';
 import type { RequestStatus } from '@/types/auth';
 import type { ChatRoom } from '@/types/chat';
 
@@ -19,12 +20,13 @@ type DriverChatButtonProps = {
 export function DriverChatButton({
   transportRequestId,
   initialChatRoom,
-  label = 'Chat with client',
+  label,
   fullWidth = true,
   showUnavailableState = false,
   requestStatus,
 }: DriverChatButtonProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const chatDisabled = isTerminalRequestStatus(requestStatus);
   const {
     chatRoom,
@@ -52,7 +54,7 @@ export function DriverChatButton({
             } as unknown as Href)
           }
         >
-          <Text style={styles.buttonText}>{label}</Text>
+          <Text style={styles.buttonText}>{label || t('Chat with client')}</Text>
           {typeof chatRoom.unreadCount === 'number' && chatRoom.unreadCount > 0 ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}</Text>
@@ -61,19 +63,19 @@ export function DriverChatButton({
         </Pressable>
       ) : isLoadingChatRoom ? (
         <View style={styles.loadingState}>
-          <Text style={styles.loadingText}>Checking chat availability...</Text>
+          <Text style={styles.loadingText}>{t('Checking chat availability...')}</Text>
         </View>
       ) : chatRoomError ? (
         <View style={styles.errorState}>
           <Text style={styles.errorText}>{chatRoomError}</Text>
           <Pressable style={styles.retryButton} onPress={() => void refreshChatRoom()}>
-            <Text style={styles.retryButtonText}>Retry chat</Text>
+            <Text style={styles.retryButtonText}>{t('Retry chat')}</Text>
           </Pressable>
         </View>
       ) : showUnavailableState ? (
         <View style={styles.unavailableButton}>
           <Text style={styles.unavailableButtonText}>
-            {chatDisabled ? 'Chat closed after delivery' : 'Chat unavailable'}
+            {chatDisabled ? t('Chat closed after delivery') : t('Chat unavailable')}
           </Text>
         </View>
       ) : null}

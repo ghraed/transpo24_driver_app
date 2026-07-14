@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import {
   getStripeConnectStatus,
@@ -9,6 +10,7 @@ import {
   type RetryTransferResponse,
   type StripeConnectStatusResponse,
 } from '@/lib/api';
+import { getRequestStatusLabel } from '@/lib/request-status-display';
 import type { RequestStatus } from '@/types/auth';
 import { isValidTripId } from '@/utils/deliveryValidation';
 
@@ -52,99 +54,14 @@ function resolveStatusTone(params: {
   return 'info';
 }
 
-function resolveHeadline(params: {
-  stripeStatus: StripeConnectStatusResponse | null;
-  requestStatus?: RequestStatus | null;
-  transferResult: RetryTransferResponse | null;
-  transferError: string;
-  isReleasing: boolean;
-  hasValidTripId: boolean;
-}): string {
-  const { stripeStatus, requestStatus, transferResult, transferError, isReleasing, hasValidTripId } =
-    params;
-
-  if (isReleasing) {
-    return 'Releasing held funds to your Stripe payout account...';
-  }
-
-  if (requestStatus && !isTripAwaitingPayout(requestStatus)) {
-    return 'Payout is not available for this trip yet.';
-  }
-
-  if (!stripeStatus?.stripeAccountId) {
-    return 'Funds stay held until you create a Stripe Connect payout account.';
-  }
-
-  if (!stripeStatus.payoutsEnabled) {
-    return 'Funds are held because Stripe payouts are not enabled yet.';
-  }
-
-  if (transferResult?.transferred) {
-    return 'Held funds were released successfully to your Stripe-connected payout account.';
-  }
-
-  if (transferError) {
-    return 'The last payout release attempt for this trip failed.';
-  }
-
-  if (transferResult && !transferResult.transferred) {
-    return 'Stripe did not create a new payout release for this trip.';
-  }
-
-  if (hasValidTripId) {
-    return 'Held funds are ready to release for this delivered trip.';
-  }
-
-  return 'Your payout account is ready. Delivered trips can be released from here.';
-}
-
-function resolveDetails(params: {
-  stripeStatus: StripeConnectStatusResponse | null;
-  requestStatus?: RequestStatus | null;
-  transferResult: RetryTransferResponse | null;
-  transferError: string;
-  hasValidTripId: boolean;
-}): string {
-  const { stripeStatus, requestStatus, transferResult, transferError, hasValidTripId } = params;
-
-  if (requestStatus && !isTripAwaitingPayout(requestStatus)) {
-    return 'This trip must reach Delivered or Completed before payout release is available.';
-  }
-
-  if (!stripeStatus?.stripeAccountId) {
-    return 'Create your Stripe Connect account first, then come back to release held trip funds.';
-  }
-
-  if (!stripeStatus.payoutsEnabled) {
-    return 'Complete Stripe onboarding and enable payouts before held funds can be released.';
-  }
-
-  if (transferResult?.transferred && transferResult.stripeTransferId) {
-    return `Transfer reference: ${transferResult.stripeTransferId}`;
-  }
-
-  if (transferResult?.reason?.trim()) {
-    return transferResult.reason.trim();
-  }
-
-  if (transferError) {
-    return transferError;
-  }
-
-  if (hasValidTripId) {
-    return 'The app will only request payout release when the trip is payout-eligible and Stripe payouts are ready.';
-  }
-
-  return 'No delivered trip is currently selected for release in this summary.';
-}
-
 export function DriverPayoutStatusCard({
-  title = 'Payout Status',
+  title,
   tripId,
   requestStatus,
   amountLabel,
   onOpenStripeConnect,
 }: DriverPayoutStatusCardProps) {
+  const { t } = useTranslation();
   const normalizedTripId = tripId?.trim() ?? '';
   const hasValidTripId = isValidTripId(normalizedTripId);
   const isEligibleForRelease = hasValidTripId && isTripAwaitingPayout(requestStatus);
@@ -153,7 +70,6 @@ export function DriverPayoutStatusCard({
   const [transferResult, setTransferResult] = useState<RetryTransferResponse | null>(null);
   const [screenError, setScreenError] = useState('');
   const [transferError, setTransferError] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
 
@@ -168,7 +84,6 @@ export function DriverPayoutStatusCard({
       if (silent) {
         setIsRefreshing(true);
       } else {
-        setIsLoading(true);
       }
 
       setScreenError('');
@@ -182,7 +97,6 @@ export function DriverPayoutStatusCard({
             await syncStripeConnectAccount();
             currentStripeStatus = await getStripeConnectStatus();
           } catch {
-            // Keep cached account status if sync fails.
           }
         }
 
@@ -209,21 +123,20 @@ export function DriverPayoutStatusCard({
         } catch (error) {
           setTransferResult(null);
           setTransferError(
-            error instanceof Error ? error.message : 'Failed to release held trip funds.',
+            error instanceof Error ? error.message : t('Failed to release held trip funds.'),
           );
         } finally {
           setIsReleasing(false);
         }
       } catch (error) {
         setScreenError(
-          error instanceof Error ? error.message : 'Failed to load payout status.',
+          error instanceof Error ? error.message : t('Failed to load payout status.'),
         );
       } finally {
-        setIsLoading(false);
         setIsRefreshing(false);
       }
     },
-    [isEligibleForRelease, normalizedTripId],
+    [isEligibleForRelease, normalizedTripId, t],
   );
 
   useFocusEffect(
@@ -231,14 +144,6 @@ export function DriverPayoutStatusCard({
       void loadWorkflow({ attemptRelease: false, silent: false });
     }, [loadWorkflow]),
   );
-
-  const handleRefresh = async () => {
-    await loadWorkflow({ attemptRelease: false, silent: true });
-  };
-
-  const handleRelease = async () => {
-    await loadWorkflow({ attemptRelease: true, silent: true });
-  };
 
   const tone = resolveStatusTone({
     stripeStatus,
@@ -248,187 +153,136 @@ export function DriverPayoutStatusCard({
     isReleasing,
   });
 
-  const payoutHeadline = resolveHeadline({
-    stripeStatus,
-    requestStatus,
-    transferResult,
-    transferError,
-    isReleasing,
-    hasValidTripId,
-  });
+  const headline = isReleasing
+    ? t('Releasing held funds to your Stripe payout account...')
+    : requestStatus && !isTripAwaitingPayout(requestStatus)
+      ? t('Payout is not available for this trip yet.')
+      : !stripeStatus?.stripeAccountId
+        ? t('Funds stay held until you create a Stripe Connect payout account.')
+        : !stripeStatus.payoutsEnabled
+          ? t('Funds are held because Stripe payouts are not enabled yet.')
+          : transferResult?.transferred
+            ? t('Held funds were released successfully to your Stripe-connected payout account.')
+            : transferError
+              ? t('The last payout release attempt for this trip failed.')
+              : transferResult && !transferResult.transferred
+                ? t('Stripe did not create a new payout release for this trip.')
+                : hasValidTripId
+                  ? t('Held funds are ready to release for this delivered trip.')
+                  : t('Your payout account is ready. Delivered trips can be released from here.');
 
-  const payoutDetails = resolveDetails({
-    stripeStatus,
-    requestStatus,
-    transferResult,
-    transferError,
-    hasValidTripId,
-  });
+  const details = requestStatus && !isTripAwaitingPayout(requestStatus)
+    ? t('This trip must reach Delivered or Completed before payout release is available.')
+    : !stripeStatus?.stripeAccountId
+      ? t('Create your Stripe Connect account first, then come back to release held trip funds.')
+      : !stripeStatus.payoutsEnabled
+        ? t('Complete Stripe onboarding and enable payouts before held funds can be released.')
+        : transferResult?.transferred && transferResult.stripeTransferId
+          ? `${t('Request')}: ${transferResult.stripeTransferId}`
+          : transferResult?.reason?.trim()
+            ? transferResult.reason.trim()
+            : transferError
+              ? transferError
+              : hasValidTripId
+                ? t('The app will only request payout release when the trip is payout-eligible and Stripe payouts are ready.')
+                : t('No delivered trip is currently selected for release in this summary.');
+
+  const toneStyle =
+    tone === 'danger'
+      ? styles.dangerTone
+      : tone === 'success'
+        ? styles.successTone
+        : tone === 'warning'
+          ? styles.warningTone
+          : styles.infoTone;
 
   return (
-    <View
-      style={[
-        styles.card,
-        tone === 'warning' && styles.cardWarning,
-        tone === 'success' && styles.cardSuccess,
-        tone === 'danger' && styles.cardDanger,
-      ]}
-    >
-      <Text style={styles.title}>{title}</Text>
-
-      {isLoading ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color="#1D4ED8" />
-          <Text style={styles.loadingText}>Checking payout status...</Text>
-        </View>
-      ) : (
-        <>
-          <Text
-            style={[
-              styles.headline,
-              tone === 'warning' && styles.headlineWarning,
-              tone === 'success' && styles.headlineSuccess,
-              tone === 'danger' && styles.headlineDanger,
-            ]}
-          >
-            {payoutHeadline}
-          </Text>
-          <Text style={styles.details}>{payoutDetails}</Text>
-          {amountLabel ? <Text style={styles.meta}>Trip amount: {amountLabel}</Text> : null}
-          {requestStatus ? <Text style={styles.meta}>Trip status: {requestStatus}</Text> : null}
-          <Text style={styles.meta}>
-            Stripe payouts enabled: {stripeStatus?.payoutsEnabled ? 'Yes' : 'No'}
-          </Text>
-          <Text style={styles.meta}>
-            Stripe account status: {normalizeAccountStatus(stripeStatus?.accountStatus ?? null)}
-          </Text>
-        </>
-      )}
-
+    <View style={[styles.card, toneStyle]}>
+      <Text style={styles.title}>{title || t('Payout Status')}</Text>
+      {requestStatus ? (
+        <Text style={styles.metaText}>{getRequestStatusLabel(requestStatus)}</Text>
+      ) : null}
+      {amountLabel ? <Text style={styles.amountText}>{amountLabel}</Text> : null}
+      <Text style={styles.headline}>{headline}</Text>
+      <Text style={styles.details}>{details}</Text>
+      {stripeStatus?.accountStatus ? (
+        <Text style={styles.metaText}>{normalizeAccountStatus(stripeStatus.accountStatus)}</Text>
+      ) : null}
       {screenError ? <Text style={styles.errorText}>{screenError}</Text> : null}
-      {!screenError && transferError ? <Text style={styles.errorText}>{transferError}</Text> : null}
 
-      <View style={styles.actions}>
-        {onOpenStripeConnect && (!stripeStatus?.stripeAccountId || !stripeStatus.payoutsEnabled) ? (
-          <Pressable style={styles.secondaryButton} onPress={onOpenStripeConnect}>
-            <Text style={styles.secondaryButtonText}>Open Stripe Connect</Text>
-          </Pressable>
-        ) : null}
-
-        {isEligibleForRelease && stripeStatus?.payoutsEnabled && !transferResult?.transferred ? (
-          <Pressable
-            style={[styles.secondaryButton, isReleasing && styles.disabledButton]}
-            disabled={isReleasing}
-            onPress={() => void handleRelease()}
-          >
-            {isReleasing ? (
-              <ActivityIndicator size="small" color="#1D4ED8" />
-            ) : (
-              <Text style={styles.secondaryButtonText}>Release Held Funds</Text>
-            )}
-          </Pressable>
-        ) : null}
-
-        <Pressable
-          style={[styles.secondaryButton, (isRefreshing || isLoading) && styles.disabledButton]}
-          disabled={isRefreshing || isLoading}
-          onPress={() => void handleRefresh()}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color="#1D4ED8" />
-          ) : (
-            <Text style={styles.secondaryButtonText}>Refresh Status</Text>
-          )}
+      <View style={styles.actionsRow}>
+        <Pressable style={styles.secondaryButton} onPress={() => void loadWorkflow({ attemptRelease: false, silent: true })}>
+          <Text style={styles.secondaryButtonText}>
+            {isRefreshing ? t('Loading') : t('Refresh payout status')}
+          </Text>
         </Pressable>
+        {onOpenStripeConnect ? (
+          <Pressable style={styles.secondaryButton} onPress={onOpenStripeConnect}>
+            <Text style={styles.secondaryButtonText}>{t('Stripe Connect (Payouts)')}</Text>
+          </Pressable>
+        ) : null}
       </View>
+
+      {isEligibleForRelease ? (
+        <Pressable
+          style={[styles.primaryButton, isReleasing && styles.primaryButtonDisabled]}
+          onPress={() => void loadWorkflow({ attemptRelease: true, silent: true })}
+          disabled={isReleasing}
+        >
+          {isReleasing ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>{t('Release Payout')}</Text>}
+        </Pressable>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
-    padding: 12,
-    gap: 6,
-  },
-  cardWarning: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-  },
-  cardSuccess: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
-  },
-  cardDanger: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  loadingText: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  headline: {
-    color: '#1E3A8A',
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '600',
-  },
-  headlineWarning: {
-    color: '#B45309',
-  },
-  headlineSuccess: {
-    color: '#15803D',
-  },
-  headlineDanger: {
-    color: '#B91C1C',
-  },
-  details: {
-    color: '#334155',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  meta: {
-    color: '#475569',
-    fontSize: 12,
-  },
-  errorText: {
-    color: '#B91C1C',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  actions: {
-    marginTop: 4,
+    borderRadius: 12,
+    padding: 14,
     gap: 8,
   },
+  infoTone: {
+    borderColor: '#BFDBFE',
+    backgroundColor: '#EFF6FF',
+  },
+  warningTone: {
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFFBEB',
+  },
+  successTone: {
+    borderColor: '#BBF7D0',
+    backgroundColor: '#F0FDF4',
+  },
+  dangerTone: {
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  title: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  headline: { fontSize: 14, fontWeight: '600', color: '#0F172A' },
+  details: { fontSize: 13, color: '#475569' },
+  metaText: { fontSize: 12, color: '#64748B' },
+  amountText: { fontSize: 20, fontWeight: '700', color: '#0F172A' },
+  errorText: { color: '#B91C1C', fontSize: 13 },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   secondaryButton: {
-    minHeight: 42,
+    minHeight: 38,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#CBD5E1',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
+  },
+  secondaryButtonText: { color: '#334155', fontWeight: '700', fontSize: 12 },
+  primaryButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
   },
-  secondaryButtonText: {
-    color: '#1D4ED8',
-    fontWeight: '700',
-  },
-  disabledButton: {
-    opacity: 0.65,
-  },
+  primaryButtonDisabled: { opacity: 0.7 },
+  primaryButtonText: { color: '#FFFFFF', fontWeight: '700' },
 });

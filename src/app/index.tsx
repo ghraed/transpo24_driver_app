@@ -1,6 +1,7 @@
 import { Link, useRouter, type Href } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
@@ -17,13 +18,14 @@ import { registerDriverPushNotifications } from '@/notifications/registerPushNot
 
 export default function DriverLoginScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { signIn } = useAuth();
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [rememberMe, setRememberMe] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isResettingUsers, setIsResettingUsers] = useState<boolean>(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResettingUsers, setIsResettingUsers] = useState(false);
 
   useEffect(() => {
     const loadRemembered = async (): Promise<void> => {
@@ -34,7 +36,11 @@ export default function DriverLoginScreen() {
       setRememberMe(true);
     };
 
-    void loadRemembered();
+    const timeoutId = setTimeout(() => {
+      void loadRemembered();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const onLogin = useCallback(async (): Promise<void> => {
@@ -42,7 +48,7 @@ export default function DriverLoginScreen() {
     const normalizedPassword = password.replace(/[\r\n]+/g, '');
 
     if (!normalizedEmail || !normalizedPassword) {
-      setErrorMessage('Email and password are required.');
+      setErrorMessage(t('Email and password are required.'));
       return;
     }
 
@@ -76,11 +82,11 @@ export default function DriverLoginScreen() {
 
       router.replace(targetRoute as Href);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Login failed.');
+      setErrorMessage(error instanceof Error ? error.message : t('Login failed.'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [email, password, rememberMe, router, signIn]);
+  }, [email, password, rememberMe, router, signIn, t]);
 
   const onResetUsers = useCallback(async (): Promise<void> => {
     if (isResettingUsers) return;
@@ -91,28 +97,31 @@ export default function DriverLoginScreen() {
     try {
       const response = await resetUsersForTesting();
       setErrorMessage(
-        `Deleted ${response.deletedUsers} driver user(s). Kept ${response.keptEmail}. Non-driver roles were not targeted.`,
+        t('Deleted {{count}} driver user(s). Kept {{email}}. Non-driver roles were not targeted.', {
+          count: response.deletedUsers,
+          email: response.keptEmail,
+        }),
       );
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to reset users.',
-      );
+      setErrorMessage(error instanceof Error ? error.message : t('Failed to reset users.'));
     } finally {
       setIsResettingUsers(false);
     }
-  }, [isResettingUsers]);
+  }, [isResettingUsers, t]);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Driver Login</Text>
-        <Text style={styles.subtitle}>Sign in to manage your transport requests.</Text>
-        <Text style={styles.helperText}>Test account: `driver@test.com` with password `driver@test.com`.</Text>
+        <Text style={styles.title}>{t('Driver Login')}</Text>
+        <Text style={styles.subtitle}>{t('Sign in to manage your transport requests.')}</Text>
+        <Text style={styles.helperText}>
+          {t('Test account: `driver@test.com` with password `driver@test.com`.')}
+        </Text>
       </View>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={t('Email')}
         autoCapitalize="none"
         autoComplete="email"
         textContentType="username"
@@ -123,7 +132,7 @@ export default function DriverLoginScreen() {
       />
       <TextInput
         style={[styles.input, styles.passwordInput]}
-        placeholder="Password"
+        placeholder={t('Password')}
         autoComplete="current-password"
         textContentType="password"
         importantForAutofill="yes"
@@ -135,13 +144,17 @@ export default function DriverLoginScreen() {
         <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
           {rememberMe ? <Text style={styles.checkboxTick}>✓</Text> : null}
         </View>
-        <Text style={styles.rememberText}>Remember me</Text>
+        <Text style={styles.rememberText}>{t('Remember me')}</Text>
       </Pressable>
 
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-      <Pressable style={[styles.button, isSubmitting && styles.buttonDisabled]} onPress={() => void onLogin()} disabled={isSubmitting}>
-        {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>Login</Text>}
+      <Pressable
+        style={[styles.button, isSubmitting && styles.buttonDisabled]}
+        onPress={() => void onLogin()}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>{t('Login')}</Text>}
       </Pressable>
 
       <Pressable
@@ -152,12 +165,12 @@ export default function DriverLoginScreen() {
         {isResettingUsers ? (
           <ActivityIndicator color="#1D4ED8" />
         ) : (
-          <Text style={styles.secondaryButtonText}>Delete Driver Users Except driver@test.com</Text>
+          <Text style={styles.secondaryButtonText}>{t('Delete Driver Users Except driver@test.com')}</Text>
         )}
       </Pressable>
 
       <Link href="/register" style={styles.linkText}>
-        New driver? Create an account
+        {t('New driver? Create an account')}
       </Link>
     </SafeAreaView>
   );
@@ -241,33 +254,34 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 15,
   },
   secondaryButton: {
-    minHeight: 48,
+    minHeight: 46,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: '#BFDBFE',
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 12,
+    paddingHorizontal: 12,
   },
   secondaryButtonText: {
     color: '#1D4ED8',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
-    paddingHorizontal: 12,
   },
   linkText: {
     marginTop: 16,
+    color: '#2563EB',
     textAlign: 'center',
-    color: '#1D4ED8',
     fontWeight: '600',
   },
   errorText: {
-    color: '#DC2626',
-    marginBottom: 6,
+    marginTop: 4,
+    color: '#B91C1C',
+    fontSize: 13,
   },
 });

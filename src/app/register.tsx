@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/context/auth-context';
 import { clearLastOnboardingRoute } from '@/lib/auth-storage';
@@ -54,32 +55,33 @@ function createTestRegisterDefaults(): RegisterFormState {
 
 export default function DriverRegisterScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { registerNewDriver } = useAuth();
 
   const [form, setForm] = useState<RegisterFormState>(() => createTestRegisterDefaults());
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [submitError, setSubmitError] = useState<string>('');
-  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [activeSelectorField, setActiveSelectorField] = useState<SelectorField | null>(null);
-  const [selectorSearch, setSelectorSearch] = useState<string>('');
+  const [selectorSearch, setSelectorSearch] = useState('');
 
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof RegisterFormState, string>> = {};
 
-    if (!form.firstName.trim()) errors.firstName = 'First name is required.';
-    if (!form.lastName.trim()) errors.lastName = 'Last name is required.';
-    if (!form.email.trim()) errors.email = 'Email is required.';
-    else if (!isValidEmail(form.email.trim())) errors.email = 'Enter a valid email.';
-    if (!form.phone.trim()) errors.phone = 'Phone is required.';
-    if (!form.password) errors.password = 'Password is required.';
-    else if (form.password.length < 8) errors.password = 'Password must be at least 8 characters.';
-    if (!form.confirmPassword) errors.confirmPassword = 'Confirm your password.';
-    else if (form.password !== form.confirmPassword) errors.confirmPassword = 'Passwords do not match.';
-    if (form.countryCodes.length === 0) errors.countryCodes = 'At least one country is required.';
-    if (form.cities.length === 0) errors.cities = 'At least one city is required.';
+    if (!form.firstName.trim()) errors.firstName = t('First name is required.');
+    if (!form.lastName.trim()) errors.lastName = t('Last name is required.');
+    if (!form.email.trim()) errors.email = t('Email is required.');
+    else if (!isValidEmail(form.email.trim())) errors.email = t('Enter a valid email.');
+    if (!form.phone.trim()) errors.phone = t('Phone is required.');
+    if (!form.password) errors.password = t('Password is required.');
+    else if (form.password.length < 8) errors.password = t('Password must be at least 8 characters.');
+    if (!form.confirmPassword) errors.confirmPassword = t('Confirm your password.');
+    else if (form.password !== form.confirmPassword) errors.confirmPassword = t('Passwords do not match.');
+    if (form.countryCodes.length === 0) errors.countryCodes = t('At least one country is required.');
+    if (form.cities.length === 0) errors.cities = t('At least one city is required.');
 
     return errors;
-  }, [form]);
+  }, [form, t]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -97,26 +99,23 @@ export default function DriverRegisterScreen() {
     [],
   );
 
-  const citySelectorOptions = useMemo(
-    () => {
-      const seen = new Set<string>();
-      const options: { label: string; value: string }[] = [];
+  const citySelectorOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: { label: string; value: string }[] = [];
 
-      selectedCountries.forEach((country) => {
-        country.cities.forEach((city) => {
-          if (seen.has(city)) return;
-          seen.add(city);
-          options.push({
-            label: city,
-            value: city,
-          });
+    selectedCountries.forEach((country) => {
+      country.cities.forEach((city) => {
+        if (seen.has(city)) return;
+        seen.add(city);
+        options.push({
+          label: city,
+          value: city,
         });
       });
+    });
 
-      return options;
-    },
-    [selectedCountries],
-  );
+    return options;
+  }, [selectedCountries]);
 
   const activeSelectorOptions = useMemo(() => {
     return activeSelectorField === 'country' ? countrySelectorOptions : citySelectorOptions;
@@ -177,7 +176,6 @@ export default function DriverRegisterScreen() {
 
   const onSubmit = async (): Promise<void> => {
     setHasAttemptedSubmit(true);
-
     if (!isFormValid || isSubmitting) return;
 
     setIsSubmitting(true);
@@ -209,11 +207,11 @@ export default function DriverRegisterScreen() {
       }
       router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Registration failed.';
+      const message = error instanceof Error ? error.message : t('Registration failed.');
       if (message.toLowerCase().includes('email')) {
-        setSubmitError('This email is already in use. Try logging in.');
+        setSubmitError(t('This email is already in use. Try logging in.'));
       } else if (message.toLowerCase().includes('phone')) {
-        setSubmitError('This phone number is already in use.');
+        setSubmitError(t('This phone number is already in use.'));
       } else {
         setSubmitError(message);
       }
@@ -230,31 +228,31 @@ export default function DriverRegisterScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/')}>
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.title}>Join Transpo24 as a Driver</Text>
+          <Text style={styles.title}>{t('Join Transpo24 as a Driver')}</Text>
           <Text style={styles.subtitle}>
-            Create your account and start receiving transport requests.
+            {t('Create your account and start receiving transport requests.')}
           </Text>
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>First Name</Text>
-          <TextInput style={styles.input} placeholder="First name" placeholderTextColor="#94A3B8" value={form.firstName} onChangeText={(value) => onChange('firstName', value)} />
+          <Text style={styles.label}>{t('First Name')}</Text>
+          <TextInput style={styles.input} placeholder={t('First Name')} placeholderTextColor="#94A3B8" value={form.firstName} onChangeText={(value) => onChange('firstName', value)} />
         </View>
         {hasAttemptedSubmit && fieldErrors.firstName ? <Text style={styles.errorText}>{fieldErrors.firstName}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Last Name</Text>
-          <TextInput style={styles.input} placeholder="Last name" placeholderTextColor="#94A3B8" value={form.lastName} onChangeText={(value) => onChange('lastName', value)} />
+          <Text style={styles.label}>{t('Last Name')}</Text>
+          <TextInput style={styles.input} placeholder={t('Last Name')} placeholderTextColor="#94A3B8" value={form.lastName} onChangeText={(value) => onChange('lastName', value)} />
         </View>
         {hasAttemptedSubmit && fieldErrors.lastName ? <Text style={styles.errorText}>{fieldErrors.lastName}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>{t('Email')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder={t('Email')}
             placeholderTextColor="#94A3B8"
             autoCapitalize="none"
             keyboardType="email-address"
@@ -265,177 +263,93 @@ export default function DriverRegisterScreen() {
         {hasAttemptedSubmit && fieldErrors.email ? <Text style={styles.errorText}>{fieldErrors.email}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Phone</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Phone"
-            placeholderTextColor="#94A3B8"
-            keyboardType="phone-pad"
-            value={form.phone}
-            onChangeText={(value) => onChange('phone', value)}
-          />
+          <Text style={styles.label}>{t('Phone')}</Text>
+          <TextInput style={styles.input} placeholder={t('Phone')} placeholderTextColor="#94A3B8" keyboardType="phone-pad" value={form.phone} onChangeText={(value) => onChange('phone', value)} />
         </View>
         {hasAttemptedSubmit && fieldErrors.phone ? <Text style={styles.errorText}>{fieldErrors.phone}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#94A3B8"
-            secureTextEntry
-            value={form.password}
-            onChangeText={(value) => onChange('password', value)}
-          />
+          <Text style={styles.label}>{t('Password')}</Text>
+          <TextInput style={styles.input} placeholder={t('Password')} placeholderTextColor="#94A3B8" secureTextEntry value={form.password} onChangeText={(value) => onChange('password', value)} />
         </View>
         {hasAttemptedSubmit && fieldErrors.password ? <Text style={styles.errorText}>{fieldErrors.password}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Confirm Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm password"
-            placeholderTextColor="#94A3B8"
-            secureTextEntry
-            value={form.confirmPassword}
-            onChangeText={(value) => onChange('confirmPassword', value)}
-          />
+          <Text style={styles.label}>{t('Confirm your password.')}</Text>
+          <TextInput style={styles.input} placeholder={t('Confirm your password.')} placeholderTextColor="#94A3B8" secureTextEntry value={form.confirmPassword} onChangeText={(value) => onChange('confirmPassword', value)} />
         </View>
         {hasAttemptedSubmit && fieldErrors.confirmPassword ? <Text style={styles.errorText}>{fieldErrors.confirmPassword}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Countries</Text>
-          <Pressable style={styles.selectorField} onPress={() => openSelector('country')}>
-            <Text
-              style={[
-                styles.selectorValue,
-                selectedCountries.length === 0 && styles.selectorPlaceholder,
-              ]}
-            >
+          <Text style={styles.label}>{t('Country')}</Text>
+          <Pressable style={styles.selectorButton} onPress={() => openSelector('country')}>
+            <Text style={styles.selectorButtonText}>
               {selectedCountries.length
                 ? selectedCountries.map((country) => country.label).join(', ')
-                : 'Select countries'}
+                : t('Country')}
             </Text>
           </Pressable>
-          {selectedCountries.length ? (
-            <View style={styles.countryChipRow}>
-              {selectedCountries.map((country) => (
-                <View key={country.code} style={styles.countryChip}>
-                  <Text style={styles.countryChipText}>{country.label}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
         </View>
         {hasAttemptedSubmit && fieldErrors.countryCodes ? <Text style={styles.errorText}>{fieldErrors.countryCodes}</Text> : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Cities</Text>
-          <Pressable
-            style={[
-              styles.selectorField,
-              selectedCountries.length === 0 && styles.selectorFieldDisabled,
-            ]}
-            onPress={() => openSelector('city')}
-            disabled={selectedCountries.length === 0}
-          >
-            <Text
-              style={[
-                styles.selectorValue,
-                form.cities.length === 0 && styles.selectorPlaceholder,
-              ]}
-            >
-              {form.cities.length
-                ? form.cities.join(', ')
-                : selectedCountries.length > 0
-                  ? 'Select cities'
-                  : 'Choose countries first'}
+          <Text style={styles.label}>{t('City')}</Text>
+          <Pressable style={styles.selectorButton} onPress={() => openSelector('city')}>
+            <Text style={styles.selectorButtonText}>
+              {form.cities.length ? form.cities.join(', ') : t('City')}
             </Text>
           </Pressable>
-          {form.cities.length ? (
-            <View style={styles.countryChipRow}>
-              {form.cities.map((city) => (
-                <View key={city} style={styles.countryChip}>
-                  <Text style={styles.countryChipText}>{city}</Text>
-                </View>
-              ))}
-            </View>
-          ) : null}
         </View>
         {hasAttemptedSubmit && fieldErrors.cities ? <Text style={styles.errorText}>{fieldErrors.cities}</Text> : null}
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
-        <Pressable
-          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-          disabled={isSubmitting}
-          onPress={() => void onSubmit()}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Create Driver Account</Text>
-          )}
+        <Pressable style={[styles.submitButton, isSubmitting && styles.buttonDisabled]} onPress={() => void onSubmit()} disabled={isSubmitting}>
+          {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>{t('Create account')}</Text>}
         </Pressable>
 
         <Link href="/" style={styles.linkText}>
-          Already have an account? Login
+          {t('Driver Login')}
         </Link>
       </ScrollView>
-      <Modal
-        visible={Boolean(activeSelectorField)}
-        animationType="slide"
-        transparent
-        onRequestClose={closeSelector}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalBackdrop} onPress={closeSelector} />
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {activeSelectorField === 'country' ? 'Select countries' : 'Select cities'}
-              </Text>
-              <Pressable onPress={closeSelector}>
-                <Text style={styles.modalCloseText}>Close</Text>
-              </Pressable>
-            </View>
 
+      <Modal transparent visible={Boolean(activeSelectorField)} animationType="slide" onRequestClose={closeSelector}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>{activeSelectorField === 'country' ? t('Country') : t('City')}</Text>
             <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
+              style={styles.input}
+              placeholder={activeSelectorField === 'country' ? t('Country') : t('City')}
               placeholderTextColor="#94A3B8"
               value={selectorSearch}
               onChangeText={setSelectorSearch}
             />
-
             <ScrollView contentContainerStyle={styles.selectorList}>
-              {filteredSelectorOptions.map((option) => (
-                <Pressable
-                  key={option.value}
-                  style={styles.selectorOption}
-                  onPress={() => {
-                    if (activeSelectorField === 'country') {
-                      onToggleCountry(option.value);
-                    } else {
-                      onToggleCity(option.value);
+              {filteredSelectorOptions.map((option) => {
+                const selected = activeSelectorField === 'country'
+                  ? form.countryCodes.includes(option.value)
+                  : form.cities.includes(option.value);
+
+                return (
+                  <Pressable
+                    key={option.value}
+                    style={[styles.selectorOption, selected && styles.selectorOptionSelected]}
+                    onPress={() =>
+                      activeSelectorField === 'country'
+                        ? onToggleCountry(option.value)
+                        : onToggleCity(option.value)
                     }
-                  }}
-                >
-                  <Text style={styles.selectorOptionText}>
-                    {activeSelectorField === 'country'
-                      ? form.countryCodes.includes(option.value)
-                        ? `✓ ${option.label}`
-                        : option.label
-                      : form.cities.includes(option.value)
-                        ? `✓ ${option.label}`
-                        : option.label}
-                  </Text>
-                </Pressable>
-              ))}
-              {filteredSelectorOptions.length === 0 ? (
-                <Text style={styles.emptySelectorText}>No matching options found.</Text>
-              ) : null}
+                  >
+                    <Text style={[styles.selectorOptionText, selected && styles.selectorOptionTextSelected]}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
+            <Pressable style={styles.submitButton} onPress={closeSelector}>
+              <Text style={styles.submitButtonText}>{t('Back')}</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -444,181 +358,79 @@ export default function DriverRegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 8,
-    paddingBottom: 28,
-  },
-  header: {
-    marginBottom: 8,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  content: { padding: 20, paddingBottom: 32 },
+  header: { gap: 6, marginBottom: 16 },
   backButton: {
     alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingRight: 12,
-    marginBottom: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FFFFFF',
   },
-  backButtonText: {
-    color: '#1D4ED8',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  subtitle: {
-    marginTop: 4,
-    color: '#475569',
-    fontSize: 14,
-  },
-  fieldGroup: {
-    gap: 6,
-  },
-  label: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+  backButtonText: { color: '#0F172A', fontWeight: '600' },
+  title: { fontSize: 28, fontWeight: '700', color: '#0F172A' },
+  subtitle: { color: '#475569' },
+  fieldGroup: { marginTop: 12, gap: 6 },
+  label: { color: '#0F172A', fontWeight: '600' },
   input: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
-    borderRadius: 10,
-    color: '#0F172A',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 15,
-  },
-  selectorField: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: '#D0D5DD',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  selectorFieldDisabled: {
-    backgroundColor: '#F8FAFC',
-  },
-  selectorValue: {
-    color: '#0F172A',
-    fontSize: 15,
-  },
-  selectorPlaceholder: {
-    color: '#94A3B8',
-  },
-  countryChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  countryChip: {
-    backgroundColor: '#DBEAFE',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  countryChipText: {
-    color: '#1D4ED8',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  errorText: {
-    marginTop: -2,
-    marginBottom: 2,
-    color: '#DC2626',
-    fontSize: 12,
-  },
-  submitButton: {
-    marginTop: 8,
-    minHeight: 48,
-    borderRadius: 10,
-    backgroundColor: '#1D4ED8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitButtonDisabled: {
-    opacity: 0.5,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  linkText: {
-    marginTop: 14,
-    textAlign: 'center',
-    color: '#1D4ED8',
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(15, 23, 42, 0.3)',
-  },
-  modalBackdrop: {
-    flex: 1,
-  },
-  modalSheet: {
-    maxHeight: '70%',
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 28,
-    gap: 12,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  modalTitle: {
-    color: '#0F172A',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  modalCloseText: {
-    color: '#2563EB',
-    fontWeight: '600',
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#CBD5E1',
     borderRadius: 12,
-    paddingHorizontal: 12,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
     paddingVertical: 12,
     color: '#0F172A',
-    fontSize: 15,
   },
-  selectorList: {
-    gap: 8,
-    paddingBottom: 12,
-  },
-  selectorOption: {
+  selectorButton: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 14,
     paddingVertical: 14,
+  },
+  selectorButtonText: { color: '#0F172A' },
+  submitButton: {
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  submitButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  buttonDisabled: { opacity: 0.7 },
+  linkText: { marginTop: 14, color: '#2563EB', textAlign: 'center', fontWeight: '600' },
+  errorText: { marginTop: 6, color: '#B91C1C', fontSize: 13 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
     backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    gap: 12,
+    maxHeight: '75%',
   },
-  selectorOptionText: {
-    color: '#0F172A',
-    fontSize: 15,
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  selectorList: { gap: 8 },
+  selectorOption: {
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  emptySelectorText: {
-    textAlign: 'center',
-    color: '#64748B',
-    paddingVertical: 16,
+  selectorOptionSelected: {
+    borderColor: '#2563EB',
+    backgroundColor: '#DBEAFE',
   },
+  selectorOptionText: { color: '#0F172A' },
+  selectorOptionTextSelected: { color: '#1D4ED8', fontWeight: '700' },
 });

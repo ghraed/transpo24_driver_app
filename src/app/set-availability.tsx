@@ -33,6 +33,7 @@ import {
   persistLastOnboardingRoute,
 } from '@/lib/auth-storage';
 import {
+  reverseGeocodeCoordinates,
   resolvePlaceFromQuery,
   resolvePlaceSuggestion,
   searchPlacesAutocomplete,
@@ -354,6 +355,31 @@ export default function SetAvailabilityScreen() {
     }));
   }, []);
 
+  const resolveSelectionAddress = useCallback(
+    async (latitude: number, longitude: number): Promise<{ address?: string; placeId?: string }> => {
+      try {
+        const resolved = await reverseGeocodeCoordinates(latitude, longitude);
+        if (resolved?.address) {
+          return {
+            address: resolved.address,
+            placeId: resolved.placeId || undefined,
+          };
+        }
+      } catch {
+        // Keep expo-location reverse geocoding as a fallback.
+      }
+
+      try {
+        const reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const formattedAddress = formatAddressFromReverseGeocode(reverse[0]);
+        return formattedAddress ? { address: formattedAddress } : {};
+      } catch {
+        return {};
+      }
+    },
+    [],
+  );
+
   const applyCurrentLocation = useCallback(
     async (location: Location.LocationObject) => {
       const nextRegion: Region = {
@@ -367,17 +393,16 @@ export default function SetAvailabilityScreen() {
       setLocationMessage('');
       setSubmitError('');
       setIsLocationServicesDisabled(false);
-
-      const reverse = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-      const formattedAddress = formatAddressFromReverseGeocode(reverse[0]);
+      const resolved = await resolveSelectionAddress(
+        location.coords.latitude,
+        location.coords.longitude,
+      );
 
       const nextLocation: SelectedBaseLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        address: formattedAddress || 'Current location',
+        address: resolved.address || 'Current location',
+        placeId: resolved.placeId,
         source: 'device',
       };
       mapRef.current?.animateToRegion?.(nextRegion, 350);
@@ -385,7 +410,7 @@ export default function SetAvailabilityScreen() {
       setAddressQuery(nextLocation.address ?? '');
       applySelectedLocation(nextLocation);
     },
-    [applySelectedLocation],
+    [applySelectedLocation, resolveSelectionAddress],
   );
 
   const loadCurrentLocation = useCallback(async (requestPermission: boolean) => {
@@ -470,21 +495,19 @@ export default function SetAvailabilityScreen() {
       source?: SelectedBaseLocation['source'],
     ): Promise<void> => {
       let resolvedAddress = address?.trim() || '';
+      let resolvedPlaceId = placeId;
 
       if (!resolvedAddress) {
-        try {
-          const reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
-          resolvedAddress = formatAddressFromReverseGeocode(reverse[0]);
-        } catch {
-          // Keep coordinates even if reverse geocoding fails.
-        }
+        const resolved = await resolveSelectionAddress(latitude, longitude);
+        resolvedAddress = resolved.address ?? '';
+        resolvedPlaceId = resolved.placeId ?? placeId;
       }
 
       const nextLocation: SelectedBaseLocation = {
         latitude,
         longitude,
         address: resolvedAddress || undefined,
-        placeId,
+        placeId: resolvedPlaceId,
         source,
       };
 
@@ -499,7 +522,7 @@ export default function SetAvailabilityScreen() {
         nextLocation.address ? `Pinned: ${nextLocation.address}` : 'Selected base location.',
       );
     },
-    [applySelectedLocation],
+    [applySelectedLocation, resolveSelectionAddress],
   );
 
   useEffect(() => {
