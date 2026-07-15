@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -57,6 +58,7 @@ function parseNumber(value: string | string[] | undefined): number | null {
 export default function GoToPickupScreen() {
   const router = useRouter();
   const { accessToken } = useAuth();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{
     tripId?: string;
     pickupLatitude?: string;
@@ -122,19 +124,19 @@ export default function GoToPickupScreen() {
     const setup = async (): Promise<(() => void) | void> => {
       const validTripId = validateTripId(tripId);
       if (!validTripId) {
-        setLocationError('Invalid trip id.');
+        setLocationError(t('Invalid trip id.'));
         setIsLoadingLocation(false);
         return;
       }
 
       if (!pickupLocation || !isValidGeoLocation(pickupLocation)) {
-        setLocationError('Invalid pickup location parameters.');
+        setLocationError(t('Invalid pickup location parameters.'));
         setIsLoadingLocation(false);
         return;
       }
 
       if (!accessToken) {
-        setLocationError('Missing authentication token. Please login again.');
+        setLocationError(t('Missing authentication token. Please login again.'));
         setIsLoadingLocation(false);
         return;
       }
@@ -166,7 +168,7 @@ export default function GoToPickupScreen() {
         }
       } catch (error) {
         if (!active) return;
-        setLocationError(error instanceof Error ? error.message : 'Failed to load trip status.');
+        setLocationError(error instanceof Error ? error.message : t('Failed to load trip status.'));
         setIsLoadingLocation(false);
         return;
       }
@@ -175,14 +177,14 @@ export default function GoToPickupScreen() {
         connectSocket(accessToken);
         joinTripRoom(validTripId);
       } catch (error) {
-        setSocketError(error instanceof Error ? error.message : 'Socket connection failed.');
+        setSocketError(error instanceof Error ? error.message : t('Socket connection failed.'));
       }
 
       const disconnectUnsub = onSocketDisconnect(() => {
-        setSocketError('Socket disconnected. Reconnecting...');
+        setSocketError(t('Socket disconnected. Reconnecting...'));
       });
       const socketErrorUnsub = onSocketError((message) => {
-        setSocketError(message || 'Socket connection failed.');
+        setSocketError(message || t('Socket connection failed.'));
       });
 
       const arrivedUnsub = onDriverArrivedPickupConfirmed((payload) => {
@@ -212,7 +214,7 @@ export default function GoToPickupScreen() {
       if (!active) return;
 
       if (status !== 'granted') {
-        setLocationError('Location permission denied. Please enable location permission for driver tracking.');
+        setLocationError(t('Location permission denied. Please enable location permission for driver tracking.'));
         setIsLoadingLocation(false);
         return;
       }
@@ -221,7 +223,7 @@ export default function GoToPickupScreen() {
       if (!active) return;
 
       if (!servicesEnabled) {
-        setLocationError('GPS is unavailable. Please enable location services.');
+        setLocationError(t('GPS is unavailable. Please enable location services.'));
         setIsLoadingLocation(false);
         return;
       }
@@ -311,7 +313,7 @@ export default function GoToPickupScreen() {
         setLocationError(
           error instanceof Error
             ? error.message
-            : 'Unable to get current location. Please verify GPS availability.',
+            : t('Unable to get current location. Please verify GPS availability.'),
         );
       } finally {
         if (active) {
@@ -341,29 +343,29 @@ export default function GoToPickupScreen() {
       const validTripId = validateTripId(tripId);
       if (validTripId) leaveTripRoom(validTripId);
     };
-  }, [accessToken, dropoffLocation, pickupLocation, router, tripId]);
+  }, [accessToken, dropoffLocation, pickupLocation, router, t, tripId]);
 
   const onArrivedPress = (): void => {
     setArrivalError('');
 
     const validTripId = validateTripId(tripId);
     if (!validTripId) {
-      setArrivalError('Invalid trip id.');
+      setArrivalError(t('Invalid trip id.'));
       return;
     }
 
     if (!driverLocation || !isValidGeoLocation(driverLocation)) {
-      setArrivalError('Current location is not ready.');
+      setArrivalError(t('Current location is not ready.'));
       return;
     }
 
     if (!pickupLocation || !isValidGeoLocation(pickupLocation)) {
-      setArrivalError('Pickup location is invalid.');
+      setArrivalError(t('Pickup location is invalid.'));
       return;
     }
 
     if (!canMarkArrived(driverLocation, pickupLocation)) {
-      setArrivalError('You are too far from pickup location. Move closer to continue.');
+      setArrivalError(t('You are too far from pickup location. Move closer to continue.'));
       return;
     }
 
@@ -375,7 +377,7 @@ export default function GoToPickupScreen() {
         longitude: driverLocation.longitude,
       });
     } catch (error) {
-      setArrivalError(error instanceof Error ? error.message : 'Failed to send arrival confirmation.');
+      setArrivalError(error instanceof Error ? error.message : t('Failed to send arrival confirmation.'));
     } finally {
       setIsSubmittingArrival(false);
     }
@@ -386,7 +388,7 @@ export default function GoToPickupScreen() {
     setArrivalError('');
     const validTripId = validateTripId(tripId);
     if (!validTripId) {
-      setArrivalError('Invalid trip id.');
+      setArrivalError(t('Invalid trip id.'));
       return;
     }
 
@@ -408,8 +410,7 @@ export default function GoToPickupScreen() {
     return (
       <SafeAreaView style={styles.centeredContainer}>
         <Text style={styles.errorText}>
-          Google Maps API key is missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY or platform key
-          (EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY / EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY).
+          {t('Google Maps API key is missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY or platform key (EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY / EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY).')}
         </Text>
       </SafeAreaView>
     );
@@ -418,7 +419,7 @@ export default function GoToPickupScreen() {
   if (!pickupLocation || !isValidGeoLocation(pickupLocation)) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
-        <Text style={styles.errorText}>Invalid pickup location. Please reopen this trip from driver home.</Text>
+        <Text style={styles.errorText}>{t('Invalid pickup location. Please reopen this trip from driver home.')}</Text>
       </SafeAreaView>
     );
   }
@@ -437,10 +438,10 @@ export default function GoToPickupScreen() {
               longitudeDelta: 0.03,
             }}
           >
-            <NativeMarker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+            <NativeMarker coordinate={driverLocation} title={t('Driver')} anchor={{ x: 0.5, y: 0.5 }}>
               <Text style={styles.driverMarkerIcon}>🚗</Text>
             </NativeMarker>
-            <NativeMarker coordinate={pickupLocation} title="Pickup" anchor={{ x: 0.5, y: 0.5 }}>
+            <NativeMarker coordinate={pickupLocation} title={t('Pickup')} anchor={{ x: 0.5, y: 0.5 }}>
               <View style={styles.pickupMarker}>
                 <Text style={styles.pickupMarkerText}>P</Text>
               </View>
@@ -458,25 +459,25 @@ export default function GoToPickupScreen() {
         ) : isNativeMapRuntimeAvailable ? (
           <View style={styles.centeredMapState}>
             <ActivityIndicator size="large" color="#2563EB" />
-            <Text style={styles.helperText}>Getting live location...</Text>
+            <Text style={styles.helperText}>{t('Getting live location...')}</Text>
           </View>
         ) : (
           <View style={styles.centeredMapState}>
-            <Text style={styles.helperText}>Map preview is unavailable on this platform.</Text>
+            <Text style={styles.helperText}>{t('Map preview is unavailable on this platform.')}</Text>
           </View>
         )}
       </View>
 
       <View style={styles.bottomCard}>
-        <Text style={styles.title}>Go to Pickup Location</Text>
-        <Text style={styles.addressText}>{pickupLocation.address || 'Pickup address unavailable'}</Text>
+        <Text style={styles.title}>{t('Go to Pickup Location')}</Text>
+        <Text style={styles.addressText}>{pickupLocation.address || t('Pickup address unavailable')}</Text>
         {distanceMeters !== null ? (
-          <Text style={styles.distanceText}>Distance remaining: {(distanceMeters / 1000).toFixed(2)} km</Text>
+          <Text style={styles.distanceText}>{t('Distance remaining')}: {(distanceMeters / 1000).toFixed(2)} km</Text>
         ) : (
-          <Text style={styles.distanceText}>Distance remaining: --</Text>
+          <Text style={styles.distanceText}>{t('Distance remaining')}: --</Text>
         )}
 
-        {isLoadingLocation ? <Text style={styles.helperText}>Getting location...</Text> : null}
+        {isLoadingLocation ? <Text style={styles.helperText}>{t('Getting location...')}</Text> : null}
         {locationError ? <Text style={styles.errorText}>{locationError}</Text> : null}
         {socketError ? <Text style={styles.errorText}>{socketError}</Text> : null}
         {arrivalError ? <Text style={styles.errorText}>{arrivalError}</Text> : null}
@@ -490,7 +491,7 @@ export default function GoToPickupScreen() {
             })
           }
         >
-          <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
+          <Text style={styles.secondaryActionButtonText}>{t('Additional Expenses')}</Text>
         </Pressable>
         <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
 
@@ -501,19 +502,19 @@ export default function GoToPickupScreen() {
         >
           <Text style={styles.actionButtonText}>
             {!driverLocation
-              ? 'Getting location...'
+              ? t('Getting location...')
               : !canArriveNow
-              ? 'Too far from pickup'
+              ? t('Too far from pickup')
               : isSubmittingArrival
-              ? 'Confirming arrival...'
-              : 'Arrived at Pickup'}
+              ? t('Confirming arrival...')
+              : t('Arrived at Pickup')}
           </Text>
         </Pressable>
         <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
-          <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
+          <Text style={styles.testButtonText}>{t('TESTING ONLY: Send Fake Location')}</Text>
         </Pressable>
 
-        <Text style={styles.radiusText}>Arrival allowed within {ARRIVAL_RADIUS_METERS} meters of pickup.</Text>
+        <Text style={styles.radiusText}>{t('Arrival allowed within {{count}} meters of pickup.', { count: ARRIVAL_RADIUS_METERS })}</Text>
       </View>
     </SafeAreaView>
   );

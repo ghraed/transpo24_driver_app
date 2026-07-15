@@ -20,6 +20,8 @@ import {
   getDriverRequestDetails,
   ignoreDriverRequestAlert,
 } from '@/lib/api';
+import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
+import { translateDynamicBatch } from '@/services/translation-service';
 import type { DriverRequestDetailsResponse } from '@/types/auth';
 
 function formatDate(value: string | null): string {
@@ -37,7 +39,11 @@ function availabilityMessage(requestStatus: string): string | null {
   return 'This request is no longer available.';
 }
 
-function formatRoute(address: string | null, latitude: number | null, longitude: number | null): string {
+function formatRoute(
+  address: string | null | undefined,
+  latitude: number | null,
+  longitude: number | null,
+): string {
   if (address) {
     return address;
   }
@@ -49,13 +55,38 @@ function formatRoute(address: string | null, latitude: number | null, longitude:
   return 'Location unavailable';
 }
 
+function formatServiceLabel(
+  service: DriverRequestDetailsResponse['service'] | null | undefined,
+  language: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!service) return t('Service');
+  const nameAr = typeof service.nameAr === 'string' ? service.nameAr.trim() : '';
+  const nameEn = typeof service.nameEn === 'string' ? service.nameEn.trim() : '';
+  const serviceKey = typeof service.key === 'string' ? service.key.trim() : '';
+  if (language.startsWith('ar') && nameAr) return nameAr;
+  const fallbackLabel = nameEn || serviceKey || t('Service');
+  const translated = t(fallbackLabel);
+  return translated === fallbackLabel ? fallbackLabel : translated;
+}
+
+function formatDisplayAddress(
+  address: string | null | undefined,
+  latitude: number | null,
+  longitude: number | null,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (address === 'Current location') return t('Current location');
+  return formatRoute(address, latitude, longitude);
+}
+
 function resolveAssetUrl(url: string): string {
   return resolveBackendAssetUrl(url);
 }
 
 export default function ReviewRequestDetailsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
 
@@ -64,6 +95,7 @@ export default function ReviewRequestDetailsScreen() {
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
+  const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
   const loadDetails = useCallback(async (): Promise<void> => {
     if (!requestId) {
@@ -89,6 +121,52 @@ export default function ReviewRequestDetailsScreen() {
   useEffect(() => {
     void loadDetails();
   }, [loadDetails]);
+
+  useEffect(() => {
+    const targetLanguage = i18n.language.split('-')[0];
+    if (!details || !isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    const items: { key: string; text: string }[] = [];
+    const pushItem = (key: string, text: string | number | null | undefined): void => {
+      const normalized = typeof text === 'string' ? text : typeof text === 'number' ? String(text) : '';
+      const trimmed = normalized.trim();
+      if (!trimmed || trimmed === 'Current location') return;
+      items.push({ key, text: trimmed });
+    };
+
+    pushItem('pickupAddress', details.pickup.address);
+    pushItem('dropoffAddress', details.dropoff.address);
+    pushItem('itemTitle', details.itemDetails.title || details.itemDetails.type);
+    pushItem('itemDescription', details.itemDetails.description);
+    pushItem('itemType', details.itemDetails.type);
+    pushItem('brand', details.itemDetails.brand);
+    pushItem('model', details.itemDetails.model);
+    pushItem('year', details.itemDetails.year);
+    pushItem('condition', details.itemDetails.condition);
+    pushItem('specialInstructions', details.itemDetails.specialInstructions);
+
+    if (!items.length) {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    let active = true;
+    void translateDynamicBatch({
+      items,
+      targetLanguage: targetLanguage as AppLanguage,
+    }).then((translations) => {
+      if (active) {
+        setTranslatedTextByKey(translations);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [details, i18n.language]);
 
   const requestUnavailableMessage = useMemo(
     () => (details ? availabilityMessage(details.requestStatus) : null),
@@ -194,7 +272,7 @@ export default function ReviewRequestDetailsScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Request Details</Text>
+          <Text style={styles.title}>{t('Request Details')}</Text>
           <Text style={styles.subtitle}>{t('Review the transport request before sending an offer.')}</Text>
         </View>
 
@@ -203,7 +281,7 @@ export default function ReviewRequestDetailsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Service')}</Text>
-          <Text style={styles.sectionValue}>{details.service?.nameEn || details.service?.key || t('Service')}</Text>
+          <Text style={styles.sectionValue}>{formatServiceLabel(details.service, i18n.language, t)}</Text>
         </View>
 
         <View style={styles.card}>
@@ -212,18 +290,18 @@ export default function ReviewRequestDetailsScreen() {
             {details.customer?.firstName || t('Customer details hidden until quote is accepted')}
           </Text>
           <Text style={styles.metaText}>
-            {t('Rating')}: {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
+            {t('Rating')}: {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : t('N/A')}
           </Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Pickup')}</Text>
           <Text style={styles.sectionValue}>
-            {formatRoute(details.pickup.address, details.pickup.latitude, details.pickup.longitude)}
+            {translatedTextByKey.pickupAddress || formatDisplayAddress(details.pickup.address, details.pickup.latitude, details.pickup.longitude, t)}
           </Text>
           <Text style={styles.sectionTitleAlt}>{t('Dropoff')}</Text>
           <Text style={styles.sectionValue}>
-            {formatRoute(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)}
+            {translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude, t)}
           </Text>
         </View>
 
@@ -238,19 +316,23 @@ export default function ReviewRequestDetailsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
-          <Text style={styles.sectionValue}>{details.itemDetails.title || details.itemDetails.type || t('Item')}</Text>
-          {details.itemDetails.description ? (
-            <Text style={styles.metaText}>{details.itemDetails.description}</Text>
-          ) : null}
-          <Text style={styles.metaText}>{t('Type')}: {details.itemDetails.type || 'N/A'}</Text>
-          <Text style={styles.metaText}>
-            {t('Brand/Model/Year')}: {[details.itemDetails.brand, details.itemDetails.model, details.itemDetails.year]
-              .filter((value) => value !== null && value !== undefined && value !== '')
-              .join(' / ') || 'N/A'}
+          <Text style={styles.sectionValue}>
+            {translatedTextByKey.itemTitle || details.itemDetails.title || details.itemDetails.type || t('Item')}
           </Text>
-          <Text style={styles.metaText}>{t('Condition')}: {details.itemDetails.condition || 'N/A'}</Text>
+          {(translatedTextByKey.itemDescription || details.itemDetails.description) ? (
+            <Text style={styles.metaText}>{translatedTextByKey.itemDescription || details.itemDetails.description}</Text>
+          ) : null}
+          <Text style={styles.metaText}>{t('Type')}: {translatedTextByKey.itemType || details.itemDetails.type || t('N/A')}</Text>
           <Text style={styles.metaText}>
-            {t('Weight')}: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : 'N/A'}
+            {t('Brand/Model/Year')}: {[
+              translatedTextByKey.brand || details.itemDetails.brand,
+              translatedTextByKey.model || details.itemDetails.model,
+              translatedTextByKey.year || details.itemDetails.year,
+            ].filter((value) => value !== null && value !== undefined && value !== '').join(' / ') || t('N/A')}
+          </Text>
+          <Text style={styles.metaText}>{t('Condition')}: {translatedTextByKey.condition || details.itemDetails.condition || t('N/A')}</Text>
+          <Text style={styles.metaText}>
+            {t('Weight')}: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : t('N/A')}
           </Text>
           <Text style={styles.metaText}>
             {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x {details.itemDetails.dimensions.widthCm ?? '-'} x{' '}
@@ -263,7 +345,7 @@ export default function ReviewRequestDetailsScreen() {
               : ''}
           </Text>
           {details.itemDetails.specialInstructions ? (
-            <Text style={styles.metaText}>{t('Special')}: {details.itemDetails.specialInstructions}</Text>
+            <Text style={styles.metaText}>{t('Special')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions}</Text>
           ) : null}
         </View>
 

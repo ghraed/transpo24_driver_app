@@ -1,4 +1,5 @@
 import type { ChatRoom } from './chat';
+import type { AppLanguage } from '@/localization/languages';
 
 export type UserRole = 'CUSTOMER' | 'DRIVER' | 'COUNTRY_PARTNER' | 'MASTER_ADMIN';
 
@@ -33,7 +34,7 @@ export type DayOfWeek =
   | 'SATURDAY'
   | 'SUNDAY';
 
-export type PreferredLanguage = 'en' | 'ar' | 'de' | 'fr' | 'it';
+export type PreferredLanguage = AppLanguage;
 
 export interface RegisterDriverPayload {
   firstName: string;

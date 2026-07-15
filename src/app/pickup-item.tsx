@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -84,6 +85,7 @@ function toDeliverRouteParams(
 
 export default function PickupItemScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<PickupParams>();
 
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
@@ -402,7 +404,7 @@ export default function PickupItemScreen() {
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
-        <Text style={styles.errorText}>Invalid trip data. Please reopen this trip from Accepted Jobs.</Text>
+        <Text style={styles.errorText}>{t('Invalid trip data. Please reopen this trip from Accepted Jobs.')}</Text>
       </SafeAreaView>
     );
   }
@@ -414,23 +416,23 @@ export default function PickupItemScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.title}>Pickup Item</Text>
-          <Text style={styles.subTitle}>Confirm that you received the package from the customer.</Text>
-          <Text style={styles.metaText}>Trip ID: {tripId}</Text>
+          <Text style={styles.title}>{t('Pickup Item')}</Text>
+          <Text style={styles.subTitle}>{t('Confirm that you received the package from the customer.')}</Text>
+          <Text style={styles.metaText}>{t('Trip ID')}: {tripId}</Text>
           <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Pickup Details</Text>
-          <Text style={styles.metaText}>Pickup: {pickupLocation.address || 'Address unavailable'}</Text>
-          <Text style={styles.metaText}>Dropoff: {dropoffLocation.address || 'Address unavailable'}</Text>
+          <Text style={styles.sectionTitle}>{t('Pickup Details')}</Text>
+          <Text style={styles.metaText}>{t('Pickup')}: {pickupLocation.address || t('Address unavailable')}</Text>
+          <Text style={styles.metaText}>{t('Dropoff')}: {dropoffLocation.address || t('Address unavailable')}</Text>
           {distanceMeters !== null ? (
-            <Text style={styles.metaText}>Distance to pickup: {distanceMeters.toFixed(0)} m</Text>
+            <Text style={styles.metaText}>{t('Distance to pickup')}: {distanceMeters.toFixed(0)} m</Text>
           ) : (
-            <Text style={styles.metaText}>Distance to pickup: --</Text>
+            <Text style={styles.metaText}>{t('Distance to pickup')}: --</Text>
           )}
           {tooFarFromPickup ? (
-            <Text style={styles.warningText}>GPS distance is above 150m. You can still confirm without coordinates.</Text>
+            <Text style={styles.warningText}>{t('GPS distance is above 150m. You can still confirm without coordinates.')}</Text>
           ) : null}
           {locationMessage ? <Text style={styles.warningText}>{locationMessage}</Text> : null}
         </View>
@@ -448,48 +450,48 @@ export default function PickupItemScreen() {
                   longitudeDelta: 0.02,
                 }}
               >
-                <NativeMarker coordinate={pickupLocation} title="Pickup" />
-                <NativeMarker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
+                <NativeMarker coordinate={pickupLocation} title={t('Pickup')} />
+                <NativeMarker coordinate={dropoffLocation} title={t('Dropoff')} anchor={{ x: 0.5, y: 0.5 }}>
                   <View style={styles.destinationXMarker}>
                     <Text style={styles.destinationXText}>X</Text>
                   </View>
                 </NativeMarker>
                 {driverLocation ? (
-                  <NativeMarker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+                  <NativeMarker coordinate={driverLocation} title={t('Driver')} anchor={{ x: 0.5, y: 0.5 }}>
                     <Text style={styles.driverMarkerIcon}>🚗</Text>
                   </NativeMarker>
                 ) : null}
               </NativeMapView>
             ) : (
               <View style={styles.mapFallback}>
-                <Text style={styles.mapFallbackText}>Map preview is unavailable on this platform.</Text>
+                <Text style={styles.mapFallbackText}>{t('Map preview is unavailable on this platform.')}</Text>
               </View>
             )}
           </View>
         ) : (
           <View style={styles.card}>
             <Text style={styles.warningText}>
-              Google Maps key missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to enable map preview.
+              {t('Google Maps key missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to enable map preview.')}
             </Text>
           </View>
         )}
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Pickup Notes (Optional)</Text>
+          <Text style={styles.sectionTitle}>{t('Pickup Notes (Optional)')}</Text>
           <TextInput
             style={styles.textArea}
             multiline
             numberOfLines={4}
-            placeholder="Package received from customer."
+            placeholder={t('Package received from customer.')}
             value={notes}
             onChangeText={setNotes}
             maxLength={500}
           />
           <Text style={styles.hintText}>{notes.trim().length}/500</Text>
 
-          <Text style={styles.sectionTitle}>Proof Photos</Text>
+          <Text style={styles.sectionTitle}>{t('Proof Photos')}</Text>
           <Text style={styles.metaText}>
-            Select multiple images from the gallery or capture more photos with the camera. Max {MAX_PROOF_PHOTOS}.
+            {t('Select multiple images from the gallery or capture more photos with the camera. Max {{count}}.', { count: MAX_PROOF_PHOTOS })}
           </Text>
           {proofPhotos.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.proofRow}>
@@ -497,7 +499,7 @@ export default function PickupItemScreen() {
                 <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
                   <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
                   <Text style={styles.proofName} numberOfLines={1}>
-                    {photo.fileName?.trim() || `Proof ${index + 1}`}
+                    {photo.fileName?.trim() || `${t('Proof')} ${index + 1}`}
                   </Text>
                   <Pressable
                     style={styles.removeProofButton}
@@ -505,7 +507,7 @@ export default function PickupItemScreen() {
                       setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
                     }
                   >
-                    <Text style={styles.removeProofButtonText}>Remove</Text>
+                    <Text style={styles.removeProofButtonText}>{t('Remove')}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -517,18 +519,18 @@ export default function PickupItemScreen() {
               onPress={() => void onSelectProofPhotos()}
               disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
             >
-              <Text style={styles.uploadButtonText}>Choose Images</Text>
+              <Text style={styles.uploadButtonText}>{t('Choose Images')}</Text>
             </Pressable>
             <Pressable
               style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
               onPress={() => void onTakeProofPhoto()}
               disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
             >
-              <Text style={styles.uploadButtonText}>Take Photo</Text>
+              <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
             </Pressable>
             {proofPhotos.length > 0 ? (
               <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
-                <Text style={styles.clearButtonText}>Clear All</Text>
+                <Text style={styles.clearButtonText}>{t('Clear All')}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -545,7 +547,7 @@ export default function PickupItemScreen() {
             })
           }
         >
-          <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
+          <Text style={styles.secondaryActionButtonText}>{t('Additional Expenses')}</Text>
         </Pressable>
 
         <Pressable
@@ -554,11 +556,11 @@ export default function PickupItemScreen() {
           onPress={() => void onConfirmPickup()}
         >
           <Text style={styles.actionButtonText}>
-            {isLoadingLocation
-              ? 'Getting location...'
+              {isLoadingLocation
+              ? t('Getting location...')
               : isSubmitting
-                ? 'Confirming pickup...'
-                : 'Confirm Item Pickup'}
+                ? t('Confirming pickup...')
+                : t('Confirm Item Pickup')}
           </Text>
         </Pressable>
 
@@ -568,19 +570,19 @@ export default function PickupItemScreen() {
           onPress={() => void onConfirmPickup(true)}
         >
           <Text style={styles.actionButtonText}>
-            {isLoadingLocation
-              ? 'Getting location...'
+              {isLoadingLocation
+              ? t('Getting location...')
               : isSubmitting
-                ? 'Confirming pickup...'
-                : 'Confirm Item Pickup (Skip Distance Check)'}
+                ? t('Confirming pickup...')
+                : t('Confirm Item Pickup (Skip Distance Check)')}
           </Text>
         </Pressable>
 
         <Text style={styles.footerHint}>
-          Pickup confirmation is allowed within {PICKUP_CONFIRM_RADIUS_METERS} meters when location is available.
+          {t('Pickup confirmation is allowed within {{count}} meters when location is available.', { count: PICKUP_CONFIRM_RADIUS_METERS })}
         </Text>
         <Text style={styles.footerHint}>
-          Testing button bypasses the 150m frontend distance check and sends the latest coordinates when available.
+          {t('Testing button bypasses the 150m frontend distance check and sends the latest coordinates when available.')}
         </Text>
       </ScrollView>
 

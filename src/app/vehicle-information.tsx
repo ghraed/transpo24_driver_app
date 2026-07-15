@@ -2,6 +2,7 @@ import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -37,6 +38,7 @@ import {
   type VehicleBrand,
   type VehicleModelType,
 } from '@/lib/vehicle-catalog';
+import i18n from '@/localization/i18n';
 import type {
   CreateDriverVehicleForm,
   CreateDriverVehiclePayload,
@@ -129,7 +131,7 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
 }
 
 function formatDate(value: string): string {
-  if (!value) return 'Select date';
+  if (!value) return i18n.t('Select date');
   return value;
 }
 
@@ -145,9 +147,9 @@ function readAssetLabel(asset?: LocalDocumentAsset, fallback?: string | null): s
         return filename;
       }
     }
-    return 'Uploaded file';
+    return i18n.t('Uploaded file');
   }
-  return 'No file selected';
+  return i18n.t('No file selected');
 }
 
 function normalizeDateValue(value: string): Date {
@@ -174,6 +176,7 @@ function buildRollbackPayload(vehicle: DriverVehicle): CreateDriverVehiclePayloa
 
 export default function VehicleInformationScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ vehicleId?: string; flow?: string }>();
   const vehicleId =
     typeof params.vehicleId === 'string' && params.vehicleId.trim() ? params.vehicleId : undefined;
@@ -319,29 +322,29 @@ export default function VehicleInformationScreen() {
 
       const mime = asset.mimeType ?? '';
       if (!IMAGE_ALLOWED_TYPES.has(mime)) {
-        errors[fieldKey] = `${label} must be JPEG, PNG, or WEBP.`;
+        errors[fieldKey] = t('{{label}} must be JPEG, PNG, or WEBP.', { label });
         return;
       }
       if (asset.fileSize && asset.fileSize > MAX_IMAGE_BYTES) {
-        errors[fieldKey] = `${label} must be 5 MB or smaller.`;
+        errors[fieldKey] = t('{{label}} must be 5 MB or smaller.', { label });
       }
     };
 
-    if (!vehicleForm.vehicleType) errors.vehicleType = 'Vehicle type is required.';
+    if (!vehicleForm.vehicleType) errors.vehicleType = t('Vehicle type is required.');
     if (!vehicleForm.brand.trim()) {
-      errors.brand = 'Vehicle brand is required.';
+      errors.brand = t('Vehicle brand is required.');
     } else if (
       brandSelection !== OTHER_OPTION &&
       vehicleForm.vehicleType &&
       !getBrandsForVehicleType(vehicleForm.vehicleType).includes(vehicleForm.brand as VehicleBrand)
     ) {
-      errors.brand = 'Vehicle brand must match the selected vehicle type.';
+      errors.brand = t('Vehicle brand must match the selected vehicle type.');
     }
     if (brandSelection === OTHER_OPTION && !brandOtherValue.trim()) {
-      errors.brandOther = 'Type the vehicle brand.';
+      errors.brandOther = t('Type the vehicle brand.');
     }
     if (!vehicleForm.model.trim()) {
-      errors.model = 'Vehicle model is required.';
+      errors.model = t('Vehicle model is required.');
     } else if (
       modelSelection !== OTHER_OPTION &&
       brandSelection !== OTHER_OPTION &&
@@ -349,29 +352,31 @@ export default function VehicleInformationScreen() {
         vehicleForm.model,
       )
     ) {
-      errors.model = 'Vehicle model must match the selected vehicle type and brand.';
+      errors.model = t('Vehicle model must match the selected vehicle type and brand.');
     }
     if (modelSelection === OTHER_OPTION && !modelOtherValue.trim()) {
-      errors.modelOther = 'Type the vehicle model.';
+      errors.modelOther = t('Type the vehicle model.');
     }
 
     if (!vehicleForm.year.trim()) {
-      errors.year = 'Vehicle year is required.';
+      errors.year = t('Vehicle year is required.');
     } else {
       const year = Number(vehicleForm.year);
       if (!Number.isInteger(year)) {
-        errors.year = 'Vehicle year must be a number.';
+        errors.year = t('Vehicle year must be a number.');
       } else if (year < 1980 || year > currentYear + 1) {
-        errors.year = `Vehicle year must be between 1980 and ${currentYear + 1}.`;
+        errors.year = t('Vehicle year must be between 1980 and {{maxYear}}.', {
+          maxYear: currentYear + 1,
+        });
       }
     }
 
     if (!vehicleForm.licensePlateNumber.trim()) {
-      errors.licensePlateNumber = 'License plate number is required.';
+      errors.licensePlateNumber = t('License plate number is required.');
     }
 
     if (!vehicleForm.condition) {
-      errors.condition = 'Vehicle condition is required.';
+      errors.condition = t('Vehicle condition is required.');
     }
 
     validateImageAsset(
@@ -423,7 +428,7 @@ export default function VehicleInformationScreen() {
 
       const parsed = new Date(value);
       if (Number.isNaN(parsed.getTime())) {
-        errors[key] = `${label} must be a valid date.`;
+        errors[key] = t('{{label}} must be a valid date.', { label });
         return;
       }
 
@@ -431,7 +436,7 @@ export default function VehicleInformationScreen() {
       today.setHours(0, 0, 0, 0);
       parsed.setHours(0, 0, 0, 0);
       if (parsed.getTime() < today.getTime()) {
-        errors[key] = `${label} must not be in the past.`;
+        errors[key] = t('{{label}} must not be in the past.', { label });
       }
     };
 
@@ -449,12 +454,13 @@ export default function VehicleInformationScreen() {
     existingVehicle,
     modelOtherValue,
     modelSelection,
+    t,
     vehicleForm,
   ]);
 
   const vehicleTypeSelectorOptions = useMemo<SelectorOption[]>(
-    () => VEHICLE_TYPE_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
-    [],
+    () => VEHICLE_TYPE_OPTIONS.map((option) => ({ label: t(option.label), value: option.value })),
+    [t],
   );
 
   const yearSelectorOptions = useMemo<SelectorOption[]>(() => {
@@ -471,9 +477,9 @@ export default function VehicleInformationScreen() {
         label: brand,
         value: brand,
       })),
-      { label: 'Other', value: OTHER_OPTION },
+      { label: t('Other'), value: OTHER_OPTION },
     ],
-    [vehicleForm.vehicleType],
+    [t, vehicleForm.vehicleType],
   );
 
   const modelSelectorOptions = useMemo<SelectorOption[]>(() => {
@@ -484,13 +490,13 @@ export default function VehicleInformationScreen() {
 
     return [
       ...options.map((model) => ({ label: model, value: model })),
-      { label: 'Other', value: OTHER_OPTION },
+      { label: t('Other'), value: OTHER_OPTION },
     ];
-  }, [brandSelection, vehicleForm.vehicleType]);
+  }, [brandSelection, t, vehicleForm.vehicleType]);
 
   const conditionSelectorOptions = useMemo<SelectorOption[]>(
-    () => VEHICLE_CONDITION_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
-    [],
+    () => VEHICLE_CONDITION_OPTIONS.map((option) => ({ label: t(option.label), value: option.value })),
+    [t],
   );
 
   const activeSelectorOptions = useMemo<SelectorOption[]>(() => {
@@ -835,18 +841,18 @@ export default function VehicleInformationScreen() {
             </Text>
           </View>
         )}
-        {localAsset ? <Text style={styles.fileName}>{localAsset.fileName ?? 'Selected file'}</Text> : null}
+        {localAsset ? <Text style={styles.fileName}>{localAsset.fileName ?? t('Selected file')}</Text> : null}
         {hasAttemptedSubmit && fieldErrors[field] ? (
           <Text style={styles.errorText}>{fieldErrors[field]}</Text>
         ) : null}
         <View style={styles.docButtonsRow}>
           <Pressable style={styles.uploadButtonSmall} onPress={() => void onPick()}>
             <Text style={styles.uploadButtonText}>
-              {localAsset || remoteUrl ? 'Replace' : 'Select'}
+              {localAsset || remoteUrl ? t('Replace') : t('Select')}
             </Text>
           </Pressable>
           <Pressable style={styles.uploadButtonSmall} onPress={() => void onTakeImage()}>
-            <Text style={styles.uploadButtonText}>Take image</Text>
+            <Text style={styles.uploadButtonText}>{t('Take image')}</Text>
           </Pressable>
         </View>
       </View>
@@ -855,11 +861,11 @@ export default function VehicleInformationScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1D4ED8" />
-        <Text style={styles.loadingText}>Loading vehicle information...</Text>
-      </View>
-    );
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1D4ED8" />
+        <Text style={styles.loadingText}>{t('Loading vehicle information...')}</Text>
+        </View>
+      );
   }
 
   if (loadError) {
@@ -867,7 +873,7 @@ export default function VehicleInformationScreen() {
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>{loadError}</Text>
         <Pressable style={styles.primaryButton} onPress={() => void loadVehicle()}>
-          <Text style={styles.primaryButtonText}>Retry</Text>
+          <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
         </Pressable>
       </View>
     );
@@ -881,31 +887,31 @@ export default function VehicleInformationScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
         <View style={styles.header}>
           <Text style={styles.progress}>
-            {flow === 'management' ? 'Vehicle Management' : 'Step 2 of 3: Vehicle Information'}
+            {flow === 'management' ? t('Vehicle Management') : t('Step 2 of 3: Vehicle Information')}
           </Text>
-          <Text style={styles.title}>{isEditing ? 'Edit Vehicle' : 'Add Vehicle'}</Text>
+          <Text style={styles.title}>{isEditing ? t('Edit Vehicle') : t('Add Vehicle')}</Text>
           <Text style={styles.subtitle}>
-            Save the vehicle details, photos, and documents required for transport requests.
+            {t('Save the vehicle details, photos, and documents required for transport requests.')}
           </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehicle Details</Text>
-          <Text style={styles.requiredLabel}>Required fields are marked *</Text>
+          <Text style={styles.sectionTitle}>{t('Vehicle Details')}</Text>
+          <Text style={styles.requiredLabel}>{t('Required fields are marked *')}</Text>
 
-          <Text style={styles.fieldLabel}>Vehicle type *</Text>
+          <Text style={styles.fieldLabel}>{t('Vehicle type *')}</Text>
           <Pressable style={styles.selectorField} onPress={() => openSelector('vehicleType')}>
             <Text style={vehicleForm.vehicleType ? styles.selectorValue : styles.selectorPlaceholder}>
               {vehicleForm.vehicleType
                 ? formatSelectorLabel(vehicleForm.vehicleType, vehicleTypeSelectorOptions)
-                : 'Select vehicle type'}
+                : t('Select vehicle type')}
             </Text>
           </Pressable>
           {hasAttemptedSubmit && fieldErrors.vehicleType ? (
             <Text style={styles.errorText}>{fieldErrors.vehicleType}</Text>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Vehicle brand *</Text>
+          <Text style={styles.fieldLabel}>{t('Vehicle brand *')}</Text>
           <Pressable
             style={[styles.selectorField, !vehicleForm.vehicleType && styles.selectorFieldDisabled]}
             onPress={() => {
@@ -915,8 +921,8 @@ export default function VehicleInformationScreen() {
           >
             <Text style={vehicleForm.brand ? styles.selectorValue : styles.selectorPlaceholder}>
               {vehicleForm.vehicleType
-                ? vehicleForm.brand || 'Select vehicle brand'
-                : 'Select vehicle type first'}
+                ? vehicleForm.brand || t('Select vehicle brand')
+                : t('Select vehicle type first')}
             </Text>
           </Pressable>
           {hasAttemptedSubmit && fieldErrors.brand ? (
@@ -924,10 +930,10 @@ export default function VehicleInformationScreen() {
           ) : null}
           {brandSelection === OTHER_OPTION ? (
             <>
-              <Text style={styles.fieldLabel}>Other vehicle brand *</Text>
+              <Text style={styles.fieldLabel}>{t('Other vehicle brand *')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Type vehicle brand"
+                placeholder={t('Type vehicle brand')}
                 value={brandOtherValue}
                 onChangeText={(value) => {
                   setBrandOtherValue(value);
@@ -940,7 +946,7 @@ export default function VehicleInformationScreen() {
             </>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Vehicle model *</Text>
+          <Text style={styles.fieldLabel}>{t('Vehicle model *')}</Text>
           <Pressable
             style={[styles.selectorField, !vehicleForm.brand && styles.selectorFieldDisabled]}
             onPress={() => {
@@ -949,7 +955,7 @@ export default function VehicleInformationScreen() {
             }}
           >
             <Text style={vehicleForm.model ? styles.selectorValue : styles.selectorPlaceholder}>
-              {vehicleForm.brand ? vehicleForm.model || 'Select vehicle model' : 'Select vehicle brand first'}
+              {vehicleForm.brand ? vehicleForm.model || t('Select vehicle model') : t('Select vehicle brand first')}
             </Text>
           </Pressable>
           {hasAttemptedSubmit && fieldErrors.model ? (
@@ -957,10 +963,10 @@ export default function VehicleInformationScreen() {
           ) : null}
           {modelSelection === OTHER_OPTION ? (
             <>
-              <Text style={styles.fieldLabel}>Other vehicle model *</Text>
+              <Text style={styles.fieldLabel}>{t('Other vehicle model *')}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Type vehicle model"
+                placeholder={t('Type vehicle model')}
                 value={modelOtherValue}
                 onChangeText={(value) => {
                   setModelOtherValue(value);
@@ -973,20 +979,20 @@ export default function VehicleInformationScreen() {
             </>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Vehicle year *</Text>
+          <Text style={styles.fieldLabel}>{t('Vehicle year *')}</Text>
           <Pressable style={styles.selectorField} onPress={() => openSelector('year')}>
             <Text style={vehicleForm.year ? styles.dateValue : styles.datePlaceholder}>
-              {vehicleForm.year || 'Select vehicle year'}
+              {vehicleForm.year || t('Select vehicle year')}
             </Text>
           </Pressable>
           {hasAttemptedSubmit && fieldErrors.year ? (
             <Text style={styles.errorText}>{fieldErrors.year}</Text>
           ) : null}
 
-          <Text style={styles.fieldLabel}>License plate number *</Text>
+          <Text style={styles.fieldLabel}>{t('License plate number *')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="License plate number"
+            placeholder={t('License plate number')}
             value={vehicleForm.licensePlateNumber}
             onChangeText={(value) => onVehicleChange('licensePlateNumber', value)}
           />
@@ -994,12 +1000,12 @@ export default function VehicleInformationScreen() {
             <Text style={styles.errorText}>{fieldErrors.licensePlateNumber}</Text>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Vehicle condition *</Text>
+          <Text style={styles.fieldLabel}>{t('Vehicle condition *')}</Text>
           <Pressable style={styles.selectorField} onPress={() => openSelector('condition')}>
             <Text style={vehicleForm.condition ? styles.selectorValue : styles.selectorPlaceholder}>
               {vehicleForm.condition
                 ? formatSelectorLabel(vehicleForm.condition, conditionSelectorOptions)
-                : 'Select vehicle condition'}
+                : t('Select vehicle condition')}
             </Text>
           </Pressable>
           {hasAttemptedSubmit && fieldErrors.condition ? (
@@ -1008,35 +1014,35 @@ export default function VehicleInformationScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehicle Photos</Text>
+          <Text style={styles.sectionTitle}>{t('Vehicle Photos')}</Text>
           {renderUploadCard({
             field: 'frontPhoto',
-            label: 'Front photo',
-            helper: 'Select or take a clear image showing the front of the vehicle.',
+            label: t('Front photo'),
+            helper: t('Select or take a clear image showing the front of the vehicle.'),
             remoteUrl: existingVehicle?.frontPhotoUrl,
             onPick: () => pickImage('frontPhoto'),
             onTakeImage: () => takeVehicleDocumentImage('frontPhoto'),
           })}
           {renderUploadCard({
             field: 'rearPhoto',
-            label: 'Rear photo',
-            helper: 'Select or take a clear image showing the rear of the vehicle.',
+            label: t('Rear photo'),
+            helper: t('Select or take a clear image showing the rear of the vehicle.'),
             remoteUrl: existingVehicle?.rearPhotoUrl,
             onPick: () => pickImage('rearPhoto'),
             onTakeImage: () => takeVehicleDocumentImage('rearPhoto'),
           })}
           {renderUploadCard({
             field: 'sidePhoto',
-            label: 'Side photo',
-            helper: 'Select or take a clear side-view image of the vehicle.',
+            label: t('Side photo'),
+            helper: t('Select or take a clear side-view image of the vehicle.'),
             remoteUrl: existingVehicle?.sidePhotoUrl,
             onPick: () => pickImage('sidePhoto'),
             onTakeImage: () => takeVehicleDocumentImage('sidePhoto'),
           })}
           {renderUploadCard({
             field: 'licensePlatePhoto',
-            label: 'License plate photo',
-            helper: 'Make sure the plate number is fully readable.',
+            label: t('License plate photo'),
+            helper: t('Make sure the plate number is fully readable.'),
             remoteUrl: existingVehicle?.licensePlatePhotoUrl,
             onPick: () => pickImage('licensePlatePhoto'),
             onTakeImage: () => takeVehicleDocumentImage('licensePlatePhoto'),
@@ -1044,33 +1050,33 @@ export default function VehicleInformationScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Vehicle Documents</Text>
+          <Text style={styles.sectionTitle}>{t('Vehicle Documents')}</Text>
           {renderUploadCard({
             field: 'registrationFrontDocument',
-            label: 'Registration card front side',
-            helper: 'Select or take a clear image of the front side of the vehicle registration card.',
+            label: t('Registration card front side'),
+            helper: t('Select or take a clear image of the front side of the vehicle registration card.'),
             remoteUrl: existingVehicle?.registrationFrontDocumentUrl,
             onPick: () => pickImage('registrationFrontDocument'),
             onTakeImage: () => takeVehicleDocumentImage('registrationFrontDocument'),
           })}
           {renderUploadCard({
             field: 'registrationBackDocument',
-            label: 'Registration card back side',
-            helper: 'Select or take a clear image of the back side of the vehicle registration card.',
+            label: t('Registration card back side'),
+            helper: t('Select or take a clear image of the back side of the vehicle registration card.'),
             remoteUrl: existingVehicle?.registrationBackDocumentUrl,
             onPick: () => pickImage('registrationBackDocument'),
             onTakeImage: () => takeVehicleDocumentImage('registrationBackDocument'),
           })}
           {renderUploadCard({
             field: 'insuranceDocument',
-            label: 'Insurance document',
-            helper: 'Select or take a clear image of the valid vehicle insurance document.',
+            label: t('Insurance document'),
+            helper: t('Select or take a clear image of the valid vehicle insurance document.'),
             remoteUrl: existingVehicle?.insuranceDocumentUrl,
             onPick: () => pickImage('insuranceDocument'),
             onTakeImage: () => takeVehicleDocumentImage('insuranceDocument'),
           })}
 
-          <Text style={styles.fieldLabel}>Insurance expiry date</Text>
+          <Text style={styles.fieldLabel}>{t('Insurance expiry date')}</Text>
           <Pressable
             style={styles.dateField}
             onPress={() => setActiveDateField('insuranceExpiryDate')}
@@ -1083,7 +1089,7 @@ export default function VehicleInformationScreen() {
             <Text style={styles.errorText}>{fieldErrors.insuranceExpiryDate}</Text>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Registration expiry date</Text>
+          <Text style={styles.fieldLabel}>{t('Registration expiry date')}</Text>
           <Pressable
             style={styles.dateField}
             onPress={() => setActiveDateField('registrationExpiryDate')}
@@ -1103,11 +1109,11 @@ export default function VehicleInformationScreen() {
 
         {existingVehicle?.status === 'REJECTED' && existingVehicle.rejectionReason ? (
           <Text style={styles.errorText}>
-            Rejection reason: {existingVehicle.rejectionReason}
+            {t('Rejection reason')}: {existingVehicle.rejectionReason}
           </Text>
         ) : null}
         {existingVehicle?.status === 'PENDING_REVIEW' ? (
-          <Text style={styles.infoText}>Your vehicle is pending approval.</Text>
+          <Text style={styles.infoText}>{t('Your vehicle is pending approval.')}</Text>
         ) : null}
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
@@ -1123,9 +1129,9 @@ export default function VehicleInformationScreen() {
             <Text style={styles.primaryButtonText}>
               {flow === 'management'
                 ? isEditing
-                  ? 'Save Changes'
-                  : 'Save Vehicle'
-                : 'Next'}
+                  ? t('Save Changes')
+                  : t('Save Vehicle')
+                : t('Next')}
             </Text>
           )}
         </Pressable>
@@ -1148,7 +1154,7 @@ export default function VehicleInformationScreen() {
       ) : null}
       {activeDateField ? (
         <Pressable style={styles.dateDismissButton} onPress={() => setActiveDateField(null)}>
-          <Text style={styles.dateDismissText}>Done</Text>
+          <Text style={styles.dateDismissText}>{t('Done')}</Text>
         </Pressable>
       ) : null}
       <Modal
@@ -1163,22 +1169,22 @@ export default function VehicleInformationScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {activeSelectorField === 'vehicleType'
-                  ? 'Select vehicle type'
+                  ? t('Select vehicle type')
                   : activeSelectorField === 'brand'
-                    ? 'Select vehicle brand'
+                    ? t('Select vehicle brand')
                     : activeSelectorField === 'model'
-                      ? 'Select vehicle model'
+                      ? t('Select vehicle model')
                       : activeSelectorField === 'year'
-                        ? 'Select vehicle year'
-                      : 'Select vehicle condition'}
+                        ? t('Select vehicle year')
+                      : t('Select vehicle condition')}
               </Text>
               <Pressable onPress={closeSelector}>
-                <Text style={styles.modalCloseText}>Close</Text>
+                <Text style={styles.modalCloseText}>{t('Close')}</Text>
               </Pressable>
             </View>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search"
+              placeholder={t('Search')}
               value={selectorSearch}
               onChangeText={setSelectorSearch}
             />
@@ -1205,7 +1211,7 @@ export default function VehicleInformationScreen() {
                 </Pressable>
               ))}
               {filteredSelectorOptions.length === 0 ? (
-                <Text style={styles.emptySelectorText}>No matching options found.</Text>
+                <Text style={styles.emptySelectorText}>{t('No matching options found.')}</Text>
               ) : null}
             </ScrollView>
           </View>

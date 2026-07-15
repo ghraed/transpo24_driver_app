@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
 } from '@/lib/api';
 import {
@@ -40,6 +41,7 @@ import {
   type PlaceAutocompleteSuggestion,
 } from '@/lib/places';
 import { nextStepToRoute } from '@/lib/onboarding-route';
+import i18n from '@/localization/i18n';
 import type {
   DayOfWeek,
   DriverAvailabilityForm,
@@ -135,7 +137,7 @@ function createDefaultWeeklySchedule(): DriverAvailabilityFormDay[] {
     const weekday = day !== 'SATURDAY' && day !== 'SUNDAY';
     return {
       dayOfWeek: day,
-      label: DAY_LABELS[day],
+      label: i18n.t(DAY_LABELS[day]),
       isAvailable: weekday,
       startTime: weekday ? '08:00' : '',
       endTime: weekday ? '18:00' : '',
@@ -145,6 +147,7 @@ function createDefaultWeeklySchedule(): DriverAvailabilityFormDay[] {
 
 export default function SetAvailabilityScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const {
     driver,
     refreshDriverAvailability,
@@ -206,7 +209,7 @@ export default function SetAvailabilityScreen() {
         const found = response.weeklySchedule.find((entry) => entry.dayOfWeek === day);
         return {
           dayOfWeek: day,
-          label: DAY_LABELS[day],
+          label: i18n.t(DAY_LABELS[day]),
           isAvailable: found?.isAvailable ?? false,
           startTime: found?.startTime ?? '',
           endTime: found?.endTime ?? '',
@@ -234,12 +237,12 @@ export default function SetAvailabilityScreen() {
       const response = await refreshDriverAvailability();
       applyAvailability(response);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load availability.';
+      const message = error instanceof Error ? error.message : t('Failed to load availability.');
       setLoadError(message);
     } finally {
       setIsLoading(false);
     }
-  }, [applyAvailability, refreshDriverAvailability]);
+  }, [applyAvailability, refreshDriverAvailability, t]);
 
   useEffect(() => {
     void loadAvailability();
@@ -249,42 +252,42 @@ export default function SetAvailabilityScreen() {
     const errors: Record<string, string> = {};
 
     if (!form.timezone.trim()) {
-      errors.timezone = 'Timezone is required.';
+      errors.timezone = t('Timezone is required.');
     }
 
     const radius = parseNumber(form.serviceRadiusKm);
     if (radius === undefined) {
-      errors.serviceRadiusKm = 'Service radius is required and must be numeric.';
+      errors.serviceRadiusKm = t('Service radius is required and must be numeric.');
     } else if (radius < 1 || radius > 500) {
-      errors.serviceRadiusKm = 'Service radius must be between 1 and 500 km.';
+      errors.serviceRadiusKm = t('Service radius must be between 1 and 500 km.');
     }
 
     const latitude = parseNumber(form.baseLatitude);
     const longitude = parseNumber(form.baseLongitude);
 
     if ((latitude === undefined) !== (longitude === undefined)) {
-      errors.baseLocation = 'Base latitude and longitude must be provided together.';
+      errors.baseLocation = t('Base latitude and longitude must be provided together.');
     }
 
     if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
-      errors.baseLatitude = 'Base latitude must be between -90 and 90.';
+      errors.baseLatitude = t('Base latitude must be between -90 and 90.');
     }
 
     if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
-      errors.baseLongitude = 'Base longitude must be between -180 and 180.';
+      errors.baseLongitude = t('Base longitude must be between -180 and 180.');
     }
 
     if (!form.acceptsImmediateRequests && !form.acceptsScheduledRequests) {
-      errors.requestPreferences = 'Enable at least one request preference.';
+      errors.requestPreferences = t('Enable at least one request preference.');
     }
 
     if (form.weeklySchedule.length !== 7) {
-      errors.weeklySchedule = 'Weekly schedule must contain exactly 7 days.';
+      errors.weeklySchedule = t('Weekly schedule must contain exactly 7 days.');
     }
 
     const uniqueDays = new Set(form.weeklySchedule.map((day) => day.dayOfWeek));
     if (uniqueDays.size !== 7) {
-      errors.weeklySchedule = 'Each day must appear once in weekly schedule.';
+      errors.weeklySchedule = t('Each day must appear once in weekly schedule.');
     }
 
     let availableDayCount = 0;
@@ -297,15 +300,15 @@ export default function SetAvailabilityScreen() {
       availableDayCount += 1;
 
       if (!day.startTime.trim()) {
-        errors[`startTime-${day.dayOfWeek}`] = `${day.label}: start time is required.`;
+        errors[`startTime-${day.dayOfWeek}`] = t('{{day}}: start time is required.', { day: day.label });
       } else if (!TIME_REGEX.test(day.startTime.trim())) {
-        errors[`startTime-${day.dayOfWeek}`] = `${day.label}: start time must be HH:mm.`;
+        errors[`startTime-${day.dayOfWeek}`] = t('{{day}}: start time must be HH:mm.', { day: day.label });
       }
 
       if (!day.endTime.trim()) {
-        errors[`endTime-${day.dayOfWeek}`] = `${day.label}: end time is required.`;
+        errors[`endTime-${day.dayOfWeek}`] = t('{{day}}: end time is required.', { day: day.label });
       } else if (!TIME_REGEX.test(day.endTime.trim())) {
-        errors[`endTime-${day.dayOfWeek}`] = `${day.label}: end time must be HH:mm.`;
+        errors[`endTime-${day.dayOfWeek}`] = t('{{day}}: end time must be HH:mm.', { day: day.label });
       }
 
       if (
@@ -313,16 +316,16 @@ export default function SetAvailabilityScreen() {
         TIME_REGEX.test(day.endTime.trim()) &&
         toMinutes(day.endTime.trim()) <= toMinutes(day.startTime.trim())
       ) {
-        errors[`endTime-${day.dayOfWeek}`] = `${day.label}: end time must be after start time.`;
+        errors[`endTime-${day.dayOfWeek}`] = t('{{day}}: end time must be after start time.', { day: day.label });
       }
     });
 
     if (availableDayCount === 0) {
-      errors.availableDays = 'At least one day must be available.';
+      errors.availableDays = t('At least one day must be available.');
     }
 
     return errors;
-  }, [form]);
+  }, [form, t]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -401,7 +404,7 @@ export default function SetAvailabilityScreen() {
       const nextLocation: SelectedBaseLocation = {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
-        address: resolved.address || 'Current location',
+        address: resolved.address || t('Current location'),
         placeId: resolved.placeId,
         source: 'device',
       };
@@ -410,7 +413,7 @@ export default function SetAvailabilityScreen() {
       setAddressQuery(nextLocation.address ?? '');
       applySelectedLocation(nextLocation);
     },
-    [applySelectedLocation, resolveSelectionAddress],
+    [applySelectedLocation, resolveSelectionAddress, t],
   );
 
   const loadCurrentLocation = useCallback(async (requestPermission: boolean) => {
@@ -423,9 +426,7 @@ export default function SetAvailabilityScreen() {
 
       if (permission.status !== Location.PermissionStatus.GRANTED) {
         setIsLocationServicesDisabled(false);
-        setLocationMessage(
-          'Location permission denied. You can still select a location on the map.',
-        );
+        setLocationMessage(t('Location permission denied. You can still select a location on the map.'));
         return;
       }
 
@@ -433,7 +434,7 @@ export default function SetAvailabilityScreen() {
       if (!servicesEnabled) {
         setIsLocationServicesDisabled(true);
         setLocationMessage(
-          'Location services are off. Turn GPS on to use your current location, or select a location on the map.',
+          t('Location services are off. Turn GPS on to use your current location, or select a location on the map.'),
         );
         return;
       }
@@ -448,13 +449,11 @@ export default function SetAvailabilityScreen() {
       await applyCurrentLocation(current);
     } catch {
       setIsLocationServicesDisabled(false);
-      setLocationMessage(
-        'Unable to access current location. You can still select a location manually.',
-      );
+      setLocationMessage(t('Unable to access current location. You can still select a location manually.'));
     } finally {
       setIsGettingLocation(false);
     }
-  }, [applyCurrentLocation]);
+  }, [applyCurrentLocation, t]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -519,10 +518,12 @@ export default function SetAvailabilityScreen() {
       applySelectedLocation(nextLocation);
       setPlaceSuggestions([]);
       setSearchMessage(
-        nextLocation.address ? `Pinned: ${nextLocation.address}` : 'Selected base location.',
+        nextLocation.address
+          ? t('Pinned: {{address}}', { address: nextLocation.address })
+          : t('Selected base location.'),
       );
     },
-    [applySelectedLocation, resolveSelectionAddress],
+    [applySelectedLocation, resolveSelectionAddress, t],
   );
 
   useEffect(() => {
@@ -548,13 +549,15 @@ export default function SetAvailabilityScreen() {
           if (isCancelled) return;
           setPlaceSuggestions(suggestions);
           setSearchMessage(
-            suggestions.length === 0 ? 'No matching places found.' : 'Choose a suggested address.',
+            suggestions.length === 0
+              ? t('No matching places found.')
+              : t('Choose a suggested address.'),
           );
         } catch (error) {
           if (isCancelled) return;
           setPlaceSuggestions([]);
           setSearchMessage(
-            error instanceof Error ? error.message : 'Places search failed. Please try again.',
+            error instanceof Error ? error.message : t('Places search failed. Please try again.'),
           );
         } finally {
           if (!isCancelled) {
@@ -570,7 +573,7 @@ export default function SetAvailabilityScreen() {
       isCancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [addressQuery]);
+  }, [addressQuery, t]);
 
   const onSuggestionPress = useCallback(async (suggestion: PlaceAutocompleteSuggestion) => {
     setIsSearchingPlaces(true);
@@ -587,23 +590,23 @@ export default function SetAvailabilityScreen() {
       );
     } catch (error) {
       setSearchMessage(
-        error instanceof Error ? error.message : 'Places search failed. Please try again.',
+        error instanceof Error ? error.message : t('Places search failed. Please try again.'),
       );
     } finally {
       setIsSearchingPlaces(false);
     }
-  }, [applyBaseLocationSelection]);
+  }, [applyBaseLocationSelection, t]);
 
   const onSearchSubmit = useCallback(async () => {
     const query = addressQuery.trim();
 
     if (!query) {
-      setSearchMessage('Type an address first to search places.');
+      setSearchMessage(t('Type an address first to search places.'));
       return;
     }
 
     if (!HAS_GOOGLE_MAPS_API_KEY) {
-      setSearchMessage('Google Places key is missing. Check your map environment configuration.');
+      setSearchMessage(t('Google Places key is missing. Check your map environment configuration.'));
       return;
     }
 
@@ -633,12 +636,12 @@ export default function SetAvailabilityScreen() {
       );
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Places search failed. Please try again.';
+        error instanceof Error ? error.message : t('Places search failed. Please try again.');
       setSearchMessage(message);
     } finally {
       setIsSearchingPlaces(false);
     }
-  }, [addressQuery, applyBaseLocationSelection, placeSuggestions]);
+  }, [addressQuery, applyBaseLocationSelection, placeSuggestions, t]);
 
   const onMapPress = useCallback((event: MapPressEvent) => {
     const coordinates = event.nativeEvent.coordinate;
@@ -691,11 +694,14 @@ export default function SetAvailabilityScreen() {
     try {
       const response = await saveDriverAvailability(payload);
       setSubmitSuccess(
-        `Availability saved. Online: ${response.isOnline ? 'YES' : 'NO'} | Radius: ${response.serviceRadiusKm} km`,
+        t('Availability saved. Online: {{online}} | Radius: {{radius}} km', {
+          online: response.isOnline ? t('YES') : t('NO'),
+          radius: response.serviceRadiusKm,
+        }),
       );
 
       if (response.nextStep === 'SET_AVAILABILITY') {
-        setSubmitError('Please complete all required availability fields.');
+        setSubmitError(t('Please complete all required availability fields.'));
         return;
       }
 
@@ -705,7 +711,7 @@ export default function SetAvailabilityScreen() {
 
       router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save availability.';
+      const message = error instanceof Error ? error.message : t('Failed to save availability.');
       const normalized = message.toLowerCase();
 
       if (
@@ -719,7 +725,7 @@ export default function SetAvailabilityScreen() {
       }
 
       if (normalized.includes('profile must be completed')) {
-        setSubmitError('Profile is incomplete. Redirecting to Complete Profile...');
+        setSubmitError(t('Profile is incomplete. Redirecting to Complete Profile...'));
         setTimeout(() => {
           router.replace('/complete-profile');
         }, 700);
@@ -727,7 +733,7 @@ export default function SetAvailabilityScreen() {
       }
 
       if (normalized.includes('vehicle') || normalized.includes('documents')) {
-        setSubmitSuccess('Continuing to approval despite backend document prerequisite.');
+        setSubmitSuccess(t('Continuing to approval despite backend document prerequisite.'));
         setSubmitError('');
         router.replace('/waiting-approval');
         return;
@@ -743,7 +749,7 @@ export default function SetAvailabilityScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1D4ED8" />
-        <Text style={styles.loadingText}>Loading availability...</Text>
+        <Text style={styles.loadingText}>{t('Loading availability...')}</Text>
       </View>
     );
   }
@@ -753,7 +759,7 @@ export default function SetAvailabilityScreen() {
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>{loadError}</Text>
         <Pressable style={styles.retryButton} onPress={() => void loadAvailability()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('Retry')}</Text>
         </Pressable>
       </View>
     );
@@ -767,23 +773,23 @@ export default function SetAvailabilityScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/vehicle-documents')}>
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.progress}>Step 3 of 3: Availability</Text>
-          <Text style={styles.title}>Set Your Availability</Text>
+          <Text style={styles.progress}>{t('Step 3 of 3: Availability')}</Text>
+          <Text style={styles.title}>{t('Set Your Availability')}</Text>
           <Text style={styles.subtitle}>
-            Choose when and where you can receive transport requests.
+            {t('Choose when and where you can receive transport requests.')}
           </Text>
           <Text style={styles.helper}>
-            Your availability helps us match you with transport requests at the right time and place.
+            {t('Your availability helps us match you with transport requests at the right time and place.')}
           </Text>
-          <Text style={styles.endpointText}>Backend: {apiBaseUrl}</Text>
+          <Text style={styles.endpointText}>{t('Backend')}: {apiBaseUrl}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Service Area</Text>
+          <Text style={styles.sectionTitle}>{t('Service Area')}</Text>
 
-          <Text style={styles.fieldLabel}>Timezone *</Text>
+          <Text style={styles.fieldLabel}>{t('Timezone *')}</Text>
           <TextInput
             style={styles.input}
             value={form.timezone}
@@ -793,7 +799,7 @@ export default function SetAvailabilityScreen() {
           />
           {fieldErrors.timezone ? <Text style={styles.errorText}>{fieldErrors.timezone}</Text> : null}
 
-          <Text style={styles.fieldLabel}>Service radius (km) *</Text>
+          <Text style={styles.fieldLabel}>{t('Service radius (km) *')}</Text>
           <TextInput
             style={styles.input}
             value={form.serviceRadiusKm}
@@ -803,7 +809,7 @@ export default function SetAvailabilityScreen() {
           />
           {fieldErrors.serviceRadiusKm ? <Text style={styles.errorText}>{fieldErrors.serviceRadiusKm}</Text> : null}
 
-          <Text style={styles.fieldLabel}>Base address</Text>
+          <Text style={styles.fieldLabel}>{t('Base address')}</Text>
           <View style={styles.searchContainer}>
             <TextInput
               value={addressQuery}
@@ -814,18 +820,18 @@ export default function SetAvailabilityScreen() {
                 setSearchMessage('');
               }}
               onSubmitEditing={() => void onSearchSubmit()}
-              placeholder="Search base address"
+              placeholder={t('Search base address')}
               placeholderTextColor="#98A2B3"
               style={styles.searchInput}
               returnKeyType="search"
             />
             <Text style={styles.searchHint}>
               {HAS_GOOGLE_MAPS_API_KEY
-                ? 'Google Places API key is configured.'
-                : 'Google Places API key is not configured yet.'}
+                ? t('Google Places API key is configured.')
+                : t('Google Places API key is not configured yet.')}
             </Text>
             <Text style={styles.searchHint}>
-              Start typing and tap a suggestion to pin the base location.
+              {t('Start typing and tap a suggestion to pin the base location.')}
             </Text>
             {placeSuggestions.length > 0 ? (
               <View style={styles.suggestionsList}>
@@ -848,7 +854,7 @@ export default function SetAvailabilityScreen() {
               {isGettingLocation ? (
                 <ActivityIndicator size="small" color="#1A73E8" />
               ) : (
-                <Text style={styles.locationButtonText}>Use Current Location</Text>
+                <Text style={styles.locationButtonText}>{t('Use Current Location')}</Text>
               )}
             </Pressable>
             {isSearchingPlaces ? (
@@ -875,16 +881,16 @@ export default function SetAvailabilityScreen() {
                       latitude: selectedLocation.latitude,
                       longitude: selectedLocation.longitude,
                     }}
-                    title="Base location"
-                    description={selectedLocation.address ?? 'Selected location'}
+                    title={t('Base location')}
+                    description={selectedLocation.address ?? t('Selected location')}
                   />
                 ) : null}
               </NativeMapView>
             ) : (
               <View style={styles.mapFallback}>
-                <Text style={styles.mapFallbackTitle}>Map preview is not available on web.</Text>
+                <Text style={styles.mapFallbackTitle}>{t('Map preview is not available on web.')}</Text>
                 <Text style={styles.mapFallbackText}>
-                  Search for an address above to pin the base location, or open the app on iOS or Android for full map selection.
+                  {t('Search for an address above to pin the base location, or open the app on iOS or Android for full map selection.')}
                 </Text>
               </View>
             )}
@@ -892,7 +898,7 @@ export default function SetAvailabilityScreen() {
             {isGettingLocation ? (
               <View style={styles.mapOverlay}>
                 <ActivityIndicator size="small" color="#1A73E8" />
-                <Text style={styles.mapOverlayText}>Getting your location...</Text>
+                <Text style={styles.mapOverlayText}>{t('Getting your location...')}</Text>
               </View>
             ) : null}
           </View>
@@ -902,21 +908,21 @@ export default function SetAvailabilityScreen() {
           <View style={styles.bottomCard}>
             <Text style={styles.bottomTitle}>
               {selectedLocation?.address?.trim()
-                ? selectedLocation.address
-                : selectedLocation
-                  ? 'Selected location'
-                  : 'Tap on the map or search for an address.'}
+                  ? selectedLocation.address
+                  : selectedLocation
+                  ? t('Selected location')
+                  : t('Tap on the map or search for an address.')}
             </Text>
             {selectedLocation ? (
               <Text style={styles.bottomDetails}>
-                Lat: {selectedLocation.latitude.toFixed(6)}  |  Lng: {selectedLocation.longitude.toFixed(6)}
+                {t('Lat')}: {selectedLocation.latitude.toFixed(6)}  |  {t('Lng')}: {selectedLocation.longitude.toFixed(6)}
               </Text>
             ) : null}
           </View>
 
           <View style={styles.row}>
             <View style={styles.halfWidth}>
-              <Text style={styles.fieldLabel}>Base latitude</Text>
+              <Text style={styles.fieldLabel}>{t('Base latitude')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.baseLatitude}
@@ -927,7 +933,7 @@ export default function SetAvailabilityScreen() {
               {fieldErrors.baseLatitude ? <Text style={styles.errorText}>{fieldErrors.baseLatitude}</Text> : null}
             </View>
             <View style={styles.halfWidth}>
-              <Text style={styles.fieldLabel}>Base longitude</Text>
+              <Text style={styles.fieldLabel}>{t('Base longitude')}</Text>
               <TextInput
                 style={styles.input}
                 value={form.baseLongitude}
@@ -943,10 +949,10 @@ export default function SetAvailabilityScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Request Preferences</Text>
+          <Text style={styles.sectionTitle}>{t('Request Preferences')}</Text>
 
           <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>Accept immediate requests</Text>
+            <Text style={styles.fieldLabel}>{t('Accept immediate requests')}</Text>
             <Switch
               value={form.acceptsImmediateRequests}
               onValueChange={(value) => onChange('acceptsImmediateRequests', value)}
@@ -954,7 +960,7 @@ export default function SetAvailabilityScreen() {
           </View>
 
           <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>Accept scheduled requests</Text>
+            <Text style={styles.fieldLabel}>{t('Accept scheduled requests')}</Text>
             <Switch
               value={form.acceptsScheduledRequests}
               onValueChange={(value) => onChange('acceptsScheduledRequests', value)}
@@ -967,7 +973,7 @@ export default function SetAvailabilityScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly Schedule</Text>
+          <Text style={styles.sectionTitle}>{t('Weekly Schedule')}</Text>
 
           {form.weeklySchedule.map((day) => {
             const startKey = `startTime-${day.dayOfWeek}`;
@@ -992,7 +998,7 @@ export default function SetAvailabilityScreen() {
                 {day.isAvailable ? (
                   <View style={styles.row}>
                     <View style={styles.halfWidth}>
-                      <Text style={styles.fieldLabel}>Start (HH:mm)</Text>
+                      <Text style={styles.fieldLabel}>{t('Start (HH:mm)')}</Text>
                       <TextInput
                         style={styles.input}
                         value={day.startTime}
@@ -1003,7 +1009,7 @@ export default function SetAvailabilityScreen() {
                       {fieldErrors[startKey] ? <Text style={styles.errorText}>{fieldErrors[startKey]}</Text> : null}
                     </View>
                     <View style={styles.halfWidth}>
-                      <Text style={styles.fieldLabel}>End (HH:mm)</Text>
+                      <Text style={styles.fieldLabel}>{t('End (HH:mm)')}</Text>
                       <TextInput
                         style={styles.input}
                         value={day.endTime}
@@ -1015,7 +1021,7 @@ export default function SetAvailabilityScreen() {
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.helper}>Unavailable</Text>
+                  <Text style={styles.helper}>{t('Unavailable')}</Text>
                 )}
               </View>
             );
@@ -1026,13 +1032,13 @@ export default function SetAvailabilityScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Online Status</Text>
+          <Text style={styles.sectionTitle}>{t('Online Status')}</Text>
           <View style={styles.switchRow}>
-            <Text style={styles.fieldLabel}>Go Online</Text>
+            <Text style={styles.fieldLabel}>{t('Go Online')}</Text>
             <Switch value={form.isOnline} onValueChange={(value) => onChange('isOnline', value)} />
           </View>
           <Text style={styles.helper}>
-            You can save availability now. Going online may be enabled after account approval.
+            {t('You can save availability now. Going online may be enabled after account approval.')}
           </Text>
         </View>
 
@@ -1047,11 +1053,11 @@ export default function SetAvailabilityScreen() {
           {isSaving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.primaryButtonText}>Save & Continue</Text>
+            <Text style={styles.primaryButtonText}>{t('Save & Continue')}</Text>
           )}
         </Pressable>
 
-        {isSaving ? <Text style={styles.statusText}>Saving availability...</Text> : null}
+        {isSaving ? <Text style={styles.statusText}>{t('Saving availability...')}</Text> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -3,6 +3,7 @@ import * as Location from 'expo-location';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, BackHandler, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
@@ -69,6 +70,7 @@ function buildCompletedRoute(tripId: string, deliveredAt: string): Href {
 
 export default function DeliverItemScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<DeliverItemParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
   const mapsApiKey =
@@ -612,7 +614,7 @@ export default function DeliverItemScreen() {
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
-        <Text style={styles.errorText}>Invalid trip data. Please reopen this trip from Accepted Jobs.</Text>
+        <Text style={styles.errorText}>{t('Invalid trip data. Please reopen this trip from Accepted Jobs.')}</Text>
       </SafeAreaView>
     );
   }
@@ -638,7 +640,7 @@ export default function DeliverItemScreen() {
             })
           }
         >
-          <Text style={styles.actionButtonText}>Go To Pickup Confirmation</Text>
+          <Text style={styles.actionButtonText}>{t('Go To Pickup Confirmation')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -660,7 +662,7 @@ export default function DeliverItemScreen() {
           headerBackVisible: false,
           headerLeft: () => (
             <Pressable hitSlop={12} onPress={onBackToHome}>
-              <Text style={styles.headerBackText}>Back</Text>
+              <Text style={styles.headerBackText}>{t('Back')}</Text>
             </Pressable>
           ),
         }}
@@ -679,11 +681,11 @@ export default function DeliverItemScreen() {
             }}
           >
             {driverLocation ? (
-              <NativeMarker coordinate={driverLocation} title="Driver" anchor={{ x: 0.5, y: 0.5 }}>
+              <NativeMarker coordinate={driverLocation} title={t('Driver')} anchor={{ x: 0.5, y: 0.5 }}>
                 <Text style={styles.driverMarkerIcon}>🚗</Text>
               </NativeMarker>
             ) : null}
-            <NativeMarker coordinate={dropoffLocation} title="Dropoff" anchor={{ x: 0.5, y: 0.5 }}>
+            <NativeMarker coordinate={dropoffLocation} title={t('Dropoff')} anchor={{ x: 0.5, y: 0.5 }}>
               <View style={styles.destinationXMarker}>
                 <Text style={styles.destinationXText}>X</Text>
               </View>
@@ -701,7 +703,7 @@ export default function DeliverItemScreen() {
         ) : (
           <View style={styles.centeredMapState}>
             <Text style={styles.warningText}>
-              Google Maps key missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to enable map preview.
+              {t('Google Maps key missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to enable map preview.')}
             </Text>
           </View>
         )}
@@ -727,13 +729,13 @@ export default function DeliverItemScreen() {
         contentContainerStyle={styles.bottomCard}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Deliver Item</Text>
-        <Text style={styles.addressText}>{dropoffLocation.address || 'Dropoff address unavailable'}</Text>
-        <Text style={styles.subText}>Trip ID: {tripId}</Text>
-        <Text style={styles.subText}>Pickup: {pickupLocation.address || 'Pickup address unavailable'}</Text>
+        <Text style={styles.title}>{t('Deliver Item')}</Text>
+        <Text style={styles.addressText}>{dropoffLocation.address || t('Dropoff address unavailable')}</Text>
+        <Text style={styles.subText}>{t('Trip ID')}: {tripId}</Text>
+        <Text style={styles.subText}>{t('Pickup')}: {pickupLocation.address || t('Pickup address unavailable')}</Text>
         <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
         <Text style={styles.distanceText}>
-          Distance remaining:{' '}
+          {t('Distance remaining')}:{' '}
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}
         </Text>
         <Pressable
@@ -742,14 +744,14 @@ export default function DeliverItemScreen() {
           disabled={isRefreshingLocation}
         >
           <Text style={styles.secondaryActionButtonText}>
-            {isRefreshingLocation ? 'Refreshing location...' : 'Refresh Driver Location'}
+            {isRefreshingLocation ? t('Refreshing location...') : t('Refresh Driver Location')}
           </Text>
         </Pressable>
 
-        <Text style={styles.sectionTitle}>Delivery Notes (Optional)</Text>
+        <Text style={styles.sectionTitle}>{t('Delivery Notes (Optional)')}</Text>
         <TextInput
           style={styles.textArea}
-          placeholder="Package delivered to recipient."
+          placeholder={t('Package delivered to recipient.')}
           value={notes}
           onChangeText={setNotes}
           multiline
@@ -757,9 +759,9 @@ export default function DeliverItemScreen() {
           maxLength={500}
         />
         <Text style={styles.hintText}>{notes.trim().length}/500</Text>
-        <Text style={styles.subText}>Proof Photos</Text>
+        <Text style={styles.subText}>{t('Proof Photos')}</Text>
         <Text style={styles.helperText}>
-          Select multiple images from the gallery or capture more photos with the camera. Max {MAX_PROOF_PHOTOS}.
+          {t('Select multiple images from the gallery or capture more photos with the camera. Max {{count}}.', { count: MAX_PROOF_PHOTOS })}
         </Text>
         {proofPhotos.length > 0 ? (
           <View style={styles.proofGrid}>
@@ -767,7 +769,7 @@ export default function DeliverItemScreen() {
               <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
                 <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
                 <Text style={styles.helperText} numberOfLines={1}>
-                  {photo.fileName?.trim() || `Proof ${index + 1}`}
+                  {photo.fileName?.trim() || `${t('Proof')} ${index + 1}`}
                 </Text>
                 <Pressable
                   style={styles.removeProofButton}
@@ -775,7 +777,7 @@ export default function DeliverItemScreen() {
                     setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
                   }
                 >
-                  <Text style={styles.removeProofButtonText}>Remove</Text>
+                  <Text style={styles.removeProofButtonText}>{t('Remove')}</Text>
                 </Pressable>
               </View>
             ))}
@@ -787,18 +789,18 @@ export default function DeliverItemScreen() {
             onPress={() => void onSelectProofPhotos()}
             disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
           >
-            <Text style={styles.uploadButtonText}>Choose Images</Text>
+            <Text style={styles.uploadButtonText}>{t('Choose Images')}</Text>
           </Pressable>
           <Pressable
             style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
             onPress={() => void onTakeProofPhoto()}
             disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
           >
-            <Text style={styles.uploadButtonText}>Take Photo</Text>
+            <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
           </Pressable>
           {proofPhotos.length > 0 ? (
             <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
-              <Text style={styles.clearButtonText}>Clear All</Text>
+              <Text style={styles.clearButtonText}>{t('Clear All')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -806,14 +808,17 @@ export default function DeliverItemScreen() {
         {isStartingDelivery ? (
           <View style={styles.row}>
             <ActivityIndicator size="small" color="#2563EB" />
-            <Text style={styles.helperText}>Starting delivery...</Text>
+            <Text style={styles.helperText}>{t('Starting delivery...')}</Text>
           </View>
         ) : null}
-        {isLoadingLocation ? <Text style={styles.helperText}>Getting location...</Text> : null}
+        {isLoadingLocation ? <Text style={styles.helperText}>{t('Getting location...')}</Text> : null}
         {locationMessage ? <Text style={styles.warningText}>{locationMessage}</Text> : null}
         {tooFarFromDropoff && distanceMeters !== null ? (
           <Text style={styles.warningText}>
-            Too far from dropoff. Move within {DELIVER_CONFIRM_RADIUS_METERS}m. Current: {distanceMeters.toFixed(0)}m
+            {t('Too far from dropoff. Move within {{limit}}m. Current: {{current}}m', {
+              limit: DELIVER_CONFIRM_RADIUS_METERS,
+              current: distanceMeters.toFixed(0),
+            })}
           </Text>
         ) : null}
         {payloadValidationMessage ? <Text style={styles.errorText}>{payloadValidationMessage}</Text> : null}
@@ -828,11 +833,11 @@ export default function DeliverItemScreen() {
             })
           }
         >
-          <Text style={styles.secondaryActionButtonText}>Additional Expenses</Text>
+          <Text style={styles.secondaryActionButtonText}>{t('Additional Expenses')}</Text>
         </Pressable>
 
         <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
-          <Text style={styles.testButtonText}>TESTING ONLY: Send Fake Location</Text>
+          <Text style={styles.testButtonText}>{t('TESTING ONLY: Send Fake Location')}</Text>
         </Pressable>
       </ScrollView>
 

@@ -37,9 +37,19 @@ function formatMoney(price: number, currency: string): string {
   }
 }
 
+function formatServiceLabel(
+  service: DriverAcceptedJobSummary['service'] | null | undefined,
+  language: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!service) return t('Service');
+  if (language.startsWith('ar') && service.nameAr?.trim()) return service.nameAr;
+  return service.nameEn || service.key || t('Service');
+}
+
 export default function AcceptedJobsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
   const [jobs, setJobs] = useState<DriverAcceptedJobSummary[]>([]);
   const [chatRoomsByRequestId, setChatRoomsByRequestId] = useState<Record<string, ChatRoom>>({});
@@ -155,7 +165,7 @@ export default function AcceptedJobsScreen() {
                 }
               >
                 <View style={styles.cardTopRow}>
-                  <Text style={styles.serviceText}>{job.service?.nameEn || job.service?.key || t('Service')}</Text>
+                  <Text style={styles.serviceText}>{formatServiceLabel(job.service, i18n.language, t)}</Text>
                   <View style={styles.cardTopMeta}>
                     {unreadCount > 0 ? (
                       <View style={styles.chatBadge}>

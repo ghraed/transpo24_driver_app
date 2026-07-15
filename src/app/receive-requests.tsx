@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -15,8 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { readAccessToken } from '@/lib/auth-storage';
 import { getDriverRequestAlerts } from '@/lib/api';
 import { formatDateTime, formatDistanceKm } from '@/localization/format';
+import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { getRequestStatusLabel } from '@/lib/request-status-display';
 import { connectSocket, onRequestDeleted } from '@/services/socketService';
+import { translateDynamicBatch } from '@/services/translation-service';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 
 function formatSchedule(
@@ -46,10 +48,42 @@ function badgeLabel(
   return t('Expired');
 }
 
+function formatServiceLabel(
+  service: DriverRequestAlertSummary['service'] | null | undefined,
+  language: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!service) return t('Service');
+  const nameAr = normalizeDynamicText(service.nameAr);
+  const nameEn = normalizeDynamicText(service.nameEn);
+  const serviceKey = normalizeDynamicText(service.key);
+
+  if (language.startsWith('ar') && nameAr) return nameAr;
+  const fallbackLabel = nameEn || serviceKey || t('Service');
+  const translated = t(fallbackLabel);
+  return translated === fallbackLabel ? fallbackLabel : translated;
+}
+
+function formatDisplayAddress(
+  address: string | null | undefined,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!address) return t('Coordinates unavailable');
+  if (address === 'Current location') return t('Current location');
+  return address;
+}
+
+function normalizeDynamicText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value).trim();
+  return '';
+}
+
 export default function ReceiveRequestAlertsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
+  const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -99,6 +133,56 @@ export default function ReceiveRequestAlertsScreen() {
     }, [loadAlerts]),
   );
 
+  useEffect(() => {
+    const targetLanguage = i18n.language.split('-')[0];
+    if (!isSupportedLanguage(targetLanguage)) {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    const items = alerts.flatMap((alert) => {
+      const result: { key: string; text: string }[] = [];
+      const itemTitle = normalizeDynamicText(alert.item?.title);
+      const pickupAddress = normalizeDynamicText(alert.pickup?.address);
+      const dropoffAddress = normalizeDynamicText(alert.dropoff?.address);
+
+      if (itemTitle) {
+        result.push({ key: `${alert.alertId}:itemTitle`, text: itemTitle });
+      }
+      if (pickupAddress && pickupAddress !== 'Current location') {
+        result.push({ key: `${alert.alertId}:pickupAddress`, text: pickupAddress });
+      }
+      if (dropoffAddress && dropoffAddress !== 'Current location') {
+        result.push({ key: `${alert.alertId}:dropoffAddress`, text: dropoffAddress });
+      }
+
+      return result;
+    });
+
+    if (!items.length || targetLanguage === 'en') {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    let active = true;
+    void translateDynamicBatch({
+      items,
+      targetLanguage: targetLanguage as AppLanguage,
+    }).then((translations) => {
+      if (active) {
+        setTranslatedTextByKey(translations);
+      }
+    }).catch(() => {
+      if (active) {
+        setTranslatedTextByKey({});
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [alerts, i18n.language]);
+
   const hasAlerts = useMemo(() => alerts.length > 0, [alerts]);
 
   return (
@@ -134,42 +218,70 @@ export default function ReceiveRequestAlertsScreen() {
             <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadAlerts(true)} />
           }
         >
-          {alerts.map((alert) => (
-            <Pressable
-              key={alert.alertId}
-              style={styles.card}
-              onPress={() =>
-                router.push({
-                  pathname: '/review-request-details',
-                  params: { requestId: alert.requestId },
-                })
-              }
-            >
-              <View style={styles.cardTopRow}>
-                <Text style={styles.serviceText}>
-                  {alert.service?.nameEn || alert.service?.key || t('Service')}
-                </Text>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{badgeLabel(alert.alertStatus, t)}</Text>
+          {alerts.map((alert) => {
+            const itemLabel =
+              translatedTextByKey[`${alert.alertId}:itemTitle`] ||
+              normalizeDynamicText(alert.item?.title) ||
+              normalizeDynamicText(alert.item?.type) ||
+              t('Transport request');
+            const pickupLabel =
+              translatedTextByKey[`${alert.alertId}:pickupAddress`] ||
+              formatDisplayAddress(alert.pickup?.address, t);
+            const dropoffLabel =
+              translatedTextByKey[`${alert.alertId}:dropoffAddress`] ||
+              formatDisplayAddress(alert.dropoff?.address, t);
+            const distanceLabel =
+              typeof alert.distanceKm === 'number'
+                ? formatDistanceKm(alert.distanceKm)
+                : t('Not available');
+
+            return (
+              <Pressable
+                key={alert.alertId}
+                style={styles.card}
+                onPress={() =>
+                  router.push({
+                    pathname: '/review-request-details',
+                    params: { requestId: alert.requestId },
+                  })
+                }
+              >
+                <View style={styles.cardTopRow}>
+                  <Text style={styles.serviceText}>
+                    {formatServiceLabel(alert.service, i18n.language, t)}
+                  </Text>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{badgeLabel(alert.alertStatus, t)}</Text>
+                  </View>
                 </View>
-              </View>
 
-              <Text style={styles.itemText}>{alert.item.title || alert.item.type || t('Transport request')}</Text>
-              <Text style={styles.routeText}>{t('Pickup')}: {alert.pickup.address || t('Coordinates unavailable')}</Text>
-              <Text style={styles.routeText}>{t('Dropoff')}: {alert.dropoff.address || t('Coordinates unavailable')}</Text>
-              <Text style={styles.metaText}>
-                {formatSchedule(alert.schedule.isImmediate, alert.schedule.scheduledPickupAt, t)}
-              </Text>
-              <Text style={styles.metaText}>
-                {t('Distance')}: {typeof alert.distanceKm === 'number' ? formatDistanceKm(alert.distanceKm) : t('Not available')}
-              </Text>
-              <Text style={styles.metaText}>{getRequestStatusLabel(alert.requestStatus)}</Text>
+                <Text style={styles.itemText}>{itemLabel}</Text>
+                <Text style={styles.routeText}>
+                  {t('Pickup')}: {pickupLabel}
+                </Text>
+                <Text style={styles.routeText}>
+                  {t('Dropoff')}: {dropoffLabel}
+                </Text>
+                <Text style={styles.metaText}>
+                  {formatSchedule(
+                    Boolean(alert.schedule?.isImmediate),
+                    alert.schedule?.scheduledPickupAt ?? null,
+                    t,
+                  )}
+                </Text>
+                <Text style={styles.metaText}>
+                  {t('Distance')}: {distanceLabel}
+                </Text>
+                <Text style={styles.metaText}>
+                  {getRequestStatusLabel(alert.requestStatus)}
+                </Text>
 
-              <View style={styles.reviewButton}>
-                <Text style={styles.reviewButtonText}>{t('Review Details')}</Text>
-              </View>
-            </Pressable>
-          ))}
+                <View style={styles.reviewButton}>
+                  <Text style={styles.reviewButtonText}>{t('Review Details')}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       )}
     </SafeAreaView>

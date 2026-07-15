@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -25,6 +25,8 @@ import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
 import { isTerminalRequestStatus } from '@/lib/request-status';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
+import { translateDynamicBatch } from '@/services/translation-service';
 import type { DriverAcceptedJobDetailsResponse } from '@/types/auth';
 
 function formatDate(value: string | null): string {
@@ -59,6 +61,15 @@ function hasValidCoordinates(latitude: number | null, longitude: number | null):
 
 function resolveAssetUrl(url: string): string {
   return resolveBackendAssetUrl(url);
+}
+
+function formatDisplayAddress(
+  address: string | null | undefined,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!address) return t('Address unavailable');
+  if (address === 'Current location') return t('Current location');
+  return address;
 }
 
 function getProgressLabel(status: DriverAcceptedJobDetailsResponse['requestStatus']): string {
@@ -101,7 +112,7 @@ function getNextActionLabel(status: DriverAcceptedJobDetailsResponse['requestSta
 
 export default function AcceptedJobDetailsScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
@@ -110,6 +121,7 @@ export default function AcceptedJobDetailsScreen() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
+  const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const [activeMapLocation, setActiveMapLocation] = useState<{
     title: string;
     address: string;
@@ -153,6 +165,52 @@ export default function AcceptedJobDetailsScreen() {
       void loadDetails();
     }, [loadDetails]),
   );
+
+  useEffect(() => {
+    const targetLanguage = i18n.language.split('-')[0];
+    if (!details || !isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    const items: { key: string; text: string }[] = [];
+    const pushItem = (key: string, text: string | number | null | undefined): void => {
+      const normalized = typeof text === 'string' ? text : typeof text === 'number' ? String(text) : '';
+      const trimmed = normalized.trim();
+      if (!trimmed || trimmed === 'Current location') return;
+      items.push({ key, text: trimmed });
+    };
+
+    pushItem('pickupAddress', details.pickup.address);
+    pushItem('dropoffAddress', details.dropoff.address);
+    pushItem('itemTitle', details.itemDetails.title || details.item.title);
+    pushItem('itemType', details.itemDetails.type);
+    pushItem('itemDescription', details.itemDetails.description);
+    pushItem('brand', details.itemDetails.brand);
+    pushItem('model', details.itemDetails.model);
+    pushItem('year', details.itemDetails.year);
+    pushItem('condition', details.itemDetails.condition);
+    pushItem('specialInstructions', details.itemDetails.specialInstructions);
+
+    if (!items.length) {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    let active = true;
+    void translateDynamicBatch({
+      items,
+      targetLanguage: targetLanguage as AppLanguage,
+    }).then((translations) => {
+      if (active) {
+        setTranslatedTextByKey(translations);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [details, i18n.language]);
 
   const canGoToPickup = useMemo(() => {
     if (!details) return false;
@@ -294,7 +352,7 @@ export default function AcceptedJobDetailsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Pickup Location')}</Text>
-          <Text style={styles.metaText}>{details.pickup.address || t('Address unavailable')}</Text>
+          <Text style={styles.metaText}>{translatedTextByKey.pickupAddress || formatDisplayAddress(details.pickup.address, t)}</Text>
           <Text style={styles.metaText}>
             {t('Coordinates')}: {details.pickup.latitude ?? '-'}, {details.pickup.longitude ?? '-'}
           </Text>
@@ -304,7 +362,7 @@ export default function AcceptedJobDetailsScreen() {
               !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) && styles.disabledButton,
             ]}
             onPress={() =>
-              openMap(t('Pickup Location'), details.pickup.address, details.pickup.latitude, details.pickup.longitude)
+              openMap(t('Pickup Location'), translatedTextByKey.pickupAddress || details.pickup.address, details.pickup.latitude, details.pickup.longitude)
             }
             disabled={!hasValidCoordinates(details.pickup.latitude, details.pickup.longitude)}
           >
@@ -314,7 +372,7 @@ export default function AcceptedJobDetailsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Dropoff Location')}</Text>
-          <Text style={styles.metaText}>{details.dropoff.address || t('Address unavailable')}</Text>
+          <Text style={styles.metaText}>{translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, t)}</Text>
           <Text style={styles.metaText}>
             {t('Coordinates')}: {details.dropoff.latitude ?? '-'}, {details.dropoff.longitude ?? '-'}
           </Text>
@@ -324,7 +382,7 @@ export default function AcceptedJobDetailsScreen() {
               !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude) && styles.disabledButton,
             ]}
             onPress={() =>
-              openMap(t('Dropoff Location'), details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
+              openMap(t('Dropoff Location'), translatedTextByKey.dropoffAddress || details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
             }
             disabled={!hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)}
           >
@@ -333,7 +391,7 @@ export default function AcceptedJobDetailsScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Schedule</Text>
+          <Text style={styles.sectionTitle}>{t('Schedule')}</Text>
           <Text style={styles.metaText}>
             {details.schedule.isImmediate
               ? t('Immediate pickup')
@@ -343,17 +401,19 @@ export default function AcceptedJobDetailsScreen() {
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
-          <Text style={styles.metaText}>{t('Title')}: {details.itemDetails.title || details.item.title || 'N/A'}</Text>
-          <Text style={styles.metaText}>{t('Type')}: {details.itemDetails.type || 'N/A'}</Text>
-          <Text style={styles.metaText}>{t('Description')}: {details.itemDetails.description || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Title')}: {translatedTextByKey.itemTitle || details.itemDetails.title || details.item.title || t('N/A')}</Text>
+          <Text style={styles.metaText}>{t('Type')}: {translatedTextByKey.itemType || details.itemDetails.type || t('N/A')}</Text>
+          <Text style={styles.metaText}>{t('Description')}: {translatedTextByKey.itemDescription || details.itemDetails.description || t('N/A')}</Text>
           <Text style={styles.metaText}>
-            {t('Brand/Model/Year')}: {[details.itemDetails.brand, details.itemDetails.model, details.itemDetails.year]
-              .filter((value) => value !== null && value !== undefined && value !== '')
-              .join(' / ') || 'N/A'}
+            {t('Brand/Model/Year')}: {[
+              translatedTextByKey.brand || details.itemDetails.brand,
+              translatedTextByKey.model || details.itemDetails.model,
+              translatedTextByKey.year || details.itemDetails.year,
+            ].filter((value) => value !== null && value !== undefined && value !== '').join(' / ') || t('N/A')}
           </Text>
-          <Text style={styles.metaText}>{t('Condition')}: {details.itemDetails.condition || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Condition')}: {translatedTextByKey.condition || details.itemDetails.condition || t('N/A')}</Text>
           <Text style={styles.metaText}>
-            {t('Weight')}: {details.itemDetails.weightKg !== null ? t('{{value}} kg', { value: details.itemDetails.weightKg }) : 'N/A'}
+            {t('Weight')}: {details.itemDetails.weightKg !== null ? t('{{value}} kg', { value: details.itemDetails.weightKg }) : t('N/A')}
           </Text>
           <Text style={styles.metaText}>
             {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x{' '}
@@ -365,7 +425,7 @@ export default function AcceptedJobDetailsScreen() {
               ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount })
               : ''}
           </Text>
-          <Text style={styles.metaText}>{t('Special instructions')}: {details.itemDetails.specialInstructions || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Special instructions')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions || t('N/A')}</Text>
         </View>
 
         <View style={styles.card}>

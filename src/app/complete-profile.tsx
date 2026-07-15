@@ -20,18 +20,19 @@ import {
   clearLastOnboardingRoute,
   persistLastOnboardingRoute,
 } from '@/lib/auth-storage';
+import {
+  LANGUAGE_CONFIGS,
+  type AppLanguage,
+  isSupportedLanguage,
+} from '@/localization/languages';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import type { CompleteDriverProfileForm, UpdateDriverProfilePayload } from '@/types/auth';
 
 const PHONE_PATTERN = /^[+0-9()\-\s]{7,20}$/;
-const PREFERRED_LANGUAGES = new Set(['en', 'ar', 'de', 'fr', 'it']);
-const PREFERRED_LANGUAGE_OPTIONS = [
-  { label: 'English', value: 'en' },
-  { label: 'Arabic', value: 'ar' },
-  { label: 'German', value: 'de' },
-  { label: 'French', value: 'fr' },
-  { label: 'Italian', value: 'it' },
-] as const;
+const PREFERRED_LANGUAGE_OPTIONS = Object.values(LANGUAGE_CONFIGS).map((language) => ({
+  label: language.label,
+  value: language.code,
+})) satisfies Array<{ label: string; value: AppLanguage }>;
 
 function toDateOnly(isoDate: string | null): string {
   if (!isoDate) return '';
@@ -217,9 +218,9 @@ export default function CompleteProfileScreen() {
 
     if (
       form.preferredLanguage.trim() &&
-      !PREFERRED_LANGUAGES.has(form.preferredLanguage.trim().toLowerCase())
+      !isSupportedLanguage(form.preferredLanguage.trim().toLowerCase())
     ) {
-      errors.preferredLanguage = t('Preferred language must be one of: en, ar, de, fr, it.');
+      errors.preferredLanguage = t('Preferred language must be one of: en, ar, fr, de, es.');
     }
 
     return errors;

@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Pressable,
@@ -28,6 +29,7 @@ function toCapacityMap(loadCapacities: VehicleLoadCapacity[]): Map<string, Vehic
 export default function ManageLoadCapacitiesScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { t } = useTranslation();
 
   const [vehicles, setVehicles] = useState<DriverVehicle[]>([]);
   const [capacityMap, setCapacityMap] = useState<Map<string, VehicleLoadCapacity>>(new Map());
@@ -53,7 +55,7 @@ export default function ManageLoadCapacitiesScreen() {
       setCapacityMap(toCapacityMap(capacityResponse));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load vehicle capacities.';
+        error instanceof Error ? error.message : t('Failed to load vehicle capacities.');
       const normalized = message.toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
@@ -65,7 +67,7 @@ export default function ManageLoadCapacitiesScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [router, signOut]);
+  }, [router, signOut, t]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -106,7 +108,7 @@ export default function ManageLoadCapacitiesScreen() {
       });
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to update default capacity.',
+        error instanceof Error ? error.message : t('Failed to update default capacity.'),
       );
     } finally {
       setMutatingVehicleId(null);
@@ -122,9 +124,9 @@ export default function ManageLoadCapacitiesScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Manage Load Capacities</Text>
+          <Text style={styles.title}>{t('Manage Load Capacities')}</Text>
           <Text style={styles.subtitle}>
-            Define a load profile for each vehicle and choose the default one for matching.
+            {t('Define a load profile for each vehicle and choose the default one for matching.')}
           </Text>
         </View>
 
@@ -132,7 +134,7 @@ export default function ManageLoadCapacitiesScreen() {
           style={styles.secondaryButton}
           onPress={() => router.push('/my-vehicles')}
         >
-          <Text style={styles.secondaryButtonText}>Back to My Vehicles</Text>
+          <Text style={styles.secondaryButtonText}>{t('Back to My Vehicles')}</Text>
         </Pressable>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -140,19 +142,19 @@ export default function ManageLoadCapacitiesScreen() {
         {isLoading ? (
           <View style={styles.centerState}>
             <ActivityIndicator size="large" color="#1D4ED8" />
-            <Text style={styles.helperText}>Loading vehicle load capacities...</Text>
+            <Text style={styles.helperText}>{t('Loading vehicle load capacities...')}</Text>
           </View>
         ) : !hasVehicles ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No vehicles available yet</Text>
+            <Text style={styles.emptyTitle}>{t('No vehicles available yet')}</Text>
             <Text style={styles.helperText}>
-              Add a vehicle first, then come back here to define its load capacity.
+              {t('Add a vehicle first, then come back here to define its load capacity.')}
             </Text>
             <Pressable
               style={styles.primaryButton}
               onPress={() => router.push('/vehicle-information?flow=management')}
             >
-              <Text style={styles.primaryButtonText}>Add Vehicle</Text>
+              <Text style={styles.primaryButtonText}>{t('Add Vehicle')}</Text>
             </Pressable>
           </View>
         ) : (
@@ -191,28 +193,28 @@ export default function ManageLoadCapacitiesScreen() {
                   </View>
                   {capacity?.isDefault ? (
                     <View style={styles.defaultBadge}>
-                      <Text style={styles.defaultBadgeText}>Default</Text>
+                      <Text style={styles.defaultBadgeText}>{t('Default')}</Text>
                     </View>
                   ) : null}
                 </View>
 
-                <Text style={styles.metaText}>Load profile: {capacity?.name?.trim() || 'Not named'}</Text>
-                <Text style={styles.metaText}>Status: {statusLabel}</Text>
+                <Text style={styles.metaText}>{t('Load profile')}: {capacity?.name?.trim() || t('Not named')}</Text>
+                <Text style={styles.metaText}>{t('Status')}: {statusLabel}</Text>
                 <Text style={styles.metaText}>
-                  Max load: {capacity?.maxLoadKg ?? vehicle.capacityKg ?? 'Not defined'}
-                  {capacity?.maxLoadKg || vehicle.capacityKg ? ' kg' : ''}
+                  {t('Max load')}: {capacity?.maxLoadKg ?? vehicle.capacityKg ?? t('Not defined')}
+                  {capacity?.maxLoadKg || vehicle.capacityKg ? ` ${t('kg')}` : ''}
                 </Text>
-                <Text style={styles.metaText}>Dimensions: {dimensionsSummary}</Text>
+                <Text style={styles.metaText}>{t('Dimensions')}: {dimensionsSummary}</Text>
                 <Text style={styles.metaText}>
-                  Cargo types:{' '}
+                  {t('Cargo types')}:{' '}
                   {capacity?.allowedCargoTypes?.length
                     ? formatCargoTypes(capacity.allowedCargoTypes)
                     : vehicle.allowedCargoTypes?.length
                       ? formatCargoTypes(vehicle.allowedCargoTypes)
-                      : 'Not defined'}
+                      : t('Not defined')}
                 </Text>
                 <Text style={styles.metaText}>
-                  Availability: managed from the Set Availability screen
+                  {t('Availability')}: {t('managed from the Set Availability screen')}
                 </Text>
 
                 <View style={styles.actionRow}>
@@ -223,11 +225,11 @@ export default function ManageLoadCapacitiesScreen() {
                         `/load-capacity?vehicleId=${vehicle.id}&flow=management&returnTo=manage-load-capacities`,
                       )
                     }
-                  >
-                    <Text style={styles.primaryButtonText}>
-                      {statusLabel === 'Defined' ? 'Edit Capacity' : 'Define Capacity'}
-                    </Text>
-                  </Pressable>
+                    >
+                      <Text style={styles.primaryButtonText}>
+                      {statusLabel === 'Defined' ? t('Edit Capacity') : t('Define Capacity')}
+                      </Text>
+                    </Pressable>
                   {capacity && !capacity.isDefault ? (
                     <Pressable
                       style={[
@@ -240,7 +242,7 @@ export default function ManageLoadCapacitiesScreen() {
                       {mutatingVehicleId === vehicle.id ? (
                         <ActivityIndicator color="#1D4ED8" />
                       ) : (
-                        <Text style={styles.secondaryButtonText}>Set Default</Text>
+                        <Text style={styles.secondaryButtonText}>{t('Set Default')}</Text>
                       )}
                     </Pressable>
                   ) : null}

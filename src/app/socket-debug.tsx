@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
@@ -17,6 +18,7 @@ import {
 
 export default function SocketDebugScreen() {
   const { accessToken } = useAuth();
+  const { t } = useTranslation();
   const [tripId, setTripId] = useState<string>('');
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -35,28 +37,28 @@ export default function SocketDebugScreen() {
 
   const onConnect = (): void => {
     if (!accessToken) {
-      appendLog('Missing access token. Login first.');
+      appendLog(t('Missing access token. Login first.'));
       return;
     }
     try {
       connectSocket(accessToken);
       setupListeners();
-      appendLog('Connect requested. Waiting for ack...');
+      appendLog(t('Connect requested. Waiting for ack...'));
       void waitForSocketConnection(5000)
         .then((socketId) => {
           appendLog(`Connect success (ack): ${socketId}`);
         })
         .catch((error) => {
-          appendLog(error instanceof Error ? `Connect failed: ${error.message}` : 'Connect failed.');
+          appendLog(error instanceof Error ? `${t('Connect failed')}: ${error.message}` : t('Connect failed.'));
         });
     } catch (error) {
-      appendLog(error instanceof Error ? error.message : 'Connect failed.');
+      appendLog(error instanceof Error ? error.message : t('Connect failed.'));
     }
   };
 
   const onJoin = (): void => {
     if (!tripId.trim()) {
-      appendLog('Enter trip id first.');
+      appendLog(t('Enter trip id first.'));
       return;
     }
     try {
@@ -66,16 +68,16 @@ export default function SocketDebugScreen() {
           appendLog(`joinTripRoom success: room=${response.room}`);
         })
         .catch((error) => {
-          appendLog(error instanceof Error ? `joinTripRoom failed: ${error.message}` : 'joinTripRoom failed.');
+          appendLog(error instanceof Error ? `joinTripRoom failed: ${error.message}` : t('joinTripRoom failed.'));
         });
     } catch (error) {
-      appendLog(error instanceof Error ? error.message : 'joinTripRoom failed.');
+      appendLog(error instanceof Error ? error.message : t('joinTripRoom failed.'));
     }
   };
 
   const onLeave = (): void => {
     if (!tripId.trim()) {
-      appendLog('Enter trip id first.');
+      appendLog(t('Enter trip id first.'));
       return;
     }
     leaveTripRoom(tripId.trim());
@@ -88,48 +90,48 @@ export default function SocketDebugScreen() {
         tripId: tripId.trim() || undefined,
         note: 'driver-debug',
       });
-      appendLog('socketDebugPing sent.');
+      appendLog(t('socketDebugPing sent.'));
     } catch (error) {
-      appendLog(error instanceof Error ? error.message : 'Ping failed.');
+      appendLog(error instanceof Error ? error.message : t('Ping failed.'));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Socket Debug (Driver)</Text>
+        <Text style={styles.title}>{t('Socket Debug (Driver)')}</Text>
         <TextInput
           style={styles.input}
           value={tripId}
           onChangeText={setTripId}
-          placeholder="Trip ID (optional for ping, required for join)"
+          placeholder={t('Trip ID (optional for ping, required for join)')}
           autoCapitalize="none"
         />
 
         <View style={styles.row}>
           <Pressable style={styles.button} onPress={onConnect}>
-            <Text style={styles.buttonText}>Connect</Text>
+            <Text style={styles.buttonText}>{t('Connect')}</Text>
           </Pressable>
           <Pressable style={styles.button} onPress={onJoin}>
-            <Text style={styles.buttonText}>Join Room</Text>
+            <Text style={styles.buttonText}>{t('Join Room')}</Text>
           </Pressable>
         </View>
 
         <View style={styles.row}>
           <Pressable style={styles.button} onPress={onPing}>
-            <Text style={styles.buttonText}>Ping</Text>
+            <Text style={styles.buttonText}>{t('Ping')}</Text>
           </Pressable>
           <Pressable
             style={[styles.button, styles.disconnectButton]}
             onPress={() => {
               disconnectSocket();
-              appendLog('Socket disconnected manually.');
+              appendLog(t('Socket disconnected manually.'));
             }}
           >
-            <Text style={styles.buttonText}>Disconnect</Text>
+            <Text style={styles.buttonText}>{t('Disconnect')}</Text>
           </Pressable>
           <Pressable style={[styles.button, styles.leaveButton]} onPress={onLeave}>
-            <Text style={styles.buttonText}>Leave Room</Text>
+            <Text style={styles.buttonText}>{t('Leave Room')}</Text>
           </Pressable>
         </View>
       </View>

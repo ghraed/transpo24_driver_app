@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -155,6 +156,7 @@ function buildFormState(
 
 export default function LoadCapacityScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{
     vehicleId?: string;
     flow?: string;
@@ -197,7 +199,7 @@ export default function LoadCapacityScreen() {
 
   const loadData = useCallback(async (): Promise<void> => {
     if (!vehicleId) {
-      setLoadError('Vehicle ID is missing.');
+      setLoadError(t('Vehicle ID is missing.'));
       setIsLoading(false);
       return;
     }
@@ -227,7 +229,7 @@ export default function LoadCapacityScreen() {
         : buildFormState(currentVehicle, capacity);
       setForm(nextForm);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load vehicle capacity.';
+      const message = error instanceof Error ? error.message : t('Failed to load vehicle capacity.');
       const normalized = message.toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
@@ -239,7 +241,7 @@ export default function LoadCapacityScreen() {
       setHasHydratedDraft(true);
       setIsLoading(false);
     }
-  }, [flow, router, signOut, vehicleId]);
+  }, [flow, router, signOut, t, vehicleId]);
 
   useEffect(() => {
     if (flow !== 'onboarding' || !hasHydratedDraft || !form) return;
@@ -262,7 +264,7 @@ export default function LoadCapacityScreen() {
     if (!form || !vehicle) return errors;
 
     if (form.name.trim().length > 120) {
-      errors.name = 'Custom capacity name must be 120 characters or fewer.';
+      errors.name = t('Custom capacity name must be 120 characters or fewer.');
     }
 
     const maxLoadKg = parsePositiveNumber(form.maxLoadKg);
@@ -272,29 +274,29 @@ export default function LoadCapacityScreen() {
 
     if (isCarCarrier) {
       if (form.maxLoadKg.trim() && !maxLoadKg) {
-        errors.maxLoadKg = 'Maximum load capacity must be greater than 0.';
+        errors.maxLoadKg = t('Maximum load capacity must be greater than 0.');
       }
     } else {
       if (!maxLoadKg) {
-        errors.maxLoadKg = 'Maximum load capacity is required and must be greater than 0.';
+        errors.maxLoadKg = t('Maximum load capacity is required and must be greater than 0.');
       }
       if (!cargoLengthM) {
-        errors.cargoLengthM = 'Cargo length is required and must be greater than 0.';
+        errors.cargoLengthM = t('Cargo length is required and must be greater than 0.');
       }
       if (!cargoWidthM) {
-        errors.cargoWidthM = 'Cargo width is required and must be greater than 0.';
+        errors.cargoWidthM = t('Cargo width is required and must be greater than 0.');
       }
       if (!cargoHeightM) {
-        errors.cargoHeightM = 'Cargo height is required and must be greater than 0.';
+        errors.cargoHeightM = t('Cargo height is required and must be greater than 0.');
       }
     }
 
     if (!form.allowedCargoTypes.length) {
-      errors.allowedCargoTypes = 'Select at least one allowed cargo type.';
+      errors.allowedCargoTypes = t('Select at least one allowed cargo type.');
     }
 
     return errors;
-  }, [form, isCarCarrier, vehicle]);
+  }, [form, isCarCarrier, t, vehicle]);
 
   const isFormValid = Boolean(form) && Object.keys(fieldErrors).length === 0;
 
@@ -374,15 +376,19 @@ export default function LoadCapacityScreen() {
             refreshedVehicles.find((candidate) => candidate.id === vehicleId) ?? refreshedVehicle;
 
           if (documentsStatus.missingDocuments.length > 0) {
-            throw new Error(`Missing required documents: ${documentsStatus.missingDocuments.join(', ')}.`);
+            throw new Error(
+              t('Missing required documents: {{documents}}.', {
+                documents: documentsStatus.missingDocuments.join(', '),
+              }),
+            );
           }
 
           if (!hasCompleteVehicleDocuments(reviewVehicle)) {
-            throw new Error('The selected vehicle does not have all required documents.');
+            throw new Error(t('The selected vehicle does not have all required documents.'));
           }
 
           if (!hasCompleteLoadCapacityProfile(refreshedVehicle)) {
-            throw new Error('The selected vehicle does not have a complete load-capacity profile.');
+            throw new Error(t('The selected vehicle does not have a complete load-capacity profile.'));
           }
 
           await submitDriverDocumentsForReview();
@@ -391,7 +397,7 @@ export default function LoadCapacityScreen() {
             clearLastOnboardingRoute(),
             clearOnboardingDocumentsStatus(),
           ]);
-          setSubmitSuccess('Submitted for review successfully.');
+          setSubmitSuccess(t('Submitted for review successfully.'));
           setTimeout(() => {
             router.replace('/waiting-approval');
           }, 500);
@@ -402,12 +408,14 @@ export default function LoadCapacityScreen() {
         }
       }
 
-      setSubmitSuccess(existingCapacity ? 'Load capacity updated successfully.' : 'Load capacity saved successfully.');
+      setSubmitSuccess(
+        existingCapacity ? t('Load capacity updated successfully.') : t('Load capacity saved successfully.'),
+      );
       setTimeout(() => {
         router.replace(returnTo);
       }, 500);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to save load capacity.';
+      const message = error instanceof Error ? error.message : t('Failed to save load capacity.');
       const normalized = message.toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
@@ -424,7 +432,7 @@ export default function LoadCapacityScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1D4ED8" />
-        <Text style={styles.loadingText}>Loading vehicle load capacity...</Text>
+        <Text style={styles.loadingText}>{t('Loading vehicle load capacity...')}</Text>
       </View>
     );
   }
@@ -432,9 +440,9 @@ export default function LoadCapacityScreen() {
   if (loadError || !vehicle || !form) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>{loadError || 'Vehicle not found.'}</Text>
+        <Text style={styles.errorText}>{loadError || t('Vehicle not found.')}</Text>
         <Pressable style={styles.primaryButton} onPress={() => void loadData()}>
-          <Text style={styles.primaryButtonText}>Retry</Text>
+          <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
         </Pressable>
       </View>
     );
@@ -448,37 +456,37 @@ export default function LoadCapacityScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.progress}>
-            {flow === 'onboarding' ? 'Next Step: Define Load Capacity' : 'Vehicle Capacity Management'}
+            {flow === 'onboarding' ? t('Next Step: Define Load Capacity') : t('Vehicle Capacity Management')}
           </Text>
-          <Text style={styles.title}>Define Load Capacity</Text>
+          <Text style={styles.title}>{t('Define Load Capacity')}</Text>
           <Text style={styles.subtitle}>
             {vehicle.brand} {vehicle.model} ({vehicle.year}) • {VEHICLE_TYPE_LABELS[vehicle.vehicleType]}
           </Text>
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Capacity guidance</Text>
+          <Text style={styles.infoTitle}>{t('Capacity guidance')}</Text>
           <Text style={styles.infoText}>{guidance?.note}</Text>
-          <Text style={styles.infoText}>Suggested cargo types: {guidance ? guidance.usageLabel : 'Custom transport'}</Text>
+          <Text style={styles.infoText}>{t('Suggested cargo types')}: {guidance ? guidance.usageLabel : t('Custom transport')}</Text>
           {existingCapacity?.allowedCargoTypes?.length ? (
             <Text style={styles.infoText}>
-              Current cargo types: {formatCargoTypes(existingCapacity.allowedCargoTypes)}
+              {t('Current cargo types')}: {formatCargoTypes(existingCapacity.allowedCargoTypes)}
             </Text>
           ) : null}
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Load Profile</Text>
-          <Text style={styles.fieldLabel}>Custom capacity name</Text>
+          <Text style={styles.sectionTitle}>{t('Load Profile')}</Text>
+          <Text style={styles.fieldLabel}>{t('Custom capacity name')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Small Car Carrier"
+            placeholder={t('Small Car Carrier')}
             value={form.name}
             onChangeText={(value) => onChange('name', value)}
           />
           {fieldErrors.name ? <Text style={styles.errorText}>{fieldErrors.name}</Text> : null}
 
-          <Text style={styles.fieldLabel}>Maximum load capacity (kg){isCarCarrier ? '' : ' *'}</Text>
+          <Text style={styles.fieldLabel}>{t('Maximum load capacity (kg)')}{isCarCarrier ? '' : ' *'}</Text>
           <TextInput
             style={styles.input}
             placeholder={guidance?.loadPlaceholder ?? '900'}
@@ -490,14 +498,14 @@ export default function LoadCapacityScreen() {
 
           {isCarCarrier ? (
             <View style={styles.standardDimensionsCard}>
-              <Text style={styles.standardDimensionsTitle}>Standard dimensions</Text>
+              <Text style={styles.standardDimensionsTitle}>{t('Standard dimensions')}</Text>
               <Text style={styles.standardDimensionsText}>
-                No dimensions required for car carriers.
+                {t('No dimensions required for car carriers.')}
               </Text>
             </View>
           ) : (
             <>
-              <Text style={styles.fieldLabel}>Cargo length (m) *</Text>
+              <Text style={styles.fieldLabel}>{t('Cargo length (m) *')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder={guidance?.lengthPlaceholder ?? '2'}
@@ -507,7 +515,7 @@ export default function LoadCapacityScreen() {
               />
               {fieldErrors.cargoLengthM ? <Text style={styles.errorText}>{fieldErrors.cargoLengthM}</Text> : null}
 
-              <Text style={styles.fieldLabel}>Cargo width (m) *</Text>
+              <Text style={styles.fieldLabel}>{t('Cargo width (m) *')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder={guidance?.widthPlaceholder ?? '1.8'}
@@ -517,7 +525,7 @@ export default function LoadCapacityScreen() {
               />
               {fieldErrors.cargoWidthM ? <Text style={styles.errorText}>{fieldErrors.cargoWidthM}</Text> : null}
 
-              <Text style={styles.fieldLabel}>Cargo height (m) *</Text>
+              <Text style={styles.fieldLabel}>{t('Cargo height (m) *')}</Text>
               <TextInput
                 style={styles.input}
                 placeholder={guidance?.heightPlaceholder ?? '1.2'}
@@ -531,8 +539,8 @@ export default function LoadCapacityScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Allowed Cargo Types</Text>
-          <Text style={styles.helperText}>Select one or more cargo types your vehicle can carry.</Text>
+          <Text style={styles.sectionTitle}>{t('Allowed Cargo Types')}</Text>
+          <Text style={styles.helperText}>{t('Select one or more cargo types your vehicle can carry.')}</Text>
           <View style={styles.chipsWrap}>
             {CARGO_TYPE_OPTIONS.map((option) => {
               const isSelected = form.allowedCargoTypes.includes(option.value);
@@ -543,7 +551,7 @@ export default function LoadCapacityScreen() {
                   onPress={() => onToggleCargoType(option.value)}
                 >
                   <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                    {option.label}
+                    {t(option.label)}
                   </Text>
                 </Pressable>
               );
@@ -557,9 +565,9 @@ export default function LoadCapacityScreen() {
         <View style={styles.section}>
           <View style={styles.defaultRow}>
             <View style={styles.defaultTextWrap}>
-              <Text style={styles.sectionTitle}>Preferred Default Capacity</Text>
+              <Text style={styles.sectionTitle}>{t('Preferred Default Capacity')}</Text>
               <Text style={styles.helperText}>
-                Use this load profile as the default one for request matching.
+                {t('Use this load profile as the default one for request matching.')}
               </Text>
             </View>
             <Switch
@@ -584,10 +592,10 @@ export default function LoadCapacityScreen() {
           ) : (
             <Text style={styles.primaryButtonText}>
               {flow === 'onboarding'
-                ? 'Submit for Review'
+                ? t('Submit for Review')
                 : existingCapacity
-                  ? 'Save Capacity Changes'
-                  : 'Save Load Capacity'}
+                  ? t('Save Capacity Changes')
+                  : t('Save Load Capacity')}
             </Text>
           )}
         </Pressable>

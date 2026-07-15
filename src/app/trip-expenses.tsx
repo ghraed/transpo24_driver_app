@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Image,
   Pressable,
@@ -52,6 +53,7 @@ function formatMoney(amount: number, currency: string): string {
 
 export default function TripExpensesScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<TripExpensesParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
 
@@ -74,7 +76,7 @@ export default function TripExpensesScreen() {
     setSubmitError('');
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to capture the invoice or receipt.');
+      setSubmitError(t('Camera permission is required to capture the invoice or receipt.'));
       return;
     }
 
@@ -93,7 +95,7 @@ export default function TripExpensesScreen() {
     setSubmitError('');
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Media library permission is required to choose the invoice or receipt.');
+      setSubmitError(t('Media library permission is required to choose the invoice or receipt.'));
       return;
     }
 
@@ -115,19 +117,19 @@ export default function TripExpensesScreen() {
 
     const parsedAmount = Number(formValues.amount);
     if (!tripId) {
-      setSubmitError('Trip ID is missing.');
+      setSubmitError(t('Trip ID is missing.'));
       return;
     }
     if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setSubmitError('Expense amount must be greater than 0.');
+      setSubmitError(t('Expense amount must be greater than 0.'));
       return;
     }
     if (!formValues.reason.trim()) {
-      setSubmitError('Expense reason is required.');
+      setSubmitError(t('Expense reason is required.'));
       return;
     }
     if (!formValues.invoicePhoto) {
-      setSubmitError('Invoice / receipt photo is required.');
+      setSubmitError(t('Invoice / receipt photo is required.'));
       return;
     }
 
@@ -141,15 +143,17 @@ export default function TripExpensesScreen() {
       });
 
       setSubmitMessage(
-        `Expense submitted. ${formatMoney(
-          response.walletDeduction.amount,
-          response.walletDeduction.currency,
-        )} will be deducted from the customer wallet.`,
+        t('Expense submitted. {{amount}} will be deducted from the customer wallet.', {
+          amount: formatMoney(
+            response.walletDeduction.amount,
+            response.walletDeduction.currency,
+          ),
+        }),
       );
       setFormValues(INITIAL_FORM_VALUES);
     } catch (error) {
       setSubmitError(
-        error instanceof Error ? error.message : 'Failed to submit additional expense.',
+        error instanceof Error ? error.message : t('Failed to submit additional expense.'),
       );
     } finally {
       setIsSubmitting(false);
@@ -160,16 +164,15 @@ export default function TripExpensesScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.title}>Additional Expenses</Text>
+          <Text style={styles.title}>{t('Additional Expenses')}</Text>
           <Text style={styles.helperText}>
-            Submit unexpected trip costs with invoice proof. This amount will be deducted from the
-            customer&apos;s wallet.
+            {t('Submit unexpected trip costs with invoice proof. This amount will be deducted from the customer&apos;s wallet.')}
           </Text>
-          <Text style={styles.metaText}>Trip ID: {tripId || 'N/A'}</Text>
+          <Text style={styles.metaText}>{t('Trip ID')}: {tripId || 'N/A'}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Expense Amount</Text>
+          <Text style={styles.sectionTitle}>{t('Expense Amount')}</Text>
           <TextInput
             style={styles.input}
             placeholder="0.00"
@@ -178,19 +181,19 @@ export default function TripExpensesScreen() {
             onChangeText={(value) => onChangeField('amount', value)}
           />
 
-          <Text style={styles.sectionTitle}>Reason</Text>
+          <Text style={styles.sectionTitle}>{t('Reason')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Crane cost, paid parking, yard fee..."
+            placeholder={t('Crane cost, paid parking, yard fee...')}
             value={formValues.reason}
             onChangeText={(value) => onChangeField('reason', value)}
             maxLength={160}
           />
 
-          <Text style={styles.sectionTitle}>Equipment / Category (Optional)</Text>
+          <Text style={styles.sectionTitle}>{t('Equipment / Category (Optional)')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Crane, parking, towing..."
+            placeholder={t('Crane, parking, towing...')}
             value={formValues.equipmentType}
             onChangeText={(value) => onChangeField('equipmentType', value)}
             maxLength={80}
@@ -198,8 +201,8 @@ export default function TripExpensesScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Invoice / Receipt Photo</Text>
-          <Text style={styles.helperText}>Take a clear photo of the invoice or receipt. This is required.</Text>
+          <Text style={styles.sectionTitle}>{t('Invoice / Receipt Photo')}</Text>
+          <Text style={styles.helperText}>{t('Take a clear photo of the invoice or receipt. This is required.')}</Text>
 
           {formValues.invoicePhoto ? (
             <View style={styles.proofItem}>
@@ -209,27 +212,27 @@ export default function TripExpensesScreen() {
                 resizeMode="cover"
               />
               <Text style={styles.metaText} numberOfLines={1}>
-                {formValues.invoicePhoto.fileName?.trim() || 'Invoice proof'}
+                {formValues.invoicePhoto.fileName?.trim() || t('Invoice proof')}
               </Text>
               <Pressable
                 style={styles.clearButton}
                 onPress={() => onChangeField('invoicePhoto', null)}
               >
-                <Text style={styles.clearButtonText}>Remove Photo</Text>
+                <Text style={styles.clearButtonText}>{t('Remove Photo')}</Text>
               </Pressable>
             </View>
           ) : null}
 
           <View style={styles.uploadActions}>
             <Pressable style={styles.uploadButton} onPress={() => void onChooseInvoicePhoto()}>
-              <Text style={styles.uploadButtonText}>Choose Image</Text>
+              <Text style={styles.uploadButtonText}>{t('Choose Image')}</Text>
             </Pressable>
             <Pressable style={styles.uploadButton} onPress={() => void onTakeInvoicePhoto()}>
-              <Text style={styles.uploadButtonText}>Take Photo</Text>
+              <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
             </Pressable>
           </View>
           <Text style={styles.walletMessage}>
-            This amount will be deducted from the customer&apos;s wallet.
+            {t('This amount will be deducted from the customer&apos;s wallet.')}
           </Text>
         </View>
 
@@ -242,12 +245,12 @@ export default function TripExpensesScreen() {
           onPress={() => void onSubmit()}
         >
           <Text style={styles.actionButtonText}>
-            {isSubmitting ? 'Submitting Expense...' : 'Submit Expense'}
+            {isSubmitting ? t('Submitting Expense...') : t('Submit Expense')}
           </Text>
         </Pressable>
 
         <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
-          <Text style={styles.secondaryButtonText}>Back to Active Trip</Text>
+          <Text style={styles.secondaryButtonText}>{t('Back to Active Trip')}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

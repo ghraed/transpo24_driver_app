@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Image,
@@ -102,6 +103,7 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
 
 export default function VehicleDocumentsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<OnboardingDocumentsForm>({
     idDocumentKind: 'NATIONAL_ID',
@@ -210,19 +212,19 @@ export default function VehicleDocumentsScreen() {
     ): void => {
       if (!asset) {
         if (normalizedMissing.has(existingType)) {
-          errors[fieldKey] = `${label} is required.`;
+          errors[fieldKey] = t('{{label}} is required.', { label });
         }
         return;
       }
 
       const mime = asset.mimeType ?? '';
       if (!PHOTO_ALLOWED_TYPES.has(mime)) {
-        errors[fieldKey] = `${label} must be JPEG, PNG, or WEBP.`;
+        errors[fieldKey] = t('{{label}} must be JPEG, PNG, or WEBP.', { label });
         return;
       }
 
       if (asset.fileSize && asset.fileSize > MAX_IMAGE_BYTES) {
-        errors[fieldKey] = `${label} must be 5 MB or smaller.`;
+        errors[fieldKey] = t('{{label}} must be 5 MB or smaller.', { label });
       }
     };
 
@@ -249,18 +251,18 @@ export default function VehicleDocumentsScreen() {
       (normalizedMissing.has('ID_FRONT') || normalizedMissing.has('ID_BACK')) &&
       !onboardingDocumentsForm.idDocumentKind
     ) {
-      errors.idDocumentKind = 'Choose whether you have a national ID or residency card.';
+      errors.idDocumentKind = t('Choose whether you have a national ID or residency card.');
     }
 
     const drivingLicenseAsset = onboardingDocumentsForm.drivingLicense;
     if (!drivingLicenseAsset && normalizedMissing.has('DRIVING_LICENSE')) {
-      errors.drivingLicense = 'Driving license photo is required.';
+      errors.drivingLicense = t('Driving license photo is required.');
     } else if (drivingLicenseAsset) {
       const mime = drivingLicenseAsset.mimeType ?? '';
       if (!PHOTO_ALLOWED_TYPES.has(mime)) {
-        errors.drivingLicense = 'Driving license must be JPEG, PNG, or WEBP.';
+        errors.drivingLicense = t('Driving license must be JPEG, PNG, or WEBP.');
       } else if (drivingLicenseAsset.fileSize && drivingLicenseAsset.fileSize > MAX_IMAGE_BYTES) {
-        errors.drivingLicense = 'Driving license image must be 5 MB or smaller.';
+        errors.drivingLicense = t('Driving license image must be 5 MB or smaller.');
       }
     }
 
@@ -268,7 +270,7 @@ export default function VehicleDocumentsScreen() {
       if (!value.trim()) return;
       const parsed = new Date(value);
       if (Number.isNaN(parsed.getTime())) {
-        errors[fieldKey] = `${label} must be a valid date.`;
+        errors[fieldKey] = t('{{label}} must be a valid date.', { label });
         return;
       }
 
@@ -276,13 +278,13 @@ export default function VehicleDocumentsScreen() {
       today.setHours(0, 0, 0, 0);
       parsed.setHours(0, 0, 0, 0);
       if (parsed.getTime() < today.getTime()) {
-        errors[fieldKey] = `${label} must not be in the past.`;
+        errors[fieldKey] = t('{{label}} must not be in the past.', { label });
       }
     };
 
     if (onboardingDocumentsForm.idDocumentKind === 'RESIDENCY_CARD') {
       if (!onboardingDocumentsForm.idExpiryDate.trim()) {
-        errors.idExpiryDate = 'Residency expiry date is required.';
+        errors.idExpiryDate = t('Residency expiry date is required.');
       } else {
         validateExpiryDate(
           onboardingDocumentsForm.idExpiryDate,
@@ -299,7 +301,7 @@ export default function VehicleDocumentsScreen() {
     );
 
     return errors;
-  }, [documentsStatus, onboardingDocumentsForm]);
+  }, [documentsStatus, onboardingDocumentsForm, t]);
 
   const hasFieldErrors = Object.keys(fieldErrors).length > 0;
   const onOnboardingDocumentChange = <K extends keyof OnboardingDocumentsForm>(
@@ -376,7 +378,7 @@ export default function VehicleDocumentsScreen() {
           ...prev,
           [fieldKey]: undefined,
         }));
-        setSubmitSuccess('Document uploaded successfully.');
+        setSubmitSuccess(t('Document uploaded successfully.'));
       } finally {
         setActiveOnboardingUploadType(null);
       }
@@ -399,7 +401,7 @@ export default function VehicleDocumentsScreen() {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Media library permission is required to select images.');
+      setSubmitError(t('Media library permission is required to select images.'));
       return;
     }
 
@@ -427,7 +429,7 @@ export default function VehicleDocumentsScreen() {
 
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to take document images.');
+      setSubmitError(t('Camera permission is required to take document images.'));
       return;
     }
 
@@ -462,7 +464,11 @@ export default function VehicleDocumentsScreen() {
       await persistOnboardingDocumentsStatus(JSON.stringify(status));
 
       if (status.missingDocuments.length > 0) {
-        setSubmitError(`Missing required documents: ${status.missingDocuments.join(', ')}.`);
+        setSubmitError(
+          t('Missing required documents: {{documents}}.', {
+            documents: status.missingDocuments.join(', '),
+          }),
+        );
         return;
       }
 
@@ -470,7 +476,7 @@ export default function VehicleDocumentsScreen() {
       router.push('/vehicle-information?flow=onboarding');
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to verify driver documents.';
+        error instanceof Error ? error.message : t('Failed to verify driver documents.');
       setSubmitError(message);
     }
   };
@@ -485,7 +491,7 @@ export default function VehicleDocumentsScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#1D4ED8" />
-        <Text style={styles.loadingText}>Loading document setup...</Text>
+        <Text style={styles.loadingText}>{t('Loading document setup...')}</Text>
       </View>
     );
   }
@@ -495,7 +501,7 @@ export default function VehicleDocumentsScreen() {
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>{loadError}</Text>
         <Pressable style={styles.retryButton} onPress={() => void loadDocumentsStatus()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('Retry')}</Text>
         </Pressable>
       </View>
     );
@@ -509,27 +515,25 @@ export default function VehicleDocumentsScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/complete-profile')}>
-            <Text style={styles.backButtonText}>Back</Text>
+            <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.progress}>Step 2 of 3: Documents</Text>
-          <Text style={styles.title}>Upload Driver Documents</Text>
+          <Text style={styles.progress}>{t('Step 2 of 3: Documents')}</Text>
+          <Text style={styles.title}>{t('Upload Driver Documents')}</Text>
           <Text style={styles.subtitle}>
-            Upload the documents needed for verification, then continue to vehicle
-            information.
+            {t('Upload the documents needed for verification, then continue to vehicle information.')}
           </Text>
-          <Text style={styles.helper}>Clear documents help us verify your driver account faster.</Text>
+          <Text style={styles.helper}>{t('Clear documents help us verify your driver account faster.')}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Identity Verification Documents</Text>
+          <Text style={styles.sectionTitle}>{t('Identity Verification Documents')}</Text>
           <Text style={styles.helper}>
-            Select or take clear images of the required personal documents before submitting your
-            account for review.
+            {t('Select or take clear images of the required personal documents before submitting your account for review.')}
           </Text>
 
           {renderOnboardingDocumentPicker(
-            'Recent personal photo / selfie *',
-            'Take a selfie in front of a white background with good lighting and a clear face.',
+            t('Recent personal photo / selfie *'),
+            t('Take a selfie in front of a white background with good lighting and a clear face.'),
             'PERSONAL_SELFIE',
             onboardingDocumentsForm.personalSelfie,
             getUploadedOnboardingDocument('PERSONAL_SELFIE'),
@@ -541,8 +545,8 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'ID or residency card front *',
-            'Upload clear photos of the front and back sides. The document must not be expired.',
+            t('ID or residency card front *'),
+            t('Upload clear photos of the front and back sides. The document must not be expired.'),
             'ID_FRONT',
             onboardingDocumentsForm.idFront,
             getUploadedOnboardingDocument('ID_FRONT'),
@@ -551,11 +555,11 @@ export default function VehicleDocumentsScreen() {
           )}
           {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
 
-          <Text style={styles.fieldLabel}>Document type *</Text>
+          <Text style={styles.fieldLabel}>{t('Document type *')}</Text>
           <View style={styles.optionWrap}>
             {[
-              { label: 'National ID', value: 'NATIONAL_ID' as const },
-              { label: 'Residency card', value: 'RESIDENCY_CARD' as const },
+              { label: t('National ID'), value: 'NATIONAL_ID' as const },
+              { label: t('Residency card'), value: 'RESIDENCY_CARD' as const },
             ].map((option) => {
               const selected = onboardingDocumentsForm.idDocumentKind === option.value;
               return (
@@ -577,7 +581,7 @@ export default function VehicleDocumentsScreen() {
 
           {onboardingDocumentsForm.idDocumentKind === 'RESIDENCY_CARD' ? (
             <>
-              <Text style={styles.fieldLabel}>Residency expiry date *</Text>
+              <Text style={styles.fieldLabel}>{t('Residency expiry date *')}</Text>
               <Pressable
                 style={styles.selectTrigger}
                 onPress={() => setActiveDateField('idExpiryDate')}
@@ -589,7 +593,7 @@ export default function VehicleDocumentsScreen() {
                       : styles.selectPlaceholderText
                   }
                 >
-                  {onboardingDocumentsForm.idExpiryDate || 'Select residency expiry date'}
+                  {onboardingDocumentsForm.idExpiryDate || t('Select residency expiry date')}
                 </Text>
                 <Text style={styles.selectChevron}>▼</Text>
               </Pressable>
@@ -600,8 +604,8 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
-            'ID or residency card back *',
-            'Upload clear photos of the front and back sides. The document must not be expired.',
+            t('ID or residency card back *'),
+            t('Upload clear photos of the front and back sides. The document must not be expired.'),
             'ID_BACK',
             onboardingDocumentsForm.idBack,
             getUploadedOnboardingDocument('ID_BACK'),
@@ -611,8 +615,8 @@ export default function VehicleDocumentsScreen() {
           {fieldErrors.idBack ? <Text style={styles.errorText}>{fieldErrors.idBack}</Text> : null}
 
           {renderOnboardingDocumentPicker(
-            'Driving license *',
-            'Select or take a clear valid image showing the allowed vehicle categories.',
+            t('Driving license *'),
+            t('Select or take a clear valid image showing the allowed vehicle categories.'),
             'DRIVING_LICENSE',
             onboardingDocumentsForm.drivingLicense,
             getUploadedOnboardingDocument('DRIVING_LICENSE'),
@@ -623,7 +627,7 @@ export default function VehicleDocumentsScreen() {
             <Text style={styles.errorText}>{fieldErrors.drivingLicense}</Text>
           ) : null}
 
-          <Text style={styles.fieldLabel}>Driving license expiry date</Text>
+          <Text style={styles.fieldLabel}>{t('Driving license expiry date')}</Text>
           <Pressable
             style={styles.selectTrigger}
             onPress={() => setActiveDateField('drivingLicenseExpiryDate')}
@@ -636,7 +640,7 @@ export default function VehicleDocumentsScreen() {
               }
             >
               {onboardingDocumentsForm.drivingLicenseExpiryDate ||
-                'Select driving license expiry date'}
+                t('Select driving license expiry date')}
             </Text>
             <Text style={styles.selectChevron}>▼</Text>
           </Pressable>
@@ -646,13 +650,13 @@ export default function VehicleDocumentsScreen() {
 
           {documentsStatus?.missingDocumentLabels?.length ? (
             <Text style={styles.helper}>
-              Missing documents: {documentsStatus.missingDocumentLabels.join(', ')}
+              {t('Missing documents')}: {documentsStatus.missingDocumentLabels.join(', ')}
             </Text>
           ) : null}
 
           {documentsStatus?.submittedForReviewAt ? (
             <Text style={styles.statusText}>
-              Submitted for review at{' '}
+              {t('Submitted for review at')}{' '}
               {new Date(documentsStatus.submittedForReviewAt).toLocaleString()}
             </Text>
           ) : null}
@@ -666,7 +670,7 @@ export default function VehicleDocumentsScreen() {
           disabled={!canContinue}
           onPress={() => void onContinue()}
         >
-          <Text style={styles.continueButtonText}>Next</Text>
+          <Text style={styles.continueButtonText}>{t('Next')}</Text>
         </Pressable>
       </ScrollView>
       {activeDateField ? (
@@ -714,11 +718,11 @@ export default function VehicleDocumentsScreen() {
         {previewUri && isImagePreview ? (
           <Image source={{ uri: previewUri }} style={styles.onboardingPreview} />
         ) : null}
-        {asset ? <Text style={styles.fileName}>{asset.fileName ?? 'Selected file'}</Text> : null}
+        {asset ? <Text style={styles.fileName}>{asset.fileName ?? t('Selected file')}</Text> : null}
         {!asset && uploaded ? (
           <Text style={styles.fileName}>
-            Uploaded: {uploaded.status}
-            {uploaded.expiresAt ? ` | Expires ${uploaded.expiresAt.slice(0, 10)}` : ''}
+            {t('Uploaded')}: {uploaded.status}
+            {uploaded.expiresAt ? ` | ${t('Expires')} ${uploaded.expiresAt.slice(0, 10)}` : ''}
           </Text>
         ) : null}
         {uploaded?.rejectionReason ? (
@@ -730,7 +734,7 @@ export default function VehicleDocumentsScreen() {
             onPress={onPick}
             disabled={Boolean(activeOnboardingUploadType)}
           >
-            <Text style={styles.uploadButtonText}>{asset || uploaded ? 'Replace' : 'Select'}</Text>
+            <Text style={styles.uploadButtonText}>{asset || uploaded ? t('Replace') : t('Select')}</Text>
           </Pressable>
           <Pressable
             style={styles.uploadButtonSmall}
@@ -740,7 +744,7 @@ export default function VehicleDocumentsScreen() {
             {isUploading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <Text style={styles.uploadButtonText}>Take image</Text>
+              <Text style={styles.uploadButtonText}>{t('Take image')}</Text>
             )}
           </Pressable>
         </View>
