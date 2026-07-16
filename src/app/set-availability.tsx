@@ -871,7 +871,6 @@ export default function SetAvailabilityScreen() {
                 style={styles.map}
                 initialRegion={mapRegion}
                 region={mapRegion}
-                showsUserLocation
                 onRegionChangeComplete={setMapRegion}
                 onPress={onMapPress}
               >

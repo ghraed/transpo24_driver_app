@@ -18,6 +18,28 @@ type CompletedParams = {
   deliveredAt?: string;
 };
 
+const STRIPE_ACCOUNT_STATUS_KEYS: Record<string, string> = {
+  details_submitted: 'Details submitted',
+  charges_enabled: 'Charges enabled',
+  payouts_enabled: 'Payouts enabled',
+  restricted: 'Restricted',
+  pending: 'Pending',
+  complete: 'Complete',
+  verified: 'Verified',
+  not_available: 'Not available',
+};
+
+const PAYOUT_ERROR_KEYS: Record<string, string> = {
+  'Failed to load payout workflow.': 'Failed to load payout workflow.',
+  'Failed to release held trip funds.': 'Failed to release held trip funds.',
+  'Driver does not have a Stripe Connect account.':
+    'Driver does not have a Stripe Connect account.',
+  'Stripe Connect onboarding is not complete. Payouts are not enabled.':
+    'Stripe Connect onboarding is not complete. Payouts are not enabled.',
+  'No payout transfer is linked to this trip yet.': 'No payout transfer is linked to this trip yet.',
+  'Trip payout release is not available.': 'Trip payout release is not available.',
+};
+
 function formatTimestamp(value: string | null): string {
   if (!value) return 'N/A';
 
@@ -29,14 +51,38 @@ function formatTimestamp(value: string | null): string {
   return parsed.toLocaleString();
 }
 
-function normalizeAccountStatus(status: string | null): string {
-  if (!status) return 'Not available';
+function getAccountStatusLabel(
+  status: string | null,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!status) return t('Not available');
 
-  return status
+  const normalized = status.trim().toLowerCase();
+  const translationKey = STRIPE_ACCOUNT_STATUS_KEYS[normalized];
+  if (translationKey) {
+    return t(translationKey);
+  }
+
+  return normalized
     .split('_')
     .filter(Boolean)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
     .join(' ');
+}
+
+function getPayoutErrorMessage(
+  message: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const trimmed = message.trim();
+
+  if (trimmed.startsWith('You have insufficient available')) {
+    return t(
+      'You have insufficient available funds in your Stripe balance to complete this payout release right now.',
+    );
+  }
+
+  return t(PAYOUT_ERROR_KEYS[trimmed] ?? trimmed);
 }
 
 function resolveTransferHeadline(
@@ -168,14 +214,18 @@ export default function DriverTripCompletedScreen() {
         } catch (error) {
           setTransferResult(null);
           setTransferError(
-            error instanceof Error ? error.message : t('Failed to release held trip funds.'),
+            error instanceof Error
+              ? getPayoutErrorMessage(error.message, t)
+              : t('Failed to release held trip funds.'),
           );
         } finally {
           setIsReleasing(false);
         }
       } catch (error) {
         setScreenError(
-          error instanceof Error ? error.message : t('Failed to load payout workflow.'),
+          error instanceof Error
+            ? getPayoutErrorMessage(error.message, t)
+            : t('Failed to load payout workflow.'),
         );
       } finally {
         setIsLoading(false);
@@ -238,7 +288,8 @@ export default function DriverTripCompletedScreen() {
                 {t('Stripe payouts enabled')}: {stripeStatus?.payoutsEnabled ? t('Yes') : t('No')}
               </Text>
               <Text style={styles.statusMeta}>
-                {t('Stripe account status')}: {normalizeAccountStatus(stripeStatus?.accountStatus ?? null)}
+                {t('Stripe account status')}:{' '}
+                {getAccountStatusLabel(stripeStatus?.accountStatus ?? null, t)}
               </Text>
             </>
           )}

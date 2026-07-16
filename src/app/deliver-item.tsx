@@ -16,8 +16,10 @@ import {
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
-import { isTerminalRequestStatus } from '@/lib/request-status';
+import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
+import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
+import { translateDynamicBatch } from '@/services/translation-service';
 import { deliverItem, startDelivery } from '@/services/tripService';
 import type { LocalDocumentAsset } from '@/types/auth';
 import type { AddressedLocation, DeliverItemRequest, GeoLocation } from '@/types/trip.types';
@@ -68,9 +70,36 @@ function buildCompletedRoute(tripId: string, deliveredAt: string): Href {
   };
 }
 
+function normalizeDynamicText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value).trim();
+  return '';
+}
+
+function formatDisplayAddress(
+  address: string | null | undefined,
+  fallbackKey: 'Pickup address unavailable' | 'Dropoff address unavailable',
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!address) return t(fallbackKey);
+  if (address === 'Current location') return t('Current location');
+  return address;
+}
+
+function localizeDeliveryError(
+  message: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const normalized = message.trim().toLowerCase();
+  if (normalized === 'request is not in accepted job state.') {
+    return t('Request is not in accepted job state.');
+  }
+  return message;
+}
+
 export default function DeliverItemScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useLocalSearchParams<DeliverItemParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
   const mapsApiKey =
@@ -114,6 +143,7 @@ export default function DeliverItemScreen() {
   const [routeBlockedMessage, setRouteBlockedMessage] = useState<string>('');
   const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
+  const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const { height: windowHeight } = useWindowDimensions();
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
@@ -148,12 +178,50 @@ export default function DeliverItemScreen() {
     return validateDeliverItemRequest(payload);
   }, [driverLocation, notes]);
 
+  useEffect(() => {
+    const targetLanguage = i18n.language.split('-')[0];
+    if (!isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    const items: { key: string; text: string }[] = [];
+    const pickupAddress = normalizeDynamicText(pickupLocation?.address);
+    const dropoffAddress = normalizeDynamicText(dropoffLocation?.address);
+
+    if (pickupAddress && pickupAddress !== 'Current location') {
+      items.push({ key: 'pickupAddress', text: pickupAddress });
+    }
+    if (dropoffAddress && dropoffAddress !== 'Current location') {
+      items.push({ key: 'dropoffAddress', text: dropoffAddress });
+    }
+
+    if (!items.length) {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    let active = true;
+    void translateDynamicBatch({
+      items,
+      targetLanguage: targetLanguage as AppLanguage,
+    }).then((translations) => {
+      if (active) setTranslatedTextByKey(translations);
+    }).catch(() => {
+      if (active) setTranslatedTextByKey({});
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [dropoffLocation?.address, i18n.language, pickupLocation?.address]);
+
   const onBackToHome = (): void => {
     router.replace('/driver-home');
   };
 
   const ensureDriverGoingToDropoff = useCallback(async (): Promise<void> => {
-    if (requestStatus === 'DRIVER_GOING_TO_DROPOFF') {
+    if (requestStatus === 'DRIVER_GOING_TO_DROPOFF' || requestStatus === 'IN_TRANSIT') {
       return;
     }
 
@@ -162,7 +230,7 @@ export default function DeliverItemScreen() {
       setRequestStatus(response.status);
       setRouteBlockedMessage('');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to start delivery.';
+      const message = error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to start delivery.');
       const normalizedMessage = message.toLowerCase();
 
       if (
@@ -176,7 +244,7 @@ export default function DeliverItemScreen() {
 
       throw error;
     }
-  }, [requestStatus, tripId]);
+  }, [requestStatus, t, tripId]);
 
   const refreshDriverLocation = useCallback(async (showLoader = false): Promise<GeoLocation | null> => {
     if (showLoader) {
@@ -188,13 +256,13 @@ export default function DeliverItemScreen() {
     try {
       const permission = await Location.getForegroundPermissionsAsync();
       if (permission.status !== 'granted') {
-        setLocationMessage('Location permission denied. Enable location to continue delivery confirmation.');
+        setLocationMessage(t('Location permission denied. Enable location to continue delivery confirmation.'));
         return null;
       }
 
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!servicesEnabled) {
-        setLocationMessage('GPS unavailable. Please enable location services.');
+        setLocationMessage(t('GPS unavailable. Please enable location services.'));
         return null;
       }
 
@@ -208,7 +276,7 @@ export default function DeliverItemScreen() {
       };
 
       if (!isValidGeoLocation(currentLocation)) {
-        setLocationMessage('Unable to get a valid driver location. Please try again.');
+        setLocationMessage(t('Unable to get a valid driver location. Please try again.'));
         return null;
       }
 
@@ -228,7 +296,7 @@ export default function DeliverItemScreen() {
       setLocationMessage(
         error instanceof Error
           ? error.message
-          : 'Unable to get current location. Please verify GPS availability.',
+          : t('Unable to get current location. Please verify GPS availability.'),
       );
       return null;
     } finally {
@@ -269,10 +337,7 @@ export default function DeliverItemScreen() {
           return;
         }
 
-        if (
-          details.requestStatus !== 'ITEM_PICKED_UP' &&
-          details.requestStatus !== 'DRIVER_GOING_TO_DROPOFF'
-        ) {
+        if (!isDeliveryPhaseRequestStatus(details.requestStatus)) {
           setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
           setIsStartingDelivery(false);
           setIsLoadingLocation(false);
@@ -280,7 +345,7 @@ export default function DeliverItemScreen() {
         }
       } catch (error) {
         if (!active) return;
-        setSubmitError(error instanceof Error ? error.message : 'Failed to load trip status.');
+        setSubmitError(error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to load trip status.'));
         setIsStartingDelivery(false);
         setIsLoadingLocation(false);
         return;
@@ -289,7 +354,7 @@ export default function DeliverItemScreen() {
       try {
         await ensureDriverGoingToDropoff();
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to start delivery.';
+        const message = error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to start delivery.');
         const normalizedMessage = message.toLowerCase();
         if (
           normalizedMessage.includes('trip status must be item_picked_up before starting delivery') ||
@@ -297,14 +362,17 @@ export default function DeliverItemScreen() {
         ) {
           try {
             const details = await getDriverAcceptedJobDetails(tripId);
-            if (details.requestStatus !== 'DRIVER_GOING_TO_DROPOFF') {
-              setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
+            if (
+              details.requestStatus !== 'DRIVER_GOING_TO_DROPOFF' &&
+              details.requestStatus !== 'IN_TRANSIT'
+            ) {
+              setRouteBlockedMessage(t('Pickup must be confirmed and saved before opening delivery.'));
               setIsStartingDelivery(false);
               setIsLoadingLocation(false);
               return;
             }
           } catch {
-            setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
+            setRouteBlockedMessage(t('Pickup must be confirmed and saved before opening delivery.'));
             setIsStartingDelivery(false);
             setIsLoadingLocation(false);
             return;
@@ -345,7 +413,7 @@ export default function DeliverItemScreen() {
       if (!active) return;
 
       if (permission.status !== 'granted') {
-        setLocationMessage('Location permission denied. Enable location to continue delivery confirmation.');
+        setLocationMessage(t('Location permission denied. Enable location to continue delivery confirmation.'));
         setIsLoadingLocation(false);
         return;
       }
@@ -353,7 +421,7 @@ export default function DeliverItemScreen() {
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!active) return;
       if (!servicesEnabled) {
-        setLocationMessage('GPS unavailable. Please enable location services.');
+        setLocationMessage(t('GPS unavailable. Please enable location services.'));
         setIsLoadingLocation(false);
         return;
       }
@@ -406,11 +474,11 @@ export default function DeliverItemScreen() {
         }
         locationSubscriptionRef.current = subscription;
       } catch (error) {
-        setLocationMessage(
-          error instanceof Error
-            ? error.message
-            : 'Unable to get current location. Please verify GPS availability.',
-        );
+      setLocationMessage(
+        error instanceof Error
+          ? localizeDeliveryError(error.message, t)
+          : t('Unable to get current location. Please verify GPS availability.'),
+      );
       } finally {
         if (active) {
           setIsLoadingLocation(false);
@@ -477,7 +545,7 @@ export default function DeliverItemScreen() {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Media library permission is required to select proof photos.');
+      setSubmitError(t('Media library permission is required to select proof photos.'));
       return;
     }
 
@@ -497,7 +565,7 @@ export default function DeliverItemScreen() {
 
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to take proof photos.');
+      setSubmitError(t('Camera permission is required to take proof photos.'));
       return;
     }
 
@@ -536,15 +604,15 @@ export default function DeliverItemScreen() {
   const onConfirmDelivery = async (): Promise<void> => {
     setSubmitError('');
     if (isInvalidRoute || !dropoffLocation) {
-      setSubmitError('Invalid trip data. Please reopen this trip from Accepted Jobs.');
+      setSubmitError(t('Invalid trip data. Please reopen this trip from Accepted Jobs.'));
       return;
     }
     if (proofPhotos.length === 0) {
-      setSubmitError('At least one delivery proof photo is required.');
+      setSubmitError(t('At least one delivery proof photo is required.'));
       return;
     }
     if (!driverLocation || !isValidGeoLocation(driverLocation)) {
-      setSubmitError('Current location is required to confirm delivery.');
+      setSubmitError(t('Current location is required to confirm delivery.'));
       return;
     }
 
@@ -567,7 +635,7 @@ export default function DeliverItemScreen() {
     }
 
     if (!canConfirmDelivery(latestLocation, dropoffLocation)) {
-      setSubmitError('You are too far from dropoff location. Move closer to continue.');
+      setSubmitError(t('You are too far from dropoff location. Move closer to continue.'));
       return;
     }
 
@@ -591,7 +659,7 @@ export default function DeliverItemScreen() {
       try {
         response = await deliverItem(tripId, payload);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to confirm delivery.';
+        const message = error instanceof Error ? error.message : t('Failed to confirm delivery.');
         const normalizedMessage = message.toLowerCase();
         if (
           normalizedMessage.includes('trip status must be driver_going_to_dropoff before confirming delivery')
@@ -605,7 +673,7 @@ export default function DeliverItemScreen() {
 
       router.replace(buildCompletedRoute(tripId, response.deliveredAt));
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Failed to confirm delivery.');
+      setSubmitError(error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to confirm delivery.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -627,7 +695,7 @@ export default function DeliverItemScreen() {
           style={styles.actionButton}
           onPress={() =>
             router.replace({
-              pathname: '/pickup-item',
+              pathname: '/go-to-pickup',
               params: {
                 tripId,
                 pickupLatitude: String(pickupLocation.latitude),
@@ -640,7 +708,7 @@ export default function DeliverItemScreen() {
             })
           }
         >
-          <Text style={styles.actionButtonText}>{t('Go To Pickup Confirmation')}</Text>
+          <Text style={styles.actionButtonText}>{t('Go to Pickup Location')}</Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -668,7 +736,12 @@ export default function DeliverItemScreen() {
         }}
       />
       <View style={[styles.mapContainer, { height: isMapFullscreen ? windowHeight : windowHeight * 0.5 }]}>
-        {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+        {isLoadingLocation && !driverLocation ? (
+          <View style={styles.centeredMapState}>
+            <ActivityIndicator size="large" color="#2563EB" />
+            <Text style={styles.helperText}>{t('Getting location...')}</Text>
+          </View>
+        ) : mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
           <NativeMapView
             ref={mapRef}
             provider={PROVIDER_GOOGLE}
@@ -730,9 +803,13 @@ export default function DeliverItemScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{t('Deliver Item')}</Text>
-        <Text style={styles.addressText}>{dropoffLocation.address || t('Dropoff address unavailable')}</Text>
+        <Text style={styles.addressText}>
+          {translatedTextByKey.dropoffAddress || formatDisplayAddress(dropoffLocation.address, 'Dropoff address unavailable', t)}
+        </Text>
         <Text style={styles.subText}>{t('Trip ID')}: {tripId}</Text>
-        <Text style={styles.subText}>{t('Pickup')}: {pickupLocation.address || t('Pickup address unavailable')}</Text>
+        <Text style={styles.subText}>
+          {t('Pickup')}: {translatedTextByKey.pickupAddress || formatDisplayAddress(pickupLocation.address, 'Pickup address unavailable', t)}
+        </Text>
         <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
         <Text style={styles.distanceText}>
           {t('Distance remaining')}:{' '}
@@ -748,71 +825,15 @@ export default function DeliverItemScreen() {
           </Text>
         </Pressable>
 
-        <Text style={styles.sectionTitle}>{t('Delivery Notes (Optional)')}</Text>
-        <TextInput
-          style={styles.textArea}
-          placeholder={t('Package delivered to recipient.')}
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={4}
-          maxLength={500}
-        />
-        <Text style={styles.hintText}>{notes.trim().length}/500</Text>
-        <Text style={styles.subText}>{t('Proof Photos')}</Text>
-        <Text style={styles.helperText}>
-          {t('Select multiple images from the gallery or capture more photos with the camera. Max {{count}}.', { count: MAX_PROOF_PHOTOS })}
+        <Text style={styles.infoText}>
+          {t('You are on the delivery step. Add optional notes, attach proof photos, then confirm delivery.')}
         </Text>
-        {proofPhotos.length > 0 ? (
-          <View style={styles.proofGrid}>
-            {proofPhotos.map((photo, index) => (
-              <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
-                <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
-                <Text style={styles.helperText} numberOfLines={1}>
-                  {photo.fileName?.trim() || `${t('Proof')} ${index + 1}`}
-                </Text>
-                <Pressable
-                  style={styles.removeProofButton}
-                  onPress={() =>
-                    setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
-                  }
-                >
-                  <Text style={styles.removeProofButtonText}>{t('Remove')}</Text>
-                </Pressable>
-              </View>
-            ))}
-          </View>
-        ) : null}
-        <View style={styles.uploadActions}>
-          <Pressable
-            style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
-            onPress={() => void onSelectProofPhotos()}
-            disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
-          >
-            <Text style={styles.uploadButtonText}>{t('Choose Images')}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
-            onPress={() => void onTakeProofPhoto()}
-            disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
-          >
-            <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
-          </Pressable>
-          {proofPhotos.length > 0 ? (
-            <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
-              <Text style={styles.clearButtonText}>{t('Clear All')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
 
         {isStartingDelivery ? (
-          <View style={styles.row}>
-            <ActivityIndicator size="small" color="#2563EB" />
-            <Text style={styles.helperText}>{t('Starting delivery...')}</Text>
-          </View>
+          <Text style={styles.infoText}>{t('Starting delivery...')}</Text>
         ) : null}
-        {isLoadingLocation ? <Text style={styles.helperText}>{t('Getting location...')}</Text> : null}
-        {locationMessage ? <Text style={styles.warningText}>{locationMessage}</Text> : null}
+        {isLoadingLocation ? <Text style={styles.infoText}>{t('Getting location...')}</Text> : null}
+        {locationMessage ? <Text style={styles.infoText}>{locationMessage}</Text> : null}
         {tooFarFromDropoff && distanceMeters !== null ? (
           <Text style={styles.warningText}>
             {t('Too far from dropoff. Move within {{limit}}m. Current: {{current}}m', {
@@ -821,6 +842,67 @@ export default function DeliverItemScreen() {
             })}
           </Text>
         ) : null}
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>{t('Delivery Notes (Optional)')}</Text>
+          <TextInput
+            style={styles.textArea}
+            placeholder={t('Package delivered to recipient.')}
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={4}
+            maxLength={500}
+          />
+          <Text style={styles.hintText}>{notes.trim().length}/500</Text>
+
+          <Text style={styles.sectionTitle}>{t('Proof Photos')}</Text>
+          <Text style={styles.metaText}>
+            {t('Select multiple images from the gallery or capture more photos with the camera. Max {{count}}.', { count: MAX_PROOF_PHOTOS })}
+          </Text>
+          {proofPhotos.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.proofRow}>
+              {proofPhotos.map((photo, index) => (
+                <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
+                  <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
+                  <Text style={styles.proofName} numberOfLines={1}>
+                    {photo.fileName?.trim() || `${t('Proof')} ${index + 1}`}
+                  </Text>
+                  <Pressable
+                    style={styles.removeProofButton}
+                    onPress={() =>
+                      setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
+                    }
+                  >
+                    <Text style={styles.removeProofButtonText}>{t('Remove')}</Text>
+                  </Pressable>
+                </View>
+              ))}
+            </ScrollView>
+          ) : null}
+          <View style={styles.uploadActions}>
+            <Pressable
+              style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
+              onPress={() => void onSelectProofPhotos()}
+              disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+            >
+              <Text style={styles.uploadButtonText}>{t('Choose Images')}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
+              onPress={() => void onTakeProofPhoto()}
+              disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+            >
+              <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
+            </Pressable>
+            {proofPhotos.length > 0 ? (
+              <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
+                <Text style={styles.clearButtonText}>{t('Clear All')}</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+
         {payloadValidationMessage ? <Text style={styles.errorText}>{payloadValidationMessage}</Text> : null}
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
@@ -837,7 +919,7 @@ export default function DeliverItemScreen() {
         </Pressable>
 
         <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
-          <Text style={styles.testButtonText}>{t('TESTING ONLY: Send Fake Location')}</Text>
+          <Text style={styles.testButtonText}>{t('Send Fake Location')}</Text>
         </Pressable>
       </ScrollView>
 
@@ -864,9 +946,10 @@ export default function DeliverItemScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F3F4F6',
   },
   mapContainer: {
+    position: 'relative',
   },
   hidden: {
     display: 'none',
@@ -881,7 +964,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(17, 24, 39, 0.72)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
@@ -891,26 +974,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    backgroundColor: '#D1D5DB',
   },
   centeredContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#F8FAFC',
+    padding: 24,
+    backgroundColor: '#F3F4F6',
   },
   bottomScroll: {
     flex: 1,
   },
   bottomCard: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 16,
-    gap: 8,
+    gap: 14,
+    padding: 20,
     paddingBottom: 96,
   },
   floatingSubmitButton: {
@@ -936,9 +1015,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
   },
   headerBackText: {
     color: '#2563EB',
@@ -946,115 +1025,117 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addressText: {
-    color: '#334155',
-    fontSize: 14,
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 24,
   },
   subText: {
-    color: '#475569',
-    fontSize: 13,
+    fontSize: 14,
+    color: '#6B7280',
   },
   distanceText: {
-    color: '#0F172A',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  sectionTitle: {
-    color: '#0F172A',
     fontSize: 15,
     fontWeight: '700',
+    color: '#111827',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#1D4ED8',
+    lineHeight: 20,
+  },
+  card: {
+    gap: 12,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
   },
   textArea: {
-    minHeight: 96,
+    minHeight: 110,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    color: '#0F172A',
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     textAlignVertical: 'top',
+    fontSize: 15,
+    color: '#111827',
   },
   hintText: {
-    color: '#64748B',
     fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'right',
   },
-  proofCard: {
-    gap: 8,
-  },
-  proofGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  proofItem: {
-    width: '48%',
-    gap: 6,
-  },
-  proofPreview: {
-    width: '100%',
-    height: 120,
-    borderRadius: 12,
-    backgroundColor: '#E2E8F0',
-  },
-  uploadActions: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  },
-  uploadButton: {
-    minHeight: 42,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledUploadButton: {
-    backgroundColor: '#94A3B8',
-  },
-  uploadButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  clearButton: {
-    minHeight: 42,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  clearButtonText: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  removeProofButton: {
-    minHeight: 32,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeProofButtonText: {
-    color: '#B91C1C',
-    fontSize: 12,
-    fontWeight: '700',
+  metaText: {
+    fontSize: 14,
+    color: '#4B5563',
+    lineHeight: 20,
   },
   helperText: {
     color: '#475569',
   },
+  uploadActions: {
+    gap: 10,
+  },
+  uploadButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: '#DBEAFE',
+    paddingVertical: 12,
+  },
+  disabledUploadButton: {
+    opacity: 0.5,
+  },
+  uploadButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1D4ED8',
+  },
+  clearButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 12,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4B5563',
+  },
+  removeProofButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+    paddingVertical: 8,
+  },
+  removeProofButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#B91C1C',
+  },
   warningText: {
+    fontSize: 14,
     color: '#B45309',
-    fontSize: 13,
+    lineHeight: 20,
   },
   errorText: {
-    color: '#B91C1C',
-    fontSize: 13,
+    fontSize: 14,
+    color: '#DC2626',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   actionButton: {
     marginTop: 6,
@@ -1065,60 +1146,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryActionButton: {
-    minHeight: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+    paddingVertical: 14,
   },
   disabledSecondaryActionButton: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   disabledButton: {
     backgroundColor: '#94A3B8',
   },
   actionButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
     fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   secondaryActionButtonText: {
-    color: '#334155',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 15,
+    color: '#111827',
   },
   driverMarkerIcon: {
     fontSize: 28,
   },
   destinationXMarker: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#B91C1C',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#111827',
   },
   destinationXText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  proofRow: {
+    gap: 12,
+    paddingTop: 8,
+  },
+  proofItem: {
+    width: 132,
+    gap: 8,
+  },
+  proofPreview: {
+    width: 132,
+    height: 132,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+  },
+  proofName: {
+    fontSize: 12,
+    color: '#374151',
   },
   testButton: {
-    minHeight: 44,
-    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#F59E0B',
     backgroundColor: '#FFFBEB',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 12,
   },
   testButtonText: {
-    color: '#92400E',
+    fontSize: 14,
     fontWeight: '700',
-    fontSize: 13,
+    color: '#92400E',
   },
 });

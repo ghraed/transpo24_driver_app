@@ -4,10 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getRequestStatusLabel } from '@/lib/request-status-display';
+
 export default function OfferWaitingResponseScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ requestId?: string; status?: string; offerId?: string }>();
+  const statusLabel = getRequestStatusLabel(
+    typeof params.status === 'string' ? params.status : null,
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -16,9 +21,15 @@ export default function OfferWaitingResponseScreen() {
         <Text style={styles.subtitle}>
           {t('Your offer is pending customer review. We will notify you when the customer chooses.')}
         </Text>
-        <Text style={styles.meta}>{t('Request ID: {{value}}', { value: params.requestId || 'N/A' })}</Text>
-        <Text style={styles.meta}>{t('Offer ID: {{value}}', { value: params.offerId || 'N/A' })}</Text>
-        <Text style={styles.meta}>{t('Request Status: {{value}}', { value: params.status || 'N/A' })}</Text>
+        <Text style={styles.meta}>
+          {t('Request ID: {{value}}', { value: params.requestId || t('N/A') })}
+        </Text>
+        <Text style={styles.meta}>
+          {t('Offer ID: {{value}}', { value: params.offerId || t('N/A') })}
+        </Text>
+        <Text style={styles.meta}>
+          {t('Request Status: {{value}}', { value: statusLabel || t('N/A') })}
+        </Text>
 
         <Pressable style={styles.primaryButton} onPress={() => router.replace('/receive-requests')}>
           <Text style={styles.primaryButtonText}>{t('Back to Available Requests')}</Text>

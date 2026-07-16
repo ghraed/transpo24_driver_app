@@ -15,6 +15,8 @@ import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
+const SELECTED_DARK_TEXT_COLOR = '#EAB308';
+
 export default function AppTabs() {
   return (
     <Tabs>
@@ -34,12 +36,18 @@ export default function AppTabs() {
 }
 
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
+
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
+        <ThemedText
+          type="small"
+          themeColor={isFocused ? 'text' : 'textSecondary'}
+          style={isFocused && isDark ? styles.selectedDarkText : undefined}>
           {children}
         </ThemedText>
       </ThemedView>
@@ -111,5 +119,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
     marginLeft: Spacing.three,
+  },
+  selectedDarkText: {
+    color: SELECTED_DARK_TEXT_COLOR,
   },
 });

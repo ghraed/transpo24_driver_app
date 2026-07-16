@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/auth-context';
 import { sendDriverPriceOffer } from '@/lib/api';
 import { formatDateTime } from '@/localization/format';
+import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
+import { translateDynamicBatch } from '@/services/translation-service';
 import type { SendDriverPriceOfferPayload, SupportedOfferCurrency } from '@/types/auth';
 
 type SendOfferFormState = {
@@ -47,9 +49,24 @@ function parseOptionalIsoDate(rawValue: string): Date | null {
   return parsed;
 }
 
+function normalizeDynamicText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value).trim();
+  return '';
+}
+
+function formatDisplayAddress(
+  address: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!address) return t('Address unavailable');
+  if (address === 'Current location') return t('Current location');
+  return address;
+}
+
 export default function SendPriceOfferScreen() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
   const params = useLocalSearchParams();
 
@@ -70,11 +87,54 @@ export default function SendPriceOfferScreen() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
   const requestIdShort = useMemo(() => {
     if (!requestId) return '';
     return requestId.length > 12 ? `${requestId.slice(0, 6)}...${requestId.slice(-4)}` : requestId;
   }, [requestId]);
+
+  useEffect(() => {
+    const targetLanguage = i18n.language.split('-')[0];
+    if (!isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    const items: { key: string; text: string }[] = [];
+    const pushItem = (key: string, text: unknown): void => {
+      const trimmed = normalizeDynamicText(text);
+      if (!trimmed || trimmed === 'Current location') return;
+      items.push({ key, text: trimmed });
+    };
+
+    pushItem('serviceName', serviceName);
+    pushItem('pickupAddress', pickupAddress);
+    pushItem('dropoffAddress', dropoffAddress);
+
+    if (!items.length) {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    let active = true;
+    void translateDynamicBatch({
+      items,
+      targetLanguage: targetLanguage as AppLanguage,
+    }).then((translations) => {
+      if (active) {
+        setTranslatedTextByKey(translations);
+      }
+    }).catch(() => {
+      if (active) {
+        setTranslatedTextByKey({});
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [dropoffAddress, i18n.language, pickupAddress, serviceName]);
 
   const validate = (): FormErrors => {
     const nextErrors: FormErrors = {};
@@ -207,9 +267,21 @@ export default function SendPriceOfferScreen() {
 
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>{t('Request Summary')}</Text>
-            {serviceName ? <Text style={styles.valueText}>{t('Service')}: {serviceName}</Text> : null}
-            {pickupAddress ? <Text style={styles.valueText}>{t('Pickup')}: {pickupAddress}</Text> : null}
-            {dropoffAddress ? <Text style={styles.valueText}>{t('Dropoff')}: {dropoffAddress}</Text> : null}
+            {serviceName ? (
+              <Text style={styles.valueText}>
+                {t('Service')}: {translatedTextByKey.serviceName || serviceName}
+              </Text>
+            ) : null}
+            {pickupAddress ? (
+              <Text style={styles.valueText}>
+                {t('Pickup')}: {translatedTextByKey.pickupAddress || formatDisplayAddress(pickupAddress, t)}
+              </Text>
+            ) : null}
+            {dropoffAddress ? (
+              <Text style={styles.valueText}>
+                {t('Dropoff')}: {translatedTextByKey.dropoffAddress || formatDisplayAddress(dropoffAddress, t)}
+              </Text>
+            ) : null}
             <Text style={styles.valueText}>{t('Schedule')}: {scheduledPickupAt ? formatDateTime(scheduledPickupAt) : t('Immediate pickup')}</Text>
             <Text style={styles.valueText}>{t('Request')}: {requestId ? requestIdShort : t('Missing request ID')}</Text>
             {errors.requestId ? <Text style={styles.errorText}>{errors.requestId}</Text> : null}

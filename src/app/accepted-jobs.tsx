@@ -1,5 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -13,8 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
-import { isActiveAcceptedJobStatus } from '@/lib/request-status';
+import { isActiveAcceptedJobStatus, isDeliveryPhaseRequestStatus } from '@/lib/request-status';
 import { getDriverAcceptedJobs, getDriverChatRooms } from '@/lib/api';
+import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
+import { getRequestStatusLabel } from '@/lib/request-status-display';
+import { translateDynamicBatch } from '@/services/translation-service';
 import type { DriverAcceptedJobSummary } from '@/types/auth';
 import type { ChatRoom } from '@/types/chat';
 
@@ -43,8 +46,87 @@ function formatServiceLabel(
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
   if (!service) return t('Service');
-  if (language.startsWith('ar') && service.nameAr?.trim()) return service.nameAr;
-  return service.nameEn || service.key || t('Service');
+  const nameAr = typeof service.nameAr === 'string' ? service.nameAr.trim() : '';
+  const nameEn = typeof service.nameEn === 'string' ? service.nameEn.trim() : '';
+  const serviceKey = typeof service.key === 'string' ? service.key.trim() : '';
+  if (language.startsWith('ar') && nameAr) return nameAr;
+  const fallbackLabel = nameEn || serviceKey || t('Service');
+  const translated = t(fallbackLabel);
+  return translated === fallbackLabel ? fallbackLabel : translated;
+}
+
+function normalizeDynamicText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number') return String(value).trim();
+  return '';
+}
+
+function formatDisplayAddress(
+  address: string | null | undefined,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (!address) return t('Address unavailable');
+  if (address === 'Current location') return t('Current location');
+  return address;
+}
+
+function getAcceptedJobRoute(job: DriverAcceptedJobSummary): {
+  pathname: '/accepted-job-details' | '/go-to-pickup' | '/deliver-item';
+  params: Record<string, string>;
+} {
+  const sharedParams = {
+    tripId: job.requestId,
+    pickupLatitude: String(job.pickup.latitude ?? ''),
+    pickupLongitude: String(job.pickup.longitude ?? ''),
+    pickupAddress: job.pickup.address ?? '',
+    dropoffLatitude: String(job.dropoff.latitude ?? ''),
+    dropoffLongitude: String(job.dropoff.longitude ?? ''),
+    dropoffAddress: job.dropoff.address ?? '',
+  };
+
+  if (job.requestStatus === 'DRIVER_ARRIVED_PICKUP') {
+    return { pathname: '/go-to-pickup', params: sharedParams };
+  }
+
+  if (isDeliveryPhaseRequestStatus(job.requestStatus)) {
+    return { pathname: '/deliver-item', params: sharedParams };
+  }
+
+  if (
+    job.requestStatus === 'ACCEPTED' ||
+    job.requestStatus === 'DRIVER_ASSIGNED' ||
+    job.requestStatus === 'DRIVER_GOING_TO_PICKUP'
+  ) {
+    return { pathname: '/go-to-pickup', params: sharedParams };
+  }
+
+  return {
+    pathname: '/accepted-job-details',
+    params: { requestId: job.requestId },
+  };
+}
+
+function getAcceptedJobActionLabel(
+  job: DriverAcceptedJobSummary,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (job.requestStatus === 'DRIVER_ARRIVED_PICKUP') {
+    return t('Go To Pickup Confirmation');
+  }
+
+  if (isDeliveryPhaseRequestStatus(job.requestStatus)) {
+    return t('Go to Dropoff Location');
+  }
+
+  if (
+    job.requestStatus === 'ACCEPTED' ||
+    job.requestStatus === 'DRIVER_ASSIGNED' ||
+    job.requestStatus === 'DRIVER_GOING_TO_PICKUP'
+  ) {
+    return t('Go to Pickup Location');
+  }
+
+  return t('View Job');
 }
 
 export default function AcceptedJobsScreen() {
@@ -53,6 +135,7 @@ export default function AcceptedJobsScreen() {
   const { signOut } = useAuth();
   const [jobs, setJobs] = useState<DriverAcceptedJobSummary[]>([]);
   const [chatRoomsByRequestId, setChatRoomsByRequestId] = useState<Record<string, ChatRoom>>({});
+  const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -114,6 +197,56 @@ export default function AcceptedJobsScreen() {
     }, [loadJobs]),
   );
 
+  useEffect(() => {
+    const targetLanguage = i18n.language.split('-')[0];
+    if (!isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    const items = jobs.flatMap((job) => {
+      const result: { key: string; text: string }[] = [];
+      const itemTitle = normalizeDynamicText(job.item?.title);
+      const pickupAddress = normalizeDynamicText(job.pickup?.address);
+      const dropoffAddress = normalizeDynamicText(job.dropoff?.address);
+
+      if (itemTitle) {
+        result.push({ key: `${job.requestId}:itemTitle`, text: itemTitle });
+      }
+      if (pickupAddress && pickupAddress !== 'Current location') {
+        result.push({ key: `${job.requestId}:pickupAddress`, text: pickupAddress });
+      }
+      if (dropoffAddress && dropoffAddress !== 'Current location') {
+        result.push({ key: `${job.requestId}:dropoffAddress`, text: dropoffAddress });
+      }
+
+      return result;
+    });
+
+    if (!items.length) {
+      setTranslatedTextByKey({});
+      return;
+    }
+
+    let active = true;
+    void translateDynamicBatch({
+      items,
+      targetLanguage: targetLanguage as AppLanguage,
+    }).then((translations) => {
+      if (active) {
+        setTranslatedTextByKey(translations);
+      }
+    }).catch(() => {
+      if (active) {
+        setTranslatedTextByKey({});
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [i18n.language, jobs]);
+
   const hasJobs = useMemo(() => jobs.length > 0, [jobs]);
 
   return (
@@ -152,17 +285,23 @@ export default function AcceptedJobsScreen() {
           {jobs.map((job) => {
             const jobChatRoom = chatRoomsByRequestId[job.requestId];
             const unreadCount = typeof jobChatRoom?.unreadCount === 'number' ? jobChatRoom.unreadCount : 0;
+            const itemLabel =
+              translatedTextByKey[`${job.requestId}:itemTitle`] ||
+              normalizeDynamicText(job.item?.title) ||
+              normalizeDynamicText(job.item?.type) ||
+              t('Transport item');
+            const pickupLabel =
+              translatedTextByKey[`${job.requestId}:pickupAddress`] ||
+              formatDisplayAddress(job.pickup?.address, t);
+            const dropoffLabel =
+              translatedTextByKey[`${job.requestId}:dropoffAddress`] ||
+              formatDisplayAddress(job.dropoff?.address, t);
 
             return (
               <Pressable
                 key={job.requestId}
                 style={styles.card}
-                onPress={() =>
-                  router.push({
-                    pathname: '/accepted-job-details',
-                    params: { requestId: job.requestId },
-                  })
-                }
+                onPress={() => router.push(getAcceptedJobRoute(job))}
               >
                 <View style={styles.cardTopRow}>
                   <Text style={styles.serviceText}>{formatServiceLabel(job.service, i18n.language, t)}</Text>
@@ -179,9 +318,9 @@ export default function AcceptedJobsScreen() {
                     </View>
                   </View>
                 </View>
-                <Text style={styles.itemText}>{job.item.title || job.item.type || t('Transport item')}</Text>
-                <Text style={styles.metaText}>{t('Pickup')}: {job.pickup.address || t('Address unavailable')}</Text>
-                <Text style={styles.metaText}>{t('Dropoff')}: {job.dropoff.address || t('Address unavailable')}</Text>
+                <Text style={styles.itemText}>{itemLabel}</Text>
+                <Text style={styles.metaText}>{t('Pickup')}: {pickupLabel}</Text>
+                <Text style={styles.metaText}>{t('Dropoff')}: {dropoffLabel}</Text>
                 <Text style={styles.metaText}>
                   {job.schedule.isImmediate
                     ? t('Immediate pickup')
@@ -191,9 +330,12 @@ export default function AcceptedJobsScreen() {
                   {t('Offer')}: {formatMoney(job.acceptedOffer.price, job.acceptedOffer.currency)}
                 </Text>
                 <Text style={styles.metaText}>{t('Accepted at')}: {formatDate(job.acceptedAt)}</Text>
+                <Text style={styles.metaText}>
+                  {t('Status')}: {getRequestStatusLabel(job.requestStatus)}
+                </Text>
 
                 <View style={styles.cardButton}>
-                  <Text style={styles.cardButtonText}>{t('View Job')}</Text>
+                  <Text style={styles.cardButtonText}>{getAcceptedJobActionLabel(job, t)}</Text>
                 </View>
               </Pressable>
             );

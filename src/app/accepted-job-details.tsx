@@ -23,7 +23,7 @@ import {
 import { DriverPayoutStatusCard } from '@/components/driver-payout-status-card';
 import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
-import { isTerminalRequestStatus } from '@/lib/request-status';
+import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
@@ -82,7 +82,9 @@ function getProgressLabel(status: DriverAcceptedJobDetailsResponse['requestStatu
     case 'DRIVER_ARRIVED_PICKUP':
       return 'Arrived at Location';
     case 'ITEM_PICKED_UP':
+    case 'PICKUP_IN_PROGRESS':
       return 'Picked Up';
+    case 'IN_TRANSIT':
     case 'DRIVER_GOING_TO_DROPOFF':
       return 'On the Way to Delivery';
     case 'DELIVERED':
@@ -101,12 +103,45 @@ function getNextActionLabel(status: DriverAcceptedJobDetailsResponse['requestSta
     case 'DRIVER_ARRIVED_PICKUP':
       return 'Picked Up';
     case 'ITEM_PICKED_UP':
+    case 'PICKUP_IN_PROGRESS':
+    case 'IN_TRANSIT':
     case 'DRIVER_GOING_TO_DROPOFF':
       return 'On the Way to Delivery';
     case 'DELIVERED':
       return 'Delivered';
     default:
       return null;
+  }
+}
+
+function getPrimaryRoutePath(status: DriverAcceptedJobDetailsResponse['requestStatus']): '/go-to-pickup' | '/deliver-item' {
+  switch (status) {
+    case 'DRIVER_ARRIVED_PICKUP':
+      return '/go-to-pickup';
+    case 'ITEM_PICKED_UP':
+    case 'PICKUP_IN_PROGRESS':
+    case 'IN_TRANSIT':
+    case 'DRIVER_GOING_TO_DROPOFF':
+      return '/deliver-item';
+    default:
+      return '/go-to-pickup';
+  }
+}
+
+function getPrimaryRouteLabel(
+  status: DriverAcceptedJobDetailsResponse['requestStatus'],
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  switch (status) {
+    case 'DRIVER_ARRIVED_PICKUP':
+      return t('Go To Pickup Confirmation');
+    case 'ITEM_PICKED_UP':
+    case 'PICKUP_IN_PROGRESS':
+    case 'IN_TRANSIT':
+    case 'DRIVER_GOING_TO_DROPOFF':
+      return t('Go to Dropoff Location');
+    default:
+      return t('Go to Pickup Location');
   }
 }
 
@@ -224,11 +259,7 @@ export default function AcceptedJobDetailsScreen() {
 
   const canGoToDropoff = useMemo(() => {
     if (!details) return false;
-    const requestStatus = String(details.requestStatus);
-    return (
-      requestStatus === 'ITEM_PICKED_UP' ||
-      requestStatus === 'DRIVER_GOING_TO_DROPOFF'
-    );
+    return isDeliveryPhaseRequestStatus(details.requestStatus);
   }, [details]);
 
   const currentStageLabel = useMemo(
@@ -534,7 +565,7 @@ export default function AcceptedJobDetailsScreen() {
           ]}
           onPress={() =>
             router.push({
-              pathname: canGoToDropoff ? '/deliver-item' : '/go-to-pickup',
+              pathname: getPrimaryRoutePath(details.requestStatus),
               params: {
                 tripId: details.requestId,
                 pickupLatitude: String(details.pickup.latitude ?? ''),
@@ -549,7 +580,7 @@ export default function AcceptedJobDetailsScreen() {
           disabled={!canGoToPickup && !canGoToDropoff}
         >
           <Text style={styles.primaryActionButtonText}>
-            {canGoToDropoff ? t('Go to Dropoff Location') : t('Go to Pickup Location')}
+            {getPrimaryRouteLabel(details.requestStatus, t)}
           </Text>
         </Pressable>
       </View>

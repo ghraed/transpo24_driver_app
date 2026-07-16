@@ -3,15 +3,18 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 
+const SELECTED_DARK_TEXT_COLOR = '#EAB308';
+
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const selectedLabelColor = scheme === 'dark' ? SELECTED_DARK_TEXT_COLOR : colors.text;
 
   return (
     <NativeTabs
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
+      labelStyle={{ selected: { color: selectedLabelColor } }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon

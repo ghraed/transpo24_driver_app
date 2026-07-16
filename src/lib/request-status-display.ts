@@ -9,6 +9,7 @@ const REQUEST_STATUS_KEYS: Partial<Record<RequestStatus, string>> = {
   DRIVER_GOING_TO_PICKUP: 'En route to pickup',
   DRIVER_ARRIVED_PICKUP: 'Arrived at pickup',
   ITEM_PICKED_UP: 'Picked up',
+  PICKUP_IN_PROGRESS: 'Picked up',
   IN_TRANSIT: 'In transit',
   DRIVER_GOING_TO_DROPOFF: 'En route to delivery',
   DELIVERED: 'Delivered',
