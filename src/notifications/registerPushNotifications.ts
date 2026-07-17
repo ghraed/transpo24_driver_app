@@ -96,7 +96,7 @@ export function initializeNotifications(): void {
   });
 }
 
-export async function registerDriverPushNotifications(): Promise<string> {
+export async function registerDriverPushNotifications(): Promise<string | null> {
   initializeNotifications();
 
   if (!Device.isDevice) {
@@ -108,7 +108,7 @@ export async function registerDriverPushNotifications(): Promise<string> {
 
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
-      throw new Error('Notification permission was not granted.');
+      return null;
     }
 
     const projectId = requireProjectId();

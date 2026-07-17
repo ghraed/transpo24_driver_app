@@ -602,58 +602,62 @@ export default function DeliverItemScreen() {
   };
 
   const onConfirmDelivery = async (): Promise<void> => {
-    setSubmitError('');
-    if (isInvalidRoute || !dropoffLocation) {
-      setSubmitError(t('Invalid trip data. Please reopen this trip from Accepted Jobs.'));
-      return;
-    }
-    if (proofPhotos.length === 0) {
-      setSubmitError(t('At least one delivery proof photo is required.'));
-      return;
-    }
-    if (!driverLocation || !isValidGeoLocation(driverLocation)) {
-      setSubmitError(t('Current location is required to confirm delivery.'));
-      return;
-    }
-
-    let latestLocation = driverLocation;
-    try {
-      const permission = await Location.getForegroundPermissionsAsync();
-      if (permission.status === 'granted') {
-        const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        const normalizedLocation: GeoLocation = {
-          latitude: fresh.coords.latitude,
-          longitude: fresh.coords.longitude,
-        };
-        if (isValidGeoLocation(normalizedLocation)) {
-          latestLocation = normalizedLocation;
-          setDriverLocation(normalizedLocation);
-        }
-      }
-    } catch {
-      // use latest known location
-    }
-
-    if (!canConfirmDelivery(latestLocation, dropoffLocation)) {
-      setSubmitError(t('You are too far from dropoff location. Move closer to continue.'));
-      return;
-    }
-
-    const payload: DeliverItemRequest = {
-      notes: notes.trim() || undefined,
-      proofPhotos: proofPhotos.length ? proofPhotos : undefined,
-      latitude: latestLocation.latitude,
-      longitude: latestLocation.longitude,
-    };
-
-    const validationError = validateDeliverItemRequest(payload);
-    if (validationError) {
-      setSubmitError(validationError);
+    if (isSubmitting) {
       return;
     }
 
     setIsSubmitting(true);
+    setSubmitError('');
     try {
+      if (isInvalidRoute || !dropoffLocation) {
+        setSubmitError(t('Invalid trip data. Please reopen this trip from Accepted Jobs.'));
+        return;
+      }
+      if (proofPhotos.length === 0) {
+        setSubmitError(t('At least one delivery proof photo is required.'));
+        return;
+      }
+      if (!driverLocation || !isValidGeoLocation(driverLocation)) {
+        setSubmitError(t('Current location is required to confirm delivery.'));
+        return;
+      }
+
+      let latestLocation = driverLocation;
+      try {
+        const permission = await Location.getForegroundPermissionsAsync();
+        if (permission.status === 'granted') {
+          const fresh = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+          const normalizedLocation: GeoLocation = {
+            latitude: fresh.coords.latitude,
+            longitude: fresh.coords.longitude,
+          };
+          if (isValidGeoLocation(normalizedLocation)) {
+            latestLocation = normalizedLocation;
+            setDriverLocation(normalizedLocation);
+          }
+        }
+      } catch {
+        // use latest known location
+      }
+
+      if (!canConfirmDelivery(latestLocation, dropoffLocation)) {
+        setSubmitError(t('You are too far from dropoff location. Move closer to continue.'));
+        return;
+      }
+
+      const payload: DeliverItemRequest = {
+        notes: notes.trim() || undefined,
+        proofPhotos: proofPhotos.length ? proofPhotos : undefined,
+        latitude: latestLocation.latitude,
+        longitude: latestLocation.longitude,
+      };
+
+      const validationError = validateDeliverItemRequest(payload);
+      if (validationError) {
+        setSubmitError(validationError);
+        return;
+      }
+
       await ensureDriverGoingToDropoff();
       let response: Awaited<ReturnType<typeof deliverItem>>;
       try {
@@ -926,18 +930,20 @@ export default function DeliverItemScreen() {
       <Pressable
         style={[styles.floatingSubmitButton, actionDisabled && styles.disabledButton, isMapFullscreen && styles.hidden]}
         disabled={actionDisabled}
-        onPress={onConfirmDelivery}
+        onPress={() => void onConfirmDelivery()}
       >
-        {isSubmitting ? (
-          <ActivityIndicator size="small" color="#FFFFFF" />
-        ) : (
+        {isSubmitting ? <ActivityIndicator size="small" color="#FFFFFF" /> : null}
+        <Text style={styles.floatingSubmitButtonText}>
+          {isSubmitting ? t('Submitting Delivery...') : t('Submit Delivery')}
+        </Text>
+        {!isSubmitting ? (
           <SymbolView
             name={{ ios: 'arrow.forward', android: 'arrow_forward', web: 'arrow_forward' }}
             size={24}
             weight="bold"
             tintColor="#FFFFFF"
           />
-        )}
+        ) : null}
       </Pressable>
     </SafeAreaView>
   );
@@ -995,19 +1001,26 @@ const styles = StyleSheet.create({
   floatingSubmitButton: {
     position: 'absolute',
     bottom: 24,
+    left: 24,
     right: 24,
-    width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: '#16A34A',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 20,
+  },
+  floatingSubmitButtonText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   row: {
     flexDirection: 'row',

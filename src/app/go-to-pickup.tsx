@@ -600,6 +600,10 @@ export default function GoToPickupScreen() {
   };
 
   const onMarkArrived = async (): Promise<void> => {
+    if (isSubmittingArrival || isSubmittingPickup || isAwaitingArrivalConfirmation) {
+      return;
+    }
+
     setSubmitError('');
 
     const validTripId = validateTripId(tripId);
@@ -641,74 +645,78 @@ export default function GoToPickupScreen() {
   };
 
   const onConfirmPickup = async (): Promise<void> => {
-    setSubmitError('');
-
-    if (isInvalidRoute || !pickupLocation || !dropoffLocation || !deliverRoute) {
-      setSubmitError(t('Invalid trip data. Please reopen this trip from Accepted Jobs.'));
-      return;
-    }
-
-    if (!isArrivedAtPickup) {
-      setSubmitError(t('Arrive at pickup first before submitting pickup confirmation.'));
-      return;
-    }
-
-    if (proofPhotos.length === 0) {
-      setSubmitError(t('At least one pickup proof photo is required.'));
-      return;
-    }
-
-    let latestLocation = driverLocation;
-
-    try {
-      const permission = await Location.getForegroundPermissionsAsync();
-      if (permission.status === 'granted') {
-        const freshLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
-
-        const normalizedLocation: GeoLocation = {
-          latitude: freshLocation.coords.latitude,
-          longitude: freshLocation.coords.longitude,
-        };
-
-        if (isValidGeoLocation(normalizedLocation)) {
-          latestLocation = normalizedLocation;
-          setDriverLocation(normalizedLocation);
-        }
-      }
-    } catch {
-      // Use latest known location.
-    }
-
-    const canSendLocation =
-      latestLocation && pickupLocation
-        ? canConfirmPickup(latestLocation, pickupLocation)
-        : false;
-
-    const payload: PickupItemRequest = {
-      notes: notes.trim() || undefined,
-      proofPhotos: proofPhotos.length ? proofPhotos : undefined,
-      latitude: canSendLocation ? latestLocation?.latitude : undefined,
-      longitude: canSendLocation ? latestLocation?.longitude : undefined,
-    };
-
-    if (latestLocation && !canSendLocation) {
-      setLocationMessage(
-        t('GPS shows you are farther than {{distance}}m from pickup. Sending confirmation without coordinates.', {
-          distance: PICKUP_CONFIRM_RADIUS_METERS,
-        }),
-      );
-    }
-
-    const validationError = validatePickupItemRequest(payload);
-    if (validationError) {
-      setSubmitError(validationError);
+    if (isSubmittingPickup || isSubmittingArrival || isAwaitingArrivalConfirmation) {
       return;
     }
 
     setIsSubmittingPickup(true);
+    setSubmitError('');
+
     try {
+      if (isInvalidRoute || !pickupLocation || !dropoffLocation || !deliverRoute) {
+        setSubmitError(t('Invalid trip data. Please reopen this trip from Accepted Jobs.'));
+        return;
+      }
+
+      if (!isArrivedAtPickup) {
+        setSubmitError(t('Arrive at pickup first before submitting pickup confirmation.'));
+        return;
+      }
+
+      if (proofPhotos.length === 0) {
+        setSubmitError(t('At least one pickup proof photo is required.'));
+        return;
+      }
+
+      let latestLocation = driverLocation;
+
+      try {
+        const permission = await Location.getForegroundPermissionsAsync();
+        if (permission.status === 'granted') {
+          const freshLocation = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+
+          const normalizedLocation: GeoLocation = {
+            latitude: freshLocation.coords.latitude,
+            longitude: freshLocation.coords.longitude,
+          };
+
+          if (isValidGeoLocation(normalizedLocation)) {
+            latestLocation = normalizedLocation;
+            setDriverLocation(normalizedLocation);
+          }
+        }
+      } catch {
+        // Use latest known location.
+      }
+
+      const canSendLocation =
+        latestLocation && pickupLocation
+          ? canConfirmPickup(latestLocation, pickupLocation)
+          : false;
+
+      const payload: PickupItemRequest = {
+        notes: notes.trim() || undefined,
+        proofPhotos: proofPhotos.length ? proofPhotos : undefined,
+        latitude: canSendLocation ? latestLocation?.latitude : undefined,
+        longitude: canSendLocation ? latestLocation?.longitude : undefined,
+      };
+
+      if (latestLocation && !canSendLocation) {
+        setLocationMessage(
+          t('GPS shows you are farther than {{distance}}m from pickup. Sending confirmation without coordinates.', {
+            distance: PICKUP_CONFIRM_RADIUS_METERS,
+          }),
+        );
+      }
+
+      const validationError = validatePickupItemRequest(payload);
+      if (validationError) {
+        setSubmitError(validationError);
+        return;
+      }
+
       const response = await pickupItem(tripId, payload);
       if (!isDeliveryPhaseRequestStatus(response.status)) {
         setSubmitError(t('Unexpected pickup status returned by backend.'));
@@ -973,16 +981,16 @@ export default function GoToPickupScreen() {
         onPress={() => void (isArrivedAtPickup ? onConfirmPickup() : onMarkArrived())}
         accessibilityLabel={primaryActionLabel}
       >
-        {isPrimaryActionBusy ? (
-          <ActivityIndicator size="small" color="#FFFFFF" />
-        ) : (
+        {isPrimaryActionBusy ? <ActivityIndicator size="small" color="#FFFFFF" /> : null}
+        <Text style={styles.floatingSubmitButtonText}>{primaryActionLabel}</Text>
+        {!isPrimaryActionBusy ? (
           <SymbolView
             name={{ ios: 'arrow.forward', android: 'arrow_forward', web: 'arrow_forward' }}
             size={24}
             weight="bold"
             tintColor="#FFFFFF"
           />
-        )}
+        ) : null}
       </Pressable>
     </SafeAreaView>
   );
@@ -1126,19 +1134,26 @@ const styles = StyleSheet.create({
   floatingSubmitButton: {
     position: 'absolute',
     bottom: 24,
+    left: 24,
     right: 24,
-    width: 60,
     height: 60,
     borderRadius: 30,
     backgroundColor: '#16A34A',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
     zIndex: 20,
+  },
+  floatingSubmitButtonText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
   disabledFloatingSubmitButton: {
     backgroundColor: '#94A3B8',
