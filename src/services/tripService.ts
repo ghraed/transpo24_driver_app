@@ -397,6 +397,10 @@ function validateAdditionalExpensePayload(
     return 'Expense amount must be greater than 0.';
   }
 
+  if (!payload.currency?.trim()) {
+    return 'Expense currency is required.';
+  }
+
   if (!payload.reason.trim()) {
     return 'Expense reason is required.';
   }
@@ -415,7 +419,8 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
 
   const candidate = payload as Record<string, unknown>;
   const invoice = candidate.invoice;
-  const walletDeduction = candidate.walletDeduction;
+  const approval = candidate.approval;
+  const payment = candidate.payment;
 
   if (
     typeof candidate.id !== 'string' ||
@@ -423,6 +428,8 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
     typeof candidate.driverId !== 'string' ||
     typeof candidate.customerId !== 'string' ||
     typeof candidate.amount !== 'number' ||
+    typeof candidate.appFeeAmount !== 'number' ||
+    typeof candidate.totalChargeAmount !== 'number' ||
     typeof candidate.currency !== 'string' ||
     typeof candidate.reason !== 'string' ||
     typeof candidate.invoiceUrl !== 'string' ||
@@ -431,14 +438,22 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
     typeof candidate.updatedAt !== 'string' ||
     typeof invoice !== 'object' ||
     invoice === null ||
-    typeof walletDeduction !== 'object' ||
-    walletDeduction === null
+    typeof approval !== 'object' ||
+    approval === null ||
+    typeof payment !== 'object' ||
+    payment === null
   ) {
     return null;
   }
 
   const invoiceRecord = invoice as Record<string, unknown>;
-  const walletRecord = walletDeduction as Record<string, unknown>;
+  const approvalRecord = approval as Record<string, unknown>;
+  const paymentRecord = payment as Record<string, unknown>;
+  const savedPaymentMethod =
+    paymentRecord.savedPaymentMethod &&
+    typeof paymentRecord.savedPaymentMethod === 'object'
+      ? (paymentRecord.savedPaymentMethod as Record<string, unknown>)
+      : null;
 
   if (
     (invoiceRecord.originalFilename !== null &&
@@ -450,9 +465,41 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
     (invoiceRecord.sizeBytes !== null &&
       invoiceRecord.sizeBytes !== undefined &&
       typeof invoiceRecord.sizeBytes !== 'number') ||
-    typeof walletRecord.amount !== 'number' ||
-    typeof walletRecord.currency !== 'string' ||
-    walletRecord.transactionType !== 'ADDITIONAL_CHARGE'
+    (approvalRecord.approvedAt !== null &&
+      approvalRecord.approvedAt !== undefined &&
+      typeof approvalRecord.approvedAt !== 'string') ||
+    (approvalRecord.approvedByCustomerId !== null &&
+      approvalRecord.approvedByCustomerId !== undefined &&
+      typeof approvalRecord.approvedByCustomerId !== 'string') ||
+    (approvalRecord.confirmationLocale !== null &&
+      approvalRecord.confirmationLocale !== undefined &&
+      typeof approvalRecord.confirmationLocale !== 'string') ||
+    (approvalRecord.confirmationText !== null &&
+      approvalRecord.confirmationText !== undefined &&
+      typeof approvalRecord.confirmationText !== 'string') ||
+    (paymentRecord.stripePaymentIntentId !== null &&
+      paymentRecord.stripePaymentIntentId !== undefined &&
+      typeof paymentRecord.stripePaymentIntentId !== 'string') ||
+    (paymentRecord.stripeChargeId !== null &&
+      paymentRecord.stripeChargeId !== undefined &&
+      typeof paymentRecord.stripeChargeId !== 'string') ||
+    (paymentRecord.failureReason !== null &&
+      paymentRecord.failureReason !== undefined &&
+      typeof paymentRecord.failureReason !== 'string') ||
+    (savedPaymentMethod !== null &&
+      (typeof savedPaymentMethod.id !== 'string' ||
+        (savedPaymentMethod.brand !== null &&
+          savedPaymentMethod.brand !== undefined &&
+          typeof savedPaymentMethod.brand !== 'string') ||
+        (savedPaymentMethod.last4 !== null &&
+          savedPaymentMethod.last4 !== undefined &&
+          typeof savedPaymentMethod.last4 !== 'string') ||
+        (savedPaymentMethod.expMonth !== null &&
+          savedPaymentMethod.expMonth !== undefined &&
+          typeof savedPaymentMethod.expMonth !== 'number') ||
+        (savedPaymentMethod.expYear !== null &&
+          savedPaymentMethod.expYear !== undefined &&
+          typeof savedPaymentMethod.expYear !== 'number')))
   ) {
     return null;
   }
@@ -463,6 +510,8 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
     driverId: candidate.driverId,
     customerId: candidate.customerId,
     amount: candidate.amount,
+    appFeeAmount: candidate.appFeeAmount,
+    totalChargeAmount: candidate.totalChargeAmount,
     currency: candidate.currency,
     reason: candidate.reason,
     equipmentType: typeof candidate.equipmentType === 'string' ? candidate.equipmentType : null,
@@ -475,10 +524,49 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
       mimeType: typeof invoiceRecord.mimeType === 'string' ? invoiceRecord.mimeType : null,
       sizeBytes: typeof invoiceRecord.sizeBytes === 'number' ? invoiceRecord.sizeBytes : null,
     },
-    walletDeduction: {
-      amount: walletRecord.amount,
-      currency: walletRecord.currency,
-      transactionType: 'ADDITIONAL_CHARGE',
+    approval: {
+      approvedAt: typeof approvalRecord.approvedAt === 'string' ? approvalRecord.approvedAt : null,
+      approvedByCustomerId:
+        typeof approvalRecord.approvedByCustomerId === 'string'
+          ? approvalRecord.approvedByCustomerId
+          : null,
+      confirmationLocale:
+        typeof approvalRecord.confirmationLocale === 'string'
+          ? approvalRecord.confirmationLocale
+          : null,
+      confirmationText:
+        typeof approvalRecord.confirmationText === 'string'
+          ? approvalRecord.confirmationText
+          : null,
+    },
+    payment: {
+      stripePaymentIntentId:
+        typeof paymentRecord.stripePaymentIntentId === 'string'
+          ? paymentRecord.stripePaymentIntentId
+          : null,
+      stripeChargeId:
+        typeof paymentRecord.stripeChargeId === 'string'
+          ? paymentRecord.stripeChargeId
+          : null,
+      savedPaymentMethod: savedPaymentMethod
+        ? {
+            id: savedPaymentMethod.id as string,
+            brand: typeof savedPaymentMethod.brand === 'string' ? savedPaymentMethod.brand : null,
+            last4: typeof savedPaymentMethod.last4 === 'string' ? savedPaymentMethod.last4 : null,
+            expMonth:
+              typeof savedPaymentMethod.expMonth === 'number'
+                ? savedPaymentMethod.expMonth
+                : null,
+            expYear:
+              typeof savedPaymentMethod.expYear === 'number'
+                ? savedPaymentMethod.expYear
+                : null,
+          }
+        : null,
+      failureReason:
+        typeof paymentRecord.failureReason === 'string'
+          ? paymentRecord.failureReason
+          : null,
     },
     status: candidate.status,
     createdAt: candidate.createdAt,
@@ -502,6 +590,7 @@ export async function createAdditionalExpense(
   const endpoint = `${getApiBaseUrl()}/driver/requests/${encodeURIComponent(tripId.trim())}/additional-charges`;
   const formData = new FormData();
   formData.append('amount', String(payload.amount));
+  formData.append('currency', payload.currency.trim().toUpperCase());
   formData.append('reason', payload.reason.trim());
 
   if (payload.equipmentType?.trim()) {

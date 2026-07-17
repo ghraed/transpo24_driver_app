@@ -1,4 +1,4 @@
-import type { LocalDocumentAsset } from './auth';
+import type { LocalDocumentAsset, SupportedOfferCurrency } from './auth';
 
 export type UserRole = "CUSTOMER" | "DRIVER" | "ADMIN";
 
@@ -164,6 +164,7 @@ export type RequestProofPhotoResponse = {
 
 export type AdditionalExpenseFormValues = {
   amount: string;
+  currency: SupportedOfferCurrency;
   reason: string;
   equipmentType: string;
   invoicePhoto: LocalDocumentAsset | null;
@@ -171,6 +172,7 @@ export type AdditionalExpenseFormValues = {
 
 export type CreateAdditionalExpensePayload = {
   amount: number;
+  currency: SupportedOfferCurrency;
   reason: string;
   equipmentType?: string;
   invoicePhoto: LocalDocumentAsset;
@@ -182,6 +184,8 @@ export type AdditionalExpenseResponse = {
   driverId: string;
   customerId: string;
   amount: number;
+  appFeeAmount: number;
+  totalChargeAmount: number;
   currency: string;
   reason: string;
   equipmentType: string | null;
@@ -191,10 +195,23 @@ export type AdditionalExpenseResponse = {
     mimeType: string | null;
     sizeBytes: number | null;
   };
-  walletDeduction: {
-    amount: number;
-    currency: string;
-    transactionType: "ADDITIONAL_CHARGE";
+  approval: {
+    approvedAt: string | null;
+    approvedByCustomerId: string | null;
+    confirmationLocale: string | null;
+    confirmationText: string | null;
+  };
+  payment: {
+    stripePaymentIntentId: string | null;
+    stripeChargeId: string | null;
+    savedPaymentMethod: {
+      id: string;
+      brand: string | null;
+      last4: string | null;
+      expMonth: number | null;
+      expYear: number | null;
+    } | null;
+    failureReason: string | null;
   };
   status: string;
   createdAt: string;

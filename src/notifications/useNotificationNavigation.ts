@@ -52,14 +52,21 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
       return null;
     case 'TRIP_FUNDS_TRANSFERRED':
     case 'ITEM_DELIVERED':
+    case 'ADDITIONAL_CHARGE_APPROVED':
     case 'TRIP_COMPLETED':
     case 'CLIENT_PAYMENT_COMPLETED':
     case 'PAYMENT_COMPLETED': {
       const tripId = resolveTripId(data);
       if (tripId) {
         return {
-          pathname: '/driver-trip-completed',
-          params: { tripId },
+          pathname:
+            data.type === 'ADDITIONAL_CHARGE_APPROVED'
+              ? '/accepted-job-details'
+              : '/driver-trip-completed',
+          params:
+            data.type === 'ADDITIONAL_CHARGE_APPROVED'
+              ? { requestId: tripId }
+              : { tripId },
         } as unknown as Href;
       }
       return null;

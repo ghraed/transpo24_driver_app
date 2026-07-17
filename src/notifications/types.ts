@@ -6,6 +6,7 @@ export type PushNotificationType =
   | 'CHAT_MESSAGE'
   | 'ITEM_PICKED_UP'
   | 'ITEM_DELIVERED'
+  | 'ADDITIONAL_CHARGE_APPROVED'
   | 'TRIP_COMPLETED'
   | 'CLIENT_PAYMENT_COMPLETED'
   | 'PAYMENT_COMPLETED'
@@ -23,6 +24,7 @@ export interface PushNotificationData {
   type?: PushNotificationType;
   tripId?: string;
   requestId?: string;
+  chargeId?: string;
   offerId?: string;
   chatRoomId?: string;
   transportRequestId?: string;

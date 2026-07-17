@@ -15,14 +15,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createAdditionalExpense } from '@/services/tripService';
 import type { AdditionalExpenseFormValues } from '@/types/trip.types';
-import type { LocalDocumentAsset } from '@/types/auth';
+import type { LocalDocumentAsset, SupportedOfferCurrency } from '@/types/auth';
 
 type TripExpensesParams = {
   tripId?: string;
 };
 
+const EXPENSE_CURRENCIES: SupportedOfferCurrency[] = ['CHF', 'EUR', 'AED', 'SAR', 'QAR', 'USD'];
+
 const INITIAL_FORM_VALUES: AdditionalExpenseFormValues = {
   amount: '',
+  currency: 'CHF',
   reason: '',
   equipmentType: '',
   invoicePhoto: null,
@@ -137,16 +140,17 @@ export default function TripExpensesScreen() {
     try {
       const response = await createAdditionalExpense(tripId, {
         amount: parsedAmount,
+        currency: formValues.currency,
         reason: formValues.reason.trim(),
         equipmentType: formValues.equipmentType.trim() || undefined,
         invoicePhoto: formValues.invoicePhoto,
       });
 
       setSubmitMessage(
-        t('Expense submitted. {{amount}} will be deducted from the customer wallet.', {
+        t('Expense submitted. The client will be asked to approve {{amount}} including the app fee.', {
           amount: formatMoney(
-            response.walletDeduction.amount,
-            response.walletDeduction.currency,
+            response.totalChargeAmount,
+            response.currency,
           ),
         }),
       );
@@ -166,7 +170,7 @@ export default function TripExpensesScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>{t('Additional Expenses')}</Text>
           <Text style={styles.helperText}>
-            {t('Submit unexpected trip costs with invoice proof. This amount will be deducted from the customer&apos;s wallet.')}
+            {t('Submit unexpected trip costs with invoice proof. The client must approve the expense total including the app fee before it is charged.')}
           </Text>
           <Text style={styles.metaText}>{t('Trip ID')}: {tripId || 'N/A'}</Text>
         </View>
@@ -180,6 +184,25 @@ export default function TripExpensesScreen() {
             value={formValues.amount}
             onChangeText={(value) => onChangeField('amount', value)}
           />
+
+          <Text style={styles.sectionTitle}>{t('Currency')}</Text>
+          <View style={styles.currencyRow}>
+            {EXPENSE_CURRENCIES.map((currency) => {
+              const selected = formValues.currency === currency;
+
+              return (
+                <Pressable
+                  key={currency}
+                  style={[styles.currencyChip, selected && styles.currencyChipSelected]}
+                  onPress={() => onChangeField('currency', currency)}
+                >
+                  <Text style={[styles.currencyChipText, selected && styles.currencyChipTextSelected]}>
+                    {currency}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
           <Text style={styles.sectionTitle}>{t('Reason')}</Text>
           <TextInput
@@ -302,6 +325,31 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
     color: '#0F172A',
+  },
+  currencyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  currencyChip: {
+    borderWidth: 1,
+    borderColor: '#D0D7DE',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  currencyChipSelected: {
+    backgroundColor: '#0F62FE',
+    borderColor: '#0F62FE',
+  },
+  currencyChipText: {
+    color: '#111827',
+    fontWeight: '600',
+  },
+  currencyChipTextSelected: {
+    color: '#FFFFFF',
   },
   proofItem: {
     gap: 8,
