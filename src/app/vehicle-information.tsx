@@ -1,4 +1,4 @@
-import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -1138,18 +1138,22 @@ export default function VehicleInformationScreen() {
       </ScrollView>
 
       {activeDateField ? (
-        <ExpoDateTimePicker
+        <DateTimePicker
           mode="date"
-          presentation="dialog"
+          display="default"
           value={normalizeDateValue(vehicleForm[activeDateField])}
           minimumDate={new Date()}
-          onValueChange={(_event, selectedDate) => {
+          onChange={(event, selectedDate) => {
+            if (event.type === 'dismissed') {
+              setActiveDateField(null);
+              return;
+            }
+
             if (selectedDate) {
               onVehicleChange(activeDateField, selectedDate.toISOString().slice(0, 10));
             }
             setActiveDateField(null);
           }}
-          onDismiss={() => setActiveDateField(null)}
         />
       ) : null}
       {activeDateField ? (

@@ -1,5 +1,5 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
-import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -674,18 +674,22 @@ export default function VehicleDocumentsScreen() {
         </Pressable>
       </ScrollView>
       {activeDateField ? (
-        <ExpoDateTimePicker
+        <DateTimePicker
           mode="date"
-          presentation="dialog"
+          display="default"
           value={normalizeDateValue(onboardingDocumentsForm[activeDateField])}
           minimumDate={new Date()}
-          onValueChange={(_event, selectedDate) => {
+          onChange={(event, selectedDate) => {
+            if (event.type === 'dismissed') {
+              setActiveDateField(null);
+              return;
+            }
+
             if (selectedDate) {
               onOnboardingDocumentChange(activeDateField, toDateOnly(selectedDate.toISOString()));
             }
             setActiveDateField(null);
           }}
-          onDismiss={() => setActiveDateField(null)}
         />
       ) : null}
     </KeyboardAvoidingView>

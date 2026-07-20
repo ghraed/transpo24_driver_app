@@ -8,9 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
 import { DriverChatButton } from '@/components/driver-chat-button';
+import { DriverRoutePolyline } from '@/components/driver-route-polyline';
 import {
   NativeMapView,
-  NativeMapViewDirections,
   NativeMarker,
   PROVIDER_GOOGLE,
   isNativeMapRuntimeAvailable,
@@ -84,6 +84,18 @@ function formatDisplayAddress(
   if (!address) return t(fallbackKey);
   if (address === 'Current location') return t('Current location');
   return address;
+}
+
+function buildRoutePolylineKey(
+  origin: GeoLocation | null | undefined,
+  destination: AddressedLocation | null | undefined,
+): string {
+  return [
+    origin?.latitude ?? 'na',
+    origin?.longitude ?? 'na',
+    destination?.latitude ?? 'na',
+    destination?.longitude ?? 'na',
+  ].join(':');
 }
 
 function localizeDeliveryError(
@@ -767,8 +779,9 @@ export default function DeliverItemScreen() {
                 <Text style={styles.destinationXText}>X</Text>
               </View>
             </NativeMarker>
-            {driverLocation && NativeMapViewDirections ? (
-              <NativeMapViewDirections
+            {driverLocation ? (
+              <DriverRoutePolyline
+                key={buildRoutePolylineKey(driverLocation, dropoffLocation)}
                 origin={driverLocation}
                 destination={dropoffLocation}
                 apikey={mapsApiKey}

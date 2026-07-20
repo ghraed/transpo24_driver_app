@@ -1,4 +1,4 @@
-import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -493,12 +493,17 @@ export default function CompleteProfileScreen() {
         </View>
       </Modal>
       {activeDateField ? (
-        <ExpoDateTimePicker
+        <DateTimePicker
           mode="date"
-          presentation="dialog"
+          display="default"
           value={activeDateValue ?? maximumDobDate}
           maximumDate={maximumDobDate}
-          onValueChange={(_event, selectedDate) => {
+          onChange={(event, selectedDate) => {
+            if (event.type === 'dismissed') {
+              closeDatePicker();
+              return;
+            }
+
             const field = activeDateField;
             if (selectedDate) {
               setActiveDateValue(selectedDate);
@@ -506,7 +511,6 @@ export default function CompleteProfileScreen() {
             }
             closeDatePicker();
           }}
-          onDismiss={closeDatePicker}
         />
       ) : null}
     </KeyboardAvoidingView>

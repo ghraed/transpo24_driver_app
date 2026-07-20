@@ -22,17 +22,20 @@ type GenericComponent = React.ComponentType<any>;
 let MapViewComponent: GenericComponent | null = null;
 let MarkerComponent: GenericComponent | null = null;
 let MapViewDirectionsComponent: GenericComponent | null = null;
+let PolylineComponent: GenericComponent | null = null;
 let GoogleProvider: unknown;
 
 if (Platform.OS !== 'web') {
   const mapsModule = require('react-native-maps') as {
     default: GenericComponent;
     Marker: GenericComponent;
+    Polyline: GenericComponent;
     PROVIDER_GOOGLE?: unknown;
   };
 
   MapViewComponent = mapsModule.default;
   MarkerComponent = mapsModule.Marker;
+  PolylineComponent = mapsModule.Polyline;
   GoogleProvider = mapsModule.PROVIDER_GOOGLE;
 
   try {
@@ -48,6 +51,7 @@ if (Platform.OS !== 'web') {
 export const NativeMapView = MapViewComponent;
 export const NativeMarker = MarkerComponent;
 export const NativeMapViewDirections = MapViewDirectionsComponent;
+export const NativePolyline = PolylineComponent;
 export const PROVIDER_GOOGLE = GoogleProvider;
 export const isNativeMapRuntimeAvailable =
-  Platform.OS !== 'web' && NativeMapView !== null && NativeMarker !== null;
+  Platform.OS !== 'web' && NativeMapView !== null && NativeMarker !== null && NativePolyline !== null;

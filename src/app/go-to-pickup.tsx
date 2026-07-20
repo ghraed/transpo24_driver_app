@@ -18,9 +18,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverChatButton } from '@/components/driver-chat-button';
+import { DriverRoutePolyline } from '@/components/driver-route-polyline';
 import {
   NativeMapView,
-  NativeMapViewDirections,
   NativeMarker,
   PROVIDER_GOOGLE,
   isNativeMapRuntimeAvailable,
@@ -180,6 +180,7 @@ export default function GoToPickupScreen() {
   const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
   const [locationMessage, setLocationMessage] = useState<string>('');
   const [socketError, setSocketError] = useState<string>('');
+  const [routeError, setRouteError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
@@ -278,6 +279,7 @@ export default function GoToPickupScreen() {
     }
 
     setLocationMessage('');
+    setRouteError('');
 
     try {
       const permission = await Location.getForegroundPermissionsAsync();
@@ -480,6 +482,7 @@ export default function GoToPickupScreen() {
 
             if (!isValidGeoLocation(liveLocation)) return;
 
+            setRouteError('');
             setDriverLocation(liveLocation);
             const now = Date.now();
             const lastLocation = lastEmitLocationRef.current;
@@ -732,6 +735,16 @@ export default function GoToPickupScreen() {
   };
 
   const onSendFakeLocationPress = (): void => {
+    setSocketError('');
+    setLocationMessage('');
+    setRouteError('');
+
+    const validTripId = validateTripId(tripId);
+    if (!validTripId) {
+      setSubmitError(t('Invalid trip id.'));
+      return;
+    }
+
     if (!pickupLocation) return;
 
     const nextLocation =
@@ -743,7 +756,7 @@ export default function GoToPickupScreen() {
 
     try {
       emitDriverLocationUpdate({
-        tripId,
+        tripId: validTripId,
         latitude: nextLocation.latitude,
         longitude: nextLocation.longitude,
       });
@@ -806,13 +819,16 @@ export default function GoToPickupScreen() {
                 <Text style={styles.destinationXText}>X</Text>
               </View>
             </NativeMarker>
-            {driverLocation && NativeMapViewDirections ? (
-              <NativeMapViewDirections
+            {driverLocation ? (
+              <DriverRoutePolyline
                 origin={driverLocation}
                 destination={pickupLocation}
                 apikey={mapsApiKey}
                 strokeWidth={4}
-                strokeColor="#F97316"
+                strokeColor="#0EA5E9"
+                onError={(message: string) => {
+                  setRouteError(`Route error: ${message}`);
+                }}
               />
             ) : null}
           </NativeMapView>
@@ -887,6 +903,7 @@ export default function GoToPickupScreen() {
           </Text>
         ) : null}
         {locationMessage ? <Text style={styles.infoText}>{locationMessage}</Text> : null}
+        {routeError ? <Text style={styles.warningText}>{routeError}</Text> : null}
         {socketError ? <Text style={styles.warningText}>{socketError}</Text> : null}
 
         <View style={styles.card}>
