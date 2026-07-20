@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
   bottomCard: {
     gap: 14,
     padding: 20,
-    paddingBottom: 32,
+    paddingBottom: 120,
   },
   hidden: {
     display: 'none',
