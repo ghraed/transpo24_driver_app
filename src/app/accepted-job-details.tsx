@@ -119,7 +119,6 @@ function getPrimaryRoutePath(status: DriverAcceptedJobDetailsResponse['requestSt
     case 'DRIVER_ARRIVED_PICKUP':
       return '/go-to-pickup';
     case 'ITEM_PICKED_UP':
-    case 'PICKUP_IN_PROGRESS':
     case 'IN_TRANSIT':
     case 'DRIVER_GOING_TO_DROPOFF':
       return '/deliver-item';
@@ -136,7 +135,6 @@ function getPrimaryRouteLabel(
     case 'DRIVER_ARRIVED_PICKUP':
       return t('Go To Pickup Confirmation');
     case 'ITEM_PICKED_UP':
-    case 'PICKUP_IN_PROGRESS':
     case 'IN_TRANSIT':
     case 'DRIVER_GOING_TO_DROPOFF':
       return t('Go to Dropoff Location');

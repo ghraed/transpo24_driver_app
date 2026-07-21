@@ -3,7 +3,6 @@ import type { RequestStatus } from '@/types/auth';
 const TERMINAL_REQUEST_STATUSES: RequestStatus[] = ['DELIVERED', 'COMPLETED', 'CANCELLED'];
 const DELIVERY_PHASE_REQUEST_STATUSES: RequestStatus[] = [
   'ITEM_PICKED_UP',
-  'PICKUP_IN_PROGRESS',
   'IN_TRANSIT',
   'DRIVER_GOING_TO_DROPOFF',
 ];

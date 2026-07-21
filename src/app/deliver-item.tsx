@@ -232,8 +232,10 @@ export default function DeliverItemScreen() {
     router.replace('/driver-home');
   };
 
-  const ensureDriverGoingToDropoff = useCallback(async (): Promise<void> => {
-    if (requestStatus === 'DRIVER_GOING_TO_DROPOFF' || requestStatus === 'IN_TRANSIT') {
+  const ensureDriverGoingToDropoff = useCallback(async (currentStatus?: string | null): Promise<void> => {
+    const effectiveStatus = currentStatus ?? requestStatus;
+
+    if (effectiveStatus === 'DRIVER_GOING_TO_DROPOFF' || effectiveStatus === 'IN_TRANSIT') {
       return;
     }
 
@@ -339,10 +341,13 @@ export default function DeliverItemScreen() {
         return;
       }
 
+      let currentRequestStatus: string | null = null;
+
       try {
         const details = await getDriverAcceptedJobDetails(tripId);
         if (!active) return;
 
+        currentRequestStatus = details.requestStatus;
         setRequestStatus(details.requestStatus);
         if (isTerminalRequestStatus(details.requestStatus)) {
           router.replace(buildCompletedRoute(tripId, new Date().toISOString()));
@@ -364,7 +369,7 @@ export default function DeliverItemScreen() {
       }
 
       try {
-        await ensureDriverGoingToDropoff();
+        await ensureDriverGoingToDropoff(currentRequestStatus);
       } catch (error) {
         const message = error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to start delivery.');
         const normalizedMessage = message.toLowerCase();
@@ -383,6 +388,11 @@ export default function DeliverItemScreen() {
               setIsLoadingLocation(false);
               return;
             }
+
+            setRequestStatus(details.requestStatus);
+            setRouteBlockedMessage('');
+            setSubmitError('');
+            setIsStartingDelivery(false);
           } catch {
             setRouteBlockedMessage(t('Pickup must be confirmed and saved before opening delivery.'));
             setIsStartingDelivery(false);
