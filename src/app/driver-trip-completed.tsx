@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -160,7 +160,6 @@ export default function DriverTripCompletedScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
-  const hasAttemptedInitialReleaseRef = useRef(false);
 
   const loadWorkflow = useCallback(
     async ({
@@ -237,9 +236,7 @@ export default function DriverTripCompletedScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const attemptRelease = !hasAttemptedInitialReleaseRef.current;
-      hasAttemptedInitialReleaseRef.current = true;
-      void loadWorkflow({ attemptRelease, silent: false });
+      void loadWorkflow({ attemptRelease: false, silent: false });
     }, [loadWorkflow]),
   );
 

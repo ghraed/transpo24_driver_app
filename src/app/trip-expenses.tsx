@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -59,6 +59,18 @@ export default function TripExpensesScreen() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<TripExpensesParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
+
+  const onBackToActiveTrip = (): void => {
+    if (!tripId) {
+      router.back();
+      return;
+    }
+
+    router.replace({
+      pathname: '/deliver-item',
+      params: { tripId },
+    } as Href);
+  };
 
   const [formValues, setFormValues] = useState<AdditionalExpenseFormValues>(INITIAL_FORM_VALUES);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -272,7 +284,7 @@ export default function TripExpensesScreen() {
           </Text>
         </Pressable>
 
-        <Pressable style={styles.secondaryButton} onPress={() => router.back()}>
+        <Pressable style={styles.secondaryButton} onPress={onBackToActiveTrip}>
           <Text style={styles.secondaryButtonText}>{t('Back to Active Trip')}</Text>
         </Pressable>
       </ScrollView>

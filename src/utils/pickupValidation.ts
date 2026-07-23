@@ -5,7 +5,7 @@ import type {
   TripStatus,
 } from '@/types/trip.types';
 
-const PICKUP_CONFIRM_RADIUS_METERS = 150;
+const PICKUP_CONFIRM_RADIUS_METERS = 1500;
 const TRIP_ID_MIN_LENGTH = 8;
 const TRIP_ID_MAX_LENGTH = 64;
 

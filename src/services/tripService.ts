@@ -22,6 +22,7 @@ import {
 } from '@/utils/pickupValidation';
 
 const REQUEST_TIMEOUT_MS = 12000;
+const UPLOAD_REQUEST_TIMEOUT_MS = 60000;
 
 type ApiErrorResponse = {
   message?: string | string[];
@@ -107,7 +108,7 @@ function uploadFormDataWithXhr(
       reject(new Error(`Request timed out while uploading to ${endpoint}.`));
     };
 
-    xhr.timeout = REQUEST_TIMEOUT_MS;
+    xhr.timeout = UPLOAD_REQUEST_TIMEOUT_MS;
     xhr.send(formData);
   });
 }

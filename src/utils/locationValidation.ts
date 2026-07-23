@@ -5,7 +5,7 @@ import type {
   OfferAcceptedPayload,
 } from '@/types/trip.types';
 
-const PICKUP_ARRIVAL_RADIUS_METERS = 100;
+const PICKUP_ARRIVAL_RADIUS_METERS = 1500;
 
 export function isPositiveIntegerString(value: string): boolean {
   return /^\d+$/.test(value.trim());

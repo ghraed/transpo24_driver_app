@@ -32,7 +32,7 @@ import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/req
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import {
   connectSocket,
-  emitDriverArrivedPickup,
+  emitDriverArrivedPickupWithAck,
   emitDriverLocationUpdate,
   joinTripRoom,
   leaveTripRoom,
@@ -65,6 +65,7 @@ import {
 const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
 const MAX_PROOF_PHOTOS = 8;
+const PICKUP_ARRIVAL_RADIUS_METERS = 1500;
 const TEST_FAKE_LOCATIONS: GeoLocation[] = [
   { latitude: 34.4367, longitude: 35.8497 },
   { latitude: 34.364, longitude: 35.9208 },
@@ -631,9 +632,9 @@ export default function GoToPickupScreen() {
     }
 
     setIsSubmittingArrival(true);
-    setIsAwaitingArrivalConfirmation(true);
     try {
-      emitDriverArrivedPickup({
+      setIsAwaitingArrivalConfirmation(true);
+      await emitDriverArrivedPickupWithAck({
         tripId: validTripId,
         latitude: driverLocation.latitude,
         longitude: driverLocation.longitude,
@@ -887,7 +888,9 @@ export default function GoToPickupScreen() {
 
         {!isArrivedAtPickup ? (
           <Text style={styles.infoText}>
-            {t('Move within 100m of the pickup point to mark arrival, then submit the pickup from this same screen.')}
+            {t('Move within {{distance}}m of the pickup point to mark arrival, then submit the pickup from this same screen.', {
+              distance: PICKUP_ARRIVAL_RADIUS_METERS,
+            })}
           </Text>
         ) : (
           <Text style={styles.infoText}>

@@ -246,6 +246,27 @@ export function emitDriverArrivedPickup(payload: DriverArrivedPickupPayload): vo
   getSocket().emit('driverArrivedPickup', payload);
 }
 
+export function emitDriverArrivedPickupWithAck(
+  payload: DriverArrivedPickupPayload,
+  timeoutMs = 5000,
+): Promise<void> {
+  const instance = getSocket();
+  return new Promise((resolve, reject) => {
+    instance.timeout(timeoutMs).emit(
+      'driverArrivedPickup',
+      payload,
+      (error: Error | null) => {
+        if (error) {
+          reject(new Error(error.message || 'driverArrivedPickup timed out.'));
+          return;
+        }
+
+        resolve();
+      },
+    );
+  });
+}
+
 export function emitSocketDebugPing(payload: { tripId?: string; note?: string }): void {
   getSocket().emit('socketDebugPing', {
     ...payload,
