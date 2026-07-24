@@ -191,10 +191,18 @@ export default function DeliverItemScreen() {
   }, [driverLocation, notes]);
 
   useEffect(() => {
+    let active = true;
     const targetLanguage = i18n.language.split('-')[0];
     if (!isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
     const items: { key: string; text: string }[] = [];
@@ -209,11 +217,17 @@ export default function DeliverItemScreen() {
     }
 
     if (!items.length) {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
-    let active = true;
     void translateDynamicBatch({
       items,
       targetLanguage: targetLanguage as AppLanguage,
@@ -228,9 +242,9 @@ export default function DeliverItemScreen() {
     };
   }, [dropoffLocation?.address, i18n.language, pickupLocation?.address]);
 
-  const onBackToHome = (): void => {
+  const onBackToHome = useCallback((): void => {
     router.replace('/driver-home');
-  };
+  }, [router]);
 
   const ensureDriverGoingToDropoff = useCallback(async (currentStatus?: string | null): Promise<void> => {
     const effectiveStatus = currentStatus ?? requestStatus;
@@ -258,7 +272,7 @@ export default function DeliverItemScreen() {
 
       throw error;
     }
-  }, [requestStatus, t, tripId]);
+  }, [requestStatus, setRequestStatus, setRouteBlockedMessage, t, tripId]);
 
   const refreshDriverLocation = useCallback(async (showLoader = false): Promise<GeoLocation | null> => {
     if (showLoader) {
@@ -318,7 +332,13 @@ export default function DeliverItemScreen() {
         setIsRefreshingLocation(false);
       }
     }
-  }, [tripId]);
+  }, [
+    setDriverLocation,
+    setIsRefreshingLocation,
+    setLocationMessage,
+    t,
+    tripId,
+  ]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -329,7 +349,7 @@ export default function DeliverItemScreen() {
     return () => {
       subscription.remove();
     };
-  }, [router]);
+  }, [onBackToHome]);
 
   useEffect(() => {
     let active = true;
@@ -526,7 +546,7 @@ export default function DeliverItemScreen() {
         locationSubscriptionRef.current = null;
       }
     };
-  }, [ensureDriverGoingToDropoff, isInvalidRoute, refreshDriverLocation, router, tripId]);
+  }, [ensureDriverGoingToDropoff, isInvalidRoute, refreshDriverLocation, router, t, tripId]);
 
   // Auto-fit map to show both driver and dropoff when driver location first arrives
   useEffect(() => {

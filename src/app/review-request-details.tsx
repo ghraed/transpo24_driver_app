@@ -119,14 +119,28 @@ export default function ReviewRequestDetailsScreen() {
   }, [requestId, t]);
 
   useEffect(() => {
-    void loadDetails();
+    const loadTimeout = setTimeout(() => {
+      void loadDetails();
+    }, 0);
+
+    return () => {
+      clearTimeout(loadTimeout);
+    };
   }, [loadDetails]);
 
   useEffect(() => {
+    let active = true;
     const targetLanguage = i18n.language.split('-')[0];
     if (!details || !isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
     const items: { key: string; text: string }[] = [];
@@ -149,11 +163,17 @@ export default function ReviewRequestDetailsScreen() {
     pushItem('specialInstructions', details.itemDetails.specialInstructions);
 
     if (!items.length) {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
-    let active = true;
     void translateDynamicBatch({
       items,
       targetLanguage: targetLanguage as AppLanguage,

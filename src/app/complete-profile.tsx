@@ -32,7 +32,7 @@ const PHONE_PATTERN = /^[+0-9()\-\s]{7,20}$/;
 const PREFERRED_LANGUAGE_OPTIONS = Object.values(LANGUAGE_CONFIGS).map((language) => ({
   label: language.label,
   value: language.code,
-})) satisfies Array<{ label: string; value: AppLanguage }>;
+})) satisfies { label: string; value: AppLanguage }[];
 
 function toDateOnly(isoDate: string | null): string {
   if (!isoDate) return '';
@@ -181,14 +181,20 @@ export default function CompleteProfileScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [applyFormFromProfile, driver, refreshDriverMe]);
+  }, [applyFormFromProfile, driver, refreshDriverMe, t]);
 
   useEffect(() => {
     void persistLastOnboardingRoute('/complete-profile');
   }, []);
 
   useEffect(() => {
-    void loadProfile();
+    const loadTimeout = setTimeout(() => {
+      void loadProfile();
+    }, 0);
+
+    return () => {
+      clearTimeout(loadTimeout);
+    };
   }, [loadProfile]);
 
   const fieldErrors = useMemo(() => {

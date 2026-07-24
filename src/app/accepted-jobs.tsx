@@ -198,10 +198,18 @@ export default function AcceptedJobsScreen() {
   );
 
   useEffect(() => {
+    let active = true;
     const targetLanguage = i18n.language.split('-')[0];
     if (!isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
     const items = jobs.flatMap((job) => {
@@ -224,11 +232,17 @@ export default function AcceptedJobsScreen() {
     });
 
     if (!items.length) {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
-    let active = true;
     void translateDynamicBatch({
       items,
       targetLanguage: targetLanguage as AppLanguage,

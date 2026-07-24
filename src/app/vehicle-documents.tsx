@@ -12,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -388,6 +387,7 @@ export default function VehicleDocumentsScreen() {
       onboardingDocumentsForm.drivingLicenseExpiryDate,
       onboardingDocumentsForm.idDocumentKind,
       onboardingDocumentsForm.idExpiryDate,
+      t,
     ],
   );
 

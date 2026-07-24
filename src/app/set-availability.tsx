@@ -227,7 +227,7 @@ export default function SetAvailabilityScreen() {
           }
         : null,
     );
-  }, [driver?.countryCode, refreshDriverAvailability]);
+  }, [driver?.countryCode]);
 
   const loadAvailability = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -245,7 +245,13 @@ export default function SetAvailabilityScreen() {
   }, [applyAvailability, refreshDriverAvailability, t]);
 
   useEffect(() => {
-    void loadAvailability();
+    const loadTimeout = setTimeout(() => {
+      void loadAvailability();
+    }, 0);
+
+    return () => {
+      clearTimeout(loadTimeout);
+    };
   }, [loadAvailability]);
 
   const fieldErrors = useMemo(() => {

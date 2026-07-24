@@ -202,6 +202,7 @@ export type AdditionalExpenseResponse = {
     confirmationText: string | null;
   };
   payment: {
+    paymentOption: 'SAVED_CARD' | 'CASH_ON_DELIVERY' | null;
     stripePaymentIntentId: string | null;
     stripeChargeId: string | null;
     savedPaymentMethod: {

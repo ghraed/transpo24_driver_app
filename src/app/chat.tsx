@@ -220,9 +220,15 @@ export default function ChatScreen() {
   }, [chatRoom]);
 
   useEffect(() => {
-    setTranslatedMessages({});
-    setExpandedTranslations({});
-    setTranslatingMessageIds({});
+    const resetTimeout = setTimeout(() => {
+      setTranslatedMessages({});
+      setExpandedTranslations({});
+      setTranslatingMessageIds({});
+    }, 0);
+
+    return () => {
+      clearTimeout(resetTimeout);
+    };
   }, [language]);
 
   const resolveRoomAndMessages = useCallback(async (): Promise<void> => {

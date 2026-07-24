@@ -26,6 +26,7 @@ let PolylineComponent: GenericComponent | null = null;
 let GoogleProvider: unknown;
 
 if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mapsModule = require('react-native-maps') as {
     default: GenericComponent;
     Marker: GenericComponent;
@@ -39,6 +40,7 @@ if (Platform.OS !== 'web') {
   GoogleProvider = mapsModule.PROVIDER_GOOGLE;
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const directionsModule = require('react-native-maps-directions') as {
       default: GenericComponent;
     };

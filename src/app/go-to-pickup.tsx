@@ -48,7 +48,6 @@ import type { LocalDocumentAsset } from '@/types/auth';
 import type { AddressedLocation, GeoLocation, PickupItemRequest } from '@/types/trip.types';
 import {
   PICKUP_CONFIRM_RADIUS_METERS,
-  calculateDistanceMeters as calculatePickupDistanceMeters,
   canConfirmPickup,
   isValidGeoLocation as isValidPickupGeoLocation,
   isValidTripId,
@@ -233,10 +232,18 @@ export default function GoToPickupScreen() {
   }, [dropoffLocation, pickupLocation, tripId]);
 
   useEffect(() => {
+    let active = true;
     const targetLanguage = i18n.language.split('-')[0];
     if (!isSupportedLanguage(targetLanguage) || targetLanguage === 'en') {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
     const items: { key: string; text: string }[] = [];
@@ -251,11 +258,17 @@ export default function GoToPickupScreen() {
     }
 
     if (!items.length) {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
-    let active = true;
     void translateDynamicBatch({
       items,
       targetLanguage: targetLanguage as AppLanguage,
@@ -339,7 +352,15 @@ export default function GoToPickupScreen() {
         setIsRefreshingLocation(false);
       }
     }
-  }, [t, tripId]);
+  }, [
+    setDriverLocation,
+    setIsRefreshingLocation,
+    setLocationMessage,
+    setRouteError,
+    setSocketError,
+    t,
+    tripId,
+  ]);
 
   useEffect(() => {
     let active = true;

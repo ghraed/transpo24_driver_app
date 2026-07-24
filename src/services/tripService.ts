@@ -26,6 +26,9 @@ const UPLOAD_REQUEST_TIMEOUT_MS = 60000;
 
 type ApiErrorResponse = {
   message?: string | string[];
+  error?: unknown;
+  details?: unknown;
+  reason?: unknown;
 };
 
 type XhrResponsePayload = {
@@ -43,11 +46,45 @@ function getApiBaseUrl(): string {
   return getBackendApiBaseUrl();
 }
 
-function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): string {
-  if (Array.isArray(errorData.message)) {
-    return errorData.message[0] ?? fallback;
+function extractErrorMessage(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    return normalized ? normalized : null;
   }
-  return errorData.message ?? fallback;
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const nested = extractErrorMessage(item);
+      if (nested) {
+        return nested;
+      }
+    }
+    return null;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+
+    for (const key of ['message', 'error', 'detail', 'details', 'reason']) {
+      const nested = extractErrorMessage(record[key]);
+      if (nested) {
+        return nested;
+      }
+    }
+
+    for (const nestedValue of Object.values(record)) {
+      const nested = extractErrorMessage(nestedValue);
+      if (nested) {
+        return nested;
+      }
+    }
+  }
+
+  return null;
+}
+
+function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): string {
+  return extractErrorMessage(errorData) ?? fallback;
 }
 
 async function parseError(response: Response, fallback: string): Promise<Error> {
@@ -478,6 +515,10 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
     (approvalRecord.confirmationText !== null &&
       approvalRecord.confirmationText !== undefined &&
       typeof approvalRecord.confirmationText !== 'string') ||
+    (paymentRecord.paymentOption !== null &&
+      paymentRecord.paymentOption !== undefined &&
+      paymentRecord.paymentOption !== 'SAVED_CARD' &&
+      paymentRecord.paymentOption !== 'CASH_ON_DELIVERY') ||
     (paymentRecord.stripePaymentIntentId !== null &&
       paymentRecord.stripePaymentIntentId !== undefined &&
       typeof paymentRecord.stripePaymentIntentId !== 'string') ||
@@ -541,6 +582,11 @@ function parseAdditionalExpenseResponse(payload: unknown): AdditionalExpenseResp
           : null,
     },
     payment: {
+      paymentOption:
+        paymentRecord.paymentOption === 'SAVED_CARD' ||
+        paymentRecord.paymentOption === 'CASH_ON_DELIVERY'
+          ? paymentRecord.paymentOption
+          : null,
       stripePaymentIntentId:
         typeof paymentRecord.stripePaymentIntentId === 'string'
           ? paymentRecord.stripePaymentIntentId

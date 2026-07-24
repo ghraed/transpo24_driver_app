@@ -40,10 +40,10 @@ export const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
   MOTORCYCLE: 'Motorcycle',
 };
 
-export const CARGO_TYPE_OPTIONS: Array<{
+export const CARGO_TYPE_OPTIONS: {
   label: string;
   value: VehicleCargoType;
-}> = [
+}[] = [
   { label: 'Vehicle transport', value: 'VEHICLE' },
   { label: 'Motorcycle transport', value: 'MOTORCYCLE' },
   { label: 'Goods', value: 'GOODS' },

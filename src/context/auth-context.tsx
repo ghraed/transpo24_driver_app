@@ -85,7 +85,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [applyDriverMeResponse]);
 
   useEffect(() => {
-    void restoreSession();
+    const restoreTimeout = setTimeout(() => {
+      void restoreSession();
+    }, 0);
+
+    return () => {
+      clearTimeout(restoreTimeout);
+    };
   }, [restoreSession]);
 
   const registerNewDriver = useCallback(async (payload: RegisterDriverPayload) => {

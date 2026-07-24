@@ -134,10 +134,18 @@ export default function ReceiveRequestAlertsScreen() {
   );
 
   useEffect(() => {
+    let active = true;
     const targetLanguage = i18n.language.split('-')[0];
     if (!isSupportedLanguage(targetLanguage)) {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
     const items = alerts.flatMap((alert) => {
@@ -160,11 +168,17 @@ export default function ReceiveRequestAlertsScreen() {
     });
 
     if (!items.length || targetLanguage === 'en') {
-      setTranslatedTextByKey({});
-      return;
+      const resetTimeout = setTimeout(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      }, 0);
+      return () => {
+        active = false;
+        clearTimeout(resetTimeout);
+      };
     }
 
-    let active = true;
     void translateDynamicBatch({
       items,
       targetLanguage: targetLanguage as AppLanguage,

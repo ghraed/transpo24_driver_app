@@ -92,8 +92,12 @@ export function DriverRoutePolyline({
 
   useEffect(() => {
     if (!isReady || !origin || !destination) {
-      setCoordinates([]);
-      return;
+      const resetTimeout = setTimeout(() => {
+        setCoordinates([]);
+      }, 0);
+      return () => {
+        clearTimeout(resetTimeout);
+      };
     }
 
     const requestId = requestIdRef.current + 1;

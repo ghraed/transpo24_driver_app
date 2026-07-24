@@ -184,6 +184,9 @@ export default function TripExpensesScreen() {
           <Text style={styles.helperText}>
             {t('Submit unexpected trip costs with invoice proof. The client must approve the expense total including the app fee before it is charged.')}
           </Text>
+          <Text style={styles.helperText}>
+            {t('When the client approves it, the approval will clearly show whether they chose cash on delivery or a saved card.')}
+          </Text>
           <Text style={styles.metaText}>{t('Trip ID')}: {tripId || 'N/A'}</Text>
         </View>
 

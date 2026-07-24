@@ -43,7 +43,6 @@ import type {
   CreateDriverVehicleForm,
   CreateDriverVehiclePayload,
   DriverVehicle,
-  DriverVehicleDocumentsResponse,
   LocalDocumentAsset,
   VehicleCondition,
   VehicleType,
@@ -709,8 +708,6 @@ export default function VehicleInformationScreen() {
         : await createDriverVehicle(payload);
       savedVehicle = vehicle;
       shouldRollbackCreatedVehicle = !targetVehicleId;
-      let documentResponse: DriverVehicleDocumentsResponse | null = null;
-
       const shouldUploadDocuments =
         Boolean(vehicleForm.frontPhoto) ||
         Boolean(vehicleForm.rearPhoto) ||
@@ -724,7 +721,7 @@ export default function VehicleInformationScreen() {
           (existingVehicle?.registrationExpiryDate?.slice(0, 10) ?? '');
 
       if (shouldUploadDocuments) {
-        documentResponse = await uploadDriverVehicleDocuments(vehicle.id, {
+        await uploadDriverVehicleDocuments(vehicle.id, {
           frontPhoto: vehicleForm.frontPhoto,
           rearPhoto: vehicleForm.rearPhoto,
           sidePhoto: vehicleForm.sidePhoto,
