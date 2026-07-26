@@ -161,6 +161,7 @@ export default function ReviewRequestDetailsScreen() {
     pushItem('year', details.itemDetails.year);
     pushItem('condition', details.itemDetails.condition);
     pushItem('specialInstructions', details.itemDetails.specialInstructions);
+    pushItem('customerNote', details.customerNote);
 
     if (!items.length) {
       const resetTimeout = setTimeout(() => {
@@ -366,6 +367,9 @@ export default function ReviewRequestDetailsScreen() {
           </Text>
           {details.itemDetails.specialInstructions ? (
             <Text style={styles.metaText}>{t('Special')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions}</Text>
+          ) : null}
+          {details.customerNote ? (
+            <Text style={styles.metaText}>{t('Customer note')}: {translatedTextByKey.customerNote || details.customerNote}</Text>
           ) : null}
         </View>
 

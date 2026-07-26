@@ -552,6 +552,7 @@ export interface RequestPhoto {
 }
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  customerNote: string | null;
   customer: {
     firstName: string | null;
     rating: number | null;
@@ -659,6 +660,7 @@ export interface DriverAcceptedJobSummary {
 }
 
 export interface DriverAcceptedJobDetailsResponse extends DriverAcceptedJobSummary {
+  customerNote: string | null;
   customer: {
     firstName: string | null;
     phone: string | null;

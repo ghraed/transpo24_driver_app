@@ -232,6 +232,7 @@ export default function AcceptedJobDetailsScreen() {
     pushItem('year', details.itemDetails.year);
     pushItem('condition', details.itemDetails.condition);
     pushItem('specialInstructions', details.itemDetails.specialInstructions);
+    pushItem('customerNote', details.customerNote);
 
     if (!items.length) {
       const resetTimeout = setTimeout(() => {
@@ -469,6 +470,7 @@ export default function AcceptedJobDetailsScreen() {
               : ''}
           </Text>
           <Text style={styles.metaText}>{t('Special instructions')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions || t('N/A')}</Text>
+          <Text style={styles.metaText}>{t('Customer note')}: {translatedTextByKey.customerNote || details.customerNote || t('N/A')}</Text>
         </View>
 
         <View style={styles.card}>
