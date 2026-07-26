@@ -40,6 +40,7 @@ import {
   searchPlacesAutocomplete,
   type PlaceAutocompleteSuggestion,
 } from '@/lib/places';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import i18n from '@/localization/i18n';
 import type {
@@ -146,6 +147,7 @@ function createDefaultWeeklySchedule(): DriverAvailabilityFormDay[] {
 }
 
 export default function SetAvailabilityScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
   const {
@@ -776,7 +778,13 @@ export default function SetAvailabilityScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? { paddingBottom: 40 + keyboardInset } : undefined,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/vehicle-documents')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>

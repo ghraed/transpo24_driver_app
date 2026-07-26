@@ -27,6 +27,7 @@ import {
 } from '@/components/native-maps';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { useAuth } from '@/context/auth-context';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
@@ -138,6 +139,7 @@ function formatDisplayAddress(
 }
 
 export default function GoToPickupScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { accessToken } = useAuth();
   const { t, i18n } = useTranslation();
@@ -880,7 +882,10 @@ export default function GoToPickupScreen() {
 
       <ScrollView
         style={[styles.bottomScroll, isMapFullscreen && styles.hidden]}
-        contentContainerStyle={styles.bottomCard}
+        contentContainerStyle={[
+          styles.bottomCard,
+          keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{isArrivedAtPickup ? t('Pickup Item') : t('Go to Pickup Location')}</Text>
@@ -1017,6 +1022,7 @@ export default function GoToPickupScreen() {
           styles.floatingSubmitButton,
           actionDisabled && styles.disabledFloatingSubmitButton,
           isMapFullscreen && styles.hidden,
+          keyboardInset > 0 ? { bottom: 20 + keyboardInset } : undefined,
         ]}
         disabled={actionDisabled}
         onPress={() => void (isArrivedAtPickup ? onConfirmPickup() : onMarkArrived())}

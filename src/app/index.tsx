@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import {
   clearLastOnboardingRoute,
   clearRememberedCredentials,
@@ -26,6 +27,7 @@ export default function DriverLoginScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResettingUsers, setIsResettingUsers] = useState(false);
+  const keyboardInset = useAndroidKeyboardInset();
 
   useEffect(() => {
     const loadRemembered = async (): Promise<void> => {
@@ -110,7 +112,13 @@ export default function DriverLoginScreen() {
   }, [isResettingUsers, t]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        keyboardInset > 0 ? styles.containerKeyboardOpen : undefined,
+        keyboardInset > 0 ? { paddingBottom: 24 + keyboardInset } : undefined,
+      ]}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>{t('Driver Login')}</Text>
         <Text style={styles.subtitle}>{t('Sign in to manage your transport requests.')}</Text>
@@ -182,6 +190,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     padding: 24,
     justifyContent: 'center',
+  },
+  containerKeyboardOpen: {
+    justifyContent: 'flex-start',
+    paddingTop: 24,
   },
   rememberRow: {
     flexDirection: 'row',

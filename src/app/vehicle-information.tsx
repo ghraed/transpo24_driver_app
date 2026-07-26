@@ -38,6 +38,7 @@ import {
   type VehicleBrand,
   type VehicleModelType,
 } from '@/lib/vehicle-catalog';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import i18n from '@/localization/i18n';
 import type {
   CreateDriverVehicleForm,
@@ -174,6 +175,7 @@ function buildRollbackPayload(vehicle: DriverVehicle): CreateDriverVehiclePayloa
 }
 
 export default function VehicleInformationScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{ vehicleId?: string; flow?: string }>();
@@ -881,7 +883,13 @@ export default function VehicleInformationScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
+        ]}
+        keyboardShouldPersistTaps="always"
+      >
         <View style={styles.header}>
           <Text style={styles.progress}>
             {flow === 'management' ? t('Vehicle Management') : t('Step 2 of 3: Vehicle Information')}
@@ -1166,7 +1174,12 @@ export default function VehicleInformationScreen() {
       >
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalBackdrop} onPress={closeSelector} />
-          <View style={styles.modalSheet}>
+          <View
+            style={[
+              styles.modalSheet,
+              keyboardInset > 0 ? { marginBottom: keyboardInset } : undefined,
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {activeSelectorField === 'vehicleType'

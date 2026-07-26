@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/context/auth-context';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import {
   connectSocket,
   disconnectSocket,
@@ -19,6 +20,7 @@ import {
 export default function SocketDebugScreen() {
   const { accessToken } = useAuth();
   const { t } = useTranslation();
+  const keyboardInset = useAndroidKeyboardInset();
   const [tripId, setTripId] = useState<string>('');
   const [logs, setLogs] = useState<string[]>([]);
 
@@ -97,7 +99,12 @@ export default function SocketDebugScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        keyboardInset > 0 ? { paddingBottom: 16 + keyboardInset } : undefined,
+      ]}
+    >
       <View style={styles.card}>
         <Text style={styles.title}>{t('Socket Debug (Driver)')}</Text>
         <TextInput

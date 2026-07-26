@@ -25,6 +25,7 @@ import {
   type AppLanguage,
   isSupportedLanguage,
 } from '@/localization/languages';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import type { CompleteDriverProfileForm, UpdateDriverProfilePayload } from '@/types/auth';
 
@@ -92,6 +93,7 @@ function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
 }
 
 export default function CompleteProfileScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
   const { driver, refreshDriverMe, saveDriverProfile, signOut } = useAuth();
@@ -350,7 +352,13 @@ export default function CompleteProfileScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? { paddingBottom: 28 + keyboardInset } : undefined,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/register')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
@@ -462,7 +470,12 @@ export default function CompleteProfileScreen() {
             style={styles.modalBackdrop}
             onPress={() => setIsLanguageModalVisible(false)}
           />
-          <View style={styles.modalSheet}>
+          <View
+            style={[
+              styles.modalSheet,
+              keyboardInset > 0 ? { marginBottom: keyboardInset } : undefined,
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('Select Preferred Language')}</Text>
               <Pressable onPress={() => setIsLanguageModalVisible(false)}>

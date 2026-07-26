@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPriceOffer } from '@/lib/api';
 import { formatDateTime } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
@@ -65,6 +66,7 @@ function formatDisplayAddress(
 }
 
 export default function SendPriceOfferScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
@@ -268,7 +270,13 @@ export default function SendPriceOfferScreen() {
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Text style={styles.title}>{t('Send Price Offer')}</Text>
             <Text style={styles.subtitle}>

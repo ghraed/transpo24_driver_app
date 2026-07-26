@@ -16,6 +16,7 @@ import {
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
@@ -110,6 +111,7 @@ function localizeDeliveryError(
 }
 
 export default function DeliverItemScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const params = useLocalSearchParams<DeliverItemParams>();
@@ -846,7 +848,10 @@ export default function DeliverItemScreen() {
 
       <ScrollView
         style={[styles.bottomScroll, isMapFullscreen && styles.hidden]}
-        contentContainerStyle={styles.bottomCard}
+        contentContainerStyle={[
+          styles.bottomCard,
+          keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>{t('Deliver Item')}</Text>
@@ -971,7 +976,12 @@ export default function DeliverItemScreen() {
       </ScrollView>
 
       <Pressable
-        style={[styles.floatingSubmitButton, actionDisabled && styles.disabledButton, isMapFullscreen && styles.hidden]}
+        style={[
+          styles.floatingSubmitButton,
+          actionDisabled && styles.disabledButton,
+          isMapFullscreen && styles.hidden,
+          keyboardInset > 0 ? { bottom: 20 + keyboardInset } : undefined,
+        ]}
         disabled={actionDisabled}
         onPress={() => void onConfirmDelivery()}
       >

@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import {
   getDriverChatMessages,
   getDriverChatRoom,
@@ -176,6 +177,7 @@ function buildSourceLanguageCandidates(text: string, targetLanguage: AppLanguage
 }
 
 export default function ChatScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
   const { language } = useAppLanguage();
@@ -634,7 +636,12 @@ export default function ChatScreen() {
 
         {sendError ? <Text style={styles.errorText}>{sendError}</Text> : null}
 
-        <View style={styles.inputRow}>
+        <View
+          style={[
+            styles.inputRow,
+            keyboardInset > 0 ? { paddingBottom: 12 + keyboardInset } : undefined,
+          ]}
+        >
           <TextInput
             style={styles.input}
             placeholder={t('Type a message')}

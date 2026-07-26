@@ -39,6 +39,7 @@ import {
   parsePositiveNumber,
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import type {
   DriverDocumentType,
   DriverVehicle,
@@ -155,6 +156,7 @@ function buildFormState(
 }
 
 export default function LoadCapacityScreen() {
+  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<{
@@ -453,7 +455,13 @@ export default function LoadCapacityScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? { paddingBottom: 40 + keyboardInset } : undefined,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Text style={styles.progress}>
             {flow === 'onboarding' ? t('Next Step: Define Load Capacity') : t('Vehicle Capacity Management')}

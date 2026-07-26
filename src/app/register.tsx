@@ -15,6 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/context/auth-context';
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { clearLastOnboardingRoute } from '@/lib/auth-storage';
 import { COUNTRY_OPTIONS } from '@/lib/country-city-options';
 import { nextStepToRoute } from '@/lib/onboarding-route';
@@ -57,6 +58,7 @@ export default function DriverRegisterScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { registerNewDriver } = useAuth();
+  const keyboardInset = useAndroidKeyboardInset();
 
   const [form, setForm] = useState<RegisterFormState>(() => createTestRegisterDefaults());
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -225,7 +227,13 @@ export default function DriverRegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable style={styles.backButton} onPress={() => router.replace('/')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
@@ -315,7 +323,12 @@ export default function DriverRegisterScreen() {
 
       <Modal transparent visible={Boolean(activeSelectorField)} animationType="slide" onRequestClose={closeSelector}>
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+          <View
+            style={[
+              styles.modalCard,
+              keyboardInset > 0 ? { marginBottom: keyboardInset } : undefined,
+            ]}
+          >
             <Text style={styles.modalTitle}>{activeSelectorField === 'country' ? t('Country') : t('City')}</Text>
             <TextInput
               style={styles.input}

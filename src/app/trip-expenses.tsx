@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { createAdditionalExpense } from '@/services/tripService';
 import type { AdditionalExpenseFormValues } from '@/types/trip.types';
 import type { LocalDocumentAsset, SupportedOfferCurrency } from '@/types/auth';
@@ -58,6 +59,7 @@ export default function TripExpensesScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const params = useLocalSearchParams<TripExpensesParams>();
+  const keyboardInset = useAndroidKeyboardInset();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
 
   const onBackToActiveTrip = (): void => {
@@ -178,7 +180,13 @@ export default function TripExpensesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.card}>
           <Text style={styles.title}>{t('Additional Expenses')}</Text>
           <Text style={styles.helperText}>
