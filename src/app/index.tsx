@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { LoginIntroGate } from '@/components/login-intro-gate';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import {
@@ -112,75 +113,83 @@ export default function DriverLoginScreen() {
   }, [isResettingUsers, t]);
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        keyboardInset > 0 ? styles.containerKeyboardOpen : undefined,
-        keyboardInset > 0 ? { paddingBottom: 24 + keyboardInset } : undefined,
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('Driver Login')}</Text>
-        <Text style={styles.subtitle}>{t('Sign in to manage your transport requests.')}</Text>
-        <Text style={styles.helperText}>
-          {t('Test account: `driver@test.com` with password `driver@test.com`.')}
-        </Text>
-      </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder={t('Email')}
-        autoCapitalize="none"
-        autoComplete="email"
-        textContentType="username"
-        importantForAutofill="yes"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={[styles.input, styles.passwordInput]}
-        placeholder={t('Password')}
-        autoComplete="current-password"
-        textContentType="password"
-        importantForAutofill="yes"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <Pressable style={styles.rememberRow} onPress={() => setRememberMe((prev) => !prev)}>
-        <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-          {rememberMe ? <Text style={styles.checkboxTick}>✓</Text> : null}
+    <LoginIntroGate>
+      <SafeAreaView
+        style={[
+          styles.container,
+          keyboardInset > 0 ? styles.containerKeyboardOpen : undefined,
+          keyboardInset > 0 ? { paddingBottom: 24 + keyboardInset } : undefined,
+        ]}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('Driver Login')}</Text>
+          <Text style={styles.subtitle}>{t('Sign in to manage your transport requests.')}</Text>
+          <Text style={styles.helperText}>
+            {t('Test account: `driver@test.com` with password `driver@test.com`.')}
+          </Text>
         </View>
-        <Text style={styles.rememberText}>{t('Remember me')}</Text>
-      </Pressable>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        <TextInput
+          style={styles.input}
+          placeholder={t('Email')}
+          autoCapitalize="none"
+          autoComplete="email"
+          textContentType="username"
+          importantForAutofill="yes"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <TextInput
+          style={[styles.input, styles.passwordInput]}
+          placeholder={t('Password')}
+          autoComplete="current-password"
+          textContentType="password"
+          importantForAutofill="yes"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Pressable style={styles.rememberRow} onPress={() => setRememberMe((prev) => !prev)}>
+          <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+            {rememberMe ? <Text style={styles.checkboxTick}>✓</Text> : null}
+          </View>
+          <Text style={styles.rememberText}>{t('Remember me')}</Text>
+        </Pressable>
 
-      <Pressable
-        style={[styles.button, isSubmitting && styles.buttonDisabled]}
-        onPress={() => void onLogin()}
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.buttonText}>{t('Login')}</Text>}
-      </Pressable>
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
-      <Pressable
-        style={[styles.secondaryButton, isResettingUsers && styles.buttonDisabled]}
-        onPress={() => void onResetUsers()}
-        disabled={isResettingUsers}
-      >
-        {isResettingUsers ? (
-          <ActivityIndicator color="#1D4ED8" />
-        ) : (
-          <Text style={styles.secondaryButtonText}>{t('Delete Driver Users Except driver@test.com')}</Text>
-        )}
-      </Pressable>
+        <Pressable
+          style={[styles.button, isSubmitting && styles.buttonDisabled]}
+          onPress={() => void onLogin()}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>{t('Login')}</Text>
+          )}
+        </Pressable>
 
-      <Link href="/register" style={styles.linkText}>
-        {t('New driver? Create an account')}
-      </Link>
-    </SafeAreaView>
+        <Pressable
+          style={[styles.secondaryButton, isResettingUsers && styles.buttonDisabled]}
+          onPress={() => void onResetUsers()}
+          disabled={isResettingUsers}
+        >
+          {isResettingUsers ? (
+            <ActivityIndicator color="#1D4ED8" />
+          ) : (
+            <Text style={styles.secondaryButtonText}>
+              {t('Delete Driver Users Except driver@test.com')}
+            </Text>
+          )}
+        </Pressable>
+
+        <Link href="/register" style={styles.linkText}>
+          {t('New driver? Create an account')}
+        </Link>
+      </SafeAreaView>
+    </LoginIntroGate>
   );
 }
 
