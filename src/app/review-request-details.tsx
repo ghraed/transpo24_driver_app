@@ -70,6 +70,42 @@ function formatServiceLabel(
   return translated === fallbackLabel ? fallbackLabel : translated;
 }
 
+function getRequestItemCategory(
+  details: DriverRequestDetailsResponse,
+): 'vehicle' | 'cargo' | 'generic' {
+  const searchValue = [
+    details.service?.key,
+    details.service?.nameEn,
+    details.itemDetails.type,
+    details.itemDetails.title,
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .join(' ')
+    .toLowerCase();
+
+  if (
+    /motorcycle|motorbike|bike|scooter|vehicle|car|auto/.test(searchValue)
+  ) {
+    return 'vehicle';
+  }
+
+  if (
+    /goods|furniture|cargo|package|parcel|appliance|shipment|load/.test(searchValue)
+  ) {
+    return 'cargo';
+  }
+
+  return 'generic';
+}
+
+function hasDimensionValue(details: DriverRequestDetailsResponse['itemDetails']['dimensions']): boolean {
+  return (
+    details.lengthCm !== null ||
+    details.widthCm !== null ||
+    details.heightCm !== null
+  );
+}
+
 function formatDisplayAddress(
   address: string | null | undefined,
   latitude: number | null,
@@ -191,6 +227,10 @@ export default function ReviewRequestDetailsScreen() {
 
   const requestUnavailableMessage = useMemo(
     () => (details ? availabilityMessage(details.requestStatus) : null),
+    [details],
+  );
+  const itemCategory = useMemo(
+    () => (details ? getRequestItemCategory(details) : 'generic'),
     [details],
   );
 
@@ -344,34 +384,58 @@ export default function ReviewRequestDetailsScreen() {
             <Text style={styles.metaText}>{translatedTextByKey.itemDescription || details.itemDetails.description}</Text>
           ) : null}
           <Text style={styles.metaText}>{t('Type')}: {translatedTextByKey.itemType || details.itemDetails.type || t('N/A')}</Text>
-          <Text style={styles.metaText}>
-            {t('Brand/Model/Year')}: {[
-              translatedTextByKey.brand || details.itemDetails.brand,
-              translatedTextByKey.model || details.itemDetails.model,
-              translatedTextByKey.year || details.itemDetails.year,
-            ].filter((value) => value !== null && value !== undefined && value !== '').join(' / ') || t('N/A')}
-          </Text>
-          <Text style={styles.metaText}>{t('Condition')}: {translatedTextByKey.condition || details.itemDetails.condition || t('N/A')}</Text>
-          <Text style={styles.metaText}>
-            {t('Weight')}: {details.itemDetails.weightKg !== null ? `${details.itemDetails.weightKg} kg` : t('N/A')}
-          </Text>
-          <Text style={styles.metaText}>
-            {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x {details.itemDetails.dimensions.widthCm ?? '-'} x{' '}
-            {details.itemDetails.dimensions.heightCm ?? '-'} cm
-          </Text>
-          <Text style={styles.metaText}>
-            {t('Loading help')}: {details.itemDetails.requiresLoadingHelp ? t('Yes') : t('No')}
-            {details.itemDetails.requiresLoadingHelp && details.itemDetails.loadingWorkersCount
-              ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount })
-              : ''}
-          </Text>
+          {itemCategory === 'vehicle' ? (
+            <>
+              {[
+                translatedTextByKey.brand || details.itemDetails.brand,
+                translatedTextByKey.model || details.itemDetails.model,
+                translatedTextByKey.year || details.itemDetails.year,
+              ].filter((value) => value !== null && value !== undefined && value !== '').length ? (
+                <Text style={styles.metaText}>
+                  {t('Brand/Model/Year')}: {[
+                    translatedTextByKey.brand || details.itemDetails.brand,
+                    translatedTextByKey.model || details.itemDetails.model,
+                    translatedTextByKey.year || details.itemDetails.year,
+                  ].filter((value) => value !== null && value !== undefined && value !== '').join(' / ')}
+                </Text>
+              ) : null}
+              {(translatedTextByKey.condition || details.itemDetails.condition) ? (
+                <Text style={styles.metaText}>
+                  {t('Condition')}: {translatedTextByKey.condition || details.itemDetails.condition}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+          {details.itemDetails.weightKg !== null ? (
+            <Text style={styles.metaText}>
+              {t('Weight')}: {details.itemDetails.weightKg} kg
+            </Text>
+          ) : null}
+          {hasDimensionValue(details.itemDetails.dimensions) ? (
+            <Text style={styles.metaText}>
+              {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x {details.itemDetails.dimensions.widthCm ?? '-'} x{' '}
+              {details.itemDetails.dimensions.heightCm ?? '-'} cm
+            </Text>
+          ) : null}
+          {itemCategory !== 'vehicle' || details.itemDetails.requiresLoadingHelp ? (
+            <Text style={styles.metaText}>
+              {t('Loading help')}: {details.itemDetails.requiresLoadingHelp ? t('Yes') : t('No')}
+              {details.itemDetails.requiresLoadingHelp && details.itemDetails.loadingWorkersCount
+                ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount })
+                : ''}
+            </Text>
+          ) : null}
           {details.itemDetails.specialInstructions ? (
             <Text style={styles.metaText}>{t('Special')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions}</Text>
           ) : null}
-          {details.customerNote ? (
-            <Text style={styles.metaText}>{t('Customer note')}: {translatedTextByKey.customerNote || details.customerNote}</Text>
-          ) : null}
         </View>
+
+        {details.customerNote ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('Customer note')}</Text>
+            <Text style={styles.noteText}>{translatedTextByKey.customerNote || details.customerNote}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Photos')}</Text>
@@ -500,6 +564,11 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 13,
     color: '#475569',
+  },
+  noteText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#1E293B',
   },
   photosRow: {
     gap: 8,
