@@ -10,8 +10,11 @@ import {
 import {
   clearAccessToken,
   clearDriverOnboardingDrafts,
+  clearTrustedDriverSession,
   persistAccessToken,
+  persistTrustedDriverSession,
   readAccessToken,
+  readTrustedDriverSession,
 } from '@/lib/auth-storage';
 import type {
   AuthUser,
@@ -32,6 +35,7 @@ interface AuthContextValue {
   isRestoringSession: boolean;
   hasRestoredStoredSession: boolean;
   authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
+  continueWithTrustedSession: () => Promise<boolean>;
   signOut: () => Promise<void>;
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
@@ -95,7 +99,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   ): Promise<DriverNextStep> => {
     const response = await verifyDriverPhoneVerificationCode(payload);
 
-    await persistAccessToken(response.accessToken);
+    await Promise.all([
+      persistAccessToken(response.accessToken),
+      persistTrustedDriverSession({
+        accessToken: response.accessToken,
+        phoneNumber: response.driver.phone,
+      }),
+    ]);
     await clearDriverOnboardingDrafts();
     setHasRestoredStoredSession(false);
     setAccessToken(response.accessToken);
@@ -108,6 +118,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
   }, []);
+
+  const continueWithTrustedSession = useCallback(async (): Promise<boolean> => {
+    const trustedSession = await readTrustedDriverSession();
+    if (!trustedSession) return false;
+
+    try {
+      await persistAccessToken(trustedSession.accessToken);
+      const me = await getDriverMe();
+      applyDriverMeResponse(me);
+      setHasRestoredStoredSession(true);
+      setAccessToken(trustedSession.accessToken);
+      return true;
+    } catch {
+      await Promise.all([
+        clearAccessToken(),
+        clearTrustedDriverSession(),
+      ]);
+      setHasRestoredStoredSession(false);
+      setAccessToken(null);
+      setUser(null);
+      setDriver(null);
+      return false;
+    }
+  }, [applyDriverMeResponse]);
 
   const refreshDriverMe = useCallback(async (): Promise<DriverMeResponse> => {
     const me = await getDriverMe();
@@ -150,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isRestoringSession,
       hasRestoredStoredSession,
       authenticateWithPhone,
+      continueWithTrustedSession,
       signOut,
       restoreSession,
       refreshDriverMe,
@@ -160,6 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [
       accessToken,
       authenticateWithPhone,
+      continueWithTrustedSession,
       driver,
       hasRestoredStoredSession,
       isRestoringSession,

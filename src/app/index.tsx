@@ -1,23 +1,35 @@
 import { Link, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginIntroGate } from '@/components/login-intro-gate';
+import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { resetUsersForTesting, sendDriverPhoneVerificationCode } from '@/lib/api';
+import { readTrustedDriverSession } from '@/lib/auth-storage';
 import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
 
 export default function DriverLoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { continueWithTrustedSession } = useAuth();
   const [dialingCode, setDialingCode] = useState('+961');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [trustedPhoneNumber, setTrustedPhoneNumber] = useState('');
+  const [isContinuing, setIsContinuing] = useState(false);
   const [isResettingUsers, setIsResettingUsers] = useState(false);
   const keyboardInset = useAndroidKeyboardInset();
+  const canContinue = Boolean(trustedPhoneNumber) && !phoneNumber.trim();
+
+  useEffect(() => {
+    void readTrustedDriverSession().then((session) => {
+      setTrustedPhoneNumber(session?.phoneNumber ?? '');
+    });
+  }, []);
 
   const onContinue = useCallback(async (): Promise<void> => {
     const normalizedPhoneNumber = buildInternationalPhoneNumber(
@@ -49,6 +61,19 @@ export default function DriverLoginScreen() {
       setIsSubmitting(false);
     }
   }, [dialingCode, phoneNumber, router, t]);
+
+  const onContinueTrustedSession = useCallback(async (): Promise<void> => {
+    if (!canContinue || isContinuing) return;
+
+    setErrorMessage('');
+    setIsContinuing(true);
+    const restored = await continueWithTrustedSession();
+    if (!restored) {
+      setTrustedPhoneNumber('');
+      setErrorMessage('Unable to continue. Please request a verification code.');
+    }
+    setIsContinuing(false);
+  }, [canContinue, continueWithTrustedSession, isContinuing]);
 
   const onResetUsers = useCallback(async (): Promise<void> => {
     if (isResettingUsers) return;
@@ -110,6 +135,22 @@ export default function DriverLoginScreen() {
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
+        {canContinue ? (
+          <Pressable
+            style={[styles.continueButton, isContinuing && styles.buttonDisabled]}
+            onPress={() => void onContinueTrustedSession()}
+            disabled={isContinuing}
+          >
+            {isContinuing ? (
+              <ActivityIndicator color="#1D4ED8" />
+            ) : (
+              <Text style={styles.continueButtonText}>
+                {`Continue as ${trustedPhoneNumber}`}
+              </Text>
+            )}
+          </Pressable>
+        ) : null}
+
         <Pressable
           style={[styles.button, isSubmitting && styles.buttonDisabled]}
           onPress={() => void onContinue()}
@@ -137,7 +178,7 @@ export default function DriverLoginScreen() {
         </Pressable>
 
         <Link href="/register" style={styles.linkText}>
-          {t('New driver? Continue with phone verification')}
+          {t('New driver? Create an account')}
         </Link>
       </SafeAreaView>
     </LoginIntroGate>
@@ -207,6 +248,21 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  continueButton: {
+    marginTop: 20,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    borderRadius: 14,
+    minHeight: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueButtonText: {
+    color: '#1D4ED8',
     fontSize: 16,
     fontWeight: '700',
   },

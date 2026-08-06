@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 const ACCESS_TOKEN_KEY = 'transpo24.driver.accessToken';
+const TRUSTED_DRIVER_SESSION_KEY = 'transpo24.driver.trustedSession';
 const REMEMBERED_EMAIL_KEY = 'transpo24.driver.rememberedEmail';
 const REMEMBERED_PASSWORD_KEY = 'transpo24.driver.rememberedPassword';
 const LAST_ONBOARDING_ROUTE_KEY = 'transpo24.driver.lastOnboardingRoute';
@@ -19,6 +20,43 @@ export async function readAccessToken(): Promise<string | null> {
 
 export async function clearAccessToken(): Promise<void> {
   await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+}
+
+export type TrustedDriverSession = {
+  accessToken: string;
+  phoneNumber: string;
+};
+
+export async function persistTrustedDriverSession(
+  session: TrustedDriverSession,
+): Promise<void> {
+  await SecureStore.setItemAsync(
+    TRUSTED_DRIVER_SESSION_KEY,
+    JSON.stringify(session),
+  );
+}
+
+export async function readTrustedDriverSession(): Promise<TrustedDriverSession | null> {
+  const rawSession = await SecureStore.getItemAsync(TRUSTED_DRIVER_SESSION_KEY);
+  if (!rawSession) return null;
+
+  try {
+    const session = JSON.parse(rawSession) as Partial<TrustedDriverSession>;
+    if (
+      typeof session.accessToken !== 'string' ||
+      typeof session.phoneNumber !== 'string'
+    ) {
+      throw new Error('Invalid trusted driver session');
+    }
+    return session as TrustedDriverSession;
+  } catch {
+    await SecureStore.deleteItemAsync(TRUSTED_DRIVER_SESSION_KEY);
+    return null;
+  }
+}
+
+export async function clearTrustedDriverSession(): Promise<void> {
+  await SecureStore.deleteItemAsync(TRUSTED_DRIVER_SESSION_KEY);
 }
 
 export async function persistRememberedCredentials(email: string, password: string): Promise<void> {
