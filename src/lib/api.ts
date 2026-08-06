@@ -380,19 +380,9 @@ async function appendFormDataAsset(
 ): Promise<void> {
   const file = toFormDataFile(asset, fallbackName, fallbackMimeType);
 
-  try {
-    const fileResponse = await fetchWithTimeout(file.uri, { method: 'GET' });
-    if (!fileResponse.ok) {
-      throw new Error(`Failed to read local file URI: ${file.uri}`);
-    }
-
-    const rawBlob = await fileResponse.blob();
-    const typedBlob = rawBlob.type ? rawBlob : rawBlob.slice(0, rawBlob.size, file.type);
-    formData.append(fieldName, typedBlob, file.name);
-  } catch {
-    // Fallback for platforms where local URI -> Blob conversion is unavailable.
-    appendFormDataFile(formData, fieldName, file);
-  }
+  // React Native's Android networking stack serializes local URI file parts directly.
+  // Converting the URI to a Blob can produce an empty multipart body on Android.
+  appendFormDataFile(formData, fieldName, file);
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {

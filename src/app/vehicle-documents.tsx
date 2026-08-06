@@ -116,6 +116,7 @@ export default function VehicleDocumentsScreen() {
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
+  const [isContinuing, setIsContinuing] = useState<boolean>(false);
   const [activeDateField, setActiveDateField] = useState<
     'idExpiryDate' | 'drivingLicenseExpiryDate' | null
   >(null);
@@ -332,7 +333,7 @@ export default function VehicleDocumentsScreen() {
     async (
       type: UploadableDocumentType,
       asset: LocalDocumentAsset,
-    ): Promise<void> => {
+    ): Promise<boolean> => {
       setActiveOnboardingUploadType(type);
       setSubmitError('');
       setSubmitSuccess('');
@@ -378,6 +379,12 @@ export default function VehicleDocumentsScreen() {
           [fieldKey]: undefined,
         }));
         setSubmitSuccess(t('Document uploaded successfully.'));
+        return true;
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error ? error.message : t('Failed to upload driver document.'),
+        );
+        return false;
       } finally {
         setActiveOnboardingUploadType(null);
       }
@@ -447,18 +454,43 @@ export default function VehicleDocumentsScreen() {
     await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
   };
 
+  const hasRequiredDocumentsReadyForUpload = Boolean(documentsStatus) &&
+    (documentsStatus?.requiredDocuments ?? []).every((type) => {
+      const hasUploadedDocument = documentsStatus?.uploadedDocuments.some(
+        (document) => document.type === type && document.status !== 'REJECTED',
+      );
+      if (hasUploadedDocument) return true;
+
+      const fieldKey = FIELD_BY_DOCUMENT_TYPE[type as UploadableDocumentType];
+      return fieldKey ? Boolean(onboardingDocumentsForm[fieldKey]) : false;
+    });
+
   const canContinue =
     !isBusy &&
+    !isContinuing &&
     !isLoading &&
     !hasFieldErrors &&
-    Boolean(documentsStatus) &&
-    (documentsStatus?.missingDocuments.length ?? 0) === 0;
+    hasRequiredDocumentsReadyForUpload;
 
   const onContinue = async (): Promise<void> => {
+    if (!canContinue) return;
+
     setSubmitError('');
     setSubmitSuccess('');
+    setIsContinuing(true);
 
     try {
+      for (const [fieldKey, documentType] of Object.entries(DOCUMENT_TYPE_BY_FIELD) as [
+        UploadableOnboardingField,
+        UploadableDocumentType,
+      ][]) {
+        const asset = onboardingDocumentsForm[fieldKey];
+        if (asset) {
+          const uploaded = await uploadOnboardingAsset(documentType, asset);
+          if (!uploaded) return;
+        }
+      }
+
       const status = await getDriverDocumentsStatus();
       applyDocumentsStatus(status);
       await persistOnboardingDocumentsStatus(JSON.stringify(status));
@@ -478,6 +510,8 @@ export default function VehicleDocumentsScreen() {
       const message =
         error instanceof Error ? error.message : t('Failed to verify driver documents.');
       setSubmitError(message);
+    } finally {
+      setIsContinuing(false);
     }
   };
 
@@ -670,7 +704,11 @@ export default function VehicleDocumentsScreen() {
           disabled={!canContinue}
           onPress={() => void onContinue()}
         >
-          <Text style={styles.continueButtonText}>{t('Next')}</Text>
+          {isContinuing ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <Text style={styles.continueButtonText}>{t('Next')}</Text>
+          )}
         </Pressable>
       </ScrollView>
       {activeDateField ? (
