@@ -1,57 +1,32 @@
-import { Link, useRouter, type Href } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LoginIntroGate } from '@/components/login-intro-gate';
-import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import {
-  clearLastOnboardingRoute,
-  clearRememberedCredentials,
-  readLastOnboardingRoute,
-  persistRememberedCredentials,
-  readRememberedCredentials,
-} from '@/lib/auth-storage';
-import { resetUsersForTesting } from '@/lib/api';
-import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
-import { registerDriverPushNotifications } from '@/notifications/registerPushNotifications';
+import { resetUsersForTesting, sendDriverPhoneVerificationCode } from '@/lib/api';
+import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
 
 export default function DriverLoginScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [dialingCode, setDialingCode] = useState('+961');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResettingUsers, setIsResettingUsers] = useState(false);
   const keyboardInset = useAndroidKeyboardInset();
 
-  useEffect(() => {
-    const loadRemembered = async (): Promise<void> => {
-      const remembered = await readRememberedCredentials();
-      if (!remembered) return;
-      setEmail(remembered.email);
-      setPassword(remembered.password);
-      setRememberMe(true);
-    };
+  const onContinue = useCallback(async (): Promise<void> => {
+    const normalizedPhoneNumber = buildInternationalPhoneNumber(
+      dialingCode,
+      phoneNumber,
+    );
 
-    const timeoutId = setTimeout(() => {
-      void loadRemembered();
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  const onLogin = useCallback(async (): Promise<void> => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPassword = password.replace(/[\r\n]+/g, '');
-
-    if (!normalizedEmail || !normalizedPassword) {
-      setErrorMessage(t('Email and password are required.'));
+    if (!phoneNumber.trim()) {
+      setErrorMessage(t('Phone number is required.'));
       return;
     }
 
@@ -59,37 +34,21 @@ export default function DriverLoginScreen() {
     setErrorMessage('');
 
     try {
-      const nextStep = await signIn({
-        email: normalizedEmail,
-        password: normalizedPassword,
+      await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber });
+      router.push({
+        pathname: '/verify-phone',
+        params: { phoneNumber: normalizedPhoneNumber },
       });
-
-      try {
-        await registerDriverPushNotifications();
-      } catch (pushError) {
-        console.warn('Driver push registration failed after login.', pushError);
-      }
-
-      const savedRoute = await readLastOnboardingRoute();
-      const targetRoute = resolveDriverEntryRoute(nextStep, savedRoute);
-
-      if (rememberMe) {
-        await persistRememberedCredentials(normalizedEmail, normalizedPassword);
-      } else {
-        await clearRememberedCredentials();
-      }
-
-      if (nextStep === 'HOME') {
-        await clearLastOnboardingRoute();
-      }
-
-      router.replace(targetRoute as Href);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t('Login failed.'));
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : t('Unable to send the verification code.'),
+      );
     } finally {
       setIsSubmitting(false);
     }
-  }, [email, password, rememberMe, router, signIn, t]);
+  }, [dialingCode, phoneNumber, router, t]);
 
   const onResetUsers = useCallback(async (): Promise<void> => {
     if (isResettingUsers) return;
@@ -123,51 +82,43 @@ export default function DriverLoginScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>{t('Driver Login')}</Text>
-          <Text style={styles.subtitle}>{t('Sign in to manage your transport requests.')}</Text>
-          <Text style={styles.helperText}>
-            {t('Test account: `driver@test.com` with password `driver@test.com`.')}
+          <Text style={styles.subtitle}>
+            {t('Enter your mobile number and we will send you a verification code by SMS.')}
           </Text>
         </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder={t('Email')}
-          autoCapitalize="none"
-          autoComplete="email"
-          textContentType="username"
-          importantForAutofill="yes"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={[styles.input, styles.passwordInput]}
-          placeholder={t('Password')}
-          autoComplete="current-password"
-          textContentType="password"
-          importantForAutofill="yes"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
-        <Pressable style={styles.rememberRow} onPress={() => setRememberMe((prev) => !prev)}>
-          <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-            {rememberMe ? <Text style={styles.checkboxTick}>✓</Text> : null}
-          </View>
-          <Text style={styles.rememberText}>{t('Remember me')}</Text>
-        </Pressable>
+        <View style={styles.phoneRow}>
+          <TextInput
+            style={[styles.input, styles.dialingCodeInput]}
+            placeholder="+961"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            keyboardType="phone-pad"
+            value={dialingCode}
+            onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
+          />
+          <TextInput
+            style={[styles.input, styles.phoneInput]}
+            placeholder={t('Mobile number')}
+            autoComplete="tel"
+            textContentType="telephoneNumber"
+            keyboardType="phone-pad"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+          />
+        </View>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
         <Pressable
           style={[styles.button, isSubmitting && styles.buttonDisabled]}
-          onPress={() => void onLogin()}
+          onPress={() => void onContinue()}
           disabled={isSubmitting}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.buttonText}>{t('Login')}</Text>
+            <Text style={styles.buttonText}>{t('Send verification code')}</Text>
           )}
         </Pressable>
 
@@ -186,7 +137,7 @@ export default function DriverLoginScreen() {
         </Pressable>
 
         <Link href="/register" style={styles.linkText}>
-          {t('New driver? Create an account')}
+          {t('New driver? Continue with phone verification')}
         </Link>
       </SafeAreaView>
     </LoginIntroGate>
@@ -204,105 +155,81 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingTop: 24,
   },
-  rememberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#94A3B8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  checkboxChecked: {
-    borderColor: '#1D4ED8',
-    backgroundColor: '#DBEAFE',
-  },
-  checkboxTick: {
-    color: '#1D4ED8',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  rememberText: {
-    color: '#334155',
-    fontSize: 14,
-  },
   header: {
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 24,
   },
   title: {
-    fontSize: 30,
-    fontWeight: '700',
-    color: '#101828',
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0F172A',
   },
   subtitle: {
-    marginTop: 6,
-    color: '#475467',
-  },
-  helperText: {
-    marginTop: 8,
-    color: '#475467',
-    fontSize: 13,
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#475569',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginBottom: 12,
+    borderColor: '#CBD5E1',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
-  passwordInput: {
-    color: '#000000',
+  phoneRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  dialingCodeInput: {
+    width: 104,
+  },
+  phoneInput: {
+    flex: 1,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    marginTop: 12,
   },
   button: {
-    minHeight: 48,
-    borderRadius: 10,
+    marginTop: 20,
     backgroundColor: '#1D4ED8',
+    borderRadius: 14,
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 6,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
     color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '700',
-    fontSize: 15,
   },
   secondaryButton: {
-    minHeight: 46,
-    borderRadius: 10,
+    marginTop: 16,
+    minHeight: 48,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
-    paddingHorizontal: 12,
+    backgroundColor: '#EFF6FF',
   },
   secondaryButtonText: {
     color: '#1D4ED8',
+    fontSize: 14,
     fontWeight: '700',
-    fontSize: 13,
-    textAlign: 'center',
   },
   linkText: {
-    marginTop: 16,
-    color: '#2563EB',
-    textAlign: 'center',
+    marginTop: 24,
+    alignSelf: 'center',
+    color: '#1D4ED8',
+    fontSize: 15,
     fontWeight: '600',
-  },
-  errorText: {
-    marginTop: 4,
-    color: '#B91C1C',
-    fontSize: 13,
   },
 });

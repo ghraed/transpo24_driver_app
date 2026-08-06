@@ -3,10 +3,9 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import {
   getDriverAvailability,
   getDriverMe,
-  loginDriver,
-  registerDriver,
   updateDriverAvailability,
   updateDriverProfile,
+  verifyDriverPhoneVerificationCode,
 } from '@/lib/api';
 import {
   clearAccessToken,
@@ -17,14 +16,12 @@ import {
 import type {
   AuthUser,
   DriverAvailabilityResponse,
-  DriverAuthResponse,
   DriverMeResponse,
   DriverNextStep,
   DriverProfile,
-  LoginPayload,
-  RegisterDriverPayload,
   UpdateDriverAvailabilityPayload,
   UpdateDriverProfilePayload,
+  VerifyPhoneCodePayload,
 } from '@/types/auth';
 
 interface AuthContextValue {
@@ -34,9 +31,8 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isRestoringSession: boolean;
   hasRestoredStoredSession: boolean;
-  signIn: (payload: LoginPayload) => Promise<DriverNextStep>;
+  authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
   signOut: () => Promise<void>;
-  registerNewDriver: (payload: RegisterDriverPayload) => Promise<DriverAuthResponse>;
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
   saveDriverProfile: (payload: UpdateDriverProfilePayload) => Promise<DriverMeResponse>;
@@ -94,19 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [restoreSession]);
 
-  const registerNewDriver = useCallback(async (payload: RegisterDriverPayload) => {
-    const response = await registerDriver(payload);
-    await persistAccessToken(response.accessToken);
-    await clearDriverOnboardingDrafts();
-    setHasRestoredStoredSession(false);
-    setAccessToken(response.accessToken);
-    setUser(response.user);
-    setDriver(response.driver);
-    return response;
-  }, []);
-
-  const signIn = useCallback(async (payload: LoginPayload): Promise<DriverNextStep> => {
-    const response = await loginDriver(payload);
+  const authenticateWithPhone = useCallback(async (
+    payload: VerifyPhoneCodePayload,
+  ): Promise<DriverNextStep> => {
+    const response = await verifyDriverPhoneVerificationCode(payload);
 
     await persistAccessToken(response.accessToken);
     await clearDriverOnboardingDrafts();
@@ -162,9 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: Boolean(accessToken),
       isRestoringSession,
       hasRestoredStoredSession,
-      signIn,
+      authenticateWithPhone,
       signOut,
-      registerNewDriver,
       restoreSession,
       refreshDriverMe,
       saveDriverProfile,
@@ -173,16 +159,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       accessToken,
+      authenticateWithPhone,
       driver,
       hasRestoredStoredSession,
       isRestoringSession,
       refreshDriverMe,
       refreshDriverAvailability,
-      registerNewDriver,
       restoreSession,
       saveDriverProfile,
       saveDriverAvailability,
-      signIn,
       signOut,
       user,
     ],

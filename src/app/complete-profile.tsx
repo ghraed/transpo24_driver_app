@@ -75,20 +75,20 @@ function formatDateOnly(date: Date): string {
 
 function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
   return {
-    firstName: 'Test',
-    lastName: 'Driver',
-    phone: '+96170123456',
-    countryCode: 'LB',
-    city: 'Beirut',
-    fullNameOnId: 'Test Driver',
-    idOrResidencyNumber: 'ID123456',
-    dateOfBirth: '1995-01-01',
-    addressLine1: 'Beirut Main Street',
-    addressLine2: 'Building 12',
-    postalCode: '1107',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    countryCode: '',
+    city: '',
+    fullNameOnId: '',
+    idOrResidencyNumber: '',
+    dateOfBirth: '',
+    addressLine1: '',
+    addressLine2: '',
+    postalCode: '',
     preferredLanguage: 'en',
-    emergencyContactName: 'Emergency Contact',
-    emergencyContactPhone: '+96170999888',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
   };
 }
 
@@ -202,6 +202,24 @@ export default function CompleteProfileScreen() {
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof CompleteDriverProfileForm, string>> = {};
 
+    if (!form.firstName.trim()) {
+      errors.firstName = t('First name is required.');
+    }
+
+    if (!form.lastName.trim()) {
+      errors.lastName = t('Last name is required.');
+    }
+
+    if (!form.phone.trim()) {
+      errors.phone = t('Phone is required.');
+    } else if (!PHONE_PATTERN.test(form.phone.trim())) {
+      errors.phone = t('Enter a valid international phone number.');
+    }
+
+    if (!form.city.trim()) {
+      errors.city = t('City is required.');
+    }
+
     if (!form.fullNameOnId.trim() && !(driver?.fullNameOnId?.trim())) {
       errors.fullNameOnId = t('Full name on ID is required.');
     }
@@ -272,11 +290,13 @@ export default function CompleteProfileScreen() {
     setSubmitError('');
 
     const payload: UpdateDriverProfilePayload = {
-      firstName: driver?.firstName?.trim() || form.firstName.trim(),
-      lastName: driver?.lastName?.trim() || form.lastName.trim(),
-      phone: driver?.phone?.trim() || form.phone.trim(),
-      countryCode: driver?.countryCode?.trim() || undefined,
-      city: driver?.city?.trim() || undefined,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      phone: form.phone.trim(),
+      countryCode: form.countryCode.trim() || undefined,
+      countryCodes: form.countryCode.trim() ? [form.countryCode.trim()] : undefined,
+      city: form.city.trim() || undefined,
+      cities: form.city.trim() ? [form.city.trim()] : undefined,
       fullNameOnId: form.fullNameOnId.trim() || undefined,
       idOrResidencyNumber: form.idOrResidencyNumber.trim() || undefined,
       dateOfBirth: form.dateOfBirth.trim() || undefined,
@@ -372,6 +392,70 @@ export default function CompleteProfileScreen() {
             {t('Your profile information helps us verify your account and assign suitable transport requests.')}
           </Text>
         </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>{t('First Name')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('First name')}
+            value={form.firstName}
+            onChangeText={(value) => onChange('firstName', value)}
+          />
+        </View>
+        {hasAttemptedSubmit && fieldErrors.firstName ? (
+          <Text style={styles.errorText}>{fieldErrors.firstName}</Text>
+        ) : null}
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>{t('Last Name')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('Last name')}
+            value={form.lastName}
+            onChangeText={(value) => onChange('lastName', value)}
+          />
+        </View>
+        {hasAttemptedSubmit && fieldErrors.lastName ? (
+          <Text style={styles.errorText}>{fieldErrors.lastName}</Text>
+        ) : null}
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>{t('Phone')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('Phone')}
+            keyboardType="phone-pad"
+            value={form.phone}
+            onChangeText={(value) => onChange('phone', value)}
+          />
+        </View>
+        {hasAttemptedSubmit && fieldErrors.phone ? (
+          <Text style={styles.errorText}>{fieldErrors.phone}</Text>
+        ) : null}
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>{t('Country Code')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('Country code')}
+            autoCapitalize="characters"
+            value={form.countryCode}
+            onChangeText={(value) => onChange('countryCode', value)}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>{t('City')}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder={t('City')}
+            value={form.city}
+            onChangeText={(value) => onChange('city', value)}
+          />
+        </View>
+        {hasAttemptedSubmit && fieldErrors.city ? (
+          <Text style={styles.errorText}>{fieldErrors.city}</Text>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>{t('Full Name On ID')}</Text>

@@ -23,6 +23,8 @@ import type {
   LoginPayload,
   LoginResponse,
   RegisterDriverPayload,
+  SendPhoneCodePayload,
+  VerifyPhoneCodePayload,
   SendDriverPriceOfferPayload,
   SendDriverPriceOfferResponse,
   UpdateDriverAvailabilityPayload,
@@ -494,6 +496,68 @@ export async function registerDriver(payload: RegisterDriverPayload): Promise<Dr
   return parseJsonResponse<DriverAuthResponse>(
     response,
     'Failed to parse driver registration response.',
+  );
+}
+
+export async function sendDriverPhoneVerificationCode(
+  payload: SendPhoneCodePayload,
+): Promise<{ success: true; message: string }> {
+  const endpoint = `${getApiBaseUrl()}/auth/driver/phone/send-code`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      endpoint,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+      AUTH_REGISTER_TIMEOUT_MS,
+    );
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to send the verification code.');
+  }
+
+  return parseJsonResponse<{ success: true; message: string }>(
+    response,
+    'Failed to parse the verification-code response.',
+  );
+}
+
+export async function verifyDriverPhoneVerificationCode(
+  payload: VerifyPhoneCodePayload,
+): Promise<DriverAuthResponse> {
+  const endpoint = `${getApiBaseUrl()}/auth/driver/phone/verify-code`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      endpoint,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+      AUTH_REGISTER_TIMEOUT_MS,
+    );
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to verify the code.');
+  }
+
+  return parseJsonResponse<DriverAuthResponse>(
+    response,
+    'Failed to parse the driver verification response.',
   );
 }
 

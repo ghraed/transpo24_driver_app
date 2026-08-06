@@ -97,6 +97,15 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface SendPhoneCodePayload {
+  phoneNumber: string;
+}
+
+export interface VerifyPhoneCodePayload {
+  phoneNumber: string;
+  code: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
