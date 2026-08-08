@@ -9,7 +9,8 @@ export type DriverAppRoute =
   | '/load-capacity'
   | '/set-availability'
   | '/waiting-approval'
-  | '/driver-home';
+  | '/driver-home'
+  | '/receive-requests';
 
 const ONBOARDING_ROUTE_PREFIXES: DriverAppRoute[] = [
   '/complete-profile',
@@ -19,6 +20,7 @@ const ONBOARDING_ROUTE_PREFIXES: DriverAppRoute[] = [
   '/set-availability',
   '/waiting-approval',
   '/driver-home',
+  '/receive-requests',
 ];
 
 export function nextStepToRoute(nextStep: DriverNextStep): DriverAppRoute {
@@ -33,7 +35,7 @@ export function nextStepToRoute(nextStep: DriverNextStep): DriverAppRoute {
     case 'WAITING_APPROVAL':
       return '/waiting-approval';
     case 'HOME':
-      return '/driver-home';
+      return '/receive-requests';
     default:
       return '/';
   }
@@ -80,7 +82,7 @@ export function resolveDriverEntryRoute(
     case 'WAITING_APPROVAL':
       return '/waiting-approval';
     case 'HOME':
-      return '/driver-home';
+      return '/receive-requests';
     default:
       return '/';
   }

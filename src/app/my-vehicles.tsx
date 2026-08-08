@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { useAuth } from '@/context/auth-context';
 import {
   activateDriverVehicle,
@@ -54,8 +56,14 @@ function getStatusColor(status: VehicleReviewStatus | null): string {
       return '#475569';
     case 'PENDING_REVIEW':
     default:
-      return '#1D4ED8';
+      return '#A66F00';
   }
+}
+
+function getVehicleIcon(vehicleType: DriverVehicle['vehicleType']): DriverIconName {
+  if (vehicleType === 'MOTORCYCLE') return 'motorcycle';
+  if (vehicleType === 'OPEN_CAR_CARRIER' || vehicleType === 'ENCLOSED_CARRIER') return 'car';
+  return 'truck';
 }
 
 function getVehicleConditionLabel(
@@ -165,7 +173,8 @@ export default function MyVehiclesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar style="dark" />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -180,7 +189,7 @@ export default function MyVehiclesScreen() {
         </View>
 
         <Pressable
-          style={styles.primaryButton}
+          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
           onPress={() => router.push('/vehicle-information?flow=management')}
         >
           <Text style={styles.primaryButtonText}>{t('Add New Vehicle')}</Text>
@@ -188,6 +197,9 @@ export default function MyVehiclesScreen() {
 
         <View style={styles.availabilityCard}>
           <View style={styles.availabilityHeader}>
+            <View style={styles.availabilityIcon}>
+              <DriverIcon name="location" size={25} color="#171717" strokeWidth={2} />
+            </View>
             <View style={styles.availabilityCopy}>
               <Text style={styles.availabilityTitle}>{t('Service Radius')}</Text>
               <Text style={styles.availabilitySubtitle}>
@@ -250,9 +262,14 @@ export default function MyVehiclesScreen() {
             return (
               <View key={vehicle.id} style={styles.vehicleCard}>
                 <View style={styles.vehicleHeader}>
-                  <Text style={styles.vehicleTitle}>
-                    {vehicle.brand} {vehicle.model} ({vehicle.year})
-                  </Text>
+                  <View style={styles.vehicleIdentity}>
+                    <View style={styles.vehicleIcon}>
+                      <DriverIcon name={getVehicleIcon(vehicle.vehicleType)} size={27} color="#171717" strokeWidth={2} />
+                    </View>
+                    <Text style={styles.vehicleTitle}>
+                      {vehicle.brand} {vehicle.model} ({vehicle.year})
+                    </Text>
+                  </View>
                   <View
                     style={[
                       styles.statusBadge,
@@ -348,7 +365,7 @@ export default function MyVehiclesScreen() {
                       onPress={() => void onActivateVehicle(vehicle.id)}
                     >
                       {isMutatingId === vehicle.id ? (
-                        <ActivityIndicator color="#1D4ED8" />
+                        <ActivityIndicator color="#171717" />
                       ) : (
                         <Text style={styles.secondaryButtonText}>{t('Activate')}</Text>
                       )}
@@ -381,15 +398,22 @@ export default function MyVehiclesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F7F8F9' },
   content: {
-    padding: 20,
+    paddingHorizontal: 22,
+    paddingTop: 25,
     gap: 14,
-    paddingBottom: 36,
+    paddingBottom: 40,
   },
-  header: { gap: 6 },
-  title: { fontSize: 28, fontWeight: '700', color: '#0F172A' },
-  subtitle: { color: '#475569', fontSize: 14 },
+  header: { gap: 7, marginBottom: 5 },
+  title: {
+    color: '#151515',
+    fontSize: 31,
+    lineHeight: 38,
+    fontWeight: '800',
+    letterSpacing: -0.7,
+  },
+  subtitle: { color: '#707A8C', fontSize: 15, lineHeight: 21 },
   centerState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -398,27 +422,39 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderWidth: 1,
-    borderColor: '#DBEAFE',
-    backgroundColor: '#F8FBFF',
-    borderRadius: 16,
-    padding: 18,
+    borderColor: '#DFE3E8',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 22,
     gap: 8,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  helperText: { color: '#475569', fontSize: 14, textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#202020' },
+  helperText: { color: '#707A8C', fontSize: 14, textAlign: 'center' },
   availabilityCard: {
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
-    padding: 16,
+    borderColor: '#DFE3E8',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
     gap: 8,
+    shadowColor: '#111111',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   availabilityHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
     alignItems: 'flex-start',
+    gap: 12,
+  },
+  availabilityIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFC515',
   },
   availabilityCopy: {
     flex: 1,
@@ -426,37 +462,45 @@ const styles = StyleSheet.create({
   },
   availabilityTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: '800',
+    color: '#202020',
   },
   availabilitySubtitle: {
     fontSize: 13,
-    color: '#475569',
+    color: '#707A8C',
+    lineHeight: 19,
   },
   availabilityValue: {
-    fontSize: 24,
+    marginTop: 2,
+    fontSize: 25,
     fontWeight: '800',
-    color: '#1D4ED8',
+    color: '#F3B800',
   },
   availabilityButton: {
-    minHeight: 40,
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    minHeight: 38,
+    borderRadius: 13,
+    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1D4ED8',
+    backgroundColor: '#FFC515',
   },
   availabilityButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: '#171717',
+    fontWeight: '800',
     fontSize: 13,
   },
   vehicleCard: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
+    borderColor: '#DFE3E8',
+    borderRadius: 24,
+    padding: 18,
+    gap: 9,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#111111',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
   vehicleHeader: {
     flexDirection: 'row',
@@ -464,11 +508,20 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'flex-start',
   },
+  vehicleIdentity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  vehicleIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFC515',
+  },
   vehicleTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: '800',
+    color: '#202020',
   },
   statusBadge: {
     borderRadius: 999,
@@ -476,45 +529,47 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   statusBadgeText: { fontSize: 12, fontWeight: '700' },
-  metaText: { color: '#334155', fontSize: 14 },
-  pendingText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
+  metaText: { color: '#707A8C', fontSize: 14, lineHeight: 20 },
+  pendingText: { color: '#A66F00', fontSize: 13, fontWeight: '700' },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
   primaryButton: {
-    minHeight: 50,
-    borderRadius: 12,
-    backgroundColor: '#1D4ED8',
+    minHeight: 54,
+    borderRadius: 17,
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonPressed: { opacity: 0.78, transform: [{ scale: 0.995 }] },
   secondaryActionButton: {
-    minHeight: 50,
-    borderRadius: 12,
+    minHeight: 52,
+    borderRadius: 17,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
   },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  secondaryActionButtonText: { color: '#1D4ED8', fontWeight: '700', fontSize: 15 },
+  primaryButtonText: { color: '#171717', fontWeight: '800', fontSize: 15 },
+  secondaryActionButtonText: { color: '#8A6200', fontWeight: '800', fontSize: 15 },
   secondaryButton: {
     flex: 1,
-    minHeight: 46,
-    borderRadius: 12,
+    minHeight: 44,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFCF0',
   },
-  secondaryButtonText: { color: '#1D4ED8', fontWeight: '700' },
+  secondaryButtonText: { color: '#8A6200', fontWeight: '800' },
   testingButton: {
     minHeight: 46,
-    borderRadius: 12,
-    backgroundColor: '#DC2626',
+    borderRadius: 14,
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  testingButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  testingButtonText: { color: '#171717', fontWeight: '800' },
   dangerButton: {
     flex: 1,
     minHeight: 46,
@@ -525,5 +580,5 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: { color: '#FFFFFF', fontWeight: '700' },
   buttonDisabled: { opacity: 0.6 },
-  errorText: { color: '#B91C1C', fontSize: 13 },
+  errorText: { color: '#C73333', fontSize: 13 },
 });

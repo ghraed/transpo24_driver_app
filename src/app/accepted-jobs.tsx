@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
+import { DriverJobSwitcher } from '@/components/driver-job-switcher';
 import { useAuth } from '@/context/auth-context';
 import { isActiveAcceptedJobStatus, isDeliveryPhaseRequestStatus } from '@/lib/request-status';
 import { getDriverAcceptedJobs, getDriverChatRooms } from '@/lib/api';
@@ -264,10 +267,11 @@ export default function AcceptedJobsScreen() {
   const hasJobs = useMemo(() => jobs.length > 0, [jobs]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar style="dark" />
       <View style={styles.header}>
         <Text style={styles.title}>{t('Accepted Jobs')}</Text>
-        <Text style={styles.subtitle}>{t('Jobs where the customer accepted your offer.')}</Text>
+        <DriverJobSwitcher active="accepted" />
       </View>
 
       {isLoading ? (
@@ -356,6 +360,7 @@ export default function AcceptedJobsScreen() {
           })}
         </ScrollView>
       )}
+      <DriverBottomNav />
     </SafeAreaView>
   );
 }
@@ -366,10 +371,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 12,
-    gap: 6,
+    paddingHorizontal: 22,
+    paddingTop: 25,
+    paddingBottom: 14,
+    gap: 15,
   },
   title: {
     fontSize: 24,
@@ -417,7 +422,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 22,
+    paddingBottom: DRIVER_BOTTOM_NAV_HEIGHT + 22,
     gap: 12,
   },
   card: {

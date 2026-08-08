@@ -49,6 +49,12 @@
         }
       ],
       "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Driver Mobile to use your location while the map is open."
+        }
+      ],
       "expo-secure-store"
     ],
     "experiments": {

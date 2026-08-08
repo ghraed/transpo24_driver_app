@@ -11,6 +11,7 @@ import type {
   DriverRequestDetailsResponse,
   DriverAuthResponse,
   DriverDocumentsStatusResponse,
+  DriverEarningsSummary,
   DriverMeResponse,
   DriverOnboardingResponse,
   DriverPersonalInfoPayload,
@@ -728,6 +729,28 @@ export async function getDriverVehicles(): Promise<DriverVehicle[]> {
     ...normalizeDriverVehicle(item.vehicle),
     documents: item.documents,
   }));
+}
+
+export async function getDriverEarningsSummary(): Promise<DriverEarningsSummary> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/earnings/summary`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load earnings summary.');
+  }
+
+  return parseJsonResponse<DriverEarningsSummary>(
+    response,
+    'Failed to parse earnings summary response.',
+  );
 }
 
 export async function getDriverVehicle(vehicleId: string): Promise<DriverVehicle> {

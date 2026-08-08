@@ -699,3 +699,16 @@ export interface DriverAcceptedJobDetailsResponse extends DriverAcceptedJobSumma
 export interface DriverAcceptedJobsResponse {
   jobs: DriverAcceptedJobSummary[];
 }
+
+export interface DriverEarningsSummary {
+  currency: string;
+  totalGross: number;
+  totalPlatformFees: number;
+  totalNet: number;
+  pendingAmount: number;
+  availableAmount: number;
+  paidOutAmount: number;
+  completedTripsCount: number;
+  averageRating: number | null;
+  ratingsCount: number;
+}
