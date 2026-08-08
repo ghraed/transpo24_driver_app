@@ -48,13 +48,13 @@ export default function OfferWaitingResponseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
     padding: 20,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     padding: 16,
     gap: 10,
@@ -62,26 +62,26 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: '#707A8C',
   },
   meta: {
     fontSize: 13,
-    color: '#334155',
+    color: '#505A6A',
   },
   primaryButton: {
     marginTop: 12,
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontWeight: '700',
   },
   secondaryButton: {
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontWeight: '700',
   },
 });

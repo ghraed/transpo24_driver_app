@@ -756,7 +756,7 @@ export default function SetAvailabilityScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1D4ED8" />
+        <ActivityIndicator size="large" color="#F1B900" />
         <Text style={styles.loadingText}>{t('Loading availability...')}</Text>
       </View>
     );
@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: '#475569',
+    color: '#707A8C',
   },
   content: {
     paddingHorizontal: 20,
@@ -1108,36 +1108,36 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   backButtonText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontWeight: '700',
     fontSize: 14,
   },
   progress: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontWeight: '700',
     fontSize: 13,
   },
   title: {
     fontSize: 27,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 14,
   },
   helper: {
-    color: '#64748B',
+    color: '#707A8C',
     fontSize: 13,
   },
   endpointText: {
-    color: '#0369A1',
+    color: '#8A6200',
     fontSize: 12,
     marginTop: 2,
   },
   section: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     padding: 12,
     gap: 8,
@@ -1145,16 +1145,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   fieldLabel: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 13,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#DFE3E8',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -1170,7 +1170,7 @@ const styles = StyleSheet.create({
   searchInput: {
     height: 44,
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#DFE3E8',
     borderRadius: 10,
     paddingHorizontal: 12,
     fontSize: 15,
@@ -1189,7 +1189,7 @@ const styles = StyleSheet.create({
   suggestionsList: {
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#DFE3E8',
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: '#FFFFFF',
@@ -1209,8 +1209,8 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: '#F3D26B',
+    backgroundColor: '#FFF9E6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1218,7 +1218,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   locationButtonText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -1244,7 +1244,7 @@ const styles = StyleSheet.create({
   mapFallbackTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
     textAlign: 'center',
   },
   mapFallbackText: {
@@ -1266,7 +1266,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   mapOverlayText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -1278,7 +1278,7 @@ const styles = StyleSheet.create({
   bottomCard: {
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     padding: 12,
@@ -1316,20 +1316,20 @@ const styles = StyleSheet.create({
   },
   dayCard: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 10,
     padding: 10,
     gap: 8,
   },
   dayTitle: {
-    color: '#0F172A',
+    color: '#202020',
     fontWeight: '700',
     fontSize: 14,
   },
   primaryButton: {
     minHeight: 50,
     borderRadius: 10,
-    backgroundColor: '#1D4ED8',
+    backgroundColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1337,7 +1337,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontWeight: '700',
     fontSize: 15,
   },
@@ -1370,34 +1370,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CBD5E1',
     borderRadius: 8,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
     padding: 8,
     gap: 4,
   },
   debugTitle: {
-    color: '#0F172A',
+    color: '#202020',
     fontWeight: '700',
     fontSize: 12,
   },
   debugText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 12,
   },
   statusText: {
     textAlign: 'center',
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 12,
   },
   retryButton: {
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#1D4ED8',
+    backgroundColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontWeight: '700',
   },
 });

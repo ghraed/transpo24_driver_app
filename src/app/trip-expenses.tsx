@@ -306,7 +306,7 @@ export default function TripExpensesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
   },
   content: {
     padding: 16,
@@ -317,26 +317,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     padding: 14,
     gap: 8,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   helperText: {
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 13,
   },
   metaText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 13,
   },
   input: {
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
-    color: '#0F172A',
+    color: '#202020',
   },
   currencyRow: {
     flexDirection: 'row',
@@ -364,15 +364,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   currencyChipSelected: {
-    backgroundColor: '#0F62FE',
-    borderColor: '#0F62FE',
+    backgroundColor: '#FFC515',
+    borderColor: '#FFC515',
   },
   currencyChipText: {
     color: '#111827',
     fontWeight: '600',
   },
   currencyChipTextSelected: {
-    color: '#FFFFFF',
+    color: '#171717',
   },
   proofItem: {
     gap: 8,
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 180,
     borderRadius: 12,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
   },
   uploadActions: {
     flexDirection: 'row',
@@ -392,17 +392,17 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: 14,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
   uploadButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 13,
     fontWeight: '700',
   },
   walletMessage: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -416,14 +416,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   clearButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 13,
     fontWeight: '600',
   },
   actionButton: {
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   actionButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   secondaryButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 14,
     fontWeight: '600',
   },

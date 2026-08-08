@@ -786,7 +786,7 @@ export default function DeliverItemScreen() {
       <View style={[styles.mapContainer, { height: isMapFullscreen ? windowHeight : windowHeight * 0.5 }]}>
         {isLoadingLocation && !driverLocation ? (
           <View style={styles.centeredMapState}>
-            <ActivityIndicator size="large" color="#2563EB" />
+            <ActivityIndicator size="large" color="#FFC515" />
             <Text style={styles.helperText}>{t('Getting location...')}</Text>
           </View>
         ) : mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
@@ -818,7 +818,7 @@ export default function DeliverItemScreen() {
                 destination={dropoffLocation}
                 apikey={mapsApiKey}
                 strokeWidth={4}
-                strokeColor="#0EA5E9"
+                strokeColor="#F1B900"
               />
             ) : null}
           </NativeMapView>
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   headerBackText: {
-    color: '#2563EB',
+    color: '#FFC515',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#1D4ED8',
+    color: '#F1B900',
     lineHeight: 20,
   },
   card: {
@@ -1114,7 +1114,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     padding: 18,
-    shadowColor: '#0F172A',
+    shadowColor: '#202020',
     shadowOpacity: 0.08,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -1148,7 +1148,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   helperText: {
-    color: '#475569',
+    color: '#707A8C',
   },
   uploadActions: {
     gap: 10,
@@ -1157,7 +1157,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#FFF1B8',
     paddingVertical: 12,
   },
   disabledUploadButton: {
@@ -1166,7 +1166,7 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: '#F1B900',
   },
   clearButton: {
     alignItems: 'center',

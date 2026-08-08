@@ -350,7 +350,7 @@ export default function CompleteProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1D4ED8" />
+        <ActivityIndicator size="large" color="#F1B900" />
         <Text style={styles.loadingText}>Loading your profile...</Text>
       </View>
     );
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    color: '#475569',
+    color: '#707A8C',
   },
   content: {
     paddingHorizontal: 20,
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   progress: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontWeight: '700',
     fontSize: 13,
   },
@@ -657,23 +657,23 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   backButtonText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontWeight: '700',
     fontSize: 14,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
     marginTop: 2,
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 14,
   },
   helper: {
     marginTop: 4,
-    color: '#64748B',
+    color: '#707A8C',
     fontSize: 13,
     lineHeight: 18,
   },
@@ -681,20 +681,20 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 14,
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#DFE3E8',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
   },
   inputText: {
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 15,
   },
   placeholderText: {
@@ -725,21 +725,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   modalTitle: {
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 18,
     fontWeight: '700',
   },
   modalCloseText: {
-    color: '#2563EB',
+    color: '#FFC515',
     fontWeight: '600',
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 15,
   },
   selectorList: {
@@ -748,19 +748,19 @@ const styles = StyleSheet.create({
   },
   selectorOption: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 14,
     backgroundColor: '#FFFFFF',
   },
   selectorOptionText: {
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 15,
   },
   emptySelectorText: {
     textAlign: 'center',
-    color: '#64748B',
+    color: '#707A8C',
     paddingVertical: 16,
   },
   errorText: {
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 48,
     borderRadius: 10,
-    backgroundColor: '#1D4ED8',
+    backgroundColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -781,25 +781,25 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   continueButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 15,
     fontWeight: '700',
   },
   savingText: {
     marginTop: 4,
     textAlign: 'center',
-    color: '#475569',
+    color: '#707A8C',
   },
   retryButton: {
     borderRadius: 10,
     minHeight: 44,
-    backgroundColor: '#1D4ED8',
+    backgroundColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontWeight: '700',
   },
 });

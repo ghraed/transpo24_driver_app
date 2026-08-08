@@ -309,14 +309,14 @@ export default function DriverHomeScreen() {
                 </Text>
               </View>
               {isLoadingAvailability ? (
-                <ActivityIndicator size="small" color="#1D4ED8" />
+                <ActivityIndicator size="small" color="#F1B900" />
               ) : (
                 <Switch
                   value={isOnline}
                   onValueChange={(value) => void onToggleAvailability(value)}
                   disabled={isUpdatingAvailability}
-                  trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-                  thumbColor={isOnline ? '#1D4ED8' : '#FFFFFF'}
+                  trackColor={{ false: '#CBD5E1', true: '#F7D560' }}
+                  thumbColor={isOnline ? '#F1B900' : '#FFFFFF'}
                 />
               )}
             </View>
@@ -392,7 +392,7 @@ export default function DriverHomeScreen() {
 
           {isLoadingVehicles ? (
             <View style={styles.vehicleHintRow}>
-              <ActivityIndicator size="small" color="#1D4ED8" />
+              <ActivityIndicator size="small" color="#F1B900" />
               <Text style={styles.vehicleHintText}>{t('Checking your vehicle status...')}</Text>
             </View>
           ) : !hasVehicles ? (
@@ -433,12 +433,12 @@ export default function DriverHomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF', padding: 20 },
   scrollContent: { paddingBottom: 24 },
-  card: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 12, padding: 16, gap: 10 },
-  title: { fontSize: 24, fontWeight: '700', color: '#0F172A' },
-  subtitle: { color: '#475569' },
+  card: { borderWidth: 1, borderColor: '#DFE3E8', borderRadius: 12, padding: 16, gap: 10 },
+  title: { fontSize: 24, fontWeight: '700', color: '#202020' },
+  subtitle: { color: '#707A8C' },
   languageCard: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     padding: 14,
@@ -457,16 +457,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   languageButtonSelected: {
-    borderColor: '#1D4ED8',
-    backgroundColor: '#DBEAFE',
+    borderColor: '#F1B900',
+    backgroundColor: '#FFF1B8',
   },
-  languageButtonText: { color: '#0F172A', fontWeight: '700' },
-  languageButtonMeta: { color: '#475569', fontSize: 12 },
-  languageButtonTextSelected: { color: '#1D4ED8' },
+  languageButtonText: { color: '#202020', fontWeight: '700' },
+  languageButtonMeta: { color: '#707A8C', fontSize: 12 },
+  languageButtonTextSelected: { color: '#F1B900' },
   availabilityCard: {
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#FFF1B8',
     borderRadius: 12,
     backgroundColor: '#F8FBFF',
     padding: 14,
@@ -485,14 +485,14 @@ const styles = StyleSheet.create({
   availabilityTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   availabilitySubtitle: {
     fontSize: 13,
-    color: '#475569',
+    color: '#707A8C',
   },
   availabilityHint: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -501,11 +501,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#FFF1B8',
     paddingHorizontal: 14,
   },
   setupAvailabilityButtonText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -517,16 +517,16 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  requestsButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  requestsButtonText: { color: '#171717', fontWeight: '800' },
   acceptedJobsButton: {
     marginTop: 8,
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#9333EA',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
     opacity: 1,
@@ -551,22 +551,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  acceptedJobsButtonText: { color: '#FFFFFF', fontWeight: '700' },
+  acceptedJobsButtonText: { color: '#171717', fontWeight: '800' },
   vehicleHintRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginTop: 4,
   },
-  vehicleHintText: { color: '#1D4ED8', fontSize: 13, fontWeight: '600' },
+  vehicleHintText: { color: '#F1B900', fontSize: 13, fontWeight: '600' },
   payoutJobButton: {
     minHeight: 42,
     borderRadius: 10,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#202020',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -575,11 +575,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   payoutHintText: {
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 13,
   },
   testNotificationMessage: {
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 13,
   },
   button: {
@@ -590,5 +590,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: { color: '#FFFFFF', fontWeight: '700' },
+  buttonText: { color: '#FFFFFF', fontWeight: '800' },
 });

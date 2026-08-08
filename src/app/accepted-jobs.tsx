@@ -276,7 +276,7 @@ export default function AcceptedJobsScreen() {
 
       {isLoading ? (
         <View style={styles.centeredState}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#FFC515" />
           <Text style={styles.stateText}>{t('Loading accepted jobs...')}</Text>
         </View>
       ) : error ? (
@@ -368,7 +368,7 @@ export default function AcceptedJobsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
   },
   header: {
     paddingHorizontal: 22,
@@ -379,11 +379,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: '#707A8C',
   },
   centeredState: {
     flex: 1,
@@ -394,12 +394,12 @@ const styles = StyleSheet.create({
   },
   stateText: {
     fontSize: 16,
-    color: '#334155',
+    color: '#505A6A',
     textAlign: 'center',
   },
   hintText: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#707A8C',
     textAlign: 'center',
   },
   errorText: {
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   primaryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     borderRadius: 10,
     minHeight: 44,
     paddingHorizontal: 18,
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 14,
     padding: 14,
     gap: 6,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   serviceText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0F172A',
+    color: '#202020',
     flex: 1,
   },
   acceptedBadge: {
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   chatBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0369A1',
+    color: '#8A6200',
   },
   itemText: {
     fontSize: 15,
@@ -479,18 +479,18 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
-    color: '#334155',
+    color: '#505A6A',
   },
   cardButton: {
     marginTop: 8,
     minHeight: 40,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 14,
     fontWeight: '700',
   },

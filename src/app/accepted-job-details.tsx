@@ -312,7 +312,7 @@ export default function AcceptedJobDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredState}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#FFC515" />
           <Text style={styles.stateText}>{t('Loading accepted job...')}</Text>
         </View>
       </SafeAreaView>
@@ -605,7 +605,7 @@ export default function AcceptedJobDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
   },
   centeredState: {
     flex: 1,
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   },
   stateText: {
     fontSize: 16,
-    color: '#334155',
+    color: '#505A6A',
     textAlign: 'center',
   },
   errorText: {
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   primaryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     borderRadius: 10,
     minHeight: 44,
     paddingHorizontal: 18,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -669,40 +669,40 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     padding: 12,
     gap: 6,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   progressBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#DBEAFE',
-    color: '#1D4ED8',
+    backgroundColor: '#FFF1B8',
+    color: '#F1B900',
     fontSize: 12,
     fontWeight: '700',
   },
   metaText: {
     fontSize: 13,
-    color: '#334155',
+    color: '#505A6A',
   },
   secondaryButton: {
     marginTop: 6,
     minHeight: 38,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: '#2563EB',
+    borderColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 90,
     borderRadius: 8,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
   },
   modalBackdrop: {
     flex: 1,
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#DFE3E8',
   },
   mapModalHeaderText: {
     flex: 1,
@@ -757,24 +757,24 @@ const styles = StyleSheet.create({
   mapModalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   mapModalAddress: {
     fontSize: 13,
-    color: '#475569',
+    color: '#707A8C',
   },
   mapCloseButton: {
     minHeight: 36,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
     alignItems: 'center',
     justifyContent: 'center',
   },
   mapCloseButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   map: {
     flex: 1,
@@ -784,18 +784,18 @@ const styles = StyleSheet.create({
     minHeight: 320,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
     paddingHorizontal: 16,
   },
   mapFallbackText: {
-    color: '#475569',
+    color: '#707A8C',
     textAlign: 'center',
   },
   mapCoordinates: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 12,
-    color: '#475569',
+    color: '#707A8C',
   },
   footer: {
     position: 'absolute',
@@ -805,9 +805,9 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#DFE3E8',
   },
   secondaryFooterButton: {
     minHeight: 44,
@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryFooterButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 14,
     fontWeight: '700',
   },

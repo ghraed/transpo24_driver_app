@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,6 +15,7 @@ import {
   Switch,
 } from 'react-native';
 
+import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { useAuth } from '@/context/auth-context';
 import {
   getDriverDocumentsStatus,
@@ -153,6 +155,12 @@ function buildFormState(
           : testDefaults.allowedCargoTypes,
     isDefault: Boolean(capacity?.isDefault ?? vehicle.isDefaultLoadProfile ?? testDefaults.isDefault),
   };
+}
+
+function getVehicleIcon(vehicleType: DriverVehicle['vehicleType']): DriverIconName {
+  if (vehicleType === 'MOTORCYCLE') return 'motorcycle';
+  if (vehicleType === 'OPEN_CAR_CARRIER' || vehicleType === 'ENCLOSED_CARRIER') return 'car';
+  return 'truck';
 }
 
 export default function LoadCapacityScreen() {
@@ -433,7 +441,7 @@ export default function LoadCapacityScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1D4ED8" />
+        <ActivityIndicator size="large" color="#F4B900" />
         <Text style={styles.loadingText}>{t('Loading vehicle load capacity...')}</Text>
       </View>
     );
@@ -455,6 +463,7 @@ export default function LoadCapacityScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <StatusBar style="dark" />
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -473,7 +482,12 @@ export default function LoadCapacityScreen() {
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>{t('Capacity guidance')}</Text>
+          <View style={styles.infoHeader}>
+            <View style={styles.infoIcon}>
+              <DriverIcon name={getVehicleIcon(vehicle.vehicleType)} size={25} color="#171717" strokeWidth={2} />
+            </View>
+            <Text style={styles.infoTitle}>{t('Capacity guidance')}</Text>
+          </View>
           <Text style={styles.infoText}>{guidance?.note}</Text>
           <Text style={styles.infoText}>{t('Suggested cargo types')}: {guidance ? guidance.usageLabel : t('Custom transport')}</Text>
           {existingCapacity?.allowedCargoTypes?.length ? (
@@ -581,8 +595,8 @@ export default function LoadCapacityScreen() {
             <Switch
               value={form.isDefault}
               onValueChange={(value) => onChange('isDefault', value)}
-              trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-              thumbColor={form.isDefault ? '#1D4ED8' : '#F8FAFC'}
+              trackColor={{ false: '#CBD5E1', true: '#F7D560' }}
+              thumbColor={form.isDefault ? '#F1B900' : '#F7F8F9'}
             />
           </View>
         </View>
@@ -596,7 +610,7 @@ export default function LoadCapacityScreen() {
           onPress={() => void onSave()}
         >
           {isSaving ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color="#171717" />
           ) : (
             <Text style={styles.primaryButtonText}>
               {flow === 'onboarding'
@@ -613,83 +627,109 @@ export default function LoadCapacityScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#F7F8F9' },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F7F8F9',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
     padding: 20,
   },
-  loadingText: { color: '#475569' },
+  loadingText: { color: '#707A8C' },
   content: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 22,
+    paddingTop: 25,
     paddingBottom: 40,
     gap: 14,
   },
-  header: { gap: 4 },
-  progress: { color: '#1D4ED8', fontWeight: '700', fontSize: 13 },
-  title: { fontSize: 28, fontWeight: '700', color: '#0F172A' },
-  subtitle: { color: '#475569', fontSize: 14 },
+  header: { gap: 6, marginBottom: 5 },
+  progress: { color: '#A66F00', fontWeight: '800', fontSize: 13 },
+  title: {
+    color: '#151515',
+    fontSize: 31,
+    lineHeight: 38,
+    fontWeight: '800',
+    letterSpacing: -0.7,
+  },
+  subtitle: { color: '#707A8C', fontSize: 15, lineHeight: 21 },
   infoCard: {
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
-    padding: 14,
+    borderColor: '#DFE3E8',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
     gap: 6,
+    shadowColor: '#111111',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
-  infoTitle: { fontSize: 16, fontWeight: '700', color: '#1E3A8A' },
-  infoText: { color: '#1E3A8A', fontSize: 13 },
+  infoHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 3 },
+  infoIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFC515',
+  },
+  infoTitle: { fontSize: 18, fontWeight: '800', color: '#202020' },
+  infoText: { color: '#707A8C', fontSize: 13, lineHeight: 19 },
   section: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 14,
+    borderColor: '#DFE3E8',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 18,
     gap: 10,
+    shadowColor: '#111111',
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  helperText: { color: '#64748B', fontSize: 13 },
-  fieldLabel: { color: '#334155', fontSize: 13, fontWeight: '600' },
-  smallLabel: { color: '#334155', fontSize: 12, fontWeight: '600' },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#202020' },
+  helperText: { color: '#707A8C', fontSize: 13, lineHeight: 19 },
+  fieldLabel: { color: '#505A6A', fontSize: 13, fontWeight: '700' },
+  smallLabel: { color: '#505A6A', fontSize: 12, fontWeight: '600' },
   input: {
     borderWidth: 1,
-    borderColor: '#D0D5DD',
-    borderRadius: 12,
+    borderColor: '#DFE3E8',
+    borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#0F172A',
-    backgroundColor: '#FFFFFF',
+    color: '#202020',
+    backgroundColor: '#FCFCFC',
   },
   standardDimensionsCard: {
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    backgroundColor: '#FFF9E6',
     padding: 12,
     gap: 4,
   },
-  standardDimensionsTitle: { color: '#0F172A', fontWeight: '700' },
-  standardDimensionsText: { color: '#475569', fontSize: 13 },
+  standardDimensionsTitle: { color: '#202020', fontWeight: '800' },
+  standardDimensionsText: { color: '#707A8C', fontSize: 13 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: {
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#F1D46B',
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 10,
     backgroundColor: '#FFFFFF',
   },
   chipSelected: {
-    backgroundColor: '#1D4ED8',
-    borderColor: '#1D4ED8',
+    backgroundColor: '#FFC515',
+    borderColor: '#FFC515',
   },
-  chipText: { color: '#1D4ED8', fontWeight: '600' },
-  chipTextSelected: { color: '#FFFFFF' },
+  chipText: { color: '#8A6200', fontWeight: '700' },
+  chipTextSelected: { color: '#171717' },
   dayCard: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 14,
     padding: 12,
     gap: 10,
@@ -701,11 +741,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dayTitleWrap: { flex: 1, gap: 4 },
-  dayTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A' },
+  dayTitle: { fontSize: 16, fontWeight: '800', color: '#202020' },
   timeRangesWrap: { gap: 10 },
   timeRangeRow: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     padding: 10,
     gap: 10,
@@ -724,24 +764,24 @@ const styles = StyleSheet.create({
   },
   defaultTextWrap: { flex: 1, gap: 4 },
   primaryButton: {
-    minHeight: 52,
-    borderRadius: 12,
-    backgroundColor: '#1D4ED8',
+    minHeight: 54,
+    borderRadius: 17,
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  primaryButtonText: { color: '#171717', fontWeight: '800', fontSize: 15 },
   secondaryButton: {
     minHeight: 46,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 14,
   },
-  secondaryButtonText: { color: '#1D4ED8', fontWeight: '700' },
+  secondaryButtonText: { color: '#8A6200', fontWeight: '800' },
   buttonDisabled: { opacity: 0.6 },
-  errorText: { color: '#B91C1C', fontSize: 13 },
+  errorText: { color: '#C73333', fontSize: 13 },
   successText: { color: '#166534', fontSize: 13, fontWeight: '600' },
 });

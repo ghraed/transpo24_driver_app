@@ -141,7 +141,7 @@ export default function ManageLoadCapacitiesScreen() {
 
         {isLoading ? (
           <View style={styles.centerState}>
-            <ActivityIndicator size="large" color="#1D4ED8" />
+            <ActivityIndicator size="large" color="#F1B900" />
             <Text style={styles.helperText}>{t('Loading vehicle load capacities...')}</Text>
           </View>
         ) : !hasVehicles ? (
@@ -240,7 +240,7 @@ export default function ManageLoadCapacitiesScreen() {
                       onPress={() => void onSetDefault(vehicle.id)}
                     >
                       {mutatingVehicleId === vehicle.id ? (
-                        <ActivityIndicator color="#1D4ED8" />
+                        <ActivityIndicator color="#F1B900" />
                       ) : (
                         <Text style={styles.secondaryButtonText}>{t('Set Default')}</Text>
                       )}
@@ -264,8 +264,8 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
   },
   header: { gap: 6 },
-  title: { fontSize: 28, fontWeight: '700', color: '#0F172A' },
-  subtitle: { color: '#475569', fontSize: 14 },
+  title: { fontSize: 28, fontWeight: '700', color: '#202020' },
+  subtitle: { color: '#707A8C', fontSize: 14 },
   centerState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -274,17 +274,17 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    borderColor: '#FFF1B8',
     backgroundColor: '#F8FBFF',
     borderRadius: 16,
     padding: 18,
     gap: 10,
   },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  helperText: { color: '#475569', fontSize: 14, textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#202020' },
+  helperText: { color: '#707A8C', fontSize: 14, textAlign: 'center' },
   vehicleCard: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 16,
     padding: 16,
     gap: 8,
@@ -296,8 +296,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTextWrap: { flex: 1, gap: 2 },
-  vehicleTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
-  vehicleMeta: { color: '#475569', fontSize: 13 },
+  vehicleTitle: { fontSize: 18, fontWeight: '700', color: '#202020' },
+  vehicleMeta: { color: '#707A8C', fontSize: 13 },
   defaultBadge: {
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 10,
@@ -305,28 +305,28 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   defaultBadgeText: { color: '#166534', fontSize: 12, fontWeight: '700' },
-  metaText: { color: '#334155', fontSize: 14 },
+  metaText: { color: '#505A6A', fontSize: 14 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
   primaryButton: {
     flex: 1,
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: '#1D4ED8',
+    backgroundColor: '#F1B900',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryButtonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+  primaryButtonText: { color: '#171717', fontWeight: '800', fontSize: 15 },
   secondaryButton: {
     minHeight: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#1D4ED8',
+    borderColor: '#F1B900',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  secondaryButtonText: { color: '#1D4ED8', fontWeight: '700', fontSize: 15 },
+  secondaryButtonText: { color: '#F1B900', fontWeight: '700', fontSize: 15 },
   errorText: { color: '#B91C1C', fontSize: 13 },
   buttonDisabled: { opacity: 0.6 },
 });

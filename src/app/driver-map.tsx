@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   onlineText: { color: '#111111', fontSize: 19, fontWeight: '800' },
   locationMessage: {
     position: 'absolute', right: 22, bottom: 98, left: 22, paddingHorizontal: 14, paddingVertical: 9,
-    borderRadius: 14, color: '#475569', fontSize: 13, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 14, color: '#707A8C', fontSize: 13, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.94)',
   },
   locationButton: {
     position: 'absolute', right: 29, bottom: 25, width: 58, height: 58, borderRadius: 29,

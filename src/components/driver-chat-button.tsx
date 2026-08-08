@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingText: {
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 13,
   },
   errorState: {
@@ -144,20 +144,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retryButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 13,
     fontWeight: '700',
   },
   unavailableButton: {
     minHeight: 44,
     borderRadius: 12,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   unavailableButtonText: {
-    color: '#64748B',
+    color: '#707A8C',
     fontSize: 14,
     fontWeight: '700',
   },

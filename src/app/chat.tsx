@@ -565,7 +565,7 @@ export default function ChatScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centeredState}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color="#FFC515" />
         <Text style={styles.stateText}>{t('Loading chat...')}</Text>
       </SafeAreaView>
     );
@@ -667,7 +667,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
   },
   keyboardContainer: {
     flex: 1,
@@ -678,17 +678,17 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#DFE3E8',
     backgroundColor: '#FFFFFF',
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
     fontSize: 13,
-    color: '#475569',
+    color: '#707A8C',
   },
   centeredState: {
     flex: 1,
@@ -696,16 +696,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     paddingHorizontal: 24,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
   },
   stateText: {
     fontSize: 16,
-    color: '#334155',
+    color: '#505A6A',
     textAlign: 'center',
   },
   emptyHint: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#707A8C',
     textAlign: 'center',
   },
   warningText: {
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
   translationBanner: {
     marginHorizontal: 16,
     marginTop: 12,
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 13,
   },
   errorText: {
@@ -729,13 +729,13 @@ const styles = StyleSheet.create({
   retryButton: {
     minHeight: 44,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -783,22 +783,22 @@ const styles = StyleSheet.create({
   clientBubble: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
   },
   driverBubble: {
-    backgroundColor: '#0F766E',
+    backgroundColor: '#FFC515',
   },
   messageText: {
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 15,
     lineHeight: 20,
   },
   translationHint: {
-    color: '#475569',
+    color: '#707A8C',
     fontSize: 12,
   },
   driverTranslationHint: {
-    color: '#CCFBF1',
+    color: '#8A6200',
   },
   translationBlock: {
     marginTop: 2,
@@ -808,35 +808,35 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   driverTranslationBlock: {
-    borderTopColor: 'rgba(204,251,241,0.45)',
+    borderTopColor: '#F1D46B',
   },
   translationLabel: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
   driverTranslationLabel: {
-    color: '#CCFBF1',
+    color: '#8A6200',
   },
   translationText: {
-    color: '#0F172A',
+    color: '#202020',
     fontSize: 14,
     lineHeight: 19,
   },
   driverTranslationText: {
-    color: '#FFFFFF',
+    color: '#171717',
   },
   driverMessageText: {
-    color: '#FFFFFF',
+    color: '#171717',
   },
   messageTime: {
-    color: '#64748B',
+    color: '#707A8C',
     fontSize: 11,
   },
   driverMessageTime: {
-    color: '#CCFBF1',
+    color: '#8A6200',
   },
   loadMoreButton: {
     alignSelf: 'center',
@@ -844,13 +844,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
   },
   loadMoreButtonDisabled: {
     opacity: 0.7,
   },
   loadMoreButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#DFE3E8',
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -875,12 +875,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 15,
-    color: '#0F172A',
+    color: '#202020',
     backgroundColor: '#FFFFFF',
   },
   inputDisabled: {
     backgroundColor: '#F1F5F9',
-    color: '#64748B',
+    color: '#707A8C',
   },
   sendButton: {
     minHeight: 44,
@@ -888,13 +888,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0F766E',
+    backgroundColor: '#FFC515',
   },
   sendButtonDisabled: {
     backgroundColor: '#94A3B8',
   },
   sendButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 14,
     fontWeight: '700',
   },

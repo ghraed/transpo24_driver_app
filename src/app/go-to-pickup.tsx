@@ -849,7 +849,7 @@ export default function GoToPickupScreen() {
                 destination={pickupLocation}
                 apikey={mapsApiKey}
                 strokeWidth={4}
-                strokeColor="#0EA5E9"
+                strokeColor="#F1B900"
                 onError={(message: string) => {
                   setRouteError(`Route error: ${message}`);
                 }}
@@ -1095,7 +1095,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     padding: 18,
-    shadowColor: '#0F172A',
+    shadowColor: '#202020',
     shadowOpacity: 0.08,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
@@ -1122,7 +1122,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#1D4ED8',
+    color: '#F1B900',
     lineHeight: 20,
   },
   warningText: {
@@ -1216,7 +1216,7 @@ const styles = StyleSheet.create({
   testButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#475569',
+    color: '#707A8C',
   },
   proofRow: {
     gap: 12,
@@ -1255,7 +1255,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#DBEAFE',
+    backgroundColor: '#FFF1B8',
     paddingVertical: 12,
   },
   disabledUploadButton: {
@@ -1264,7 +1264,7 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1D4ED8',
+    color: '#F1B900',
   },
   clearButton: {
     alignItems: 'center',

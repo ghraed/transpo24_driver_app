@@ -53,7 +53,7 @@ function getStatusColor(status: VehicleReviewStatus | null): string {
     case 'REJECTED':
       return '#B91C1C';
     case 'INACTIVE':
-      return '#475569';
+      return '#707A8C';
     case 'PENDING_REVIEW':
     default:
       return '#A66F00';
@@ -245,7 +245,7 @@ export default function MyVehiclesScreen() {
 
         {isLoading ? (
           <View style={styles.centerState}>
-            <ActivityIndicator size="large" color="#1D4ED8" />
+            <ActivityIndicator size="large" color="#F1B900" />
             <Text style={styles.helperText}>{t('Loading your vehicles...')}</Text>
           </View>
         ) : vehicles.length === 0 ? (

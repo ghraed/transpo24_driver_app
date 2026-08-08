@@ -274,7 +274,7 @@ export default function DriverTripCompletedScreen() {
           <Text style={styles.noticeTitle}>{t('Held Funds Release')}</Text>
           {isLoading ? (
             <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color="#1D4ED8" />
+              <ActivityIndicator size="small" color="#F1B900" />
               <Text style={styles.loadingText}>{t('Checking Stripe payout status...')}</Text>
             </View>
           ) : (
@@ -317,7 +317,7 @@ export default function DriverTripCompletedScreen() {
               onPress={() => void handleReleaseFunds()}
             >
               {isReleasing ? (
-                <ActivityIndicator size="small" color="#1D4ED8" />
+                <ActivityIndicator size="small" color="#F1B900" />
               ) : (
                 <Text style={styles.secondaryButtonText}>{t('Release Held Funds')}</Text>
               )}
@@ -330,7 +330,7 @@ export default function DriverTripCompletedScreen() {
             onPress={() => void handleRefresh()}
           >
             {isRefreshing ? (
-              <ActivityIndicator size="small" color="#1D4ED8" />
+              <ActivityIndicator size="small" color="#F1B900" />
             ) : (
               <Text style={styles.secondaryButtonText}>{t('Refresh Payout Status')}</Text>
             )}
@@ -348,14 +348,14 @@ export default function DriverTripCompletedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
     padding: 20,
     justifyContent: 'center',
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 12,
     padding: 16,
     gap: 8,
@@ -363,40 +363,40 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
-    color: '#334155',
+    color: '#505A6A',
   },
   meta: {
-    color: '#475569',
+    color: '#707A8C',
   },
   noticeCard: {
     marginTop: 8,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
+    borderColor: '#F3D26B',
+    backgroundColor: '#FFF9E6',
     borderRadius: 10,
     padding: 12,
     gap: 6,
   },
   noticeTitle: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 15,
     fontWeight: '700',
   },
   noticeText: {
-    color: '#1E3A8A',
+    color: '#505A6A',
     fontSize: 13,
     lineHeight: 20,
   },
   noticeMeta: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 12,
     fontWeight: '600',
   },
   statusMeta: {
-    color: '#334155',
+    color: '#505A6A',
     fontSize: 12,
   },
   loadingRow: {
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontSize: 13,
     fontWeight: '600',
   },
@@ -416,26 +416,26 @@ const styles = StyleSheet.create({
   button: {
     minHeight: 46,
     borderRadius: 10,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontWeight: '700',
   },
   secondaryButton: {
     minHeight: 46,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#F3D26B',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
   secondaryButtonText: {
-    color: '#1D4ED8',
+    color: '#F1B900',
     fontWeight: '700',
   },
   disabledButton: {

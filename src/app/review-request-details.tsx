@@ -299,7 +299,7 @@ export default function ReviewRequestDetailsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centeredState}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator size="large" color="#FFC515" />
           <Text style={styles.stateText}>{t('Loading request details...')}</Text>
         </View>
       </SafeAreaView>
@@ -484,7 +484,7 @@ export default function ReviewRequestDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F7F8F9',
   },
   centeredState: {
     flex: 1,
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   stateText: {
     fontSize: 16,
-    color: '#334155',
+    color: '#505A6A',
     textAlign: 'center',
   },
   errorText: {
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   primaryButton: {
-    backgroundColor: '#2563EB',
+    backgroundColor: '#FFC515',
     borderRadius: 10,
     minHeight: 44,
     paddingHorizontal: 18,
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -532,16 +532,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   subtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: '#707A8C',
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#DFE3E8',
     borderRadius: 14,
     padding: 14,
     gap: 6,
@@ -549,12 +549,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
   },
   sectionTitleAlt: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#0F172A',
+    color: '#202020',
     marginTop: 8,
   },
   sectionValue: {
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 13,
-    color: '#475569',
+    color: '#707A8C',
   },
   noteText: {
     fontSize: 14,
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 10,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: '#DFE3E8',
   },
   modalBackdrop: {
     flex: 1,
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     padding: 14,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: '#DFE3E8',
     flexDirection: 'row',
     gap: 10,
   },
@@ -613,19 +613,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#334155',
+    color: '#505A6A',
     fontWeight: '600',
   },
   primaryActionButton: {
     flex: 1.4,
     minHeight: 46,
     borderRadius: 10,
-    backgroundColor: '#0EA5E9',
+    backgroundColor: '#FFC515',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryActionButtonText: {
-    color: '#FFFFFF',
+    color: '#171717',
     fontWeight: '700',
   },
   disabledButton: {

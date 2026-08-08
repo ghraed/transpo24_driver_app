@@ -155,16 +155,16 @@ export default function SocketDebugScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC', padding: 16 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', padding: 12, gap: 10 },
-  title: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#F7F8F9', padding: 16 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#DFE3E8', padding: 12, gap: 10 },
+  title: { fontSize: 18, fontWeight: '700', color: '#202020' },
   input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
   row: { flexDirection: 'row', gap: 8 },
-  button: { flex: 1, minHeight: 40, borderRadius: 8, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center' },
+  button: { flex: 1, minHeight: 40, borderRadius: 8, backgroundColor: '#FFC515', alignItems: 'center', justifyContent: 'center' },
   disconnectButton: { backgroundColor: '#DC2626' },
-  leaveButton: { backgroundColor: '#475569' },
+  leaveButton: { backgroundColor: '#707A8C' },
   buttonText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
-  logPanel: { marginTop: 12, flex: 1, backgroundColor: '#0F172A', borderRadius: 10 },
+  logPanel: { marginTop: 12, flex: 1, backgroundColor: '#202020', borderRadius: 10 },
   logContent: { padding: 10, gap: 8 },
-  logLine: { color: '#E2E8F0', fontSize: 12 },
+  logLine: { color: '#DFE3E8', fontSize: 12 },
 });

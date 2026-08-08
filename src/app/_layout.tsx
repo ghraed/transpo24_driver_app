@@ -108,7 +108,7 @@ function AppNavigator() {
   if (isRestoringSession || !localizationReady) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color="#FFC515" />
       </View>
     );
   }
