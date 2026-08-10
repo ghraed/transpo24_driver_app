@@ -4,6 +4,7 @@ import type { RegisterPushTokenPayload } from '@/notifications/types';
 import type {
   AcceptDriverRequestAlertResponse,
   CreateDriverVehiclePayload,
+  ContinueDriverSessionPayload,
   DriverAcceptedJobDetailsResponse,
   DriverAcceptedJobsResponse,
   DriverAvailabilityResponse,
@@ -549,6 +550,35 @@ export async function verifyDriverPhoneVerificationCode(
   return parseJsonResponse<DriverAuthResponse>(
     response,
     'Failed to parse the driver verification response.',
+  );
+}
+
+export async function continueDriverTrustedSession(
+  payload: ContinueDriverSessionPayload,
+): Promise<DriverAuthResponse> {
+  const endpoint = `${getApiBaseUrl()}/auth/driver/session/continue`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      endpoint,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+      AUTH_REGISTER_TIMEOUT_MS,
+    );
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Unable to continue the trusted session.');
+  }
+
+  return parseJsonResponse<DriverAuthResponse>(
+    response,
+    'Failed to parse the trusted-session response.',
   );
 }
 

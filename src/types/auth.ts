@@ -477,6 +477,10 @@ export interface DriverAuthResponse {
   nextStep: DriverNextStep;
 }
 
+export interface ContinueDriverSessionPayload {
+  accessToken: string;
+}
+
 export interface LoginResponse {
   accessToken: string;
   user: AuthUser;

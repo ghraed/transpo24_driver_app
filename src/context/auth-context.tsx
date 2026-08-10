@@ -3,6 +3,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import {
   getDriverAvailability,
   getDriverMe,
+  continueDriverTrustedSession,
   updateDriverAvailability,
   updateDriverProfile,
   verifyDriverPhoneVerificationCode,
@@ -72,6 +73,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const me = await getDriverMe();
           applyDriverMeResponse(me);
         } catch {
+          const trustedSession = await readTrustedDriverSession();
+          if (trustedSession) {
+            try {
+              const renewed = await continueDriverTrustedSession({
+                accessToken: trustedSession.accessToken,
+              });
+              await persistAccessToken(renewed.accessToken);
+              await persistTrustedDriverSession({
+                accessToken: renewed.accessToken,
+                phoneNumber: renewed.driver.phone,
+              });
+              setAccessToken(renewed.accessToken);
+              setUser(renewed.user);
+              setDriver(renewed.driver);
+              return;
+            } catch {
+              await clearTrustedDriverSession();
+            }
+          }
           await clearAccessToken();
           await clearDriverOnboardingDrafts();
           setAccessToken(null);
@@ -124,11 +144,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!trustedSession) return false;
 
     try {
-      await persistAccessToken(trustedSession.accessToken);
-      const me = await getDriverMe();
-      applyDriverMeResponse(me);
+      const renewed = await continueDriverTrustedSession({
+        accessToken: trustedSession.accessToken,
+      });
+      await Promise.all([
+        persistAccessToken(renewed.accessToken),
+        persistTrustedDriverSession({
+          accessToken: renewed.accessToken,
+          phoneNumber: renewed.driver.phone,
+        }),
+      ]);
+      setUser(renewed.user);
+      setDriver(renewed.driver);
       setHasRestoredStoredSession(true);
-      setAccessToken(trustedSession.accessToken);
+      setAccessToken(renewed.accessToken);
       return true;
     } catch {
       await Promise.all([
