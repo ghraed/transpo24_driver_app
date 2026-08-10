@@ -150,8 +150,9 @@ export default function DriverMapScreen() {
       ? asRegion({ latitude: availability.baseLatitude, longitude: availability.baseLongitude })
       : undefined;
 
+  // The map is a live view: scheduled jobs belong in the Jobs list, not here.
   const jobMarkers = alerts.filter(
-    (alert) => hasCoordinate(alert.pickup) || hasCoordinate(alert.dropoff),
+    (alert) => alert.schedule.isImmediate && (hasCoordinate(alert.pickup) || hasCoordinate(alert.dropoff)),
   );
 
   return (
