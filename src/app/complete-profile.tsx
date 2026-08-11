@@ -123,6 +123,9 @@ export default function CompleteProfileScreen() {
       '',
     [form.preferredLanguage],
   );
+  const isIdOrResidencyNumberLocked = Boolean(
+    driver?.idOrResidencyNumberMasked?.trim(),
+  );
 
   const filteredLanguageOptions = useMemo(() => {
     const normalizedSearch = languageSearch.trim().toLowerCase();
@@ -146,9 +149,9 @@ export default function CompleteProfileScreen() {
       countryCode: profile.countryCode?.trim() || testDefaults.countryCode,
       city: profile.city?.trim() || testDefaults.city,
       fullNameOnId: profile.fullNameOnId?.trim() || testDefaults.fullNameOnId,
-      idOrResidencyNumber: profile.idOrResidencyNumberMasked?.trim()
-        ? ''
-        : testDefaults.idOrResidencyNumber,
+      idOrResidencyNumber:
+        profile.idOrResidencyNumberMasked?.trim() ||
+        testDefaults.idOrResidencyNumber,
       dateOfBirth: toDateOnly(profile.dateOfBirth) || testDefaults.dateOfBirth,
       addressLine1: profile.addressLine1?.trim() || testDefaults.addressLine1,
       addressLine2: profile.addressLine2?.trim() || testDefaults.addressLine2,
@@ -298,7 +301,9 @@ export default function CompleteProfileScreen() {
       city: form.city.trim() || undefined,
       cities: form.city.trim() ? [form.city.trim()] : undefined,
       fullNameOnId: form.fullNameOnId.trim() || undefined,
-      idOrResidencyNumber: form.idOrResidencyNumber.trim() || undefined,
+      idOrResidencyNumber: isIdOrResidencyNumberLocked
+        ? undefined
+        : form.idOrResidencyNumber.trim() || undefined,
       dateOfBirth: form.dateOfBirth.trim() || undefined,
       addressLine1: form.addressLine1.trim() || undefined,
       addressLine2: form.addressLine2.trim() || undefined,
@@ -471,11 +476,15 @@ export default function CompleteProfileScreen() {
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>{t('ID Or Residency Number')}</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, isIdOrResidencyNumberLocked && styles.lockedInput]}
             placeholder={t('ID or residency number')}
             value={form.idOrResidencyNumber}
             onChangeText={(value) => onChange('idOrResidencyNumber', value)}
+            editable={!isIdOrResidencyNumberLocked}
           />
+          {isIdOrResidencyNumberLocked ? (
+            <Text style={styles.helper}>This number is locked after it has been saved.</Text>
+          ) : null}
         </View>
         {hasAttemptedSubmit && fieldErrors.idOrResidencyNumber ? <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text> : null}
 
@@ -692,6 +701,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 15,
+  },
+  lockedInput: {
+    backgroundColor: '#F6F7F9',
+    color: '#707A8C',
   },
   inputText: {
     color: '#202020',
