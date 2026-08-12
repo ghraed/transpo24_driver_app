@@ -617,7 +617,6 @@ export type SupportedOfferCurrency = 'CHF' | 'EUR' | 'AED' | 'SAR' | 'QAR' | 'US
 
 export interface SendDriverPriceOfferPayload {
   price: number;
-  currency: SupportedOfferCurrency;
   estimatedPickupAt?: string;
   estimatedDeliveryAt?: string;
   estimatedDurationMinutes?: number;

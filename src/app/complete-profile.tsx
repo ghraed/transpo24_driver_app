@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { CountryPicker } from '@/components/country-picker';
 import { useAuth } from '@/context/auth-context';
 import {
   clearLastOnboardingRoute,
@@ -26,6 +27,11 @@ import {
   isSupportedLanguage,
 } from '@/localization/languages';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
+import {
+  currencyForCountryCode,
+  getCountryLabel,
+  normalizeCountryCode,
+} from '@/lib/country-currency';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import type { CompleteDriverProfileForm, UpdateDriverProfilePayload } from '@/types/auth';
 
@@ -219,6 +225,10 @@ export default function CompleteProfileScreen() {
       errors.phone = t('Enter a valid international phone number.');
     }
 
+    if (!normalizeCountryCode(form.countryCode)) {
+      errors.countryCode = t('Please select a country.');
+    }
+
     if (!form.city.trim()) {
       errors.city = t('City is required.');
     }
@@ -296,8 +306,10 @@ export default function CompleteProfileScreen() {
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       phone: form.phone.trim(),
-      countryCode: form.countryCode.trim() || undefined,
-      countryCodes: form.countryCode.trim() ? [form.countryCode.trim()] : undefined,
+      countryCode: normalizeCountryCode(form.countryCode) || undefined,
+      countryCodes: normalizeCountryCode(form.countryCode)
+        ? [normalizeCountryCode(form.countryCode) as string]
+        : undefined,
       city: form.city.trim() || undefined,
       cities: form.city.trim() ? [form.city.trim()] : undefined,
       fullNameOnId: form.fullNameOnId.trim() || undefined,
@@ -439,15 +451,23 @@ export default function CompleteProfileScreen() {
         ) : null}
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('Country Code')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('Country code')}
-            autoCapitalize="characters"
+          <Text style={styles.label}>{t('Country')}</Text>
+          <CountryPicker
             value={form.countryCode}
-            onChangeText={(value) => onChange('countryCode', value)}
+            onChange={(value) => onChange('countryCode', value)}
           />
+          <Text style={styles.helper}>
+            {normalizeCountryCode(form.countryCode)
+              ? t('Offer currency will default to {{currency}} for {{country}}.', {
+                  currency: currencyForCountryCode(form.countryCode),
+                  country: getCountryLabel(form.countryCode) || form.countryCode,
+                })
+              : t('Select your country from the list.')}
+          </Text>
         </View>
+        {hasAttemptedSubmit && fieldErrors.countryCode ? (
+          <Text style={styles.errorText}>{fieldErrors.countryCode}</Text>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>{t('City')}</Text>

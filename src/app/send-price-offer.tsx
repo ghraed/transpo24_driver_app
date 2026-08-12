@@ -16,14 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPriceOffer } from '@/lib/api';
+import { currencyForCountryCode, getCountryLabel } from '@/lib/country-currency';
 import { formatDateTime } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
-import type { SendDriverPriceOfferPayload, SupportedOfferCurrency } from '@/types/auth';
+import type { SendDriverPriceOfferPayload } from '@/types/auth';
 
 type SendOfferFormState = {
   price: string;
-  currency: SupportedOfferCurrency;
   estimatedPickupAt: string;
   estimatedDeliveryAt: string;
   estimatedDurationMinutes: string;
@@ -33,14 +33,11 @@ type SendOfferFormState = {
 type FormErrors = {
   requestId?: string;
   price?: string;
-  currency?: string;
   estimatedPickupAt?: string;
   estimatedDeliveryAt?: string;
   estimatedDurationMinutes?: string;
   message?: string;
 };
-
-const OFFER_CURRENCIES: SupportedOfferCurrency[] = ['CHF', 'EUR', 'AED', 'SAR', 'QAR', 'USD'];
 
 function parseOptionalIsoDate(rawValue: string): Date | null {
   const trimmed = rawValue.trim();
@@ -69,7 +66,7 @@ export default function SendPriceOfferScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { signOut } = useAuth();
+  const { driver, signOut } = useAuth();
   const params = useLocalSearchParams();
 
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
@@ -80,7 +77,6 @@ export default function SendPriceOfferScreen() {
 
   const [form, setForm] = useState<SendOfferFormState>({
     price: '',
-    currency: 'CHF',
     estimatedPickupAt: '',
     estimatedDeliveryAt: '',
     estimatedDurationMinutes: '',
@@ -95,6 +91,14 @@ export default function SendPriceOfferScreen() {
     if (!requestId) return '';
     return requestId.length > 12 ? `${requestId.slice(0, 6)}...${requestId.slice(-4)}` : requestId;
   }, [requestId]);
+  const offerCurrency = useMemo(
+    () => currencyForCountryCode(driver?.countryCode),
+    [driver?.countryCode],
+  );
+  const driverCountryLabel = useMemo(
+    () => getCountryLabel(driver?.countryCode),
+    [driver?.countryCode],
+  );
 
   useEffect(() => {
     let active = true;
@@ -167,10 +171,6 @@ export default function SendPriceOfferScreen() {
       nextErrors.price = t('Price must be between 1 and 100000.');
     }
 
-    if (!OFFER_CURRENCIES.includes(form.currency)) {
-      nextErrors.currency = t('Unsupported currency selected.');
-    }
-
     const pickupDate = parseOptionalIsoDate(form.estimatedPickupAt);
     if (form.estimatedPickupAt.trim() && !pickupDate) {
       nextErrors.estimatedPickupAt = t('Estimated pickup must be a valid date/time.');
@@ -213,7 +213,6 @@ export default function SendPriceOfferScreen() {
 
     const payload: SendDriverPriceOfferPayload = {
       price: Number(form.price.trim()),
-      currency: form.currency,
     };
 
     const pickupDate = parseOptionalIsoDate(form.estimatedPickupAt);
@@ -330,28 +329,16 @@ export default function SendPriceOfferScreen() {
             {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
 
             <Text style={styles.label}>{t('Currency *')}</Text>
-            <View style={styles.currencyRow}>
-              {OFFER_CURRENCIES.map((currency) => (
-                <Pressable
-                  key={currency}
-                  style={[
-                    styles.currencyChip,
-                    form.currency === currency ? styles.currencyChipSelected : undefined,
-                  ]}
-                  onPress={() => setForm((prev) => ({ ...prev, currency }))}
-                >
-                  <Text
-                    style={[
-                      styles.currencyChipText,
-                      form.currency === currency ? styles.currencyChipTextSelected : undefined,
-                    ]}
-                  >
-                    {currency}
-                  </Text>
-                </Pressable>
-              ))}
+            <View style={styles.derivedCurrencyCard}>
+              <Text style={styles.derivedCurrencyValue}>{offerCurrency}</Text>
+              <Text style={styles.derivedCurrencyHint}>
+                {driverCountryLabel
+                  ? t('Offer currency follows your country: {{country}}.', {
+                      country: driverCountryLabel,
+                    })
+                  : t('Offer currency follows your saved country.')}
+              </Text>
             </View>
-            {errors.currency ? <Text style={styles.errorText}>{errors.currency}</Text> : null}
 
             <Text style={styles.label}>{t('Estimated pickup date/time (optional)')}</Text>
             <TextInput
@@ -442,20 +429,16 @@ const styles = StyleSheet.create({
     color: '#202020',
   },
   messageInput: { minHeight: 100 },
-  currencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  currencyChip: {
+  derivedCurrencyCard: {
     borderWidth: 1,
     borderColor: '#CBD5E1',
-    borderRadius: 999,
+    borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
   },
-  currencyChipSelected: {
-    borderColor: '#FFC515',
-    backgroundColor: '#FFF1B8',
-  },
-  currencyChipText: { color: '#202020', fontWeight: '600' },
-  currencyChipTextSelected: { color: '#F1B900' },
+  derivedCurrencyValue: { color: '#202020', fontWeight: '800', fontSize: 18 },
+  derivedCurrencyHint: { color: '#707A8C', fontSize: 13, marginTop: 4 },
   backButton: {
     minHeight: 40,
     alignSelf: 'flex-start',
