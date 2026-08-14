@@ -39,6 +39,17 @@ type FormErrors = {
   message?: string;
 };
 
+const PLATFORM_FEE_PERCENTAGE = 10;
+
+function formatOfferAmount(amount: number, currency: string): string {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 function parseOptionalIsoDate(rawValue: string): Date | null {
   const trimmed = rawValue.trim();
   if (!trimmed) return null;
@@ -99,6 +110,19 @@ export default function SendPriceOfferScreen() {
     () => getCountryLabel(driver?.countryCode),
     [driver?.countryCode],
   );
+  const offerEarningsPreview = useMemo(() => {
+    const price = Number(form.price.trim());
+    if (!Number.isFinite(price) || price <= 0) {
+      return null;
+    }
+
+    const platformFee = Math.round(price * (PLATFORM_FEE_PERCENTAGE / 100) * 100) / 100;
+    return {
+      price,
+      platformFee,
+      netAmount: Math.round((price - platformFee) * 100) / 100,
+    };
+  }, [form.price]);
 
   useEffect(() => {
     let active = true;
@@ -340,6 +364,43 @@ export default function SendPriceOfferScreen() {
               </Text>
             </View>
 
+            {offerEarningsPreview ? (
+              <View style={styles.earningsPreview}>
+                <View style={styles.earningsPreviewHeader}>
+                  <Text style={styles.earningsPreviewTitle}>{t('Your earnings')}</Text>
+                  <Text style={styles.earningsPreviewPercentage}>
+                    {t('{{percentage}}% platform fee', { percentage: PLATFORM_FEE_PERCENTAGE })}
+                  </Text>
+                </View>
+                <View style={styles.earningsRow}>
+                  <Text style={styles.earningsLabel}>{t('Your offer')}</Text>
+                  <Text style={styles.earningsValue}>
+                    {formatOfferAmount(offerEarningsPreview.price, offerCurrency)}
+                  </Text>
+                </View>
+                <View style={styles.earningsRow}>
+                  <Text style={styles.earningsLabel}>
+                    {t('Platform fee ({{percentage}}%)', { percentage: PLATFORM_FEE_PERCENTAGE })}
+                  </Text>
+                  <Text style={styles.feeValue}>
+                    -{formatOfferAmount(offerEarningsPreview.platformFee, offerCurrency)}
+                  </Text>
+                </View>
+                <View style={styles.earningsDivider} />
+                <View style={styles.earningsRow}>
+                  <Text style={styles.netAmountLabel}>{t('You receive')}</Text>
+                  <Text style={styles.netAmountValue}>
+                    {formatOfferAmount(offerEarningsPreview.netAmount, offerCurrency)}
+                  </Text>
+                </View>
+                <Text style={styles.earningsHint}>
+                  {t('{{percentage}}% is deducted from your offer after the customer accepts it.', {
+                    percentage: PLATFORM_FEE_PERCENTAGE,
+                  })}
+                </Text>
+              </View>
+            ) : null}
+
             <Text style={styles.label}>{t('Estimated pickup date/time (optional)')}</Text>
             <TextInput
               style={styles.input}
@@ -439,6 +500,25 @@ const styles = StyleSheet.create({
   },
   derivedCurrencyValue: { color: '#202020', fontWeight: '800', fontSize: 18 },
   derivedCurrencyHint: { color: '#707A8C', fontSize: 13, marginTop: 4 },
+  earningsPreview: {
+    borderWidth: 1,
+    borderColor: '#F2D37A',
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: '#FFF9E8',
+    gap: 9,
+  },
+  earningsPreviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  earningsPreviewTitle: { color: '#202020', fontSize: 16, fontWeight: '800' },
+  earningsPreviewPercentage: { color: '#7A5A00', fontSize: 12, fontWeight: '700' },
+  earningsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  earningsLabel: { color: '#505A6A', fontSize: 14 },
+  earningsValue: { color: '#202020', fontSize: 14, fontWeight: '700' },
+  feeValue: { color: '#B45309', fontSize: 14, fontWeight: '800' },
+  earningsDivider: { height: 1, backgroundColor: '#F2D37A' },
+  netAmountLabel: { color: '#202020', fontSize: 15, fontWeight: '800' },
+  netAmountValue: { color: '#087968', fontSize: 19, fontWeight: '900' },
+  earningsHint: { color: '#707A8C', fontSize: 12, lineHeight: 18, marginTop: 2 },
   backButton: {
     minHeight: 40,
     alignSelf: 'flex-start',
