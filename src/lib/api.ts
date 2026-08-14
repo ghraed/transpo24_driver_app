@@ -12,6 +12,7 @@ import type {
   DriverRequestDetailsResponse,
   DriverAuthResponse,
   DriverDocumentsStatusResponse,
+  DriverEarningsResponse,
   DriverEarningsSummary,
   DriverMeResponse,
   DriverOnboardingResponse,
@@ -780,6 +781,29 @@ export async function getDriverEarningsSummary(): Promise<DriverEarningsSummary>
   return parseJsonResponse<DriverEarningsSummary>(
     response,
     'Failed to parse earnings summary response.',
+  );
+}
+
+export async function getDriverEarnings(page = 1, limit = 20): Promise<DriverEarningsResponse> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  const endpoint = `${getApiBaseUrl()}/driver/me/earnings?${params.toString()}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to load earnings history.');
+  }
+
+  return parseJsonResponse<DriverEarningsResponse>(
+    response,
+    'Failed to parse earnings history response.',
   );
 }
 

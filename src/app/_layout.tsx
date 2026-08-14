@@ -126,11 +126,12 @@ function AppNavigator() {
       <Stack.Screen name="load-capacity" options={{ title: t('Define Load Capacity') }} />
       <Stack.Screen name="set-availability" options={{ title: t('Set Availability') }} />
       <Stack.Screen name="waiting-approval" options={{ title: t('Waiting Approval') }} />
-      <Stack.Screen name="driver-home" options={{ title: t('Driver Home') }} />
+      <Stack.Screen name="driver-home" options={{ title: t('Settings'), headerShown: false }} />
       <Stack.Screen name="receive-requests" options={{ title: t('Available Requests'), headerShown: false }} />
       <Stack.Screen name="driver-map" options={{ title: t('Map'), headerShown: false }} />
       <Stack.Screen name="driver-chats" options={{ title: t('Chat'), headerShown: false }} />
       <Stack.Screen name="driver-profile" options={{ title: t('Profile'), headerShown: false }} />
+      <Stack.Screen name="earnings-history" options={{ title: t('Earnings History'), headerShown: false }} />
       <Stack.Screen name="accepted-jobs" options={{ title: t('Accepted Jobs'), headerShown: false }} />
       <Stack.Screen name="chat" options={{ title: t('Chat with Client') }} />
       <Stack.Screen name="accepted-job-details" options={{ title: t('Accepted Job Details') }} />

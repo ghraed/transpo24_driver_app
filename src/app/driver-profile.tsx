@@ -98,7 +98,7 @@ export default function DriverProfileScreen() {
   const menuItems: MenuItem[] = [
     { label: 'My Vehicle', icon: 'truck', onPress: () => router.push('/my-vehicles') },
     { label: 'Documents', icon: 'document', onPress: () => router.push('/vehicle-documents') },
-    { label: 'Earnings History', icon: 'money', onPress: () => router.push('/stripe-connect') },
+    { label: 'Earnings History', icon: 'money', onPress: () => router.push('/earnings-history') },
     { label: 'Availability Schedule', icon: 'calendar', onPress: () => router.push('/set-availability') },
     { label: 'Settings', icon: 'settings', onPress: () => router.push('/driver-home') },
     { label: 'Help & Support', icon: 'help' },

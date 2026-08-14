@@ -716,3 +716,28 @@ export interface DriverEarningsSummary {
   averageRating: number | null;
   ratingsCount: number;
 }
+
+export type DriverEarningStatus = 'PENDING' | 'AVAILABLE' | 'PAID_OUT' | 'CANCELLED';
+
+export interface DriverEarning {
+  id: string;
+  tripId: string;
+  grossAmount: number;
+  platformFeeAmount: number;
+  netAmount: number;
+  currency: string;
+  status: DriverEarningStatus;
+  createdAt: string;
+  availableAt: string | null;
+  paidOutAt: string | null;
+  stripeTransferId: string | null;
+  stripeTransferStatus: string | null;
+}
+
+export interface DriverEarningsResponse {
+  items: DriverEarning[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
