@@ -837,10 +837,22 @@ export default function GoToPickupScreen() {
                 <Text style={styles.driverMarkerIcon}>🚗</Text>
               </NativeMarker>
             ) : null}
-            <NativeMarker coordinate={pickupLocation} title={t('Pickup')} />
+            <NativeMarker coordinate={pickupLocation} title={t('Pickup')} anchor={{ x: 0.5, y: 0.5 }}>
+              <View style={styles.pickupMarker}>
+                <SymbolView
+                  name={{ ios: 'mappin.circle.fill', android: 'location_on', web: 'location_on' }}
+                  tintColor="#FFFFFF"
+                  size={18}
+                />
+              </View>
+            </NativeMarker>
             <NativeMarker coordinate={dropoffLocation} title={t('Dropoff')} anchor={{ x: 0.5, y: 0.5 }}>
-              <View style={styles.destinationXMarker}>
-                <Text style={styles.destinationXText}>X</Text>
+              <View style={styles.dropoffMarker}>
+                <SymbolView
+                  name={{ ios: 'flag.fill', android: 'flag', web: 'flag' }}
+                  tintColor="#FFFFFF"
+                  size={16}
+                />
               </View>
             </NativeMarker>
             {driverLocation ? (
@@ -1278,20 +1290,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#4B5563',
   },
-  driverMarkerIcon: {
-    fontSize: 28,
-  },
-  destinationXMarker: {
+  pickupMarker: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#1DB954',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#111827',
   },
-  destinationXText: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  dropoffMarker: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#FF4B3E',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverMarkerIcon: {
+    fontSize: 28,
   },
 });
