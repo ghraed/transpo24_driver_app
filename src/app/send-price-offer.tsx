@@ -21,6 +21,7 @@ import { formatDateTime } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
 import type { SendDriverPriceOfferPayload } from '@/types/auth';
+import { calculateDistanceMeters } from '@/utils/locationValidation';
 
 type SendOfferFormState = {
   price: string;
@@ -73,6 +74,36 @@ function formatDisplayAddress(
   return address;
 }
 
+function parseCoordinate(value: string | string[] | undefined): number | null {
+  if (typeof value !== 'string') return null;
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+}
+
+function formatRouteDistance(
+  pickupLatitude: number | null,
+  pickupLongitude: number | null,
+  dropoffLatitude: number | null,
+  dropoffLongitude: number | null,
+): string | null {
+  if (
+    pickupLatitude === null ||
+    pickupLongitude === null ||
+    dropoffLatitude === null ||
+    dropoffLongitude === null
+  ) {
+    return null;
+  }
+
+  const distanceKm = calculateDistanceMeters(
+    { latitude: pickupLatitude, longitude: pickupLongitude },
+    { latitude: dropoffLatitude, longitude: dropoffLongitude },
+  ) / 1000;
+
+  if (!Number.isFinite(distanceKm)) return null;
+  return `${distanceKm.toFixed(distanceKm < 1 ? 2 : 1)} km`;
+}
+
 export default function SendPriceOfferScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
@@ -84,6 +115,10 @@ export default function SendPriceOfferScreen() {
   const serviceName = typeof params.serviceName === 'string' ? params.serviceName : '';
   const pickupAddress = typeof params.pickupAddress === 'string' ? params.pickupAddress : '';
   const dropoffAddress = typeof params.dropoffAddress === 'string' ? params.dropoffAddress : '';
+  const pickupLatitude = parseCoordinate(params.pickupLatitude);
+  const pickupLongitude = parseCoordinate(params.pickupLongitude);
+  const dropoffLatitude = parseCoordinate(params.dropoffLatitude);
+  const dropoffLongitude = parseCoordinate(params.dropoffLongitude);
   const scheduledPickupAt = typeof params.scheduledPickupAt === 'string' ? params.scheduledPickupAt : null;
 
   const [form, setForm] = useState<SendOfferFormState>({
@@ -123,6 +158,10 @@ export default function SendPriceOfferScreen() {
       netAmount: Math.round((price - platformFee) * 100) / 100,
     };
   }, [form.price]);
+  const routeDistance = useMemo(
+    () => formatRouteDistance(pickupLatitude, pickupLongitude, dropoffLatitude, dropoffLongitude),
+    [dropoffLatitude, dropoffLongitude, pickupLatitude, pickupLongitude],
+  );
 
   useEffect(() => {
     let active = true;
@@ -237,6 +276,7 @@ export default function SendPriceOfferScreen() {
 
     const payload: SendDriverPriceOfferPayload = {
       price: Number(form.price.trim()),
+      currency: offerCurrency,
     };
 
     const pickupDate = parseOptionalIsoDate(form.estimatedPickupAt);
@@ -327,6 +367,7 @@ export default function SendPriceOfferScreen() {
                 {t('Dropoff')}: {translatedTextByKey.dropoffAddress || formatDisplayAddress(dropoffAddress, t)}
               </Text>
             ) : null}
+            {routeDistance ? <Text style={styles.valueText}>{t('Distance')}: {routeDistance}</Text> : null}
             <Text style={styles.valueText}>{t('Schedule')}: {scheduledPickupAt ? formatDateTime(scheduledPickupAt) : t('Immediate pickup')}</Text>
             <Text style={styles.valueText}>{t('Request')}: {requestId ? requestIdShort : t('Missing request ID')}</Text>
             {errors.requestId ? <Text style={styles.errorText}>{errors.requestId}</Text> : null}

@@ -23,6 +23,7 @@ import {
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
 import type { DriverRequestDetailsResponse } from '@/types/auth';
+import { calculateDistanceMeters } from '@/utils/locationValidation';
 
 function formatDate(value: string | null): string {
   if (!value) return 'Not specified';
@@ -118,6 +119,26 @@ function formatDisplayAddress(
 
 function resolveAssetUrl(url: string): string {
   return resolveBackendAssetUrl(url);
+}
+
+function formatRouteDistance(details: DriverRequestDetailsResponse): string | null {
+  const { pickup, dropoff } = details;
+  if (
+    typeof pickup.latitude !== 'number' ||
+    typeof pickup.longitude !== 'number' ||
+    typeof dropoff.latitude !== 'number' ||
+    typeof dropoff.longitude !== 'number'
+  ) {
+    return null;
+  }
+
+  const distanceKm = calculateDistanceMeters(
+    { latitude: pickup.latitude, longitude: pickup.longitude },
+    { latitude: dropoff.latitude, longitude: dropoff.longitude },
+  ) / 1000;
+
+  if (!Number.isFinite(distanceKm)) return null;
+  return `${distanceKm.toFixed(distanceKm < 1 ? 2 : 1)} km`;
 }
 
 export default function ReviewRequestDetailsScreen() {
@@ -233,6 +254,7 @@ export default function ReviewRequestDetailsScreen() {
     () => (details ? getRequestItemCategory(details) : 'generic'),
     [details],
   );
+  const routeDistance = useMemo(() => (details ? formatRouteDistance(details) : null), [details]);
 
   const canAccept = useMemo(() => {
     if (!details) return false;
@@ -284,6 +306,10 @@ export default function ReviewRequestDetailsScreen() {
           serviceName: details?.service?.nameEn || details?.service?.key || '',
           pickupAddress: details?.pickup?.address || '',
           dropoffAddress: details?.dropoff?.address || '',
+          pickupLatitude: details?.pickup?.latitude?.toString() || '',
+          pickupLongitude: details?.pickup?.longitude?.toString() || '',
+          dropoffLatitude: details?.dropoff?.latitude?.toString() || '',
+          dropoffLongitude: details?.dropoff?.longitude?.toString() || '',
           scheduledPickupAt: details?.schedule?.scheduledPickupAt || '',
         },
       });
@@ -364,6 +390,7 @@ export default function ReviewRequestDetailsScreen() {
           <Text style={styles.sectionValue}>
             {translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude, t)}
           </Text>
+          {routeDistance ? <Text style={styles.metaText}>{t('Distance')}: {routeDistance}</Text> : null}
         </View>
 
         <View style={styles.card}>

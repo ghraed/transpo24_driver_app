@@ -19,6 +19,7 @@ import { readAccessToken } from '@/lib/auth-storage';
 import { getDriverRequestAlerts } from '@/lib/api';
 import { connectSocket, onRequestDeleted } from '@/services/socketService';
 import type { DriverRequestAlertSummary } from '@/types/auth';
+import { calculateDistanceMeters } from '@/utils/locationValidation';
 
 type PricedAlert = DriverRequestAlertSummary & {
   suggestedPrice?: number | null;
@@ -66,6 +67,26 @@ function displayMatch(alert: PricedAlert): string {
     return `${Math.round(alert.matchPercent)}% match`;
   }
   return 'Available';
+}
+
+function formatRouteDistance(alert: DriverRequestAlertSummary): string {
+  const { pickup, dropoff } = alert;
+  if (
+    typeof pickup.latitude !== 'number' ||
+    typeof pickup.longitude !== 'number' ||
+    typeof dropoff.latitude !== 'number' ||
+    typeof dropoff.longitude !== 'number'
+  ) {
+    return '— km';
+  }
+
+  const distanceKm = calculateDistanceMeters(
+    { latitude: pickup.latitude, longitude: pickup.longitude },
+    { latitude: dropoff.latitude, longitude: dropoff.longitude },
+  ) / 1000;
+
+  if (!Number.isFinite(distanceKm)) return '— km';
+  return `${distanceKm.toFixed(distanceKm < 1 ? 2 : 1)} km`;
 }
 
 export default function ReceiveRequestAlertsScreen() {
@@ -183,7 +204,7 @@ export default function ReceiveRequestAlertsScreen() {
             const alert = rawAlert as PricedAlert;
             const pickup = compactPlace(alert.pickup.address, 'Pickup');
             const dropoff = compactPlace(alert.dropoff.address, 'Dropoff');
-            const distance = typeof alert.distanceKm === 'number' ? `${Math.round(alert.distanceKm)} km` : '— km';
+            const distance = formatRouteDistance(alert);
             const jobNumber = alert.requestId.slice(-6).toUpperCase();
 
             return (
