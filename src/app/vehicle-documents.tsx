@@ -691,7 +691,7 @@ export default function VehicleDocumentsScreen() {
           {documentsStatus?.submittedForReviewAt ? (
             <Text style={styles.statusText}>
               {t('Submitted for review at')}{' '}
-              {new Date(documentsStatus.submittedForReviewAt).toLocaleString()}
+              {new Date(documentsStatus.submittedForReviewAt).toLocaleString(undefined, { hour12: false })}
             </Text>
           ) : null}
         </View>

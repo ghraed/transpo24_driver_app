@@ -18,7 +18,7 @@ function messagePreview(room: ChatRoom): string {
 function messageTime(room: ChatRoom): string {
   const date = new Date(room.lastMessage?.createdAt || room.updatedAt);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: false });
 }
 
 export default function DriverChatsScreen() {

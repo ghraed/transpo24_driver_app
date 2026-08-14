@@ -48,7 +48,7 @@ function formatTimestamp(value: string | null): string {
     return value;
   }
 
-  return parsed.toLocaleString();
+  return parsed.toLocaleString(undefined, { hour12: false });
 }
 
 function getAccountStatusLabel(

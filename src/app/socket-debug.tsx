@@ -25,7 +25,10 @@ export default function SocketDebugScreen() {
   const [logs, setLogs] = useState<string[]>([]);
 
   const appendLog = (message: string): void => {
-    setLogs((prev) => [`${new Date().toLocaleTimeString()} - ${message}`, ...prev].slice(0, 80));
+    setLogs((prev) => [
+      `${new Date().toLocaleTimeString([], { hour12: false })} - ${message}`,
+      ...prev,
+    ].slice(0, 80));
   };
 
   const setupListeners = (): void => {

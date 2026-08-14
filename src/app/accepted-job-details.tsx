@@ -33,7 +33,7 @@ function formatDate(value: string | null): string {
   if (!value) return 'N/A';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleString();
+  return date.toLocaleString(undefined, { hour12: false });
 }
 
 function formatMoney(price: number, currency: string): string {

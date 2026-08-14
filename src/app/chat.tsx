@@ -56,6 +56,7 @@ function formatTime(value: string): string {
   return date.toLocaleTimeString([], {
     hour: 'numeric',
     minute: '2-digit',
+    hour12: false,
   });
 }
 

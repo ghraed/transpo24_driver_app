@@ -28,7 +28,7 @@ function formatDate(value: string | null): string {
   if (!value) return 'Not specified';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Not specified';
-  return date.toLocaleString();
+  return date.toLocaleString(undefined, { hour12: false });
 }
 
 function availabilityMessage(requestStatus: string): string | null {
