@@ -489,11 +489,14 @@ export default function LoadCapacityScreen() {
             </View>
             <Text style={styles.infoTitle}>{t('Capacity guidance')}</Text>
           </View>
-          <Text style={styles.infoText}>{guidance?.note}</Text>
-          <Text style={styles.infoText}>{t('Suggested cargo types')}: {guidance ? guidance.usageLabel : t('Custom transport')}</Text>
+          <Text style={styles.infoText}>{guidance?.note ? t(guidance.note) : null}</Text>
+          <Text style={styles.infoText}>{t('Suggested cargo types')}: {guidance ? t(guidance.usageLabel) : t('Custom transport')}</Text>
           {existingCapacity?.allowedCargoTypes?.length ? (
             <Text style={styles.infoText}>
-              {t('Current cargo types')}: {formatCargoTypes(existingCapacity.allowedCargoTypes)}
+              {t('Current cargo types')}: {formatCargoTypes(existingCapacity.allowedCargoTypes)
+                .split(', ')
+                .map((label) => t(label))
+                .join(', ')}
             </Text>
           ) : null}
         </View>

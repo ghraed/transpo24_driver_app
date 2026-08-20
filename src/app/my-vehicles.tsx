@@ -229,7 +229,7 @@ export default function MyVehiclesScreen() {
                   availability?.baseLongitude !== null &&
                   availability?.baseLongitude !== undefined
                 ? `${availability.baseLatitude.toFixed(6)}, ${availability.baseLongitude.toFixed(6)}`
-                : 'Not set'}
+                : t('Not set')}
           </Text>
         </View>
 

@@ -18,6 +18,7 @@ import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
 import { readTrustedDriverSession } from '@/lib/auth-storage';
+import { nextStepToRoute } from '@/lib/onboarding-route';
 import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
 import { useAppLanguage } from '@/localization/provider';
 
@@ -118,16 +119,20 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     setErrorMessage('');
     setIsContinuing(true);
     const result = await continueWithTrustedSession();
-    if (result.status === 'invalid') {
+    if (result.status === 'restored') {
+      router.replace(nextStepToRoute(result.nextStep));
+    } else if (result.status === 'invalid') {
       setTrustedPhoneNumber('');
       setErrorMessage(t('Unable to continue. Please request a verification code.'));
     } else if (result.status === 'unavailable') {
       setErrorMessage(
-        result.message || t('Your saved device is still trusted. Check your connection and try again.'),
+        result.message
+          ? t(result.message)
+          : t('Your saved device is still trusted. Check your connection and try again.'),
       );
     }
     setIsContinuing(false);
-  }, [continueWithTrustedSession, hasTrustedDevice, isContinuing, t]);
+  }, [continueWithTrustedSession, hasTrustedDevice, isContinuing, router, t]);
 
   const useDifferentPhoneNumber = useCallback(() => {
     setErrorMessage('');

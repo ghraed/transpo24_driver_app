@@ -288,13 +288,13 @@ export default function VehicleInformationScreen() {
       setModelOtherValue(matchedModel ? '' : nextForm.model);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load vehicle information.';
+        error instanceof Error ? error.message : t('Failed to load vehicle information.');
       setLoadError(message);
     } finally {
       setHasHydratedDraft(true);
       setIsLoading(false);
     }
-  }, [flow, testDefaults, vehicleId]);
+  }, [flow, t, testDefaults, vehicleId]);
 
   useEffect(() => {
     if (flow !== 'onboarding' || !hasHydratedDraft) return;
@@ -741,7 +741,9 @@ export default function VehicleInformationScreen() {
         await clearVehicleInformationDraft();
       }
 
-      setSubmitSuccess(isEditing ? 'Vehicle updated successfully.' : 'Vehicle saved successfully.');
+      setSubmitSuccess(
+        isEditing ? t('Vehicle updated successfully.') : t('Vehicle saved successfully.'),
+      );
       setTimeout(() => {
         if (flow === 'management') {
           if (isEditing) {
@@ -767,17 +769,17 @@ export default function VehicleInformationScreen() {
           const rollbackMessage =
             rollbackError instanceof Error
               ? rollbackError.message
-              : 'Rollback failed after the vehicle save error.';
+              : t('Failed to save vehicle.');
           setSubmitError(
-            `${error instanceof Error ? error.message : 'Failed to save vehicle.'} ` +
-              `The vehicle rollback also failed: ${rollbackMessage}`,
+            `${error instanceof Error ? error.message : t('Failed to save vehicle.')} ` +
+              `${t('Please try again.')} ${rollbackMessage}`,
           );
           setIsSaving(false);
           return;
         }
       }
 
-      const message = error instanceof Error ? error.message : 'Failed to save vehicle.';
+      const message = error instanceof Error ? error.message : t('Failed to save vehicle.');
       const normalized = getSourceErrorMessage(error, message).toLowerCase();
 
       if (

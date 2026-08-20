@@ -1,5 +1,6 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { getDriverChatRoomByTransportRequestId } from '@/lib/api';
 import { getSourceErrorMessage } from '@/localization/response-message';
@@ -28,6 +29,7 @@ export function useDriverChatRoom(
   initialChatRoom?: ChatRoom | null,
   enabled = true,
 ): UseDriverChatRoomResult {
+  const { t } = useTranslation();
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(initialChatRoom ?? null);
   const [isLoadingChatRoom, setIsLoadingChatRoom] = useState<boolean>(false);
   const [chatRoomError, setChatRoomError] = useState<string>('');
@@ -42,7 +44,7 @@ export function useDriverChatRoom(
 
     if (!transportRequestId.trim()) {
       setChatRoom(null);
-      setChatRoomError('Missing transport request id.');
+      setChatRoomError(t('Missing transport request id.'));
       return;
     }
 
@@ -53,7 +55,7 @@ export function useDriverChatRoom(
       const nextRoom = await getDriverChatRoomByTransportRequestId(transportRequestId);
       setChatRoom(nextRoom);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load chat room.';
+      const message = error instanceof Error ? error.message : t('Failed to load chat room.');
       if (isMissingChatRoomError(getSourceErrorMessage(error, message))) {
         setChatRoom(null);
         setChatRoomError('');
@@ -63,7 +65,7 @@ export function useDriverChatRoom(
     } finally {
       setIsLoadingChatRoom(false);
     }
-  }, [enabled, transportRequestId]);
+  }, [enabled, t, transportRequestId]);
 
   useFocusEffect(
     useCallback(() => {

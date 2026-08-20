@@ -179,13 +179,13 @@ export default function VehicleDocumentsScreen() {
       await persistOnboardingDocumentsStatus(JSON.stringify(status));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to load document status.';
+        error instanceof Error ? error.message : t('Failed to load document status.');
       setLoadError(message);
     } finally {
       setHasHydratedDraft(true);
       setIsLoading(false);
     }
-  }, [applyDocumentsStatus]);
+  }, [applyDocumentsStatus, t]);
 
   useEffect(() => {
     if (!hasHydratedDraft) return;

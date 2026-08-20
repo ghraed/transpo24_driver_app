@@ -996,7 +996,7 @@ export default function SetAvailabilityScreen() {
             return (
               <View key={day.dayOfWeek} style={styles.dayCard}>
                 <View style={styles.switchRow}>
-                  <Text style={styles.dayTitle}>{day.label}</Text>
+                  <Text style={styles.dayTitle}>{t(day.label)}</Text>
                   <Switch
                     value={day.isAvailable}
                     onValueChange={(value) =>

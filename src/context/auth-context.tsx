@@ -31,7 +31,7 @@ import type {
 } from '@/types/auth';
 
 export type TrustedSessionContinuationResult =
-  | { status: 'restored' }
+  | { status: 'restored'; nextStep: DriverNextStep }
   | { status: 'invalid' }
   | { status: 'unavailable'; message: string };
 
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setDriver(renewed.driver);
       setHasRestoredStoredSession(true);
       setAccessToken(renewed.accessToken);
-      return { status: 'restored' };
+      return { status: 'restored', nextStep: renewed.nextStep };
     } catch (error) {
       if (!isAuthenticationFailure(error)) {
         return {

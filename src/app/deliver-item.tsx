@@ -378,7 +378,7 @@ export default function DeliverItemScreen() {
         }
 
         if (!isDeliveryPhaseRequestStatus(details.requestStatus)) {
-          setRouteBlockedMessage('Pickup must be confirmed and saved before opening delivery.');
+          setRouteBlockedMessage(t('Pickup must be confirmed and saved before opening delivery.'));
           setIsStartingDelivery(false);
           setIsLoadingLocation(false);
           return;
