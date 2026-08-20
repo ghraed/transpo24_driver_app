@@ -1,7 +1,7 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
@@ -42,10 +42,11 @@ function money(amount: number | undefined): string {
 
 export default function DriverProfileScreen() {
   const router = useRouter();
-  const { driver, signOut } = useAuth();
+  const { deleteAccount, driver, signOut } = useAuth();
   const [summary, setSummary] = useState<DriverEarningsSummary | null>(null);
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const loadProfileStats = useCallback(async () => {
     setIsLoading(true);
@@ -107,6 +108,23 @@ export default function DriverProfileScreen() {
   const rating = summary?.averageRating ?? 0;
   const fullName = `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim() || 'Driver';
 
+
+  const onDeleteAccount = (): void => {
+    if (isDeletingAccount) return;
+    Alert.alert('Delete account?', 'This permanently deletes your profile and documents, signs you out on all devices, and cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete account',
+        style: 'destructive',
+        onPress: () => {
+          setIsDeletingAccount(true);
+          void deleteAccount()
+            .then(() => router.replace('/'))
+            .catch((error) => Alert.alert('Unable to delete account', error instanceof Error ? error.message : 'Please try again.'))
+            .finally(() => setIsDeletingAccount(false));
+        },
+      },
+    ]);
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <StatusBar style="dark" />
@@ -211,6 +229,17 @@ export default function DriverProfileScreen() {
         >
           <DriverIcon name="logout" size={24} color="#FF3535" strokeWidth={1.8} />
           <Text style={styles.logoutText}>Log Out</Text>
+        </Pressable>
+        <Pressable
+          style={styles.deleteAccountButton}
+          onPress={onDeleteAccount}
+          disabled={isDeletingAccount}
+        >
+          {isDeletingAccount ? (
+            <ActivityIndicator color="#C82424" />
+          ) : (
+            <Text style={styles.deleteAccountText}>Delete account</Text>
+          )}
         </Pressable>
       </ScrollView>
 
@@ -350,4 +379,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   logoutText: { color: '#FF3535', fontSize: 16 },
+  deleteAccountButton: {
+    alignSelf: 'center',
+    minHeight: 44,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteAccountText: { color: '#C82424', fontSize: 14, textDecorationLine: 'underline' },
 });

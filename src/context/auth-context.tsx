@@ -4,6 +4,7 @@ import {
   getDriverAvailability,
   getDriverMe,
   continueDriverTrustedSession,
+  deleteDriverAccount,
   updateDriverAvailability,
   updateDriverProfile,
   verifyDriverPhoneVerificationCode,
@@ -44,6 +45,7 @@ interface AuthContextValue {
   authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
   continueWithTrustedSession: () => Promise<TrustedSessionContinuationResult>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
   saveDriverProfile: (payload: UpdateDriverProfilePayload) => Promise<DriverMeResponse>;
@@ -216,13 +218,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async (): Promise<void> => {
-    await clearAccessToken();
-    await clearDriverOnboardingDrafts();
+    await Promise.all([
+      clearAccessToken(),
+      clearTrustedDriverSession(),
+      clearDriverOnboardingDrafts(),
+    ]);
     setHasRestoredStoredSession(false);
     setAccessToken(null);
     setUser(null);
     setDriver(null);
   }, []);
+
+  const deleteAccount = useCallback(async (): Promise<void> => {
+    await deleteDriverAccount();
+    await signOut();
+  }, [signOut]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -234,6 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hasRestoredStoredSession,
       authenticateWithPhone,
       continueWithTrustedSession,
+      deleteAccount,
       signOut,
       restoreSession,
       refreshDriverMe,
@@ -245,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessToken,
       authenticateWithPhone,
       continueWithTrustedSession,
+      deleteAccount,
       driver,
       hasRestoredStoredSession,
       isRestoringSession,

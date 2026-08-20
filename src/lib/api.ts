@@ -669,6 +669,23 @@ export async function getDriverMe(): Promise<DriverMeResponse> {
   return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse driver profile response.');
 }
 
+export async function deleteDriverAccount(): Promise<void> {
+  const endpoint = `${getApiBaseUrl()}/auth/account`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'DELETE',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to delete account.');
+  }
+}
+
 export async function registerPushToken(payload: RegisterPushTokenPayload): Promise<void> {
   const endpoint = `${getApiBaseUrl()}/push-tokens`;
   let response: Response;
