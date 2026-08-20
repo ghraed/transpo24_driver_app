@@ -33,11 +33,12 @@ import {
   normalizeCountryCode,
 } from '@/lib/country-currency';
 import { nextStepToRoute } from '@/lib/onboarding-route';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type { CompleteDriverProfileForm, UpdateDriverProfilePayload } from '@/types/auth';
 
 const PHONE_PATTERN = /^[+0-9()\-\s]{7,20}$/;
 const PREFERRED_LANGUAGE_OPTIONS = Object.values(LANGUAGE_CONFIGS).map((language) => ({
-  label: language.label,
+  label: language.nativeLabel,
   value: language.code,
 })) satisfies { label: string; value: AppLanguage }[];
 
@@ -101,7 +102,7 @@ function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
 export default function CompleteProfileScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { driver, refreshDriverMe, saveDriverProfile, signOut } = useAuth();
   const testDefaults = useMemo(() => createTestCompleteProfileDefaults(), []);
 
@@ -340,7 +341,7 @@ export default function CompleteProfileScreen() {
       router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to save profile.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
 
       if (
         normalized.includes('invalid or expired token') ||
@@ -355,7 +356,7 @@ export default function CompleteProfileScreen() {
       if (normalized.includes('already in use') && normalized.includes('phone')) {
         setSubmitError(t('This phone number is already in use.'));
       } else if (normalized.includes('18')) {
-        setSubmitError('Driver must be at least 18 years old.');
+        setSubmitError(t('Driver must be at least 18 years old.'));
       } else {
         setSubmitError(message);
       }
@@ -368,7 +369,7 @@ export default function CompleteProfileScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#F1B900" />
-        <Text style={styles.loadingText}>Loading your profile...</Text>
+        <Text style={styles.loadingText}>{t('Loading your profile...')}</Text>
       </View>
     );
   }
@@ -378,7 +379,7 @@ export default function CompleteProfileScreen() {
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>{loadError}</Text>
         <Pressable style={styles.retryButton} onPress={() => void loadProfile()}>
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={styles.retryButtonText}>{t('Retry')}</Text>
         </Pressable>
       </View>
     );
@@ -460,7 +461,7 @@ export default function CompleteProfileScreen() {
             {normalizeCountryCode(form.countryCode)
               ? t('Offer currency will default to {{currency}} for {{country}}.', {
                   currency: currencyForCountryCode(form.countryCode),
-                  country: getCountryLabel(form.countryCode) || form.countryCode,
+                  country: getCountryLabel(form.countryCode, i18n.resolvedLanguage) || form.countryCode,
                 })
               : t('Select your country from the list.')}
           </Text>
@@ -503,7 +504,7 @@ export default function CompleteProfileScreen() {
             editable={!isIdOrResidencyNumberLocked}
           />
           {isIdOrResidencyNumberLocked ? (
-            <Text style={styles.helper}>This number is locked after it has been saved.</Text>
+            <Text style={styles.helper}>{t('This number is locked after it has been saved.')}</Text>
           ) : null}
         </View>
         {hasAttemptedSubmit && fieldErrors.idOrResidencyNumber ? <Text style={styles.errorText}>{fieldErrors.idOrResidencyNumber}</Text> : null}

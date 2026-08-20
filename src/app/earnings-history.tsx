@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import type { TFunction } from 'i18next';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,15 +10,17 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverIcon } from '@/components/driver-icon';
 import { getDriverEarnings } from '@/lib/api';
+import { useAppLanguage } from '@/localization/provider';
 import type { DriverEarning } from '@/types/auth';
 
-function formatMoney(amount: number, currency: string): string {
+function formatMoney(amount: number, currency: string, locale: string): string {
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
       minimumFractionDigits: 2,
@@ -28,40 +31,46 @@ function formatMoney(amount: number, currency: string): string {
   }
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null, locale: string): string {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function statusDetails(earning: DriverEarning): { label: string; detail: string; color: string; background: string } {
+function statusDetails(
+  earning: DriverEarning,
+  locale: string,
+  t: TFunction,
+): { label: string; detail: string; color: string; background: string } {
   switch (earning.status) {
     case 'PAID_OUT':
       return {
-        label: 'Paid',
-        detail: `Paid ${formatDate(earning.paidOutAt)}`,
+        label: t('Paid'),
+        detail: t('Paid {{date}}', { date: formatDate(earning.paidOutAt, locale) }),
         color: '#07883E',
         background: '#E5F7EC',
       };
     case 'AVAILABLE':
       return {
-        label: 'Ready for payout',
-        detail: 'Waiting for transfer',
+        label: t('Ready for payout'),
+        detail: t('Waiting for transfer'),
         color: '#A96900',
         background: '#FFF4D6',
       };
     case 'CANCELLED':
       return {
-        label: 'Cancelled',
-        detail: 'This earning was cancelled',
+        label: t('Cancelled'),
+        detail: t('This earning was cancelled'),
         color: '#C92828',
         background: '#FDE8E8',
       };
     default:
       return {
-        label: 'Pending',
-        detail: earning.availableAt ? `Available ${formatDate(earning.availableAt)}` : 'Being processed',
+        label: t('Pending'),
+        detail: earning.availableAt
+          ? t('Available {{date}}', { date: formatDate(earning.availableAt, locale) })
+          : t('Being processed'),
         color: '#6A7280',
         background: '#EEF0F3',
       };
@@ -70,6 +79,8 @@ function statusDetails(earning: DriverEarning): { label: string; detail: string;
 
 export default function EarningsHistoryScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { locale } = useAppLanguage();
   const [earnings, setEarnings] = useState<DriverEarning[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -83,12 +94,12 @@ export default function EarningsHistoryScreen() {
       const response = await getDriverEarnings();
       setEarnings(response.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load earnings history.');
+      setError(err instanceof Error ? err.message : t('Failed to load earnings history.'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -99,10 +110,10 @@ export default function EarningsHistoryScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <Pressable accessibilityLabel="Go back" hitSlop={12} onPress={() => router.back()}>
+        <Pressable accessibilityLabel={t('Go back')} hitSlop={12} onPress={() => router.back()}>
           <DriverIcon name="arrow-back" size={29} strokeWidth={2.2} />
         </Pressable>
-        <Text style={styles.title}>Earnings History</Text>
+        <Text style={styles.title}>{t('Earnings History')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -113,8 +124,8 @@ export default function EarningsHistoryScreen() {
         <View style={styles.introCard}>
           <DriverIcon name="money" size={25} color="#A96900" />
           <View style={styles.introTextWrap}>
-            <Text style={styles.introTitle}>Your app transactions</Text>
-            <Text style={styles.introText}>Track earnings and transfers made to your payout account.</Text>
+            <Text style={styles.introTitle}>{t('Your app transactions')}</Text>
+            <Text style={styles.introText}>{t('Track earnings and transfers made to your payout account.')}</Text>
           </View>
         </View>
 
@@ -124,31 +135,31 @@ export default function EarningsHistoryScreen() {
           <View style={styles.centerContent}>
             <Text style={styles.errorText}>{error}</Text>
             <Pressable style={styles.retryButton} onPress={() => void loadEarnings()}>
-              <Text style={styles.retryText}>Try Again</Text>
+              <Text style={styles.retryText}>{t('Try Again')}</Text>
             </Pressable>
           </View>
         ) : earnings.length === 0 ? (
           <View style={styles.emptyCard}>
             <DriverIcon name="money" size={35} color="#9CA6B5" />
-            <Text style={styles.emptyTitle}>No transactions yet</Text>
-            <Text style={styles.emptyText}>Completed jobs and payout transfers will appear here.</Text>
+            <Text style={styles.emptyTitle}>{t('No transactions yet')}</Text>
+            <Text style={styles.emptyText}>{t('Completed jobs and payout transfers will appear here.')}</Text>
           </View>
         ) : (
           <View style={styles.list}>
             {earnings.map((earning) => {
-              const status = statusDetails(earning);
+              const status = statusDetails(earning, locale, t);
               return (
                 <View key={earning.id} style={styles.transactionCard}>
                   <View style={styles.transactionTopRow}>
                     <View style={styles.transactionIcon}><DriverIcon name="money" size={22} color="#A96900" /></View>
                     <View style={styles.transactionInfo}>
-                      <Text style={styles.transactionTitle}>Trip earning</Text>
+                      <Text style={styles.transactionTitle}>{t('Trip earning')}</Text>
                       <Text style={styles.transactionDate}>{status.detail}</Text>
                     </View>
-                    <Text style={styles.amount}>+{formatMoney(earning.netAmount, earning.currency)}</Text>
+                    <Text style={styles.amount}>+{formatMoney(earning.netAmount, earning.currency, locale)}</Text>
                   </View>
                   <View style={styles.transactionFooter}>
-                    <Text style={styles.tripId}>Trip #{earning.tripId.slice(-8).toUpperCase()}</Text>
+                    <Text style={styles.tripId}>{t('Trip #{{id}}', { id: earning.tripId.slice(-8).toUpperCase() })}</Text>
                     <View style={[styles.statusBadge, { backgroundColor: status.background }]}>
                       <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                     </View>

@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
@@ -17,6 +18,8 @@ import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { DriverJobSwitcher } from '@/components/driver-job-switcher';
 import { readAccessToken } from '@/lib/auth-storage';
 import { getDriverRequestAlerts } from '@/lib/api';
+import { useAppLanguage } from '@/localization/provider';
+import { translateDynamicBatch } from '@/services/translation-service';
 import { connectSocket, onRequestDeleted } from '@/services/socketService';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 import { calculateDistanceMeters } from '@/utils/locationValidation';
@@ -33,7 +36,7 @@ function compactPlace(address: string | null | undefined, fallback: string): str
   return normalized.split(',')[0]?.trim() || normalized;
 }
 
-function serviceTitle(alert: DriverRequestAlertSummary): string {
+function sourceServiceTitle(alert: DriverRequestAlertSummary): string {
   return alert.service?.nameEn?.trim() || alert.item?.title?.trim() || 'Transport Request';
 }
 
@@ -57,16 +60,9 @@ function serviceIcon(alert: DriverRequestAlertSummary): DriverIconName {
   return 'truck';
 }
 
-function displayPrice(alert: PricedAlert): string {
+function displayPrice(alert: PricedAlert, locale: string): string {
   if (typeof alert.suggestedPrice !== 'number') return 'CHF —';
-  return `${alert.currency || 'CHF'} ${Math.round(alert.suggestedPrice).toLocaleString()}`;
-}
-
-function displayMatch(alert: PricedAlert): string {
-  if (typeof alert.matchPercent === 'number') {
-    return `${Math.round(alert.matchPercent)}% match`;
-  }
-  return 'Available';
+  return `${alert.currency || 'CHF'} ${Math.round(alert.suggestedPrice).toLocaleString(locale)}`;
 }
 
 function formatRouteDistance(alert: DriverRequestAlertSummary): string {
@@ -91,11 +87,14 @@ function formatRouteDistance(alert: DriverRequestAlertSummary): string {
 
 export default function ReceiveRequestAlertsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { language, locale } = useAppLanguage();
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [immediateOnly, setImmediateOnly] = useState(false);
+  const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
 
   const loadAlerts = useCallback(async (refreshing = false): Promise<void> => {
     if (refreshing) {
@@ -107,14 +106,32 @@ export default function ReceiveRequestAlertsScreen() {
 
     try {
       const response = await getDriverRequestAlerts();
-      setAlerts(response.alerts ?? []);
+      const nextAlerts = response.alerts ?? [];
+      setAlerts(nextAlerts);
+
+      if (language === 'ar') {
+        setTranslatedTitles(Object.fromEntries(nextAlerts.map((alert) => [
+          alert.alertId,
+          alert.service?.nameAr?.trim() || sourceServiceTitle(alert),
+        ])));
+      } else {
+        const translations = await translateDynamicBatch({
+          items: nextAlerts.map((alert) => ({
+            key: alert.alertId,
+            text: sourceServiceTitle(alert),
+            context: 'transport service or requested item title',
+          })),
+          targetLanguage: language,
+        });
+        setTranslatedTitles(translations);
+      }
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Unable to load requests.');
+      setError(requestError instanceof Error ? requestError.message : t('Unable to load requests.'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [language, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -149,9 +166,9 @@ export default function ReceiveRequestAlertsScreen() {
 
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.title}>Job Requests</Text>
+          <Text style={styles.title}>{t('Job Requests')}</Text>
           <Pressable
-            accessibilityLabel="Filter job requests"
+            accessibilityLabel={t('Filter job requests')}
             accessibilityState={{ checked: immediateOnly }}
             style={[styles.filterButton, immediateOnly && styles.filterButtonActive]}
             onPress={() => setImmediateOnly((value) => !value)}
@@ -165,13 +182,13 @@ export default function ReceiveRequestAlertsScreen() {
       {isLoading ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#F4B900" />
-          <Text style={styles.stateText}>Loading job requests…</Text>
+          <Text style={styles.stateText}>{t('Loading job requests…')}</Text>
         </View>
       ) : error ? (
         <View style={styles.centeredState}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryButton} onPress={() => void loadAlerts()}>
-            <Text style={styles.retryText}>Try again</Text>
+            <Text style={styles.retryText}>{t('Try again')}</Text>
           </Pressable>
         </View>
       ) : visibleAlerts.length === 0 ? (
@@ -183,9 +200,9 @@ export default function ReceiveRequestAlertsScreen() {
             <DriverIcon name="grid" size={34} color="#F1B800" />
           </View>
           <Text style={styles.emptyTitle}>
-            {immediateOnly ? 'No immediate requests' : 'No job requests right now'}
+            {immediateOnly ? t('No immediate requests') : t('No job requests right now')}
           </Text>
-          <Text style={styles.emptyText}>New matching transport jobs will appear here automatically.</Text>
+          <Text style={styles.emptyText}>{t('New matching transport jobs will appear here automatically.')}</Text>
         </ScrollView>
       ) : (
         <ScrollView
@@ -202,8 +219,8 @@ export default function ReceiveRequestAlertsScreen() {
         >
           {visibleAlerts.map((rawAlert) => {
             const alert = rawAlert as PricedAlert;
-            const pickup = compactPlace(alert.pickup.address, 'Pickup');
-            const dropoff = compactPlace(alert.dropoff.address, 'Dropoff');
+            const pickup = compactPlace(alert.pickup.address, t('Pickup'));
+            const dropoff = compactPlace(alert.dropoff.address, t('Dropoff'));
             const distance = formatRouteDistance(alert);
             const jobNumber = alert.requestId.slice(-6).toUpperCase();
 
@@ -224,12 +241,14 @@ export default function ReceiveRequestAlertsScreen() {
                   </View>
 
                   <View style={styles.cardHeading}>
-                    <Text style={styles.serviceTitle} numberOfLines={1}>{serviceTitle(alert)}</Text>
-                    <Text style={styles.jobId}>JOB-{jobNumber}</Text>
+                    <Text style={styles.serviceTitle} numberOfLines={1}>
+                      {translatedTitles[alert.alertId] || t(sourceServiceTitle(alert))}
+                    </Text>
+                    <Text style={styles.jobId}>{t('JOB-{{id}}', { id: jobNumber })}</Text>
                   </View>
 
                   <View style={styles.priceColumn}>
-                    <Text style={styles.price}>{displayPrice(alert)}</Text>
+                    <Text style={styles.price}>{displayPrice(alert, locale)}</Text>
                     <Text style={styles.distance}>{distance}</Text>
                   </View>
                 </View>
@@ -246,10 +265,14 @@ export default function ReceiveRequestAlertsScreen() {
                   <View style={styles.onWayRow}>
                     <DriverIcon name="location" size={18} color="#F6B900" strokeWidth={1.8} />
                     <Text style={styles.onWayText}>
-                      {alert.schedule?.isImmediate ? 'On your way' : 'Scheduled'}
+                      {alert.schedule?.isImmediate ? t('On your way') : t('Scheduled')}
                     </Text>
                   </View>
-                  <Text style={styles.matchText}>{displayMatch(alert)}</Text>
+                  <Text style={styles.matchText}>
+                    {typeof alert.matchPercent === 'number'
+                      ? t('{{percentage}}% match', { percentage: Math.round(alert.matchPercent) })
+                      : t('Available')}
+                  </Text>
                 </View>
               </Pressable>
             );

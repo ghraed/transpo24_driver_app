@@ -88,7 +88,7 @@ export default function DriverHomeScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
-        <Pressable accessibilityLabel="Go back" hitSlop={12} onPress={() => router.back()}>
+        <Pressable accessibilityLabel={t('Go back')} hitSlop={12} onPress={() => router.back()}>
           <DriverIcon name="arrow-back" size={29} strokeWidth={2.2} />
         </Pressable>
         <Text style={styles.title}>{t('Settings')}</Text>
@@ -96,7 +96,7 @@ export default function DriverHomeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionLabel}>Availability</Text>
+        <Text style={styles.sectionLabel}>{t('Availability')}</Text>
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
             <View style={styles.rowCopy}>

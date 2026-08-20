@@ -3,6 +3,8 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAppLanguage } from '@/localization/provider';
+
 const COUNTRY_CODES = [
   'AD', 'AL', 'AM', 'AT', 'AX', 'AZ', 'BA', 'BE', 'BG', 'BY', 'CH', 'CY', 'CZ', 'DE', 'DK',
   'EE', 'ES', 'FI', 'FO', 'FR', 'GB', 'GE', 'GG', 'GI', 'GR', 'HR', 'HU', 'IE', 'IM', 'IS',
@@ -97,10 +99,10 @@ function countryFlag(countryCode: string): string {
     );
 }
 
-function countryName(countryCode: CountryCode): string {
+function countryName(countryCode: CountryCode, locale: string): string {
   try {
     return (
-      new Intl.DisplayNames(undefined, { type: 'region' }).of(countryCode) ||
+      new Intl.DisplayNames([locale], { type: 'region' }).of(countryCode) ||
       COUNTRY_LABELS[countryCode]
     );
   } catch {
@@ -108,30 +110,30 @@ function countryName(countryCode: CountryCode): string {
   }
 }
 
-const COUNTRY_OPTIONS: CountryOption[] = COUNTRY_CODES
-  .map((code) => ({ code, name: countryName(code) }))
-  .sort((left, right) => left.name.localeCompare(right.name));
-
 export function CountryPicker({ value, onChange }: Props) {
   const { t } = useTranslation();
+  const { locale } = useAppLanguage();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   const countries = useMemo<CountryOption[]>(() => {
     const normalizedSearch = search.trim().toLowerCase();
-    return COUNTRY_OPTIONS.filter(
+    return COUNTRY_CODES
+      .map((code) => ({ code, name: countryName(code, locale) }))
+      .sort((left, right) => left.name.localeCompare(right.name, locale))
+      .filter(
       (item) =>
         !normalizedSearch ||
         item.name.toLowerCase().includes(normalizedSearch) ||
         item.code.toLowerCase().includes(normalizedSearch),
     );
-  }, [search]);
+  }, [locale, search]);
 
   const selectedLabel = useMemo(() => {
     const normalized = value.trim().toUpperCase();
     const selected = COUNTRY_CODES.find((code) => code === normalized);
-    return selected ? countryName(selected) : '';
-  }, [value]);
+    return selected ? countryName(selected, locale) : '';
+  }, [locale, value]);
 
   return (
     <>

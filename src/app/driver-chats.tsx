@@ -2,27 +2,31 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
 import { DriverIcon } from '@/components/driver-icon';
 import { getDriverChatRooms } from '@/lib/api';
+import { useAppLanguage } from '@/localization/provider';
 import type { ChatRoom } from '@/types/chat';
 
-function messagePreview(room: ChatRoom): string {
+function messagePreview(room: ChatRoom, photoLabel: string, emptyLabel: string): string {
   if (room.lastMessage?.body) return room.lastMessage.body;
-  if (room.lastMessage?.type === 'IMAGE') return 'Photo';
-  return 'Open this conversation';
+  if (room.lastMessage?.type === 'IMAGE') return photoLabel;
+  return emptyLabel;
 }
 
-function messageTime(room: ChatRoom): string {
+function messageTime(room: ChatRoom, locale: string): string {
   const date = new Date(room.lastMessage?.createdAt || room.updatedAt);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: false });
+  return date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit', hour12: false });
 }
 
 export default function DriverChatsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { locale } = useAppLanguage();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,7 +48,7 @@ export default function DriverChatsScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <StatusBar style="dark" />
       <View style={styles.header}>
-        <Text style={styles.title}>Chat</Text>
+        <Text style={styles.title}>{t('Chat')}</Text>
       </View>
 
       {isLoading ? (
@@ -54,8 +58,8 @@ export default function DriverChatsScreen() {
       ) : rooms.length === 0 ? (
         <View style={styles.centered}>
           <View style={styles.emptyIcon}><DriverIcon name="chat" size={38} color="#F2B900" /></View>
-          <Text style={styles.emptyTitle}>No conversations yet</Text>
-          <Text style={styles.emptyText}>Chats become available after a customer accepts your offer.</Text>
+          <Text style={styles.emptyTitle}>{t('No conversations yet')}</Text>
+          <Text style={styles.emptyText}>{t('Chats become available after a customer accepts your offer.')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -70,10 +74,12 @@ export default function DriverChatsScreen() {
               </View>
               <View style={styles.chatCopy}>
                 <View style={styles.chatTop}>
-                  <Text style={styles.chatTitle}>Job {room.transportRequestId.slice(-6).toUpperCase()}</Text>
-                  <Text style={styles.time}>{messageTime(room)}</Text>
+                  <Text style={styles.chatTitle}>{t('Job {{id}}', { id: room.transportRequestId.slice(-6).toUpperCase() })}</Text>
+                  <Text style={styles.time}>{messageTime(room, locale)}</Text>
                 </View>
-                <Text style={styles.preview} numberOfLines={1}>{messagePreview(room)}</Text>
+                <Text style={styles.preview} numberOfLines={1}>
+                  {messagePreview(room, t('Photo'), t('Open this conversation'))}
+                </Text>
               </View>
               {(room.unreadCount ?? 0) > 0 ? (
                 <View style={styles.unread}><Text style={styles.unreadText}>{room.unreadCount}</Text></View>

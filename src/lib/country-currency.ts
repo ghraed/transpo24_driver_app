@@ -70,14 +70,14 @@ export function currencyForCountryCode(countryCode?: string | null): string {
   return 'USD';
 }
 
-export function getCountryLabel(countryCode?: string | null): string {
+export function getCountryLabel(countryCode?: string | null, locale?: string): string {
   const normalized = normalizeCountryCode(countryCode);
   if (!normalized) {
     return '';
   }
 
   try {
-    return new Intl.DisplayNames(undefined, { type: 'region' }).of(normalized) || normalized;
+    return new Intl.DisplayNames(locale ? [locale] : undefined, { type: 'region' }).of(normalized) || normalized;
   } catch {
     return normalized;
   }

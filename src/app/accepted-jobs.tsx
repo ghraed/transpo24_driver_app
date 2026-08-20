@@ -21,6 +21,7 @@ import { getDriverAcceptedJobs, getDriverChatRooms } from '@/lib/api';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { getRequestStatusLabel } from '@/lib/request-status-display';
 import { translateDynamicBatch } from '@/services/translation-service';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type { DriverAcceptedJobSummary } from '@/types/auth';
 import type { ChatRoom } from '@/types/chat';
 
@@ -170,7 +171,7 @@ export default function AcceptedJobsScreen() {
         );
       } catch (requestError) {
         const message = requestError instanceof Error ? requestError.message : t('Failed to load accepted jobs.');
-        const normalized = message.toLowerCase();
+        const normalized = getSourceErrorMessage(requestError, message).toLowerCase();
         if (
           normalized.includes('invalid or expired token') ||
           normalized.includes('authorization') ||

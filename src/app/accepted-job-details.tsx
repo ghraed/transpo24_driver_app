@@ -27,6 +27,7 @@ import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/req
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type { DriverAcceptedJobDetailsResponse } from '@/types/auth';
 
 function formatDate(value: string | null): string {
@@ -177,7 +178,7 @@ export default function AcceptedJobDetailsScreen() {
       setDetails(response);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : t('Failed to load accepted job details.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(requestError, message).toLowerCase();
       if (
         normalized.includes('invalid or expired token') ||
         normalized.includes('authorization') ||

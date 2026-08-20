@@ -40,6 +40,7 @@ import {
 import { translateDynamicText } from '@/services/translation-service';
 import { LANGUAGE_CONFIGS, SUPPORTED_LANGUAGES, type AppLanguage } from '@/localization/languages';
 import { useAppLanguage } from '@/localization/provider';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type { ChatMessage, ChatMessageReadEventPayload, ChatRoom } from '@/types/chat';
 
 const FIRST_PAGE = 1;
@@ -272,7 +273,8 @@ export default function ChatScreen() {
       setSendError('');
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to load chat.');
-      if (isUnauthorizedTokenError(message) && !isChatAccessError(message)) {
+      const sourceMessage = getSourceErrorMessage(error, message);
+      if (isUnauthorizedTokenError(sourceMessage) && !isChatAccessError(sourceMessage)) {
         await signOut();
         router.replace('/');
         return;
@@ -297,7 +299,7 @@ export default function ChatScreen() {
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to mark messages as read.');
-      if (!isChatAccessError(message)) {
+      if (!isChatAccessError(getSourceErrorMessage(error, message))) {
         setSocketNotice(message);
       }
     }

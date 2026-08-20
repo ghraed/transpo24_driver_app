@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import { getDriverChatRoomByTransportRequestId } from '@/lib/api';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type { ChatRoom } from '@/types/chat';
 
 type UseDriverChatRoomResult = {
@@ -53,7 +54,7 @@ export function useDriverChatRoom(
       setChatRoom(nextRoom);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load chat room.';
-      if (isMissingChatRoomError(message)) {
+      if (isMissingChatRoomError(getSourceErrorMessage(error, message))) {
         setChatRoom(null);
         setChatRoomError('');
       } else {

@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverBottomNav } from '@/components/driver-bottom-nav';
@@ -43,6 +44,7 @@ function asRegion(coordinate: Coordinate) {
 
 export default function DriverMapScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const MapView = NativeMapView;
   const MapMarker = NativeMarker;
   const mapRef = useRef<any>(null);
@@ -77,7 +79,7 @@ export default function DriverMapScreen() {
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (permission.status !== Location.PermissionStatus.GRANTED) {
-        setLocationMessage('Location permission is needed to center the map on you.');
+        setLocationMessage(t('Location permission is needed to center the map on you.'));
         return undefined;
       }
 
@@ -101,17 +103,17 @@ export default function DriverMapScreen() {
           timeInterval: 5_000,
         },
         (location) => centerOnDriver(location.coords),
-        () => setLocationMessage('Unable to update your current location.'),
+        () => setLocationMessage(t('Unable to update your current location.')),
       );
 
       return () => subscription.remove();
     } catch {
-      setLocationMessage('Unable to get your current location. Check that location services are enabled.');
+      setLocationMessage(t('Unable to get your current location. Check that location services are enabled.'));
       return undefined;
     } finally {
       setIsLocating(false);
     }
-  }, [centerOnDriver]);
+  }, [centerOnDriver, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -175,7 +177,7 @@ export default function DriverMapScreen() {
                 {hasCoordinate(alert.pickup) ? (
                   <MapMarker
                     coordinate={alert.pickup}
-                    title="Pickup"
+                    title={t('Pickup')}
                     anchor={{ x: 0.5, y: 0.5 }}
                     onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })}
                   >
@@ -192,7 +194,7 @@ export default function DriverMapScreen() {
                 {hasCoordinate(alert.dropoff) ? (
                   <MapMarker
                     coordinate={alert.dropoff}
-                    title="Dropoff"
+                    title={t('Dropoff')}
                     anchor={{ x: 0.5, y: 0.5 }}
                     onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })}
                   >
@@ -209,7 +211,7 @@ export default function DriverMapScreen() {
               </React.Fragment>
             ))}
             {driverLocation ? (
-              <MapMarker coordinate={driverLocation} title="Your current location" anchor={{ x: 0.5, y: 0.5 }}>
+              <MapMarker coordinate={driverLocation} title={t('Your current location')} anchor={{ x: 0.5, y: 0.5 }}>
                 <View style={styles.driverMarker}>
                   <SymbolView
                     name={{ ios: 'car.fill', android: 'directions_car', web: 'directions_car' }}
@@ -244,7 +246,7 @@ export default function DriverMapScreen() {
           <Pressable style={styles.roundButton} onPress={() => router.push('/driver-profile')}>
             <DriverIcon name="profile" size={27} strokeWidth={1.9} />
           </Pressable>
-          <Text style={styles.title}>Available Jobs</Text>
+          <Text style={styles.title}>{t('Available Jobs')}</Text>
           <Pressable style={styles.roundButton} onPress={() => router.push('/receive-requests')}>
             <DriverIcon name="filter" size={27} strokeWidth={1.9} />
           </Pressable>
@@ -260,13 +262,13 @@ export default function DriverMapScreen() {
           ) : (
             <View style={[styles.onlineDot, !availability?.isOnline && styles.offlineDot]} />
           )}
-          <Text style={styles.onlineText}>{availability?.isOnline ? 'Online' : 'Offline'}</Text>
+          <Text style={styles.onlineText}>{availability?.isOnline ? t('Online') : t('Offline')}</Text>
         </Pressable>
 
         {locationMessage ? <Text style={styles.locationMessage}>{locationMessage}</Text> : null}
 
         <Pressable
-          accessibilityLabel="Center map on my current location"
+          accessibilityLabel={t('Center map on my current location')}
           style={styles.locationButton}
           onPress={() => void startLocationTracking()}
         >

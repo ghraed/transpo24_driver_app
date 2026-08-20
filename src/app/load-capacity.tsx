@@ -17,6 +17,7 @@ import {
 
 import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { useAuth } from '@/context/auth-context';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import {
   getDriverDocumentsStatus,
   getDriverVehicles,
@@ -226,7 +227,7 @@ export default function LoadCapacityScreen() {
       try {
         capacity = await getVehicleLoadCapacity(vehicleId);
       } catch (error) {
-        const message = error instanceof Error ? error.message.toLowerCase() : '';
+        const message = getSourceErrorMessage(error).toLowerCase();
         if (!message.includes('not found')) {
           throw error;
         }
@@ -240,7 +241,7 @@ export default function LoadCapacityScreen() {
       setForm(nextForm);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to load vehicle capacity.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
         router.replace('/');
@@ -426,7 +427,7 @@ export default function LoadCapacityScreen() {
       }, 500);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to save load capacity.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
         router.replace('/');

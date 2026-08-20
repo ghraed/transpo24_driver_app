@@ -1,6 +1,8 @@
 import { io, type Socket } from 'socket.io-client';
 
 import { getBackendSocketUrl } from '@/config/backend';
+import i18n from '@/localization/i18n';
+import { localizeResponseMessage } from '@/localization/response-message';
 import type {
   ChatMessage,
   ChatMessageCreatedEventPayload,
@@ -36,6 +38,16 @@ export type RequestDeletedPayload = {
 let socket: Socket | null = null;
 let currentToken: string | null = null;
 
+function rejectLocalized(
+  reject: (reason?: unknown) => void,
+  sourceMessage: string,
+  fallback: string,
+): void {
+  void localizeResponseMessage(sourceMessage, fallback).then((localized) => {
+    reject(Object.assign(new Error(localized), { sourceMessage }));
+  });
+}
+
 type SocketAckResponse = {
   tripId?: string;
   room?: string;
@@ -65,14 +77,14 @@ function ensureSocketUrl(): string {
 
 function getSocket(): Socket {
   if (!socket) {
-    throw new Error('Socket is not connected. Call connectSocket first.');
+    throw new Error(i18n.t('Socket is not connected. Call connectSocket first.'));
   }
   return socket;
 }
 
 export function connectSocket(token: string): void {
   if (!token.trim()) {
-    throw new Error('Cannot connect socket without auth token.');
+    throw new Error(i18n.t('Cannot connect socket without auth token.'));
   }
 
   const url = ensureSocketUrl();
@@ -94,6 +106,7 @@ export function connectSocket(token: string): void {
     auth: { token },
     extraHeaders: {
       Authorization: `Bearer ${token}`,
+      'Accept-Language': i18n.resolvedLanguage ?? i18n.language ?? 'en',
     },
   });
 }
@@ -122,12 +135,12 @@ export function joinTripRoomWithAck(
       { tripId },
       (error: Error | null, response?: SocketAckResponse) => {
         if (error) {
-          reject(new Error(error.message || 'joinTripRoom timed out.'));
+          rejectLocalized(reject, error.message || 'joinTripRoom timed out.', 'joinTripRoom timed out.');
           return;
         }
 
         if (!response || typeof response.tripId !== 'string' || typeof response.room !== 'string') {
-          reject(new Error('joinTripRoom ack payload is invalid.'));
+          reject(new Error(i18n.t('joinTripRoom ack payload is invalid.')));
           return;
         }
 
@@ -161,12 +174,12 @@ export function joinChatRoomWithAck(
       { roomId },
       (error: Error | null, response?: ChatJoinAckResponse) => {
         if (error) {
-          reject(new Error(error.message || 'chat.join timed out.'));
+          rejectLocalized(reject, error.message || 'chat.join timed out.', 'chat.join timed out.');
           return;
         }
 
         if (!response || typeof response.roomId !== 'string') {
-          reject(new Error('chat.join ack payload is invalid.'));
+          reject(new Error(i18n.t('chat.join ack payload is invalid.')));
           return;
         }
 
@@ -196,12 +209,12 @@ export function sendChatMessageWithAck(
       },
       (error: Error | null, response?: SendChatMessageResponse | ChatMessage) => {
         if (error) {
-          reject(new Error(error.message || 'chat.message.send timed out.'));
+          rejectLocalized(reject, error.message || 'chat.message.send timed out.', 'chat.message.send timed out.');
           return;
         }
 
         if (!response) {
-          reject(new Error('chat.message.send ack payload is invalid.'));
+          reject(new Error(i18n.t('chat.message.send ack payload is invalid.')));
           return;
         }
 
@@ -257,7 +270,7 @@ export function emitDriverArrivedPickupWithAck(
       payload,
       (error: Error | null) => {
         if (error) {
-          reject(new Error(error.message || 'driverArrivedPickup timed out.'));
+          rejectLocalized(reject, error.message || 'driverArrivedPickup timed out.', 'driverArrivedPickup timed out.');
           return;
         }
 
@@ -360,7 +373,7 @@ export function waitForSocketConnection(timeoutMs = 5000): Promise<string> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       cleanup();
-      reject(new Error('Socket connection timeout.'));
+      rejectLocalized(reject, 'Socket connection timeout.', 'Socket connection timeout.');
     }, timeoutMs);
 
     const handleConnect = (): void => {
@@ -370,7 +383,7 @@ export function waitForSocketConnection(timeoutMs = 5000): Promise<string> {
 
     const handleError = (error: Error): void => {
       cleanup();
-      reject(new Error(error.message || 'Socket connect error.'));
+      rejectLocalized(reject, error.message || 'Socket connect error.', 'Socket connect error.');
     };
 
     const cleanup = (): void => {
@@ -386,7 +399,10 @@ export function waitForSocketConnection(timeoutMs = 5000): Promise<string> {
 
 export function onSocketError(callback: (message: string) => void): () => void {
   const instance = getSocket();
-  const handler = (error: Error): void => callback(error.message || 'Socket connection error.');
+  const handler = (error: Error): void => {
+    const sourceMessage = error.message || 'Socket connection error.';
+    void localizeResponseMessage(sourceMessage, 'Socket connection error.').then(callback);
+  };
   instance.on('connect_error', handler);
   return () => instance.off('connect_error', handler);
 }

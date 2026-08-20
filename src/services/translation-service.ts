@@ -2,6 +2,7 @@ import { getBackendApiBaseUrl } from '@/config/backend';
 import { readAccessToken } from '@/lib/auth-storage';
 import { DEFAULT_LANGUAGE, type AppLanguage } from '@/localization/languages';
 import { getCachedTranslation, setCachedTranslation } from '@/localization/storage';
+import i18n from '@/localization/i18n';
 
 export interface TranslateTextRequest {
   text: string;
@@ -32,6 +33,7 @@ async function getHeaders(): Promise<HeadersInit> {
   const token = await readAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language': i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LANGUAGE,
   };
 
   if (token) {

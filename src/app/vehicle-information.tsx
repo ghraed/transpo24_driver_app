@@ -40,6 +40,7 @@ import {
 } from '@/lib/vehicle-catalog';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import i18n from '@/localization/i18n';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
   CreateDriverVehicleForm,
   CreateDriverVehiclePayload,
@@ -777,7 +778,7 @@ export default function VehicleInformationScreen() {
       }
 
       const message = error instanceof Error ? error.message : 'Failed to save vehicle.';
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
 
       if (
         normalized.includes('invalid or expired token') ||

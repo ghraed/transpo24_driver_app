@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-nativ
 import { useTranslation } from 'react-i18next';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { EnvironmentBanner } from '@/components/environment-banner';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { LocalizationProvider, useAppLanguage } from '@/localization/provider';
 import {
@@ -121,7 +122,10 @@ function AppNavigator() {
   }
 
   return (
-    <Stack>
+    <View style={styles.appContainer}>
+      <EnvironmentBanner />
+      <View style={styles.navigator}>
+        <Stack>
       <Stack.Screen name="index" options={{ title: t('Driver Login') }} />
       <Stack.Screen name="register" options={{ title: t('Driver Registration') }} />
       <Stack.Screen name="verify-phone" options={{ title: t('Verify Phone') }} />
@@ -155,7 +159,9 @@ function AppNavigator() {
         options={{ title: t('Waiting for Customer Response') }}
       />
       <Stack.Screen name="explore" options={{ title: t('Explore') }} />
-    </Stack>
+        </Stack>
+      </View>
+    </View>
   );
 }
 
@@ -175,10 +181,16 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+  },
   loaderContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
+  },
+  navigator: {
+    flex: 1,
   },
 });

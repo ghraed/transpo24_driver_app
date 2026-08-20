@@ -43,6 +43,7 @@ import {
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import i18n from '@/localization/i18n';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
   DayOfWeek,
   DriverAvailabilityForm,
@@ -720,7 +721,7 @@ export default function SetAvailabilityScreen() {
       router.replace(nextStepToRoute(response.nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to save availability.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
 
       if (
         normalized.includes('invalid or expired token') ||

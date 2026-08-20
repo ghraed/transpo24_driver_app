@@ -1,6 +1,7 @@
 import { usePathname, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
@@ -24,6 +25,7 @@ export function DriverBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   return (
     <View style={[styles.bar, { height: DRIVER_BOTTOM_NAV_HEIGHT + insets.bottom, paddingBottom: insets.bottom }]}> 
@@ -43,7 +45,7 @@ export function DriverBottomNav() {
             style={({ pressed }) => [styles.tab, framed && styles.selectedTab, pressed && styles.pressed]}
           >
             <DriverIcon name={tab.icon} size={29} color={color} strokeWidth={1.8} />
-            <Text style={[styles.label, selected && styles.selectedLabel]}>{tab.label}</Text>
+            <Text style={[styles.label, selected && styles.selectedLabel]}>{t(tab.label)}</Text>
           </Pressable>
         );
       })}

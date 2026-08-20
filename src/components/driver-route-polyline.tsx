@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { NativePolyline } from '@/components/native-maps';
+import i18n from '@/localization/i18n';
+import { localizeResponseMessage } from '@/localization/response-message';
 import type { AddressedLocation, GeoLocation } from '@/types/trip.types';
 
 type GoogleDirectionsRoute = {
@@ -73,6 +75,7 @@ function buildDirectionsUrl(origin: GeoLocation, destination: AddressedLocation,
     destination: `${destination.latitude},${destination.longitude}`,
     key: apikey,
     mode: 'driving',
+    language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
   });
 
   return `https://maps.googleapis.com/maps/api/directions/json?${params.toString()}`;
@@ -117,14 +120,20 @@ export function DriverRoutePolyline({
 
         if (data.status !== 'OK') {
           setCoordinates([]);
-          onError?.(`Directions request failed: ${data.status ?? 'UNKNOWN_ERROR'}`);
+          onError?.(await localizeResponseMessage(
+            `Directions request failed: ${data.status ?? 'UNKNOWN_ERROR'}`,
+            'Directions request failed.',
+          ));
           return;
         }
 
         const points = data.routes?.[0]?.overview_polyline?.points;
         if (!points) {
           setCoordinates([]);
-          onError?.('Directions response did not include a route path.');
+          onError?.(await localizeResponseMessage(
+            'Directions response did not include a route path.',
+            'Directions response did not include a route path.',
+          ));
           return;
         }
 
@@ -135,7 +144,10 @@ export function DriverRoutePolyline({
         }
 
         setCoordinates([]);
-        onError?.('Unable to fetch route directions.');
+        onError?.(await localizeResponseMessage(
+          'Unable to fetch route directions.',
+          'Unable to fetch route directions.',
+        ));
       }
     };
 

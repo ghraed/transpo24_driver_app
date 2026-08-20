@@ -21,6 +21,7 @@ import { isSupportedLanguage, type AppLanguage } from '@/localization/languages'
 import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { emitDriverLocationUpdate, onItemDelivered, onTripStatusUpdated } from '@/services/socketService';
 import { translateDynamicBatch } from '@/services/translation-service';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import { deliverItem, startDelivery } from '@/services/tripService';
 import type { LocalDocumentAsset } from '@/types/auth';
 import type { AddressedLocation, DeliverItemRequest, GeoLocation } from '@/types/trip.types';
@@ -261,7 +262,7 @@ export default function DeliverItemScreen() {
       setRouteBlockedMessage('');
     } catch (error) {
       const message = error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to start delivery.');
-      const normalizedMessage = message.toLowerCase();
+      const normalizedMessage = getSourceErrorMessage(error, message).toLowerCase();
 
       if (
         normalizedMessage.includes('already') ||
@@ -394,7 +395,7 @@ export default function DeliverItemScreen() {
         await ensureDriverGoingToDropoff(currentRequestStatus);
       } catch (error) {
         const message = error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to start delivery.');
-        const normalizedMessage = message.toLowerCase();
+        const normalizedMessage = getSourceErrorMessage(error, message).toLowerCase();
         if (
           normalizedMessage.includes('trip status must be item_picked_up before starting delivery') ||
           normalizedMessage.includes('pickup must be confirmed')
@@ -708,7 +709,7 @@ export default function DeliverItemScreen() {
         response = await deliverItem(tripId, payload);
       } catch (error) {
         const message = error instanceof Error ? error.message : t('Failed to confirm delivery.');
-        const normalizedMessage = message.toLowerCase();
+        const normalizedMessage = getSourceErrorMessage(error, message).toLowerCase();
         if (
           normalizedMessage.includes('trip status must be driver_going_to_dropoff before confirming delivery')
         ) {

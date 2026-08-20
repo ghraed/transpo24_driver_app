@@ -1,5 +1,7 @@
 import { readAccessToken } from './auth-storage';
 import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
+import { getSourceErrorMessage, localizeResponseMessage } from '@/localization/response-message';
+import i18n from '@/localization/i18n';
 import type { RegisterPushTokenPayload } from '@/notifications/types';
 import type {
   AcceptDriverRequestAlertResponse,
@@ -55,6 +57,7 @@ export class ApiResponseError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly sourceMessage: string = message,
   ) {
     super(message);
     this.name = 'ApiResponseError';
@@ -173,35 +176,49 @@ function parsePossiblyMalformedJson<T>(rawText: string): T {
 }
 
 async function parseError(response: Response, fallback: string): Promise<Error> {
-  const createError = (message: string): ApiResponseError =>
-    new ApiResponseError(message, response.status);
+  const createError = async (sourceMessage: string): Promise<ApiResponseError> =>
+    new ApiResponseError(
+      await localizeResponseMessage(sourceMessage, fallback),
+      response.status,
+      sourceMessage,
+    );
 
   try {
     const rawText = await response.text();
     if (!rawText) {
-      return createError(fallback);
+      return await createError(fallback);
     }
     try {
       const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
-      return createError(normalizeErrorMessage(errorData, fallback));
+      return await createError(normalizeErrorMessage(errorData, fallback));
     } catch {
-      return createError(normalizeBackendErrorMessage(rawText, fallback));
+      return await createError(normalizeBackendErrorMessage(rawText, fallback));
     }
   } catch {
-    return createError(fallback);
+    return await createError(fallback);
   }
 }
 
-function buildErrorFromRawText(rawText: string, fallback: string): Error {
+async function buildErrorFromRawText(rawText: string, fallback: string): Promise<Error> {
   if (!rawText) {
-    return new Error(fallback);
+    return new Error(await localizeResponseMessage(fallback, fallback));
   }
 
   try {
     const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
-    return new Error(normalizeErrorMessage(errorData, fallback));
+    const sourceMessage = normalizeErrorMessage(errorData, fallback);
+    return new ApiResponseError(
+      await localizeResponseMessage(sourceMessage, fallback),
+      0,
+      sourceMessage,
+    );
   } catch {
-    return new Error(normalizeBackendErrorMessage(rawText, fallback));
+    const sourceMessage = normalizeBackendErrorMessage(rawText, fallback);
+    return new ApiResponseError(
+      await localizeResponseMessage(sourceMessage, fallback),
+      0,
+      sourceMessage,
+    );
   }
 }
 
@@ -217,13 +234,18 @@ function isMissingChatRouteResponse(status: number, rawText: string): boolean {
 async function parseJsonResponse<T>(response: Response, fallback: string): Promise<T> {
   const rawText = await response.text();
   if (!rawText) {
-    throw new Error(fallback);
+    throw Object.assign(new Error(await localizeResponseMessage(fallback, fallback)), {
+      sourceMessage: fallback,
+    });
   }
 
   try {
     return parsePossiblyMalformedJson<T>(rawText);
   } catch {
-    throw new Error(`${fallback} (received non-JSON response)`);
+    const sourceMessage = `${fallback} (received non-JSON response)`;
+    throw Object.assign(new Error(await localizeResponseMessage(sourceMessage, fallback)), {
+      sourceMessage,
+    });
   }
 }
 
@@ -310,6 +332,7 @@ function uploadFormDataWithXhr(
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
+    xhr.setRequestHeader('Accept-Language', i18n.resolvedLanguage ?? i18n.language ?? 'en');
 
     xhr.onload = () => {
       resolve({
@@ -412,6 +435,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const token = await readAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language': i18n.resolvedLanguage ?? i18n.language ?? 'en',
   };
 
   if (token) {
@@ -1220,17 +1244,19 @@ export async function uploadDriverVehicleDocuments(
 
   if (xhrResponse.status < 200 || xhrResponse.status >= 300) {
     const raw = xhrResponse.responseText?.trim();
-    if (!raw) {
-      throw new Error('Failed to upload driver vehicle documents.');
-    }
+    const fallback = 'Failed to upload driver vehicle documents.';
+    let sourceMessage = fallback;
     try {
-      const errorData = JSON.parse(raw) as ApiErrorResponse;
-      throw new Error(
-        normalizeErrorMessage(errorData, 'Failed to upload driver vehicle documents.'),
-      );
+      if (raw) {
+        const errorData = JSON.parse(raw) as ApiErrorResponse;
+        sourceMessage = normalizeErrorMessage(errorData, fallback);
+      }
     } catch {
-      throw new Error(raw);
+      sourceMessage = raw || fallback;
     }
+    throw Object.assign(new Error(await localizeResponseMessage(sourceMessage, fallback)), {
+      sourceMessage,
+    });
   }
 
   const successRaw = xhrResponse.responseText?.trim();
@@ -1316,15 +1342,19 @@ export async function uploadDriverDocument(payload: {
 
   if (xhrResponse.status < 200 || xhrResponse.status >= 300) {
     const raw = xhrResponse.responseText?.trim();
-    if (!raw) {
-      throw new Error('Failed to upload driver document.');
-    }
+    const fallback = 'Failed to upload driver document.';
+    let sourceMessage = fallback;
     try {
-      const errorData = JSON.parse(raw) as ApiErrorResponse;
-      throw new Error(normalizeErrorMessage(errorData, 'Failed to upload driver document.'));
+      if (raw) {
+        const errorData = JSON.parse(raw) as ApiErrorResponse;
+        sourceMessage = normalizeErrorMessage(errorData, fallback);
+      }
     } catch {
-      throw new Error(raw);
+      sourceMessage = raw || fallback;
     }
+    throw Object.assign(new Error(await localizeResponseMessage(sourceMessage, fallback)), {
+      sourceMessage,
+    });
   }
 
   const successRaw = xhrResponse.responseText?.trim();
@@ -1760,8 +1790,7 @@ export async function getDriverChatRoomByTransportRequestId(
           return matchingRoom;
         }
       } catch (fallbackError) {
-        const fallbackMessage =
-          fallbackError instanceof Error ? fallbackError.message.toLowerCase() : '';
+        const fallbackMessage = getSourceErrorMessage(fallbackError).toLowerCase();
         if (!fallbackMessage.includes('cannot get') && !fallbackMessage.includes('not found')) {
           throw fallbackError;
         }
@@ -1770,7 +1799,7 @@ export async function getDriverChatRoomByTransportRequestId(
       throw new Error('No chat room is available for this job yet.');
     }
 
-    throw buildErrorFromRawText(rawText, 'Failed to load chat room.');
+    throw await buildErrorFromRawText(rawText, 'Failed to load chat room.');
   }
 
   return parseJsonResponse<ChatRoom>(

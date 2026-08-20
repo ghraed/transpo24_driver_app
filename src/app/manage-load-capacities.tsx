@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { getDriverVehicles, getMyLoadCapacities, setDefaultLoadCapacity } from '@/lib/api';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import {
   formatCargoTypes,
   formatDimensionsSummary,
@@ -56,7 +57,7 @@ export default function ManageLoadCapacitiesScreen() {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('Failed to load vehicle capacities.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
         router.replace('/');

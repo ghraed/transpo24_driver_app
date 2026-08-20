@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { useAuth } from '@/context/auth-context';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import {
   activateDriverVehicle,
   approveDriverVehicleForTesting,
@@ -113,7 +114,7 @@ export default function MyVehiclesScreen() {
         error instanceof Error
           ? error.message
           : t('Failed to load your vehicles and service radius.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (normalized.includes('unauthorized') || normalized.includes('token')) {
         await signOut();
         router.replace('/');

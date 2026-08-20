@@ -19,6 +19,7 @@ import { sendDriverPriceOffer } from '@/lib/api';
 import { currencyForCountryCode, getCountryLabel } from '@/lib/country-currency';
 import { formatDateTime } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
+import { getSourceErrorMessage } from '@/localization/response-message';
 import { translateDynamicBatch } from '@/services/translation-service';
 import type { SendDriverPriceOfferPayload } from '@/types/auth';
 import { calculateDistanceMeters } from '@/utils/locationValidation';
@@ -142,8 +143,8 @@ export default function SendPriceOfferScreen() {
     [driver?.countryCode],
   );
   const driverCountryLabel = useMemo(
-    () => getCountryLabel(driver?.countryCode),
-    [driver?.countryCode],
+    () => getCountryLabel(driver?.countryCode, i18n.resolvedLanguage),
+    [driver?.countryCode, i18n.resolvedLanguage],
   );
   const offerEarningsPreview = useMemo(() => {
     const price = Number(form.price.trim());
@@ -311,7 +312,7 @@ export default function SendPriceOfferScreen() {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to send offer.');
-      const normalized = message.toLowerCase();
+      const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (
         normalized.includes('invalid or expired token') ||
         normalized.includes('authorization') ||

@@ -1,5 +1,7 @@
 import { readAccessToken } from '@/lib/auth-storage';
 import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
+import { localizeResponseMessage } from '@/localization/response-message';
+import i18n from '@/localization/i18n';
 import type {
   AdditionalExpenseResponse,
   CreateAdditionalExpensePayload,
@@ -91,17 +93,23 @@ async function parseError(response: Response, fallback: string): Promise<Error> 
   try {
     const rawText = await response.text();
     if (!rawText) {
-      return new Error(fallback);
+      const localized = await localizeResponseMessage(fallback, fallback);
+      return Object.assign(new Error(localized), { sourceMessage: fallback });
     }
 
+    let sourceMessage: string;
     try {
       const errorData = JSON.parse(rawText) as ApiErrorResponse;
-      return new Error(normalizeErrorMessage(errorData, fallback));
+      sourceMessage = normalizeErrorMessage(errorData, fallback);
     } catch {
-      return new Error(rawText);
+      sourceMessage = rawText;
     }
+
+    const localized = await localizeResponseMessage(sourceMessage, fallback);
+    return Object.assign(new Error(localized), { sourceMessage });
   } catch {
-    return new Error(fallback);
+    const localized = await localizeResponseMessage(fallback, fallback);
+    return Object.assign(new Error(localized), { sourceMessage: fallback });
   }
 }
 
@@ -129,6 +137,7 @@ function uploadFormDataWithXhr(
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
+    xhr.setRequestHeader('Accept-Language', i18n.resolvedLanguage ?? i18n.language ?? 'en');
 
     xhr.onload = () => {
       resolve({
@@ -241,6 +250,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const token = await readAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language': i18n.resolvedLanguage ?? i18n.language ?? 'en',
   };
 
   if (token) {

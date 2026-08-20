@@ -2,12 +2,14 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
 import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { useAuth } from '@/context/auth-context';
 import { getDriverDocumentsStatus, getDriverEarningsSummary, getDriverVehicles } from '@/lib/api';
+import { useAppLanguage } from '@/localization/provider';
 import type { DocumentStatus, DriverDocument, DriverEarningsSummary } from '@/types/auth';
 
 type VerificationState = 'verified' | 'pending';
@@ -29,19 +31,21 @@ function isApproved(documents: DriverDocument[], types: DriverDocument['type'][]
   return documents.some((document) => types.includes(document.type) && VERIFIED_STATUSES.has(document.status));
 }
 
-function formatJoinedDate(value: string | null | undefined): string {
-  if (!value) return 'Member';
+function formatJoinedDate(value: string | null | undefined, locale: string): string | null {
+  if (!value) return null;
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Member';
-  return `Member since ${date.toLocaleDateString('en', { month: 'short', year: 'numeric' })}`;
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(locale, { month: 'short', year: 'numeric' });
 }
 
-function money(amount: number | undefined): string {
-  return Math.round(amount ?? 0).toLocaleString('en-US');
+function money(amount: number | undefined, locale: string): string {
+  return Math.round(amount ?? 0).toLocaleString(locale);
 }
 
 export default function DriverProfileScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { locale } = useAppLanguage();
   const { deleteAccount, driver, signOut } = useAuth();
   const [summary, setSummary] = useState<DriverEarningsSummary | null>(null);
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
@@ -106,35 +110,46 @@ export default function DriverProfileScreen() {
   ];
 
   const rating = summary?.averageRating ?? 0;
-  const fullName = `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim() || 'Driver';
-
+  const fullName = `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim() || t('Driver');
+  const joinedDate = formatJoinedDate(driver?.createdAt, locale);
 
   const onDeleteAccount = (): void => {
     if (isDeletingAccount) return;
-    Alert.alert('Delete account?', 'This permanently deletes your profile and documents, signs you out on all devices, and cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete account',
-        style: 'destructive',
-        onPress: () => {
-          setIsDeletingAccount(true);
-          void deleteAccount()
-            .then(() => router.replace('/'))
-            .catch((error) => Alert.alert('Unable to delete account', error instanceof Error ? error.message : 'Please try again.'))
-            .finally(() => setIsDeletingAccount(false));
+    Alert.alert(
+      t('Delete account?'),
+      t('This permanently deletes your profile and documents, signs you out on all devices, and cannot be undone.'),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Delete account'),
+          style: 'destructive',
+          onPress: () => {
+            setIsDeletingAccount(true);
+            void deleteAccount()
+              .then(() => router.replace('/'))
+              .catch((error) => {
+                Alert.alert(
+                  t('Unable to delete account'),
+                  error instanceof Error ? error.message : t('Please try again.'),
+                );
+              })
+              .finally(() => setIsDeletingAccount(false));
+          },
         },
-      },
-    ]);
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <Pressable accessibilityLabel="Go back" hitSlop={12} onPress={() => router.back()}>
+        <Pressable accessibilityLabel={t('Go back')} hitSlop={12} onPress={() => router.back()}>
           <DriverIcon name="arrow-back" size={29} strokeWidth={2.2} />
         </Pressable>
-        <Text style={styles.headerTitle}>Profile</Text>
-        <Pressable accessibilityLabel="Open settings" hitSlop={12} onPress={() => router.push('/driver-home')}>
+        <Text style={styles.headerTitle}>{t('Profile')}</Text>
+        <Pressable accessibilityLabel={t('Open settings')} hitSlop={12} onPress={() => router.push('/driver-home')}>
           <DriverIcon name="settings" size={29} strokeWidth={1.9} />
         </Pressable>
       </View>
@@ -154,36 +169,38 @@ export default function DriverProfileScreen() {
           <View style={styles.memberRow}>
             <DriverIcon name="star" size={18} color="#EAAF00" fill="#EAAF00" />
             <Text style={styles.ratingText}>{rating > 0 ? rating.toFixed(1) : '—'}</Text>
-            <Text style={styles.memberText}>· {formatJoinedDate(driver?.createdAt)}</Text>
+            <Text style={styles.memberText}>
+              · {joinedDate ? t('Member since {{date}}', { date: joinedDate }) : t('Member')}
+            </Text>
           </View>
           <Pressable style={styles.editButton} onPress={() => router.push('/complete-profile')}>
-            <Text style={styles.editButtonText}>Edit Profile</Text>
+            <Text style={styles.editButtonText}>{t('Edit Profile')}</Text>
           </Pressable>
         </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{summary?.completedTripsCount ?? 0}</Text>
-            <Text style={styles.statLabel}>Jobs Done</Text>
+            <Text style={styles.statLabel}>{t('Jobs Done')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statValue, styles.gold]}>{rating > 0 ? rating.toFixed(1) : '—'}</Text>
-            <Text style={styles.statLabel}>Rating</Text>
+            <Text style={styles.statLabel}>{t('Rating')}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.currency}>{summary?.currency || 'CHF'}</Text>
-            <Text style={styles.statValue}>{money(summary?.totalNet)}</Text>
-            <Text style={styles.statLabel}>Earned</Text>
+            <Text style={styles.statValue}>{money(summary?.totalNet, locale)}</Text>
+            <Text style={styles.statLabel}>{t('Earned')}</Text>
           </View>
         </View>
 
         <View style={styles.verificationCard}>
-          <Text style={styles.sectionTitle}>Verification Status</Text>
+          <Text style={styles.sectionTitle}>{t('Verification Status')}</Text>
           {verificationRows.map((row) => {
             const verified = row.state === 'verified';
             return (
               <View key={row.label} style={styles.verificationRow}>
-                <Text style={styles.verificationLabel}>{row.label}</Text>
+                <Text style={styles.verificationLabel}>{t(row.label)}</Text>
                 {isLoading ? (
                   <ActivityIndicator size="small" color="#F0AF00" />
                 ) : (
@@ -195,7 +212,7 @@ export default function DriverProfileScreen() {
                       strokeWidth={1.7}
                     />
                     <Text style={[styles.statusText, verified ? styles.verified : styles.pending]}>
-                      {verified ? 'Verified' : 'Pending'}
+                      {verified ? t('Verified') : t('Pending')}
                     </Text>
                   </View>
                 )}
@@ -217,7 +234,7 @@ export default function DriverProfileScreen() {
               ]}
             >
               <DriverIcon name={item.icon} size={27} color="#727C8D" strokeWidth={1.8} />
-              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Text style={styles.menuLabel}>{t(item.label)}</Text>
               <DriverIcon name="chevron-right" size={23} color="#9CA6B5" strokeWidth={1.8} />
             </Pressable>
           ))}
@@ -228,7 +245,7 @@ export default function DriverProfileScreen() {
           onPress={() => void signOut().then(() => router.replace('/'))}
         >
           <DriverIcon name="logout" size={24} color="#FF3535" strokeWidth={1.8} />
-          <Text style={styles.logoutText}>Log Out</Text>
+          <Text style={styles.logoutText}>{t('Log Out')}</Text>
         </Pressable>
         <Pressable
           style={styles.deleteAccountButton}
@@ -238,7 +255,7 @@ export default function DriverProfileScreen() {
           {isDeletingAccount ? (
             <ActivityIndicator color="#C82424" />
           ) : (
-            <Text style={styles.deleteAccountText}>Delete account</Text>
+            <Text style={styles.deleteAccountText}>{t('Delete account')}</Text>
           )}
         </Pressable>
       </ScrollView>
