@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginIntroGate } from '@/components/login-intro-gate';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { resetUsersForTesting, sendDriverPhoneVerificationCode } from '@/lib/api';
+import { sendDriverPhoneVerificationCode } from '@/lib/api';
 import { readTrustedDriverSession } from '@/lib/auth-storage';
 import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
 import { useAppLanguage } from '@/localization/provider';
@@ -49,17 +49,39 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [trustedPhoneNumber, setTrustedPhoneNumber] = useState('');
+  const [isLoadingTrustedSession, setIsLoadingTrustedSession] = useState(mode === 'login');
+  const [isUsingDifferentPhoneNumber, setIsUsingDifferentPhoneNumber] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
-  const [isResettingUsers, setIsResettingUsers] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
-  const canContinue = mode === 'login' && Boolean(trustedPhoneNumber) && !phoneNumber.trim();
+  const hasTrustedDevice = mode === 'login' && Boolean(trustedPhoneNumber);
+  const showTrustedSessionChoice = hasTrustedDevice && !isUsingDifferentPhoneNumber;
 
   useEffect(() => {
-    if (mode !== 'login') return;
+    if (mode !== 'login') {
+      return;
+    }
 
-    void readTrustedDriverSession().then((session) => {
-      setTrustedPhoneNumber(session?.phoneNumber ?? '');
-    });
+    let isActive = true;
+    void readTrustedDriverSession()
+      .then((session) => {
+        if (isActive) {
+          setTrustedPhoneNumber(session?.phoneNumber ?? '');
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setTrustedPhoneNumber('');
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsLoadingTrustedSession(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, [mode]);
 
   const sendCode = useCallback(async (): Promise<void> => {
@@ -91,35 +113,35 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   }, [dialingCode, isSubmitting, mode, phoneNumber, router, t]);
 
   const continueTrustedSession = useCallback(async (): Promise<void> => {
-    if (!canContinue || isContinuing) return;
+    if (!hasTrustedDevice || isContinuing) return;
 
     setErrorMessage('');
     setIsContinuing(true);
-    const restored = await continueWithTrustedSession();
-    if (!restored) {
+    const result = await continueWithTrustedSession();
+    if (result.status === 'invalid') {
       setTrustedPhoneNumber('');
       setErrorMessage(t('Unable to continue. Please request a verification code.'));
+    } else if (result.status === 'unavailable') {
+      setErrorMessage(
+        result.message || t('Your saved device is still trusted. Check your connection and try again.'),
+      );
     }
     setIsContinuing(false);
-  }, [canContinue, continueWithTrustedSession, isContinuing, t]);
+  }, [continueWithTrustedSession, hasTrustedDevice, isContinuing, t]);
 
-  const resetDriverUsers = useCallback(async (): Promise<void> => {
-    if (isResettingUsers) return;
-
-    setIsResettingUsers(true);
+  const useDifferentPhoneNumber = useCallback(() => {
     setErrorMessage('');
-    try {
-      const response = await resetUsersForTesting();
-      setErrorMessage(t('Deleted {{count}} driver user(s). Kept {{email}}. Non-driver roles were not targeted.', {
-        count: response.deletedUsers,
-        email: response.keptEmail,
-      }));
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t('Failed to reset users.'));
-    } finally {
-      setIsResettingUsers(false);
-    }
-  }, [isResettingUsers, t]);
+    setHasAttemptedSubmit(false);
+    setPhoneNumber('');
+    setIsUsingDifferentPhoneNumber(true);
+  }, []);
+
+  const useTrustedPhoneNumber = useCallback(() => {
+    setErrorMessage('');
+    setHasAttemptedSubmit(false);
+    setPhoneNumber('');
+    setIsUsingDifferentPhoneNumber(false);
+  }, []);
 
   const goToAlternateScreen = useCallback(() => {
     if (mode === 'login') {
@@ -144,49 +166,75 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
             <View style={styles.card}>
               {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
               {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
-              <Text style={[styles.label, isRTL && styles.rtl]}>{t('Phone number')}</Text>
-              <View style={[styles.phoneField, isRTL && styles.phoneFieldRtl]}>
-                <TextInput
-                  accessibilityLabel={t('Country calling code')}
-                  style={[styles.dialingCodeInput, isRTL && styles.rtlInput]}
-                  value={dialingCode}
-                  onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
-                  placeholder="+961"
-                  placeholderTextColor="#8A94A6"
-                  autoComplete="tel"
-                  keyboardType="phone-pad"
-                  textContentType="telephoneNumber"
-                />
-                <View style={styles.phoneDivider} />
-                <TextInput
-                  accessibilityLabel={t('Phone number')}
-                  style={[styles.phoneInput, isRTL && styles.rtlInput]}
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  placeholder={t('Mobile number')}
-                  placeholderTextColor="#8A94A6"
-                  autoComplete="tel"
-                  keyboardType="phone-pad"
-                  textContentType="telephoneNumber"
-                  returnKeyType="done"
-                  onSubmitEditing={() => void sendCode()}
-                />
-              </View>
-              {showRequiredPhoneError ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{t('Phone number is required.')}</Text> : null}
-              {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
-              {canContinue ? (
-                <Pressable style={[styles.secondaryButton, isContinuing && styles.disabled]} disabled={isContinuing} onPress={() => void continueTrustedSession()}>
-                  {isContinuing ? <ActivityIndicator color={authTheme.accentStrong} /> : <Text style={styles.secondaryButtonText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>}
-                </Pressable>
-              ) : null}
-              <Pressable style={[styles.button, isSubmitting && styles.disabled]} disabled={isSubmitting} onPress={() => void sendCode()}>
-                {isSubmitting ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Send verification code')}</Text>}
-              </Pressable>
-              {mode === 'login' ? (
-                <Pressable style={[styles.testingButton, isResettingUsers && styles.disabled]} disabled={isResettingUsers} onPress={() => void resetDriverUsers()}>
-                  {isResettingUsers ? <ActivityIndicator color={authTheme.accentStrong} /> : <Text style={styles.testingButtonText}>{t('Delete Driver Users Except driver@test.com')}</Text>}
-                </Pressable>
-              ) : null}
+              {isLoadingTrustedSession ? (
+                <View style={styles.trustedSessionLoading}>
+                  <ActivityIndicator color={authTheme.accentStrong} />
+                </View>
+              ) : showTrustedSessionChoice ? (
+                <>
+                  {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, styles.choiceError, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    style={[styles.choiceButton, isContinuing && styles.disabled]}
+                    disabled={isContinuing}
+                    onPress={() => void continueTrustedSession()}
+                  >
+                    {isContinuing ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>}
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={styles.secondaryButton}
+                    onPress={useDifferentPhoneNumber}
+                  >
+                    <Text style={styles.secondaryButtonText}>{t('Use a different phone number')}</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  {hasTrustedDevice ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      style={styles.useTrustedPhoneButton}
+                      onPress={useTrustedPhoneNumber}
+                    >
+                      <Text style={styles.useTrustedPhoneText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>
+                    </Pressable>
+                  ) : null}
+                  <Text style={[styles.label, isRTL && styles.rtl]}>{t('Phone number')}</Text>
+                  <View style={[styles.phoneField, isRTL && styles.phoneFieldRtl]}>
+                    <TextInput
+                      accessibilityLabel={t('Country calling code')}
+                      style={[styles.dialingCodeInput, isRTL && styles.rtlInput]}
+                      value={dialingCode}
+                      onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
+                      placeholder="+961"
+                      placeholderTextColor="#8A94A6"
+                      autoComplete="tel"
+                      keyboardType="phone-pad"
+                      textContentType="telephoneNumber"
+                    />
+                    <View style={styles.phoneDivider} />
+                    <TextInput
+                      accessibilityLabel={t('Phone number')}
+                      style={[styles.phoneInput, isRTL && styles.rtlInput]}
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                      placeholder={t('Mobile number')}
+                      placeholderTextColor="#8A94A6"
+                      autoComplete="tel"
+                      keyboardType="phone-pad"
+                      textContentType="telephoneNumber"
+                      returnKeyType="done"
+                      onSubmitEditing={() => void sendCode()}
+                    />
+                  </View>
+                  {showRequiredPhoneError ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{t('Phone number is required.')}</Text> : null}
+                  {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
+                  <Pressable style={[styles.button, isSubmitting && styles.disabled]} disabled={isSubmitting} onPress={() => void sendCode()}>
+                    {isSubmitting ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Send verification code')}</Text>}
+                  </Pressable>
+                </>
+              )}
               <View style={styles.footerRow}>
                 {mode === 'login' ? <Text style={[styles.footerText, isRTL && styles.rtl]}>{t('New driver?')}</Text> : null}
                 <Pressable onPress={goToAlternateScreen} accessibilityRole="button">
@@ -224,12 +272,15 @@ const styles = StyleSheet.create({
   rtl: { textAlign: 'right', writingDirection: 'rtl' },
   error: { color: authTheme.danger, fontSize: 14, marginTop: 10 },
   button: { minHeight: 54, borderRadius: 16, backgroundColor: authTheme.accent, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
+  choiceButton: { minHeight: 54, borderRadius: 16, backgroundColor: authTheme.accent, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: { minHeight: 52, borderRadius: 16, borderWidth: 1, borderColor: '#D1A52A', backgroundColor: authTheme.accentSoft, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
-  testingButton: { minHeight: 44, borderRadius: 14, borderWidth: 1, borderColor: authTheme.border, backgroundColor: authTheme.surfaceMuted, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
+  trustedSessionLoading: { minHeight: 124, alignItems: 'center', justifyContent: 'center' },
+  choiceError: { marginTop: 0, marginBottom: 12 },
+  useTrustedPhoneButton: { alignSelf: 'flex-start', marginBottom: 18 },
+  useTrustedPhoneText: { color: authTheme.accentStrong, fontSize: 14, fontWeight: '800' },
   disabled: { opacity: 0.65 },
   buttonText: { fontSize: 16, fontWeight: '800', color: authTheme.text },
   secondaryButtonText: { fontSize: 15, fontWeight: '800', color: authTheme.accentStrong },
-  testingButtonText: { fontSize: 13, fontWeight: '700', color: authTheme.textMuted },
   footerRow: { marginTop: 18, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 6 },
   footerText: { fontSize: 14, color: authTheme.textMuted },
   footerLink: { fontSize: 14, fontWeight: '800', color: authTheme.accentStrong },

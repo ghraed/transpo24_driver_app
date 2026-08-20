@@ -823,5 +823,10 @@
   "Your profile information helps us verify your account and assign suitable transport requests.": "Your profile information helps us verify your account and assign suitable transport requests.",
   "Your Stripe Connect account can receive payouts. When a delivery is confirmed, held funds can be released to your connected payout account.": "يمكن لحساب Stripe Connect الخاص بك استلام الدفعات. عند تأكيد التسليم، يمكن تحويل الأموال المحتجزة إلى حساب السحب المرتبط بك.",
   "Your submission was declined by admin review. You can return to the login screen and try again later.": "تم رفض طلبك من قبل الإدارة. يمكنك العودة إلى شاشة تسجيل الدخول والمحاولة لاحقًا.",
-  "Your vehicle is pending approval.": "Your vehicle is pending approval."
+  "Your vehicle is pending approval.": "Your vehicle is pending approval.",
+  "Continue as {{phone}}": "المتابعة كـ {{phone}}",
+  "Use a different phone number": "استخدام رقم هاتف آخر",
+  "Your saved device is still trusted. Check your connection and try again.": "جهازك المحفوظ ما زال موثوقًا. تحقّق من الاتصال وحاول مجددًا.",
+  "Unable to continue. Please request a verification code.": "تعذّرت المتابعة. يرجى طلب رمز تحقق.",
+  "Jobs": "الوظائف", "Skip": "تخطي", "Settings": "الإعدادات", "Preferences": "التفضيلات", "Payments": "المدفوعات", "Payout account": "حساب الدفعات", "Manage your Stripe Connect payout account.": "أدر حساب الدفعات الخاص بك عبر Stripe Connect."
 }

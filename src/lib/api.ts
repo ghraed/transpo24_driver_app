@@ -51,6 +51,23 @@ interface ApiErrorResponse {
   message?: string | string[];
 }
 
+export class ApiResponseError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiResponseError';
+  }
+}
+
+export function isAuthenticationFailure(error: unknown): boolean {
+  return (
+    error instanceof ApiResponseError &&
+    (error.status === 401 || error.status === 403)
+  );
+}
+
 interface ResetUsersForTestingPayload {
   keepEmail: string;
   role: 'DRIVER';
@@ -156,19 +173,22 @@ function parsePossiblyMalformedJson<T>(rawText: string): T {
 }
 
 async function parseError(response: Response, fallback: string): Promise<Error> {
+  const createError = (message: string): ApiResponseError =>
+    new ApiResponseError(message, response.status);
+
   try {
     const rawText = await response.text();
     if (!rawText) {
-      return new Error(fallback);
+      return createError(fallback);
     }
     try {
       const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
-      return new Error(normalizeErrorMessage(errorData, fallback));
+      return createError(normalizeErrorMessage(errorData, fallback));
     } catch {
-      return new Error(normalizeBackendErrorMessage(rawText, fallback));
+      return createError(normalizeBackendErrorMessage(rawText, fallback));
     }
   } catch {
-    return new Error(fallback);
+    return createError(fallback);
   }
 }
 

@@ -10,6 +10,7 @@ import {
   clearLastOnboardingRoute,
   readLastOnboardingRoute,
 } from '@/lib/auth-storage';
+import { isAuthenticationFailure } from '@/lib/api';
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 import { initializeNotifications, registerDriverPushNotifications } from '@/notifications/registerPushNotifications';
 import { useNotificationNavigation } from '@/notifications/useNotificationNavigation';
@@ -63,7 +64,13 @@ function AppNavigator() {
         }
 
         router.replace(targetRoute as Href);
-      } catch {
+      } catch (error) {
+        // A temporary USB/backend connection issue is not a logout. Preserve
+        // the saved session so the driver can continue as soon as it is back.
+        if (!isAuthenticationFailure(error)) {
+          console.warn('Unable to resolve the driver entry route.', error);
+          return;
+        }
         await signOut();
         router.replace('/');
       }

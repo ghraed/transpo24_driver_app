@@ -91,7 +91,7 @@ export default function DriverHomeScreen() {
         <Pressable accessibilityLabel="Go back" hitSlop={12} onPress={() => router.back()}>
           <DriverIcon name="arrow-back" size={29} strokeWidth={2.2} />
         </Pressable>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t('Settings')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -131,7 +131,7 @@ export default function DriverHomeScreen() {
           {availabilityError ? <Text style={styles.errorText}>{availabilityError}</Text> : null}
         </View>
 
-        <Text style={styles.sectionLabel}>Preferences</Text>
+        <Text style={styles.sectionLabel}>{t('Preferences')}</Text>
         <View style={styles.settingsCard}>
           <Text style={styles.rowTitle}>{t('Language')}</Text>
           <Text style={styles.rowDescription}>{t('Current language')}: {LANGUAGE_CONFIGS[language].nativeLabel}</Text>
@@ -154,12 +154,12 @@ export default function DriverHomeScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Payments</Text>
+        <Text style={styles.sectionLabel}>{t('Payments')}</Text>
         <Pressable style={styles.settingsCard} onPress={() => router.push('/stripe-connect')}>
           <View style={styles.settingRow}>
             <View style={styles.rowCopy}>
-              <Text style={styles.rowTitle}>Payout account</Text>
-              <Text style={styles.rowDescription}>Manage your Stripe Connect payout account.</Text>
+              <Text style={styles.rowTitle}>{t('Payout account')}</Text>
+              <Text style={styles.rowDescription}>{t('Manage your Stripe Connect payout account.')}</Text>
             </View>
             <DriverIcon name="chevron-right" size={23} color="#9CA6B5" />
           </View>

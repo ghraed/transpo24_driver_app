@@ -7,6 +7,7 @@ import {
   updateDriverAvailability,
   updateDriverProfile,
   verifyDriverPhoneVerificationCode,
+  isAuthenticationFailure,
 } from '@/lib/api';
 import {
   clearAccessToken,
@@ -28,6 +29,11 @@ import type {
   VerifyPhoneCodePayload,
 } from '@/types/auth';
 
+export type TrustedSessionContinuationResult =
+  | { status: 'restored' }
+  | { status: 'invalid' }
+  | { status: 'unavailable'; message: string };
+
 interface AuthContextValue {
   accessToken: string | null;
   user: AuthUser | null;
@@ -36,7 +42,7 @@ interface AuthContextValue {
   isRestoringSession: boolean;
   hasRestoredStoredSession: boolean;
   authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
-  continueWithTrustedSession: () => Promise<boolean>;
+  continueWithTrustedSession: () => Promise<TrustedSessionContinuationResult>;
   signOut: () => Promise<void>;
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
@@ -88,7 +94,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(renewed.user);
               setDriver(renewed.driver);
               return;
-            } catch {
+            } catch (continuationError) {
+              // A timeout or temporarily unreachable backend must never make a
+              // remembered device forget its trusted credential. Only the API
+              // can tell us conclusively that the credential is no longer valid.
+              if (!isAuthenticationFailure(continuationError)) {
+                return;
+              }
               await clearTrustedDriverSession();
             }
           }
@@ -139,11 +151,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
   }, []);
 
-  const continueWithTrustedSession = useCallback(async (): Promise<boolean> => {
-    const trustedSession = await readTrustedDriverSession();
-    if (!trustedSession) return false;
-
+  const continueWithTrustedSession = useCallback(async (): Promise<TrustedSessionContinuationResult> => {
     try {
+      const trustedSession = await readTrustedDriverSession();
+      if (!trustedSession) return { status: 'invalid' };
+
       const renewed = await continueDriverTrustedSession({
         accessToken: trustedSession.accessToken,
       });
@@ -158,19 +170,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setDriver(renewed.driver);
       setHasRestoredStoredSession(true);
       setAccessToken(renewed.accessToken);
-      return true;
-    } catch {
+      return { status: 'restored' };
+    } catch (error) {
+      if (!isAuthenticationFailure(error)) {
+        return {
+          status: 'unavailable',
+          message: error instanceof Error ? error.message : 'Unable to continue the trusted session.',
+        };
+      }
+
       await Promise.all([
         clearAccessToken(),
         clearTrustedDriverSession(),
+        clearDriverOnboardingDrafts(),
       ]);
       setHasRestoredStoredSession(false);
       setAccessToken(null);
       setUser(null);
       setDriver(null);
-      return false;
+      return { status: 'invalid' };
     }
-  }, [applyDriverMeResponse]);
+  }, []);
 
   const refreshDriverMe = useCallback(async (): Promise<DriverMeResponse> => {
     const me = await getDriverMe();

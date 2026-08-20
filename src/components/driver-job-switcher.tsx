@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type DriverJobSwitcherProps = {
@@ -8,6 +9,7 @@ type DriverJobSwitcherProps = {
 
 export function DriverJobSwitcher({ active }: DriverJobSwitcherProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const isJobsActive = active === 'jobs';
   const isAcceptedActive = active === 'accepted';
 
@@ -20,7 +22,7 @@ export function DriverJobSwitcher({ active }: DriverJobSwitcherProps) {
         style={[styles.tab, isJobsActive && styles.tabActive]}
         onPress={isJobsActive ? undefined : () => router.replace('/receive-requests')}
       >
-        <Text style={[styles.label, isJobsActive && styles.labelActive]}>Jobs</Text>
+        <Text style={[styles.label, isJobsActive && styles.labelActive]}>{t('Jobs')}</Text>
       </Pressable>
       <Pressable
         accessibilityRole="tab"
@@ -29,7 +31,7 @@ export function DriverJobSwitcher({ active }: DriverJobSwitcherProps) {
         style={[styles.tab, isAcceptedActive && styles.tabActive]}
         onPress={isAcceptedActive ? undefined : () => router.replace('/accepted-jobs')}
       >
-        <Text style={[styles.label, isAcceptedActive && styles.labelActive]}>Accepted Jobs</Text>
+        <Text style={[styles.label, isAcceptedActive && styles.labelActive]}>{t('Accepted Jobs')}</Text>
       </Pressable>
     </View>
   );

@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AccessibilityInfo,
   Animated,
@@ -19,6 +20,7 @@ type LoginIntroGateProps = {
 };
 
 export function LoginIntroGate({ children }: LoginIntroGateProps) {
+  const { t } = useTranslation();
   const [showIntro, setShowIntro] = useState(!hasShownIntroThisSession);
   const [opacity] = useState(() => new Animated.Value(1));
 
@@ -93,7 +95,7 @@ export function LoginIntroGate({ children }: LoginIntroGateProps) {
             setShowIntro(false);
           }}
         >
-          <Text style={styles.skipButtonText}>Skip</Text>
+          <Text style={styles.skipButtonText}>{t('Skip')}</Text>
         </Pressable>
       </Animated.View>
     </View>

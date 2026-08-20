@@ -816,5 +816,10 @@
   "Your profile information helps us verify your account and assign suitable transport requests.": "Your profile information helps us verify your account and assign suitable transport requests.",
   "Your Stripe Connect account can receive payouts. When a delivery is confirmed, held funds can be released to your connected payout account.": "Tu cuenta de Stripe Connect puede recibir pagos. Cuando una entrega se confirma, los fondos retenidos pueden liberarse a tu cuenta de pagos conectada.",
   "Your submission was declined by admin review. You can return to the login screen and try again later.": "Tu envío fue rechazado por la administración. Puedes volver a la pantalla de inicio de sesión e intentarlo más tarde.",
-  "Your vehicle is pending approval.": "Your vehicle is pending approval."
+  "Your vehicle is pending approval.": "Your vehicle is pending approval.",
+  "Continue as {{phone}}": "Continuar como {{phone}}",
+  "Use a different phone number": "Usar otro número de teléfono",
+  "Your saved device is still trusted. Check your connection and try again.": "Tu dispositivo guardado sigue siendo de confianza. Comprueba tu conexión e inténtalo de nuevo.",
+  "Unable to continue. Please request a verification code.": "No se puede continuar. Solicita un código de verificación.",
+  "Jobs": "Trabajos", "Skip": "Omitir", "Settings": "Configuración", "Preferences": "Preferencias", "Payments": "Pagos", "Payout account": "Cuenta de pagos", "Manage your Stripe Connect payout account.": "Administra tu cuenta de pagos de Stripe Connect."
 }

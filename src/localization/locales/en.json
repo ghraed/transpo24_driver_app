@@ -797,5 +797,10 @@
   "Learn more": "Learn more",
   "socketDebugPing sent.": "socketDebugPing sent.",
   "suffixes to provide files for different screen densities.": "suffixes to provide files for different screen densities.",
-  "{{label}} is required.": "{{label}} is required."
+  "{{label}} is required.": "{{label}} is required.",
+  "Continue as {{phone}}": "Continue as {{phone}}",
+  "Use a different phone number": "Use a different phone number",
+  "Your saved device is still trusted. Check your connection and try again.": "Your saved device is still trusted. Check your connection and try again.",
+  "Unable to continue. Please request a verification code.": "Unable to continue. Please request a verification code.",
+  "Jobs": "Jobs", "Skip": "Skip", "Settings": "Settings", "Preferences": "Preferences", "Payments": "Payments", "Payout account": "Payout account", "Manage your Stripe Connect payout account.": "Manage your Stripe Connect payout account."
 }
