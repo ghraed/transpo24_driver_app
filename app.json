@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "driver_mobile",
-    "slug": "driver_mobile",
+    "name": "Transpo24 - Driver",
+    "slug": "transpo24-driver",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "drivermobile",
+    "scheme": "transpo24-driver",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
@@ -34,8 +34,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Driver Mobile to access your photos so you can select driver documents.",
-          "cameraPermission": "Allow Driver Mobile to access your camera so you can take clear driver document photos."
+          "photosPermission": "Allow Transpo24 - Driver to access your photos so you can select driver documents.",
+          "cameraPermission": "Allow Transpo24 - Driver to access your camera so you can take clear driver document photos."
         }
       ],
       [
@@ -52,7 +52,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Driver Mobile to use your location while the map is open."
+          "locationWhenInUsePermission": "Allow Transpo24 - Driver to use your location while the map is open."
         }
       ],
       "expo-secure-store"
