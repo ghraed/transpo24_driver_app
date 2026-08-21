@@ -298,7 +298,12 @@ export default function AcceptedJobsScreen() {
         <ScrollView
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadJobs(true)} />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => void loadJobs(true)}
+              tintColor="#F4B900"
+              colors={['#F4B900']}
+            />
           }
         >
           {jobs.map((job) => {

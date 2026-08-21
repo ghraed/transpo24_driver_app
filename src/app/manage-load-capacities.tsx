@@ -121,7 +121,12 @@ export default function ManageLoadCapacitiesScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadData(true)} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => void loadData(true)}
+            tintColor="#F4B900"
+            colors={['#F4B900']}
+          />
         }
       >
         <View style={styles.header}>

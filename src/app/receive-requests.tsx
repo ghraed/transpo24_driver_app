@@ -194,7 +194,14 @@ export default function ReceiveRequestAlertsScreen() {
       ) : visibleAlerts.length === 0 ? (
         <ScrollView
           contentContainerStyle={styles.emptyScroll}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void loadAlerts(true)} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              tintColor="#F4B900"
+              colors={['#F4B900']}
+              onRefresh={() => void loadAlerts(true)}
+            />
+          }
         >
           <View style={styles.emptyIcon}>
             <DriverIcon name="grid" size={34} color="#F1B800" />

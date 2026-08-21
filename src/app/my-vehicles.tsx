@@ -179,7 +179,12 @@ export default function MyVehiclesScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => void loadVehicles(true)} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => void loadVehicles(true)}
+            tintColor="#F4B900"
+            colors={['#F4B900']}
+          />
         }
       >
         <View style={styles.header}>

@@ -119,7 +119,14 @@ export default function EarningsHistoryScreen() {
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void loadEarnings(true)} tintColor="#F0AF00" />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => void loadEarnings(true)}
+            tintColor="#F0AF00"
+            colors={['#F0AF00']}
+          />
+        }
       >
         <View style={styles.introCard}>
           <DriverIcon name="money" size={25} color="#A96900" />
