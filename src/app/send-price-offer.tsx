@@ -41,7 +41,7 @@ type FormErrors = {
   message?: string;
 };
 
-const PLATFORM_FEE_PERCENTAGE = 10;
+const PLATFORM_FEE_PERCENTAGE = 15;
 
 function formatOfferAmount(amount: number, currency: string): string {
   return new Intl.NumberFormat(undefined, {
