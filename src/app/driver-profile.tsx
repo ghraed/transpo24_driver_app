@@ -105,6 +105,8 @@ export default function DriverProfileScreen() {
     { label: 'Documents', icon: 'document', onPress: () => router.push('/vehicle-documents') },
     { label: 'Earnings History', icon: 'money', onPress: () => router.push('/earnings-history') },
     { label: 'Availability Schedule', icon: 'calendar', onPress: () => router.push('/set-availability') },
+    { label: 'Terms & Conditions', icon: 'document', onPress: () => router.push({ pathname: '/legal', params: { document: 'terms' } } as never) },
+    { label: 'Privacy Policy', icon: 'document', onPress: () => router.push({ pathname: '/legal', params: { document: 'privacy' } } as never) },
     { label: 'Settings', icon: 'settings', onPress: () => router.push('/driver-home') },
     { label: 'Help & Support', icon: 'help' },
   ];

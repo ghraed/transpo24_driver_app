@@ -128,6 +128,7 @@ function AppNavigator() {
         <Stack>
       <Stack.Screen name="index" options={{ title: t('Driver Login') }} />
       <Stack.Screen name="register" options={{ title: t('Driver Registration') }} />
+      <Stack.Screen name="legal" options={{ title: t('Terms & Conditions') }} />
       <Stack.Screen name="verify-phone" options={{ title: t('Verify Phone') }} />
       <Stack.Screen name="complete-profile" options={{ title: t('Complete Profile') }} />
       <Stack.Screen name="vehicle-documents" options={{ title: t('Driver Documents') }} />
