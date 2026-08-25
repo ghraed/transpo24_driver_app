@@ -7,6 +7,7 @@ import de from '@/localization/locales/de.json';
 import en from '@/localization/locales/en.json';
 import es from '@/localization/locales/es.json';
 import fr from '@/localization/locales/fr.json';
+import it from '@/localization/locales/it.json';
 
 const resources = {
   en: { translation: en },
@@ -14,6 +15,7 @@ const resources = {
   fr: { translation: fr },
   de: { translation: de },
   es: { translation: es },
+  it: { translation: it },
 } as const;
 
 const i18n = createInstance();

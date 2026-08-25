@@ -1,4 +1,4 @@
-export const SUPPORTED_LANGUAGES = ['en', 'ar', 'fr', 'de', 'es'] as const;
+export const SUPPORTED_LANGUAGES = ['en', 'ar', 'fr', 'de', 'es', 'it'] as const;
 
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -18,6 +18,7 @@ export const LANGUAGE_CONFIGS: Record<AppLanguage, LanguageConfig> = {
   fr: { code: 'fr', label: 'French', nativeLabel: 'Français', locale: 'fr-FR', isRTL: false },
   de: { code: 'de', label: 'German', nativeLabel: 'Deutsch', locale: 'de-DE', isRTL: false },
   es: { code: 'es', label: 'Spanish', nativeLabel: 'Español', locale: 'es-ES', isRTL: false },
+  it: { code: 'it', label: 'Italian', nativeLabel: 'Italiano', locale: 'it-IT', isRTL: false },
 };
 
 export function isSupportedLanguage(value: string | null | undefined): value is AppLanguage {

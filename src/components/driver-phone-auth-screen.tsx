@@ -20,6 +20,11 @@ import { sendDriverPhoneVerificationCode } from '@/lib/api';
 import { readTrustedDriverSession } from '@/lib/auth-storage';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
+import {
+  LANGUAGE_CONFIGS,
+  SUPPORTED_LANGUAGES,
+  type AppLanguage,
+} from '@/localization/languages';
 import { useAppLanguage } from '@/localization/provider';
 
 const authTheme = {
@@ -42,7 +47,12 @@ type DriverPhoneAuthScreenProps = {
 export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   const router = useRouter();
   const { t } = useTranslation();
-  const { isRTL } = useAppLanguage();
+  const {
+    hasSavedLanguage,
+    isChangingLanguage,
+    isRTL,
+    setLanguage,
+  } = useAppLanguage();
   const { continueWithTrustedSession } = useAuth();
   const keyboardInset = useAndroidKeyboardInset();
   const [dialingCode, setDialingCode] = useState('+961');
@@ -56,6 +66,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const hasTrustedDevice = mode === 'login' && Boolean(trustedPhoneNumber);
   const showTrustedSessionChoice = hasTrustedDevice && !isUsingDifferentPhoneNumber;
+  const needsDefaultLanguage = mode === 'register' && !hasSavedLanguage;
 
   useEffect(() => {
     if (mode !== 'login') {
@@ -156,6 +167,11 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     }
   }, [mode, router]);
 
+  const selectDefaultLanguage = useCallback((nextLanguage: AppLanguage) => {
+    setErrorMessage('');
+    void setLanguage(nextLanguage);
+  }, [setLanguage]);
+
   const showRequiredPhoneError = hasAttemptedSubmit && !phoneNumber.trim() && !errorMessage;
 
   return (
@@ -171,7 +187,32 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
             <View style={styles.card}>
               {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
               {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
-              {isLoadingTrustedSession ? (
+              {needsDefaultLanguage ? (
+                <View>
+                  <Text style={[styles.title, isRTL && styles.rtl]}>{t('Select language')}</Text>
+                  <Text style={[styles.languageHelp, isRTL && styles.rtl]}>
+                    {t('Choose the app language before confirming the switch.')}
+                  </Text>
+                  <View style={styles.languageChoices}>
+                    {SUPPORTED_LANGUAGES.map((code) => {
+                      const config = LANGUAGE_CONFIGS[code];
+                      return (
+                        <Pressable
+                          key={code}
+                          accessibilityRole="button"
+                          accessibilityLabel={config.nativeLabel}
+                          style={[styles.languageChoice, isChangingLanguage && styles.disabled]}
+                          disabled={isChangingLanguage}
+                          onPress={() => selectDefaultLanguage(code)}
+                        >
+                          <Text style={styles.languageChoiceNative}>{config.nativeLabel}</Text>
+                          <Text style={styles.languageChoiceLabel}>{t(config.label)}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ) : isLoadingTrustedSession ? (
                 <View style={styles.trustedSessionLoading}>
                   <ActivityIndicator color={authTheme.accentStrong} />
                 </View>
@@ -276,6 +317,22 @@ const styles = StyleSheet.create({
   rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
   rtl: { textAlign: 'right', writingDirection: 'rtl' },
   error: { color: authTheme.danger, fontSize: 14, marginTop: 10 },
+  languageHelp: { color: authTheme.textMuted, fontSize: 14, lineHeight: 21, marginTop: -14, marginBottom: 18 },
+  languageChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  languageChoice: {
+    flexGrow: 1,
+    flexBasis: '47%',
+    minHeight: 62,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#D1A52A',
+    backgroundColor: authTheme.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  languageChoiceNative: { color: authTheme.text, fontSize: 15, fontWeight: '800' },
+  languageChoiceLabel: { color: authTheme.accentStrong, fontSize: 12, marginTop: 2 },
   button: { minHeight: 54, borderRadius: 16, backgroundColor: authTheme.accent, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
   choiceButton: { minHeight: 54, borderRadius: 16, backgroundColor: authTheme.accent, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: { minHeight: 52, borderRadius: 16, borderWidth: 1, borderColor: '#D1A52A', backgroundColor: authTheme.accentSoft, alignItems: 'center', justifyContent: 'center', marginTop: 18 },
