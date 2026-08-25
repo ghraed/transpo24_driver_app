@@ -6,16 +6,39 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "environment": "development"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "environment": "preview"
+    },
+    "play-test": {
+      "distribution": "store",
+      "environment": "preview",
+      "autoIncrement": true
     },
     "production": {
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.transpo24.com",
+        "EXPO_PUBLIC_SOCKET_URL": "https://api.transpo24.com",
+        "EXPO_PUBLIC_ANDROID_API_URL": "https://api.transpo24.com",
+        "EXPO_PUBLIC_ANDROID_SOCKET_URL": "https://api.transpo24.com"
+      },
       "autoIncrement": true
     }
   },
   "submit": {
-    "production": {}
+    "play-test": {
+      "android": {
+        "track": "internal"
+      }
+    },
+    "production": {
+      "android": {
+        "track": "production"
+      }
+    }
   }
 }
