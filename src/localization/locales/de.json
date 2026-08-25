@@ -1218,6 +1218,7 @@
   "Unable to verify the code.": "Der Code konnte nicht bestätigt werden.",
   "Unavailable": "Nicht verfügbar",
   "Unexpected network error.": "Unerwarteter Netzwerkfehler.",
+  "Unexpected server error.": "Unerwarteter Serverfehler.",
   "Unexpected pickup status returned by backend.": "Unerwarteter Abholstatus vom Backend zurückgegeben.",
   "Unknown status": "Unbekannter Status",
   "Unsupported currency selected.": "Nicht unterstützte Währung ausgewählt.",

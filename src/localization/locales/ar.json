@@ -1218,6 +1218,7 @@
   "Unable to verify the code.": "تعذر التحقق من الرمز.",
   "Unavailable": "غير متاح",
   "Unexpected network error.": "خطأ غير متوقع في الشبكة.",
+  "Unexpected server error.": "حدث خطأ غير متوقع في الخادم.",
   "Unexpected pickup status returned by backend.": "تم إرجاع حالة الالتقاط غير المتوقعة بواسطة الواجهة الخلفية.",
   "Unknown status": "حالة غير معروفة",
   "Unsupported currency selected.": "تم اختيار عملة غير مدعومة.",

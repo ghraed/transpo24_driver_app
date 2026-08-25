@@ -59,6 +59,10 @@ async function ensureAndroidChannel(): Promise<void> {
 }
 
 async function requestNotificationPermissions(): Promise<boolean> {
+  // Android 13+ requires a notification channel before the system can show
+  // the notification permission prompt.
+  await ensureAndroidChannel();
+
   const existingPermissions = await Notifications.getPermissionsAsync();
   if (existingPermissions.granted) {
     return true;

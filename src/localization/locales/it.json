@@ -747,6 +747,7 @@
   "Cannot reach backend at {{value0}}. Verify {{value1}} and backend network access. {{value2}}.": "Impossibile raggiungere il backend all'indirizzo {{value0}}. Verifica {{value1}} e l'accesso di rete al backend. {{value2}}.",
   "EXPO_PUBLIC_API_URL is missing. Please set it in your environment.": "EXPO_PUBLIC_API_URL è mancante. Impostalo nel tuo ambiente.",
   "Unexpected network error.": "Errore di rete imprevisto.",
+  "Unexpected server error.": "Errore imprevisto del server.",
   "{{value0}} Server returned: {{value1}}": "{{value0}} Il server ha restituito: {{value1}}",
   "Failed to create furniture transport request.": "Creazione della richiesta di trasporto mobili non riuscita.",
   "Failed to upload request photos.": "Caricamento delle foto della richiesta non riuscito.",

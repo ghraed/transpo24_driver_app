@@ -3,6 +3,7 @@ export type MobileAppContext = 'DRIVER';
 export type PushNotificationType =
   | 'NEW_TRANSPORT_REQUEST'
   | 'NEW_DRIVER_OFFER'
+  | 'DRIVER_SELECTED'
   | 'CHAT_MESSAGE'
   | 'ITEM_PICKED_UP'
   | 'ITEM_DELIVERED'

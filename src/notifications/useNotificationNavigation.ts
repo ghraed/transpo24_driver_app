@@ -38,6 +38,15 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
         };
       }
       return null;
+    case 'DRIVER_SELECTED': {
+      const requestId = resolveTripId(data);
+      return requestId
+        ? {
+            pathname: '/accepted-job-details',
+            params: { requestId },
+          }
+        : null;
+    }
     case 'CHAT_MESSAGE':
       if (typeof data.chatRoomId === 'string' && data.chatRoomId.trim()) {
         return {

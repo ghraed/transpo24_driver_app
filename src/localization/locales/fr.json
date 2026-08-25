@@ -1218,6 +1218,7 @@
   "Unable to verify the code.": "Impossible de vérifier le code.",
   "Unavailable": "Indisponible",
   "Unexpected network error.": "Erreur réseau inattendue.",
+  "Unexpected server error.": "Erreur serveur inattendue.",
   "Unexpected pickup status returned by backend.": "Statut de récupération inattendu renvoyé par le backend.",
   "Unknown status": "Statut inconnu",
   "Unsupported currency selected.": "Devise non prise en charge sélectionnée.",

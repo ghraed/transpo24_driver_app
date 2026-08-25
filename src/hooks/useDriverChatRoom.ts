@@ -60,7 +60,9 @@ export function useDriverChatRoom(
         setChatRoom(null);
         setChatRoomError('');
       } else {
-        setChatRoomError(message);
+        // Avoid surfacing backend implementation details in the pickup workflow.
+        // The retry action below gives the driver a clear recovery path.
+        setChatRoomError(t('Unexpected server error.'));
       }
     } finally {
       setIsLoadingChatRoom(false);
