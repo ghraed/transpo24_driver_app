@@ -3,7 +3,6 @@ import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { EnvironmentBanner } from '@/components/environment-banner';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { LocalizationProvider, useAppLanguage } from '@/localization/provider';
@@ -171,7 +170,6 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
       <LocalizationProvider>
         <AuthProvider>
           <AppNavigator />
