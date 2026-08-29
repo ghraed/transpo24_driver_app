@@ -11,7 +11,7 @@ This document covers the Play Console work that cannot be completed from the app
    eas build --platform android --profile production
    ```
 
-3. Install the Play-generated APK from Internal app sharing or an internal test track. Test registration, OTP, maps, document upload/camera, foreground trip location, notifications, chat reporting/blocking, Stripe onboarding, and account deletion on a physical Android device.
+3. Install the Play-generated APK from Internal app sharing or an internal test track. Confirm the green **PRODUCTION** banner shows `https://api.transpo24.com`, then test registration, OTP, maps, document upload/camera, foreground trip location, notifications, chat reporting/blocking, Stripe onboarding, and account deletion on a physical Android device.
 4. Upload to the internal track first. Promote the tested artifact to production; do not rebuild between tracks.
 
 ### Known Expo SDK 56 advisory

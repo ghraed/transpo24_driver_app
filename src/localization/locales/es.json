@@ -1377,6 +1377,7 @@
   "Failed to load vehicle information.": "No se pudo cargar la información del vehículo.",
   "Vehicle saved successfully.": "Vehículo guardado correctamente.",
   "Failed to load document status.": "No se pudo cargar el estado del documento.",
+  "API environment: {{environment}} ({{apiUrl}})": "Entorno API: {{environment}} ({{apiUrl}})",
   "Production": "Producción",
   "Local": "Local",
   "Missing transport request id.": "Falta el ID de la solicitud de transporte."

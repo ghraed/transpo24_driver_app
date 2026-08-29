@@ -1377,6 +1377,7 @@
   "Failed to load vehicle information.": "فشل في تحميل معلومات السيارة.",
   "Vehicle saved successfully.": "تم حفظ المركبة بنجاح.",
   "Failed to load document status.": "فشل تحميل حالة المستند.",
+  "API environment: {{environment}} ({{apiUrl}})": "بيئة API: {{environment}} ({{apiUrl}})",
   "Production": "الإنتاج",
   "Local": "محلي",
   "Missing transport request id.": "معرّف طلب النقل مفقود."

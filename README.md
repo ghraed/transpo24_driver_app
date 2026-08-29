@@ -16,13 +16,27 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
-   For a physical Android device over USB with `EXPO_PUBLIC_API_URL=http://127.0.0.1:3001`, use:
+   For a physical Android device over USB, use:
 
    ```bash
-   npm run start:android:usb
+   npm run android:usb
    ```
 
-   That configures `adb reverse` first so the device can reach the backend on your computer.
+   That configures `adb reverse` for the backend and Metro, builds the development app,
+   installs it, and opens it on the connected phone.
+
+## Environments
+
+- Expo local and Android USB development load `.env.development`, connect to
+  `http://127.0.0.1:3001`, and show the orange **LOCAL** banner.
+- Preview, Play test, and production builds use `https://api.transpo24.com` and
+  show the green **PRODUCTION** banner.
+- `.env.production` contains the local production defaults, while `eas.json`
+  pins the same production URLs for remote EAS builds.
+
+The app also uses `__DEV__` at runtime, matching the client app: any JavaScript
+served by Expo/Metro selects the local backend, while a standalone release uses
+the production environment.
 
 In the output, you'll find options to open the app in a
 

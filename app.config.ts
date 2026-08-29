@@ -5,12 +5,9 @@ import type { ExpoConfig } from 'expo/config';
 const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ?? '';
 const MAPS_IOS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY ?? '';
 const BUILD_PROFILE = process.env.EAS_BUILD_PROFILE?.trim() ?? '';
-const CONFIGURED_BACKEND_URLS = [
-  process.env.EXPO_PUBLIC_API_URL,
-  process.env.EXPO_PUBLIC_SOCKET_URL,
-  process.env.EXPO_PUBLIC_ANDROID_API_URL,
-  process.env.EXPO_PUBLIC_ANDROID_SOCKET_URL,
-].filter((value): value is string => Boolean(value?.trim()));
+const IS_LOCAL_DEVELOPMENT_BUILD =
+  BUILD_PROFILE === 'development' ||
+  (!BUILD_PROFILE && process.env.NODE_ENV !== 'production');
 const ANDROID_GOOGLE_SERVICES_FILE =
   process.env.EXPO_PUBLIC_ANDROID_GOOGLE_SERVICES_FILE?.trim() ||
   process.env.EXPO_ANDROID_GOOGLE_SERVICES_FILE?.trim() ||
@@ -69,13 +66,11 @@ export default ({ config }: ConfigContext) => {
       manifestConfig.modResults,
     );
 
-    // Production traffic must remain encrypted. Local development may opt in to
-    // HTTP only when a configured backend URL explicitly requires it.
-    const usesCleartextTraffic =
-      BUILD_PROFILE !== 'production' &&
-      CONFIGURED_BACKEND_URLS.some((value) => value.trim().toLowerCase().startsWith('http://'));
-
-    mainApplication.$['android:usesCleartextTraffic'] = usesCleartextTraffic ? 'true' : 'false';
+    // USB/Expo development uses the local HTTP API through adb reverse. Every
+    // preview, Play test, and production binary stays HTTPS-only.
+    mainApplication.$['android:usesCleartextTraffic'] = IS_LOCAL_DEVELOPMENT_BUILD
+      ? 'true'
+      : 'false';
     return manifestConfig;
   });
 };
