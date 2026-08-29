@@ -40,9 +40,12 @@ import type {
   VehicleLoadCapacityPayload,
 } from '@/types/auth';
 import type {
+  ChatBlockState,
   ChatMessage,
+  ChatReport,
   ChatRoom,
   ChatRoomMessagesResponse,
+  CreateChatReportPayload,
   DriverChatRoomsResponse,
   MarkChatMessagesReadResponse,
   SendChatMessagePayload,
@@ -1940,6 +1943,67 @@ export async function markDriverChatRoomMessagesRead(
     response,
     'Failed to parse mark chat read response.',
   );
+}
+
+export async function reportDriverChatParticipant(
+  chatRoomId: string,
+  payload: CreateChatReportPayload,
+): Promise<ChatReport> {
+  const endpoint = `${getApiBaseUrl()}/chat/rooms/${encodeURIComponent(chatRoomId)}/reports`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to submit chat report.');
+  }
+
+  return parseJsonResponse<ChatReport>(response, 'Failed to parse chat report response.');
+}
+
+export async function blockDriverChatParticipant(chatRoomId: string): Promise<ChatBlockState> {
+  const endpoint = `${getApiBaseUrl()}/chat/rooms/${encodeURIComponent(chatRoomId)}/block`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to block chat participant.');
+  }
+
+  return parseJsonResponse<ChatBlockState>(response, 'Failed to parse chat block response.');
+}
+
+export async function unblockDriverChatParticipant(chatRoomId: string): Promise<ChatBlockState> {
+  const endpoint = `${getApiBaseUrl()}/chat/rooms/${encodeURIComponent(chatRoomId)}/block`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'DELETE',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to unblock chat participant.');
+  }
+
+  return parseJsonResponse<ChatBlockState>(response, 'Failed to parse chat unblock response.');
 }
 
 export interface StripeConnectStatusResponse {

@@ -2,7 +2,6 @@
  * The app renders this legal copy verbatim on its public legal pages.
  */
 export const TERMS_OF_SERVICE = `Effective date: 25 August 2026
-Interim Version – Pending Final Legal Review
 
 1. Operator
 
@@ -226,7 +225,34 @@ Location information may be used for purposes including:
 
 Personal data is handled in accordance with the applicable Transpo24 Privacy Policy and applicable data protection law.
 
-16. Cancellations and Refunds
+16. User-Generated Content and Acceptable Conduct
+
+Transpo24 allows users to submit content that may be visible or accessible to other users, including profile information, transport-request descriptions and photographs, offers, chat messages and other communications (collectively, “User Content”).
+
+Users remain responsible for the User Content they submit and must have all rights and permissions needed to submit it. User Content must be accurate where it describes a transport, item, identity, qualification or service.
+
+Users must not create, upload, send, display, promote or otherwise make available User Content or behaviour that:
+
+* harasses, bullies, intimidates, humiliates or targets another person for abuse;
+* contains hate speech, discrimination or attacks based on race, ethnicity, nationality, religion, disability, age, sex, sexual orientation, gender identity or another protected characteristic;
+* threatens, encourages or depicts violence, self-harm or harm to another person;
+* is pornographic, sexually explicit, sexually exploitative, intended for sexual gratification or solicits sexual acts;
+* depicts, facilitates, promotes or supports child sexual abuse or exploitation, grooming, child endangerment or any sexualized content involving minors;
+* facilitates illegal activity or the sale, purchase, possession or transport of illegal goods;
+* is fraudulent, deceptive or misleading, including scams, phishing, impersonation, fabricated offers or manipulated evidence;
+* is spam, an unsolicited promotion, malware or an attempt to disrupt, overload or misuse the platform;
+* shares another person’s private, confidential or personal information without lawful authority, including addresses, contact details, identification documents, payment details or precise location information;
+* infringes intellectual-property, privacy, publicity or other rights;
+* attempts to evade safety, reporting, blocking, moderation, payment or security controls; or
+* otherwise violates applicable law, these Terms or the safety of the Transpo24 community.
+
+Users can report objectionable messages, content or conduct and can block the other participant in an in-app conversation. Reports must be made in good faith and must not be used to harass another user or manipulate a transport or payment dispute.
+
+Transpo24 may review reports and relevant content, preserve evidence where legally permitted, remove or restrict content, close a conversation, cancel a request, limit platform functionality, suspend or terminate accounts and notify competent authorities where appropriate. Transpo24 may take immediate action where content presents a safety risk, involves suspected child exploitation or is otherwise unlawful. Moderation decisions may consider the content, context, severity, repetition, user history and applicable law.
+
+Transpo24 does not undertake to pre-screen every communication. The absence of prior moderation does not make prohibited User Content permissible or limit Transpo24’s right to act after detection or a report.
+
+17. Cancellations and Refunds
 
 Cancellation and refund conditions may depend on the status of the transport request and any costs already incurred.
 
@@ -240,7 +266,7 @@ Transpo24 may cancel, suspend or refuse a transport request where necessary, inc
 * required payment cannot be completed; or
 * performance is prevented by circumstances outside reasonable control.
 
-17. Liability
+18. Liability
 
 Transpo24 provides the digital platform, matching, communication and payment infrastructure.
 
@@ -252,7 +278,7 @@ Nothing in these Terms excludes or limits liability where such exclusion or limi
 
 Transport service providers are responsible for maintaining any insurance legally required for their activities.
 
-18. Suspension and Misuse
+19. Suspension and Misuse
 
 Transpo24 may restrict or suspend an account in cases including:
 
@@ -261,28 +287,29 @@ Transpo24 may restrict or suspend an account in cases including:
 * unlawful transport activity;
 * serious safety violations;
 * misuse of payment systems;
+* prohibited User Content or abusive conduct;
 * repeated material breaches of these Terms; or
 * use of the platform for prohibited activities.
 
-19. Platform Circumvention
+20. Platform Circumvention
 
 Users should not deliberately use information obtained through Transpo24 to bypass the platform for a transport request introduced through Transpo24 where such restriction is permitted by applicable law.
 
 Specific consequences of platform circumvention may be set out separately and must comply with applicable law.
 
-20. Intellectual Property
+21. Intellectual Property
 
 The Transpo24 name, platform, software, designs, logos and other protected materials may only be used as permitted by the relevant rights holder.
 
 Transpo24 is currently operated by Autobasilea GmbH. Ownership and operation of the platform may later be transferred to a dedicated Transpo24 legal entity.
 
-21. Privacy
+22. Privacy
 
 Personal data is processed in accordance with applicable Swiss data protection law and, where applicable, the GDPR.
 
 A separate Transpo24 Privacy Policy provides further information regarding data collection, processing, GPS/location data, KYC documents, payment providers, user rights, storage and deletion.
 
-22. Changes to the Platform and Terms
+23. Changes to the Platform and Terms
 
 Transpo24 may develop and modify its services, matching system, payment methods, non-binding price guidance and other platform functions over time.
 
@@ -290,7 +317,7 @@ Material changes affecting users’ legal rights or obligations will be communic
 
 Changes to technical functionality or non-binding pricing guidance do not affect the price of a transport already agreed between a customer and transport service provider.
 
-23. Switzerland and Future Expansion
+24. Switzerland and Future Expansion
 
 Transpo24 will initially operate in Switzerland.
 
@@ -298,13 +325,13 @@ The technical platform may support additional countries in the future.
 
 The availability of technical functionality in another country does not mean that Transpo24 will launch there without first considering applicable local legal and regulatory requirements.
 
-24. Governing Law
+25. Governing Law
 
 These Terms are governed by Swiss law, subject to any mandatory legal protections applicable to consumers or other users.
 
 Any mandatory statutory jurisdiction rights remain unaffected.
 
-25. Contact
+26. Contact
 
 Transpo24
 operated by Autobasilea GmbH
@@ -315,20 +342,11 @@ Switzerland
 
 Email: info@transpo24.ch
 Phone: +41 79 800 98 00
-UID / Handelsregister-Nr.: CHE-327.671.246
-
-⸻
-
-IMPORTANT NOTICE
-
-This is an interim version of the Transpo24 Terms & Conditions prepared for temporary platform/app submission purposes.
-
-The Terms are currently undergoing legal review and may be replaced or updated before the commercial launch of Transpo24.`;
+UID / Handelsregister-Nr.: CHE-327.671.246`;
 
 export const PRIVACY_POLICY = `TRANSPO24 – PRIVACY POLICY
 
 Effective date: 25 August 2026
-Interim Version – Pending Final Legal Review
 
 1. Who We Are
 
@@ -665,6 +683,8 @@ Specific retention periods may be updated to reflect technical, legal and regula
 
 Users may request deletion of their account.
 
+Users may submit a deletion request at any time. If an account has an active transport request, that transport request must first be completed or cancelled before account deletion can be completed.
+
 Certain information may need to be retained after account deletion where required by law or reasonably necessary for:
 
 * accounting;
@@ -753,12 +773,4 @@ Switzerland
 Email: privacy@transpo24.ch
 General contact: info@transpo24.ch
 Phone: +41 79 800 98 00
-UID / Handelsregister-Nr.: CHE-327.671.246
-
-⸻
-
-IMPORTANT NOTICE
-
-This is an interim Privacy Policy prepared for temporary platform and app submission purposes.
-
-It is currently subject to final legal review and may be amended before the commercial launch of Transpo24.`;
+UID / Handelsregister-Nr.: CHE-327.671.246`;

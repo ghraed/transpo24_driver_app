@@ -14,13 +14,15 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#FFBE09",
-        "foregroundImage": "./assets/images/android-icon-foreground.png"
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.transpo24.driver",
-      "permissions": [
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.FOREGROUND_SERVICE"
       ]
     },
     "web": {
@@ -29,6 +31,8 @@
     },
     "plugins": [
       "expo-router",
+      "expo-image",
+      "expo-web-browser",
       [
         "expo-image-picker",
         {
@@ -42,11 +46,18 @@
           "backgroundColor": "#FFFFFF",
           "android": {
             "image": "./assets/images/splash-icon.png",
-            "imageWidth": 1
+            "imageWidth": 180
           }
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#FFBE09",
+          "defaultChannel": "transport_jobs"
+        }
+      ],
       [
         "expo-location",
         {

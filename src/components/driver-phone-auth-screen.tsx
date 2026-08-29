@@ -64,6 +64,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   const [isUsingDifferentPhoneNumber, setIsUsingDifferentPhoneNumber] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const hasTrustedDevice = mode === 'login' && Boolean(trustedPhoneNumber);
   const showTrustedSessionChoice = hasTrustedDevice && !isUsingDifferentPhoneNumber;
   const needsDefaultLanguage = mode === 'register' && !hasSavedLanguage;
@@ -104,6 +105,10 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
       setErrorMessage(t('Phone number is required.'));
       return;
     }
+    if (mode === 'register' && !hasAcceptedTerms) {
+      setErrorMessage(t('You must accept the Terms & Conditions and Privacy Policy to create an account.'));
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -122,7 +127,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [dialingCode, isSubmitting, mode, phoneNumber, router, t]);
+  }, [dialingCode, hasAcceptedTerms, isSubmitting, mode, phoneNumber, router, t]);
 
   const continueTrustedSession = useCallback(async (): Promise<void> => {
     if (!hasTrustedDevice || isContinuing) return;
@@ -276,6 +281,40 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
                   </View>
                   {showRequiredPhoneError ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{t('Phone number is required.')}</Text> : null}
                   {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
+                  {mode === 'register' ? (
+                    <View style={styles.termsRow}>
+                      <Pressable
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: hasAcceptedTerms }}
+                        accessibilityLabel={t('Accept the Terms & Conditions and Privacy Policy')}
+                        style={[styles.checkbox, hasAcceptedTerms && styles.checkboxChecked]}
+                        onPress={() => {
+                          setHasAcceptedTerms((current) => !current);
+                          setErrorMessage('');
+                        }}
+                      >
+                        {hasAcceptedTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                      </Pressable>
+                      <View style={styles.termsCopy}>
+                        <Text style={styles.termsText}>{t('I agree to the')}</Text>
+                        <View style={styles.termsLinks}>
+                          <Pressable
+                            accessibilityRole="link"
+                            onPress={() => router.push({ pathname: '/legal', params: { document: 'terms' } } as never)}
+                          >
+                            <Text style={styles.termsLink}>{t('Terms & Conditions')}</Text>
+                          </Pressable>
+                          <Text style={styles.termsText}>{t('and')}</Text>
+                          <Pressable
+                            accessibilityRole="link"
+                            onPress={() => router.push({ pathname: '/legal', params: { document: 'privacy' } } as never)}
+                          >
+                            <Text style={styles.termsLink}>{t('Privacy Policy')}</Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    </View>
+                  ) : null}
                   <Pressable style={[styles.button, isSubmitting && styles.disabled]} disabled={isSubmitting} onPress={() => void sendCode()}>
                     {isSubmitting ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Send verification code')}</Text>}
                   </Pressable>
@@ -317,6 +356,22 @@ const styles = StyleSheet.create({
   rtlInput: { textAlign: 'right', writingDirection: 'rtl' },
   rtl: { textAlign: 'right', writingDirection: 'rtl' },
   error: { color: authTheme.danger, fontSize: 14, marginTop: 10 },
+  termsRow: { marginTop: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: authTheme.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: { borderColor: authTheme.accentStrong, backgroundColor: authTheme.accent },
+  checkboxMark: { color: authTheme.text, fontSize: 16, lineHeight: 18, fontWeight: '900' },
+  termsCopy: { flex: 1, gap: 3 },
+  termsLinks: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 5 },
+  termsText: { color: authTheme.textMuted, fontSize: 13, lineHeight: 18 },
+  termsLink: { color: authTheme.accentStrong, fontSize: 13, lineHeight: 18, fontWeight: '800', textDecorationLine: 'underline' },
   languageHelp: { color: authTheme.textMuted, fontSize: 14, lineHeight: 21, marginTop: -14, marginBottom: 18 },
   languageChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   languageChoice: {
