@@ -81,6 +81,10 @@ interface ResetUsersForTestingPayload {
 
 const REQUEST_TIMEOUT_MS = 12000;
 const AUTH_REGISTER_TIMEOUT_MS = 30000;
+// A 5 MB document can legitimately take well over the normal API timeout on a
+// mobile uplink. The production proxy logs the client closing these requests
+// before the API can respond when the generic 12-second timeout is used.
+const DOCUMENT_UPLOAD_TIMEOUT_MS = 180000;
 
 function getApiBaseUrl(): string {
   return getBackendApiBaseUrl();
@@ -345,14 +349,18 @@ function uploadFormDataWithXhr(
     };
 
     xhr.onerror = () => {
-      reject(createBackendReachabilityError(endpoint));
+      reject(
+        new Error(
+          'Document upload was interrupted before the server responded. Check your internet connection and try again.',
+        ),
+      );
     };
 
     xhr.ontimeout = () => {
       reject(new Error(`Request timed out while uploading to ${endpoint}.`));
     };
 
-    xhr.timeout = REQUEST_TIMEOUT_MS;
+    xhr.timeout = DOCUMENT_UPLOAD_TIMEOUT_MS;
     xhr.send(formData);
   });
 }
