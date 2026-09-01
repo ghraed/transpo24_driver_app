@@ -10,9 +10,8 @@ import { nextStepToRoute } from '@/lib/onboarding-route';
 export default function WaitingApprovalScreen() {
   const router = useRouter();
   const { t } = useTranslation();
-  const { driver, refreshDriverMe, signOut } = useAuth();
+  const { driver, refreshDriverMe } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const statusCopy = useMemo(() => {
@@ -20,7 +19,7 @@ export default function WaitingApprovalScreen() {
       return {
         title: t('Review Declined'),
         subtitle:
-          t('Your submission was declined by admin review. You can return to the login screen and try again later.'),
+          t('Your submission was declined by admin review. You can return to the home screen and try again later.'),
       };
     }
 
@@ -57,19 +56,8 @@ export default function WaitingApprovalScreen() {
     }
   };
 
-  const handleBackToLogin = async () => {
-    if (isSigningOut) return;
-
-    setIsSigningOut(true);
-    setErrorMessage('');
-
-    try {
-      await signOut();
-      router.replace('/');
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t('Failed to sign out.'));
-      setIsSigningOut(false);
-    }
+  const handleBackToHome = () => {
+    router.replace('/receive-requests');
   };
 
   return (
@@ -100,21 +88,13 @@ export default function WaitingApprovalScreen() {
 
         <Pressable
           accessibilityRole="button"
-          disabled={isSigningOut}
-          onPress={() => {
-            void handleBackToLogin();
-          }}
+          onPress={handleBackToHome}
           style={({ pressed }) => [
             styles.secondaryButton,
             pressed ? styles.secondaryButtonPressed : null,
-            isSigningOut ? styles.buttonDisabled : null,
           ]}
         >
-          {isSigningOut ? (
-            <ActivityIndicator color="#F1B900" size="small" />
-          ) : (
-            <Text style={styles.secondaryButtonText}>{t('Back to login')}</Text>
-          )}
+          <Text style={styles.secondaryButtonText}>{t('Back to home')}</Text>
         </Pressable>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
