@@ -49,6 +49,14 @@
         "EXPO_PUBLIC_ANDROID_SOCKET_URL": "https://api.transpo24.com"
       },
       "autoIncrement": true
+    },
+
+    "production-apk": {
+      "extends": "production",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {
