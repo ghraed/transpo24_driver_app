@@ -1404,5 +1404,17 @@
   "vehicleRequest.body.OTHER": "Otro",
   "vehicleRequest.transmissionType.MANUAL": "Manual",
   "vehicleRequest.transmissionType.AUTOMATIC": "Automática",
-  "vehicleRequest.transmissionType.OTHER": "Otra"
+  "vehicleRequest.transmissionType.OTHER": "Otra",
+  "Restarting to apply update…": "Reiniciando para aplicar la actualización…",
+  "Downloading update…": "Descargando actualización…",
+  "Downloading update… {{percent}}%": "Descargando actualización… {{percent}} %",
+  "Could not restart. Close and reopen the app to apply the update.": "No se pudo reiniciar. Cierra y vuelve a abrir la aplicación para aplicar la actualización.",
+  "Update ready. Restart when convenient to apply it.": "Actualización lista. Reinicia cuando te convenga para aplicarla.",
+  "Checking for updates…": "Buscando actualizaciones…",
+  "Update could not start. Using the previous app version.": "La actualización no pudo iniciarse. Se está usando la versión anterior.",
+  "Update unavailable. We’ll try again next time you open the app.": "Actualización no disponible. Lo intentaremos la próxima vez que abras la aplicación.",
+  "Update applied. You’re running the downloaded version.": "Actualización aplicada. Estás usando la versión descargada.",
+  "Restart now": "Reiniciar ahora",
+  "Dismiss": "Cerrar",
+  "Update download": "Descarga de actualización"
 }

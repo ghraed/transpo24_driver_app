@@ -1404,5 +1404,17 @@
   "vehicleRequest.body.OTHER": "Sonstige",
   "vehicleRequest.transmissionType.MANUAL": "Schaltgetriebe",
   "vehicleRequest.transmissionType.AUTOMATIC": "Automatik",
-  "vehicleRequest.transmissionType.OTHER": "Sonstiges"
+  "vehicleRequest.transmissionType.OTHER": "Sonstiges",
+  "Restarting to apply update…": "Neustart zum Anwenden des Updates…",
+  "Downloading update…": "Update wird heruntergeladen…",
+  "Downloading update… {{percent}}%": "Update wird heruntergeladen… {{percent}} %",
+  "Could not restart. Close and reopen the app to apply the update.": "Neustart fehlgeschlagen. Schließen und öffnen Sie die App, um das Update anzuwenden.",
+  "Update ready. Restart when convenient to apply it.": "Update bereit. Starten Sie die App neu, sobald es Ihnen passt.",
+  "Checking for updates…": "Suche nach Updates…",
+  "Update could not start. Using the previous app version.": "Update konnte nicht starten. Die vorherige App-Version wird verwendet.",
+  "Update unavailable. We’ll try again next time you open the app.": "Update nicht verfügbar. Beim nächsten Öffnen versuchen wir es erneut.",
+  "Update applied. You’re running the downloaded version.": "Update angewendet. Sie verwenden die heruntergeladene Version.",
+  "Restart now": "Jetzt neu starten",
+  "Dismiss": "Schließen",
+  "Update download": "Update-Download"
 }

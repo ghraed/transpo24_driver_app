@@ -14,7 +14,8 @@
         "EXPO_PUBLIC_SOCKET_URL": "http://127.0.0.1:3001",
         "EXPO_PUBLIC_ANDROID_API_URL": "http://127.0.0.1:3001",
         "EXPO_PUBLIC_ANDROID_SOCKET_URL": "http://127.0.0.1:3001"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -25,7 +26,8 @@
         "EXPO_PUBLIC_SOCKET_URL": "https://api.transpo24.com",
         "EXPO_PUBLIC_ANDROID_API_URL": "https://api.transpo24.com",
         "EXPO_PUBLIC_ANDROID_SOCKET_URL": "https://api.transpo24.com"
-      }
+      },
+      "channel": "preview"
     },
     "play-test": {
       "distribution": "store",
@@ -37,7 +39,8 @@
         "EXPO_PUBLIC_ANDROID_API_URL": "https://api.transpo24.com",
         "EXPO_PUBLIC_ANDROID_SOCKET_URL": "https://api.transpo24.com"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "play-test"
     },
     "production": {
       "environment": "production",
@@ -48,15 +51,16 @@
         "EXPO_PUBLIC_ANDROID_API_URL": "https://api.transpo24.com",
         "EXPO_PUBLIC_ANDROID_SOCKET_URL": "https://api.transpo24.com"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
     },
-
     "production-apk": {
       "extends": "production",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "production-apk"
     }
   },
   "submit": {

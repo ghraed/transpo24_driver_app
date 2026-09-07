@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { OtaUpdateBanner } from '@/components/ota-update-banner';
 import { EnvironmentBanner } from '@/components/environment-banner';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { LocalizationProvider, useAppLanguage } from '@/localization/provider';
@@ -123,6 +124,7 @@ function AppNavigator() {
   return (
     <View style={styles.appContainer}>
       <EnvironmentBanner />
+      <OtaUpdateBanner />
       <View style={styles.navigator}>
         <Stack>
       <Stack.Screen name="index" options={{ title: t('Driver Login') }} />

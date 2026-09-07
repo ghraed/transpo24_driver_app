@@ -34,7 +34,7 @@ function formatDate(value: string | null): string {
 }
 
 function availabilityMessage(requestStatus: string): string | null {
-  if (requestStatus === 'PENDING_QUOTES') {
+  if (requestStatus === 'PENDING_QUOTES' || requestStatus === 'QUOTED') {
     return null;
   }
 
@@ -260,7 +260,8 @@ export default function ReviewRequestDetailsScreen() {
   const canAccept = useMemo(() => {
     if (!details) return false;
     if (details.alertStatus === 'IGNORED' || details.alertStatus === 'EXPIRED') return false;
-    if (details.requestStatus !== 'PENDING_QUOTES') return false;
+    if (details.offerStatus) return false;
+    if (details.requestStatus !== 'PENDING_QUOTES' && details.requestStatus !== 'QUOTED') return false;
     return true;
   }, [details]);
 
@@ -489,24 +490,32 @@ export default function ReviewRequestDetailsScreen() {
         </Pressable>
       </Modal>
 
-      <View style={styles.actionsContainer}>
-        <Pressable
-          style={[styles.secondaryButton, isBusy ? styles.disabledButton : undefined]}
-          onPress={onIgnore}
-          disabled={isBusy}
-        >
-          <Text style={styles.secondaryButtonText}>{t('Ignore')}</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.primaryActionButton, (!canAccept || isBusy) ? styles.disabledButton : undefined]}
-          onPress={() => void onAccept()}
-          disabled={!canAccept || isBusy}
-        >
-          <Text style={styles.primaryActionButtonText}>
-            {isBusy ? t('Please wait...') : t('Accept & Send Offer')}
+      {details.offerStatus === 'PENDING' && !requestUnavailableMessage ? (
+        <View style={styles.actionsContainer}>
+          <Text style={styles.metaText}>
+            {t('Your offer is pending customer review. We will notify you when the customer chooses.')}
           </Text>
-        </Pressable>
-      </View>
+        </View>
+      ) : (
+        <View style={styles.actionsContainer}>
+          <Pressable
+            style={[styles.secondaryButton, isBusy ? styles.disabledButton : undefined]}
+            onPress={onIgnore}
+            disabled={isBusy}
+          >
+            <Text style={styles.secondaryButtonText}>{t('Ignore')}</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.primaryActionButton, (!canAccept || isBusy) ? styles.disabledButton : undefined]}
+            onPress={() => void onAccept()}
+            disabled={!canAccept || isBusy}
+          >
+            <Text style={styles.primaryActionButtonText}>
+              {isBusy ? t('Please wait...') : t('Accept & Send Offer')}
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

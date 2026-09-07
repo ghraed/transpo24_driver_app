@@ -579,6 +579,7 @@ export interface RequestPhoto {
 }
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  offerStatus: DriverOfferStatus | null;
   customerNote: string | null;
   customer: {
     firstName: string | null;

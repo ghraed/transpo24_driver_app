@@ -1404,5 +1404,17 @@
   "vehicleRequest.body.OTHER": "أخرى",
   "vehicleRequest.transmissionType.MANUAL": "يدوي",
   "vehicleRequest.transmissionType.AUTOMATIC": "أوتوماتيك",
-  "vehicleRequest.transmissionType.OTHER": "أخرى"
+  "vehicleRequest.transmissionType.OTHER": "أخرى",
+  "Restarting to apply update…": "جارٍ إعادة التشغيل لتطبيق التحديث…",
+  "Downloading update…": "جارٍ تنزيل التحديث…",
+  "Downloading update… {{percent}}%": "جارٍ تنزيل التحديث… {{percent}}٪",
+  "Could not restart. Close and reopen the app to apply the update.": "تعذرت إعادة التشغيل. أغلق التطبيق وافتحه مجددًا لتطبيق التحديث.",
+  "Update ready. Restart when convenient to apply it.": "التحديث جاهز. أعد التشغيل في الوقت المناسب لتطبيقه.",
+  "Checking for updates…": "جارٍ البحث عن تحديثات…",
+  "Update could not start. Using the previous app version.": "تعذر تشغيل التحديث. يتم استخدام الإصدار السابق من التطبيق.",
+  "Update unavailable. We’ll try again next time you open the app.": "التحديث غير متاح. سنحاول مجددًا عند فتح التطبيق في المرة القادمة.",
+  "Update applied. You’re running the downloaded version.": "تم تطبيق التحديث. أنت تستخدم الإصدار الذي تم تنزيله.",
+  "Restart now": "إعادة التشغيل الآن",
+  "Dismiss": "إغلاق",
+  "Update download": "تنزيل التحديث"
 }

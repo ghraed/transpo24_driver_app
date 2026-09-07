@@ -1404,5 +1404,17 @@
   "vehicleRequest.body.OTHER": "Other",
   "vehicleRequest.transmissionType.MANUAL": "Manual",
   "vehicleRequest.transmissionType.AUTOMATIC": "Automatic",
-  "vehicleRequest.transmissionType.OTHER": "Other"
+  "vehicleRequest.transmissionType.OTHER": "Other",
+  "Restarting to apply update…": "Restarting to apply update…",
+  "Downloading update…": "Downloading update…",
+  "Downloading update… {{percent}}%": "Downloading update… {{percent}}%",
+  "Could not restart. Close and reopen the app to apply the update.": "Could not restart. Close and reopen the app to apply the update.",
+  "Update ready. Restart when convenient to apply it.": "Update ready. Restart when convenient to apply it.",
+  "Checking for updates…": "Checking for updates…",
+  "Update could not start. Using the previous app version.": "Update could not start. Using the previous app version.",
+  "Update unavailable. We’ll try again next time you open the app.": "Update unavailable. We’ll try again next time you open the app.",
+  "Update applied. You’re running the downloaded version.": "Update applied. You’re running the downloaded version.",
+  "Restart now": "Restart now",
+  "Dismiss": "Dismiss",
+  "Update download": "Update download"
 }
