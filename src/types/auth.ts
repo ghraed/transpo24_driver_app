@@ -536,7 +536,21 @@ export interface RequestItemSummary {
   description: string | null;
 }
 
+export interface TransportedVehicleDetails {
+  brand: string | null;
+  model: string | null;
+  manufactureYear: number | null;
+  estimatedWeightKg: number | null;
+  bodyType: string | null;
+  condition: string | null;
+  conditionNotes: string | null;
+  mobility?: string | null;
+  issues?: string[];
+  transmission?: string | null;
+}
+
 export interface DriverRequestAlertSummary {
+  vehicleDetails?: TransportedVehicleDetails;
   alertId: string;
   requestId: string;
   alertStatus: DriverRequestAlertStatus;
@@ -655,6 +669,7 @@ export interface AcceptedOffer extends DriverOffer {
 }
 
 export interface DriverAcceptedJobSummary {
+  vehicleDetails?: TransportedVehicleDetails;
   requestId: string;
   requestStatus: RequestStatus;
   acceptedAt: string | null;

@@ -1,3 +1,4 @@
+import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -402,6 +403,7 @@ export default function ReviewRequestDetailsScreen() {
           </Text>
         </View>
 
+        {details.service?.key === 'VEHICLE_TRANSPORT' && details.vehicleDetails ? <TransportedVehicleCard vehicle={details.vehicleDetails} /> : (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
           <Text style={styles.sectionValue}>
@@ -456,6 +458,7 @@ export default function ReviewRequestDetailsScreen() {
             <Text style={styles.metaText}>{t('Special')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions}</Text>
           ) : null}
         </View>
+        )}
 
         {details.customerNote ? (
           <View style={styles.card}>

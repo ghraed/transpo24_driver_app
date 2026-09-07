@@ -1,3 +1,4 @@
+import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -444,6 +445,7 @@ export default function AcceptedJobDetailsScreen() {
           </Text>
         </View>
 
+        {details.service?.key === 'VEHICLE_TRANSPORT' && details.vehicleDetails ? <TransportedVehicleCard vehicle={details.vehicleDetails} /> : (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
           <Text style={styles.metaText}>{t('Title')}: {translatedTextByKey.itemTitle || details.itemDetails.title || details.item.title || t('N/A')}</Text>
@@ -473,6 +475,7 @@ export default function AcceptedJobDetailsScreen() {
           <Text style={styles.metaText}>{t('Special instructions')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions || t('N/A')}</Text>
           <Text style={styles.metaText}>{t('Customer note')}: {translatedTextByKey.customerNote || details.customerNote || t('N/A')}</Text>
         </View>
+        )}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Photos')}</Text>
