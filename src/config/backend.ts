@@ -34,22 +34,6 @@ const BACKEND_CONNECTION_TARGETS: readonly BackendConnectionTarget[] = [
   },
 ] as const;
 
-/**
- * Expo Go and development-client sessions execute with __DEV__ enabled. Keep
- * those sessions on the locally running API even though EXPO_PUBLIC_* values
- * are bundled into the app for production builds. On Android, adb reverse
- * makes the device's loopback address reach the development machine.
- */
-function getDevelopmentBackendUrl(): string | undefined {
-  if (!__DEV__) {
-    return undefined;
-  }
-
-  return Platform.OS === 'android'
-    ? 'http://127.0.0.1:3001'
-    : 'http://localhost:3001';
-}
-
 function normalizeHttpUrl(rawValue: string): string {
   const trimmed = rawValue.trim();
   return /^https?:\/\//i.test(trimmed) || !/^[a-z0-9.-]+:\d+($|\/)/i.test(trimmed)
@@ -102,11 +86,6 @@ function parseHttpUrl(envName: string, rawValue: string): URL {
 }
 
 function readBackendEnvValue(baseName: 'API_URL' | 'SOCKET_URL'): string | undefined {
-  const developmentUrl = getDevelopmentBackendUrl();
-  if (developmentUrl) {
-    return developmentUrl;
-  }
-
   if (Platform.OS === 'android') {
     const androidOverride =
       baseName === 'API_URL'

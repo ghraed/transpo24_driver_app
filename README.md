@@ -81,3 +81,27 @@ Join our community of developers creating universal apps.
 
 See [the driver OTA runbook](docs/ota-updates.md) for the required first native
 build, device verification, channel mapping, and production publishing commands.
+# Android development alongside Google Play
+
+Run `npm run android:usb` with your phone connected and the local backend running.
+It installs **Transpo24 Driver Dev** (`com.transpo24.driver.dev`) alongside the
+Play Store driver app. Driver Metro uses port **8082**; Customer Dev uses 8081.
+
+Local commands load `.env` and Expo's development overrides, including
+`.env.development` and `.env.local`. The checked-in `.env.development` selects
+the local API/socket server at `http://127.0.0.1:3001`. Inherited public shell
+variables are cleared first, so production values do not override these files.
+Production EAS profiles and `.env.production` retain their production settings.
+
+After installation, `npm run start:android:usb` reconnects USB ports and starts
+Metro without a native rebuild. Rerun `npm run android:usb` for native changes.
+The build script backs up native sources to a printed temporary directory when
+regenerating the ignored Android project for a different app identity.
+
+Dev uses `transpo24-driver-dev` links and disables OTA updates. For Dev push
+notifications, register `com.transpo24.driver.dev` in Firebase, download its
+configuration to `google-services.dev.json`, and set
+`EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE=./google-services.dev.json` in `.env.local`.
+Without that file, Dev builds without Firebase push configuration. If your Maps
+Android key is restricted, authorize the Dev package and debug signing SHA-1 in
+Google Cloud. Rebuild after changing native service configuration.

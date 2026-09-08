@@ -1,6 +1,8 @@
-import type { ConfigContext } from 'expo/config';
+import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { AndroidConfig, withAndroidManifest } from 'expo/config-plugins';
-import type { ExpoConfig } from 'expo/config';
+import { readFileSync } from 'node:fs';
+
+const IS_DEV = process.env.APP_VARIANT === 'development';
 
 const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ?? '';
 const MAPS_IOS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY ?? '';
@@ -14,6 +16,18 @@ const ANDROID_GOOGLE_SERVICES_FILE =
   './google-services.json';
 
 export default ({ config }: ConfigContext) => {
+  const androidPackage = IS_DEV ? 'com.transpo24.driver.dev' : config.android?.package;
+  const androidGoogleServicesFile = IS_DEV
+    ? process.env.EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE?.trim() || ''
+    : ANDROID_GOOGLE_SERVICES_FILE;
+  if (IS_DEV && androidGoogleServicesFile) {
+    const services = JSON.parse(readFileSync(androidGoogleServicesFile, 'utf8'));
+    if (!services.client?.some((client: { client_info?: { android_client_info?: { package_name?: string } } }) =>
+      client.client_info?.android_client_info?.package_name === androidPackage,
+    )) {
+      throw new Error('Dev Firebase configuration must register com.transpo24.driver.dev.');
+    }
+  }
   const existingPlugins = Array.isArray(config.plugins) ? config.plugins : [];
   const pluginsWithoutReactNativeMaps = existingPlugins.filter((plugin) => {
     if (typeof plugin === 'string') {
@@ -29,6 +43,11 @@ export default ({ config }: ConfigContext) => {
 
   const expoConfig = {
     ...config,
+    ...(IS_DEV ? {
+      name: 'Transpo24 Driver Dev',
+      scheme: 'transpo24-driver-dev',
+      updates: { ...config.updates, enabled: false },
+    } : {}),
     ios: {
       ...config.ios,
       config: {
@@ -38,9 +57,8 @@ export default ({ config }: ConfigContext) => {
     },
     android: {
       ...config.android,
-      ...(ANDROID_GOOGLE_SERVICES_FILE
-        ? { googleServicesFile: ANDROID_GOOGLE_SERVICES_FILE }
-        : {}),
+      package: androidPackage,
+      googleServicesFile: androidGoogleServicesFile || undefined,
       config: {
         ...config.android?.config,
         googleMaps: {

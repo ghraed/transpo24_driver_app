@@ -1,24 +1,14 @@
 #!/usr/bin/env node
 
 const net = require('node:net');
-const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 const { reversePort } = require('./setup-adb-reverse');
+const { loadLocalEnv, projectRoot } = require('./local-env');
+const { prepareAndroid } = require('./prepare-android');
 
 const BACKEND_PORT = 3001;
 const DEFAULT_METRO_PORT = 8082;
-const APP_SCHEME = 'drivermobile';
-const APP_PACKAGE = 'com.transpo24.driver';
-const ANDROID_PROJECT_ROOT = path.join(__dirname, '..', 'android');
-const DEBUG_APK_PATH = path.join(
-  ANDROID_PROJECT_ROOT,
-  'app',
-  'build',
-  'outputs',
-  'apk',
-  'debug',
-  'app-debug.apk',
-);
+const APP_PACKAGE = 'com.transpo24.driver.dev';
 const forwardedArgs = process.argv.slice(2);
 
 function stripMetroArgs(args) {
@@ -119,7 +109,7 @@ function getLocalPortListenerPids(port) {
     return [];
   }
 
-  const lookup = spawnSync('lsof', ['-ti', `tcp:${port}`], {
+  const lookup = spawnSync('lsof', ['-t', '-iTCP:' + port, '-sTCP:LISTEN'], {
     encoding: 'utf8',
   });
 
@@ -153,75 +143,8 @@ function stopLocalPortListeners(port) {
   }
 }
 
-function openDevClientUrl(port) {
-  const devClientUrl = `${APP_SCHEME}://expo-development-client/?url=${encodeURIComponent(
-    `http://127.0.0.1:${port}`,
-  )}`;
-
-  const openResult = spawnSync(
-    'adb',
-    [
-      'shell',
-      'am',
-      'start',
-      '-W',
-      '-a',
-      'android.intent.action.VIEW',
-      '-d',
-      devClientUrl,
-      APP_PACKAGE,
-    ],
-    { stdio: 'inherit' },
-  );
-
-  if ((openResult.status ?? 1) !== 0) {
-    console.error(`Failed to open ${devClientUrl} on the Android device.`);
-    process.exit(openResult.status ?? 1);
-  }
-}
-
-function forceStopApp() {
-  const stopResult = spawnSync(
-    'adb',
-    ['shell', 'am', 'force-stop', APP_PACKAGE],
-    { stdio: 'inherit' },
-  );
-
-  if ((stopResult.status ?? 1) !== 0) {
-    console.error(`Failed to stop ${APP_PACKAGE} before reopening the dev client.`);
-    process.exit(stopResult.status ?? 1);
-  }
-}
-
-function buildDebugApk(port) {
-  const buildResult = spawnSync(
-    './gradlew',
-    ['app:assembleDebug', `-PreactNativeDevServerPort=${port}`],
-    {
-      cwd: ANDROID_PROJECT_ROOT,
-      stdio: 'inherit',
-    },
-  );
-
-  if ((buildResult.status ?? 1) !== 0) {
-    process.exit(buildResult.status ?? 1);
-  }
-}
-
-function installDebugApk() {
-  const installResult = spawnSync(
-    'adb',
-    ['install', '-r', '-d', '--user', '0', DEBUG_APK_PATH],
-    { stdio: 'inherit' },
-  );
-
-  if ((installResult.status ?? 1) !== 0) {
-    console.error(`Failed to install ${DEBUG_APK_PATH}.`);
-    process.exit(installResult.status ?? 1);
-  }
-}
-
 async function main() {
+  loadLocalEnv();
   const metroPort = getMetroPort(forwardedArgs);
   const nativeRunArgs = stripMetroArgs(forwardedArgs);
   const clearMetroCache = shouldClearMetroCache(forwardedArgs);
@@ -232,17 +155,28 @@ async function main() {
     if (metroPort !== BACKEND_PORT) {
       reversePort(metroPort);
     }
+    prepareAndroid();
   } catch (error) {
     failWithMessage(error);
   }
 
   let metroProcess = null;
+  const stopMetro = (signal = 'SIGTERM') => {
+    if (metroProcess && !metroProcess.killed) {
+      metroProcess.kill(signal);
+    }
+  };
+
   let metroAlreadyRunning = await isLocalPortOpen(metroPort);
 
   if (metroAlreadyRunning && restartMetro) {
     console.log(`Stopping the existing Metro server on port ${metroPort}...`);
     stopLocalPortListeners(metroPort);
-    metroAlreadyRunning = await isLocalPortOpen(metroPort);
+    const deadline = Date.now() + 5000;
+    do {
+      await sleep(100);
+      metroAlreadyRunning = await isLocalPortOpen(metroPort);
+    } while (metroAlreadyRunning && Date.now() < deadline);
 
     if (metroAlreadyRunning) {
       console.error(
@@ -257,7 +191,7 @@ async function main() {
       `Metro is already running on port ${metroPort}. Reusing the existing Expo dev server.`,
     );
   } else {
-    const metroArgs = ['expo', 'start', '--dev-client', '--port', String(metroPort)];
+    const metroArgs = ['expo', 'start', '--dev-client', '--scheme', 'transpo24-driver-dev', '--port', String(metroPort)];
     if (clearMetroCache) {
       metroArgs.push('--clear');
     }
@@ -274,12 +208,6 @@ async function main() {
     }
   }
 
-  const stopMetro = (signal = 'SIGTERM') => {
-    if (metroProcess && !metroProcess.killed) {
-      metroProcess.kill(signal);
-    }
-  };
-
   process.on('SIGINT', () => {
     stopMetro('SIGINT');
     process.exit(130);
@@ -290,16 +218,14 @@ async function main() {
     process.exit(143);
   });
 
-  if (nativeRunArgs.length > 0) {
-    console.warn(`Ignoring unsupported native run arguments: ${nativeRunArgs.join(' ')}`);
+  const runResult = spawnSync('npx', [
+    'expo', 'run:android', '--port', String(metroPort),
+    '--app-id', APP_PACKAGE, ...nativeRunArgs,
+  ], { cwd: projectRoot, stdio: 'inherit' });
+  if (runResult.status !== 0) {
+    stopMetro();
+    process.exit(runResult.status ?? 1);
   }
-
-  buildDebugApk(metroPort);
-  installDebugApk();
-
-  console.log(`Reopening ${APP_SCHEME} on http://127.0.0.1:${metroPort}...`);
-  forceStopApp();
-  openDevClientUrl(metroPort);
 
   if (!metroProcess) {
     process.exit(0);

@@ -51,8 +51,8 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "start:android:usb": "node ./scripts/setup-adb-reverse.js && expo start --dev-client",
+    "start": "node ./scripts/local-expo.js start --port 8082 --scheme transpo24-driver-dev",
+    "start:android:usb": "node ./scripts/start-android-usb.js",
     "adb:reverse": "node ./scripts/setup-adb-reverse.js",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "node ./scripts/run-android.js",
