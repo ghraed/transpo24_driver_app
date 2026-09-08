@@ -2,7 +2,7 @@ export type ChatRoomStatus = 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
 
 export type ChatSenderRole = 'CLIENT' | 'DRIVER';
 
-export type ChatMessageType = 'TEXT' | 'IMAGE' | 'SYSTEM';
+export type ChatMessageType = 'TEXT' | 'IMAGE' | 'SYSTEM' | 'FILE';
 
 export type ChatReportReason =
   | 'HARASSMENT'

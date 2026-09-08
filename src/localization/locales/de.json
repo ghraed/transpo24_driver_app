@@ -1416,5 +1416,22 @@
   "Update applied. You’re running the downloaded version.": "Update angewendet. Sie verwenden die heruntergeladene Version.",
   "Restart now": "Jetzt neu starten",
   "Dismiss": "Schließen",
-  "Update download": "Update-Download"
+  "Update download": "Update-Download",
+  "documents.title": "Fahrzeugdokumente",
+  "documents.private": "Nur für den Kunden, den ausgewählten Fahrer und die Verwaltung sichtbar.",
+  "documents.question": "Gibt es ein Dokument, das Sie dem Fahrer senden möchten?",
+  "documents.add": "Dokument hinzufügen",
+  "documents.later": "Vorerst keine Dokumente",
+  "documents.empty": "Keine Fahrzeugdokumente angehängt.",
+  "documents.open": "Datei öffnen",
+  "documents.attach": "Datei anhängen",
+  "documents.loading": "Wird geöffnet…",
+  "documents.failed": "Die Datei konnte nicht geladen oder gesendet werden. Bitte erneut versuchen.",
+  "documents.tooLarge": "Wählen Sie eine Datei mit maximal 10 MB.",
+  "documents.formats": "PDF, JPG oder PNG · maximal 10 MB pro Datei",
+  "documents.retry": "Erneut versuchen",
+  "documents.type.PICKUP_AUTHORIZATION": "Abholvollmacht",
+  "documents.type.INSURANCE": "Versicherungsdokument",
+  "documents.type.PURCHASE_PROOF": "Kaufnachweis",
+  "documents.type.OTHER": "Sonstiges Dokument"
 }

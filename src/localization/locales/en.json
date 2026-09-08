@@ -1416,5 +1416,22 @@
   "Update applied. You’re running the downloaded version.": "Update applied. You’re running the downloaded version.",
   "Restart now": "Restart now",
   "Dismiss": "Dismiss",
-  "Update download": "Update download"
+  "Update download": "Update download",
+  "documents.title": "Vehicle documents",
+  "documents.private": "Visible only to the customer, selected driver and administration.",
+  "documents.question": "Is there a document to send to the driver?",
+  "documents.add": "Add document",
+  "documents.later": "No documents for now",
+  "documents.empty": "No vehicle documents attached.",
+  "documents.open": "Open file",
+  "documents.attach": "Attach file",
+  "documents.loading": "Opening…",
+  "documents.failed": "Unable to load or send the file. Please try again.",
+  "documents.tooLarge": "Choose a file up to 10 MB.",
+  "documents.formats": "PDF, JPG or PNG · up to 10 MB per file",
+  "documents.retry": "Retry",
+  "documents.type.PICKUP_AUTHORIZATION": "Pickup authorization",
+  "documents.type.INSURANCE": "Insurance document",
+  "documents.type.PURCHASE_PROOF": "Proof of purchase",
+  "documents.type.OTHER": "Other document"
 }

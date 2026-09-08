@@ -1416,5 +1416,22 @@
   "Update applied. You’re running the downloaded version.": "تم تطبيق التحديث. أنت تستخدم الإصدار الذي تم تنزيله.",
   "Restart now": "إعادة التشغيل الآن",
   "Dismiss": "إغلاق",
-  "Update download": "تنزيل التحديث"
+  "Update download": "تنزيل التحديث",
+  "documents.title": "مستندات السيارة",
+  "documents.private": "مرئية فقط للزبون والسائق المختار والإدارة.",
+  "documents.question": "هل توجد ورقة يجب إرسالها للسائق؟",
+  "documents.add": "إضافة مستند",
+  "documents.later": "لا توجد مستندات حالياً",
+  "documents.empty": "لم تتم إضافة مستندات للسيارة.",
+  "documents.open": "فتح الملف",
+  "documents.attach": "إرفاق ملف",
+  "documents.loading": "جارٍ الفتح…",
+  "documents.failed": "تعذر تحميل الملف أو إرساله. يرجى المحاولة مجدداً.",
+  "documents.tooLarge": "اختر ملفاً لا يتجاوز 10 ميغابايت.",
+  "documents.formats": "PDF أو JPG أو PNG · حتى 10 ميغابايت لكل ملف",
+  "documents.retry": "إعادة المحاولة",
+  "documents.type.PICKUP_AUTHORIZATION": "تفويض الاستلام",
+  "documents.type.INSURANCE": "وثيقة التأمين",
+  "documents.type.PURCHASE_PROOF": "إثبات الشراء",
+  "documents.type.OTHER": "مستند آخر"
 }

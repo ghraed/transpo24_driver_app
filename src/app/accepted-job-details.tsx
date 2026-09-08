@@ -1,3 +1,4 @@
+import { RequestDocuments } from '@/components/request-documents';
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -445,6 +446,7 @@ export default function AcceptedJobDetailsScreen() {
           </Text>
         </View>
 
+        {details.service?.key === 'VEHICLE_TRANSPORT' ? <RequestDocuments requestId={details.requestId} /> : null}
         {details.service?.key === 'VEHICLE_TRANSPORT' && details.vehicleDetails ? <TransportedVehicleCard vehicle={details.vehicleDetails} /> : (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Item Details')}</Text>

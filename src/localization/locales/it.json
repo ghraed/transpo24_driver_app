@@ -982,5 +982,22 @@
   "Update applied. You’re running the downloaded version.": "Aggiornamento applicato. Stai usando la versione scaricata.",
   "Restart now": "Riavvia ora",
   "Dismiss": "Chiudi",
-  "Update download": "Download aggiornamento"
+  "Update download": "Download aggiornamento",
+  "documents.title": "Documenti del veicolo",
+  "documents.private": "Visibili solo al cliente, all’autista selezionato e all’amministrazione.",
+  "documents.question": "Hai un documento da inviare all’autista?",
+  "documents.add": "Aggiungi documento",
+  "documents.later": "Nessun documento per ora",
+  "documents.empty": "Nessun documento allegato.",
+  "documents.open": "Apri file",
+  "documents.attach": "Allega file",
+  "documents.loading": "Apertura…",
+  "documents.failed": "Impossibile caricare o inviare il file. Riprova.",
+  "documents.tooLarge": "Scegli un file di massimo 10 MB.",
+  "documents.formats": "PDF, JPG o PNG · massimo 10 MB per file",
+  "documents.retry": "Riprova",
+  "documents.type.PICKUP_AUTHORIZATION": "Delega al ritiro",
+  "documents.type.INSURANCE": "Documento assicurativo",
+  "documents.type.PURCHASE_PROOF": "Prova d’acquisto",
+  "documents.type.OTHER": "Altro documento"
 }

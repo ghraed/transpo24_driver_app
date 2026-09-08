@@ -1416,5 +1416,22 @@
   "Update applied. You’re running the downloaded version.": "Mise à jour appliquée. Vous utilisez la version téléchargée.",
   "Restart now": "Redémarrer maintenant",
   "Dismiss": "Fermer",
-  "Update download": "Téléchargement de la mise à jour"
+  "Update download": "Téléchargement de la mise à jour",
+  "documents.title": "Documents du véhicule",
+  "documents.private": "Visibles uniquement par le client, le chauffeur sélectionné et l’administration.",
+  "documents.question": "Avez-vous un document à envoyer au chauffeur ?",
+  "documents.add": "Ajouter un document",
+  "documents.later": "Aucun document pour le moment",
+  "documents.empty": "Aucun document joint.",
+  "documents.open": "Ouvrir le fichier",
+  "documents.attach": "Joindre un fichier",
+  "documents.loading": "Ouverture…",
+  "documents.failed": "Impossible de charger ou d’envoyer le fichier. Réessayez.",
+  "documents.tooLarge": "Choisissez un fichier de 10 Mo maximum.",
+  "documents.formats": "PDF, JPG ou PNG · 10 Mo maximum par fichier",
+  "documents.retry": "Réessayer",
+  "documents.type.PICKUP_AUTHORIZATION": "Autorisation d’enlèvement",
+  "documents.type.INSURANCE": "Document d’assurance",
+  "documents.type.PURCHASE_PROOF": "Justificatif d’achat",
+  "documents.type.OTHER": "Autre document"
 }

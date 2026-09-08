@@ -1,3 +1,4 @@
+import { ChatAttachment, ChatAttachmentButton } from '@/components/chat-attachment';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -590,7 +591,7 @@ export default function ChatScreen() {
   }, [chatRoom, inputValue, isSending]);
 
   const translateIncomingMessage = useCallback(async (message: ChatMessage): Promise<void> => {
-    const body = message.body?.trim() ?? '';
+    const body = message.type === 'FILE' ? '' : message.body?.trim() ?? '';
     if (!body || message.senderRole !== 'CLIENT') {
       return;
     }
@@ -658,7 +659,7 @@ export default function ChatScreen() {
       normalizeComparableText(translatedText) !== normalizeComparableText(item.body),
     );
     const isTranslating = Boolean(translatingMessageIds[item.id]);
-    const displayedBody = isShowingTranslation ? translatedText : item.body;
+    const displayedBody = item.type === 'FILE' ? null : isShowingTranslation ? translatedText : item.body;
 
     return (
       <View style={[styles.messageRow, isDriverMessage ? styles.messageRowRight : styles.messageRowLeft]}>
@@ -667,6 +668,7 @@ export default function ChatScreen() {
           onLongPress={isDriverMessage ? undefined : () => openReportModal(item.id)}
           accessibilityHint={isDriverMessage ? undefined : t('Long press to report this message.')}
         >
+          {item.type === 'FILE' && item.attachmentUrl ? <ChatAttachment url={item.attachmentUrl} name={item.body ?? 'document.pdf'} /> : null}
           {displayedBody ? (
             <Text style={[styles.messageText, isDriverMessage && styles.driverMessageText]}>{displayedBody}</Text>
           ) : null}
@@ -799,6 +801,7 @@ export default function ChatScreen() {
             keyboardInset > 0 ? { paddingBottom: 12 + keyboardInset } : undefined,
           ]}
         >
+          <ChatAttachmentButton roomId={chatRoom.id} disabled={isSending || chatRoom.canSendMessages === false} onSent={message => setMessages(previous => mergeMessages(previous, [message]))} />
           <TextInput
             style={styles.input}
             placeholder={t('Type a message')}

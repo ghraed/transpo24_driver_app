@@ -50,6 +50,7 @@ export default ({ config }: ConfigContext) => {
       },
     },
     plugins: [
+      'expo-sharing',
       ...pluginsWithoutReactNativeMaps,
       [
         'react-native-maps',
