@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Modal,
   Pressable,
@@ -19,7 +18,6 @@ import { resolveBackendAssetUrl } from '@/config/backend';
 import {
   acceptDriverRequestAlert,
   getDriverRequestDetails,
-  ignoreDriverRequestAlert,
 } from '@/lib/api';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
@@ -259,39 +257,10 @@ export default function ReviewRequestDetailsScreen() {
 
   const canAccept = useMemo(() => {
     if (!details) return false;
-    if (details.alertStatus === 'IGNORED' || details.alertStatus === 'EXPIRED') return false;
     if (details.offerStatus) return false;
     if (details.requestStatus !== 'PENDING_QUOTES' && details.requestStatus !== 'QUOTED') return false;
     return true;
   }, [details]);
-
-  const onIgnore = (): void => {
-    if (!requestId || isBusy) return;
-
-    Alert.alert(t('Ignore this request?'), t('You will stop seeing this request in your alerts.'), [
-      { text: t('Cancel'), style: 'cancel' },
-      {
-        text: t('Ignore'),
-        style: 'destructive',
-        onPress: () => {
-          void (async () => {
-            setIsBusy(true);
-            setError('');
-            try {
-              await ignoreDriverRequestAlert(requestId);
-              router.replace('/receive-requests');
-            } catch (requestError) {
-              const message =
-                requestError instanceof Error ? requestError.message : t('Failed to ignore this request.');
-              setError(message);
-            } finally {
-              setIsBusy(false);
-            }
-          })();
-        },
-      },
-    ]);
-  };
 
   const onAccept = async (): Promise<void> => {
     if (!requestId || !canAccept || isBusy) return;
@@ -500,10 +469,10 @@ export default function ReviewRequestDetailsScreen() {
         <View style={styles.actionsContainer}>
           <Pressable
             style={[styles.secondaryButton, isBusy ? styles.disabledButton : undefined]}
-            onPress={onIgnore}
+            onPress={() => router.replace('/receive-requests')}
             disabled={isBusy}
           >
-            <Text style={styles.secondaryButtonText}>{t('Ignore')}</Text>
+            <Text style={styles.secondaryButtonText}>{t('Back')}</Text>
           </Pressable>
           <Pressable
             style={[styles.primaryActionButton, (!canAccept || isBusy) ? styles.disabledButton : undefined]}

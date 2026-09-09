@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -137,6 +137,7 @@ export default function AcceptedJobsScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { signOut } = useAuth();
+  const loadVersion = useRef(0);
   const [jobs, setJobs] = useState<DriverAcceptedJobSummary[]>([]);
   const [chatRoomsByRequestId, setChatRoomsByRequestId] = useState<Record<string, ChatRoom>>({});
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
@@ -146,6 +147,7 @@ export default function AcceptedJobsScreen() {
 
   const loadJobs = useCallback(
     async (refreshing = false): Promise<void> => {
+      const version = ++loadVersion.current;
       if (refreshing) {
         setIsRefreshing(true);
       } else {
@@ -154,22 +156,23 @@ export default function AcceptedJobsScreen() {
 
       setError('');
       try {
-        const [response, chatRoomsResponse] = await Promise.all([
-          getDriverAcceptedJobs(),
-          getDriverChatRooms().catch(() => ({ rooms: [] })),
-        ]);
+        const response = await getDriverAcceptedJobs();
+        if (version !== loadVersion.current) return;
         const activeJobs = (response.jobs ?? []).filter((job) =>
           isActiveAcceptedJobStatus(job.requestStatus),
         );
         setJobs(activeJobs);
-        setChatRoomsByRequestId(
-          Object.fromEntries(
+        // Chat badges must not delay or hide the driver's active work.
+        void getDriverChatRooms().then((chatRoomsResponse) => {
+          if (version !== loadVersion.current) return;
+          setChatRoomsByRequestId(Object.fromEntries(
             (chatRoomsResponse.rooms ?? [])
               .filter((room) => activeJobs.some((job) => job.requestId === room.transportRequestId))
               .map((room) => [room.transportRequestId, room]),
-          ),
-        );
+          ));
+        }).catch(() => undefined);
       } catch (requestError) {
+        if (version !== loadVersion.current) return;
         const message = requestError instanceof Error ? requestError.message : t('Failed to load accepted jobs.');
         const normalized = getSourceErrorMessage(requestError, message).toLowerCase();
         if (
@@ -183,8 +186,10 @@ export default function AcceptedJobsScreen() {
         }
         setError(message);
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        if (version === loadVersion.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
       }
     },
     [router, signOut, t],
@@ -197,7 +202,7 @@ export default function AcceptedJobsScreen() {
         void loadJobs(true);
       }, 25000);
 
-      return () => clearInterval(pollingId);
+      return () => { ++loadVersion.current; clearInterval(pollingId); };
     }, [loadJobs]),
   );
 
@@ -275,12 +280,12 @@ export default function AcceptedJobsScreen() {
         <DriverJobSwitcher active="accepted" />
       </View>
 
-      {isLoading ? (
+      {isLoading && !hasJobs ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#FFC515" />
           <Text style={styles.stateText}>{t('Loading accepted jobs...')}</Text>
         </View>
-      ) : error ? (
+      ) : error && !hasJobs ? (
         <View style={styles.centeredState}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadJobs()}>
@@ -306,6 +311,7 @@ export default function AcceptedJobsScreen() {
             />
           }
         >
+          {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
           {jobs.map((job) => {
             const jobChatRoom = chatRoomsByRequestId[job.requestId];
             const unreadCount = typeof jobChatRoom?.unreadCount === 'number' ? jobChatRoom.unreadCount : 0;
@@ -327,6 +333,7 @@ export default function AcceptedJobsScreen() {
                 style={styles.card}
                 onPress={() => router.push(getAcceptedJobRoute(job))}
               >
+                <Text style={styles.metaText}>#TRP-{job.requestId.slice(0, 8).toUpperCase()}</Text>
                 <View style={styles.cardTopRow}>
                   <Text style={styles.serviceText}>{formatServiceLabel(job.service, i18n.language, t)}</Text>
                   <View style={styles.cardTopMeta}>

@@ -26,13 +26,56 @@ export type DocumentsState = {
   shouldPrompt: boolean;
 };
 const TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+type FileResponse = {
+  ok: boolean;
+  status: number;
+  json: () => Promise<unknown>;
+};
+
+function uploadNativeFile(
+  url: string,
+  form: FormData,
+  token: string | null,
+): Promise<FileResponse> {
+  // Expo 56 fetch cannot serialize React Native's { uri, name, type } parts.
+  // XMLHttpRequest streams those local files through the native networking layer.
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.timeout = 60000;
+    xhr.onload = () =>
+      resolve({
+        ok: xhr.status >= 200 && xhr.status < 300,
+        status: xhr.status,
+        json: async () => JSON.parse(xhr.responseText),
+      });
+    xhr.onerror =
+      xhr.ontimeout =
+      xhr.onabort =
+        () => reject(new Error('documents.failed'));
+    // Let the native transport set Content-Type together with its multipart boundary.
+    xhr.send(form);
+  });
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await readToken();
-  const response = await fetch(`${baseUrl()}${path}`, {
-    ...options,
-    headers: { ...options.headers, Authorization: `Bearer ${token ?? ''}` },
-  });
-  if (!response.ok) throw new Error('documents.failed');
+  const url = `${baseUrl()}${path}`;
+  const response =
+    Platform.OS !== 'web' && options.body instanceof FormData
+      ? await uploadNativeFile(url, options.body, token)
+      : await fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
+  if (!response.ok)
+    throw new Error(
+      response.status === 413 ? 'documents.tooLarge' : 'documents.failed',
+    );
   return response.json() as Promise<T>;
 }
 export const listRequestDocuments = (id: string) =>

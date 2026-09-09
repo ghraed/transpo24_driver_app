@@ -1,6 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -89,6 +89,7 @@ export default function ReceiveRequestAlertsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { language, locale } = useAppLanguage();
+  const loadVersion = useRef(0);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,6 +98,7 @@ export default function ReceiveRequestAlertsScreen() {
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
 
   const loadAlerts = useCallback(async (refreshing = false): Promise<void> => {
+    const version = ++loadVersion.current;
     if (refreshing) {
       setIsRefreshing(true);
     } else {
@@ -106,6 +108,7 @@ export default function ReceiveRequestAlertsScreen() {
 
     try {
       const response = await getDriverRequestAlerts();
+      if (version !== loadVersion.current) return;
       const nextAlerts = response.alerts ?? [];
       setAlerts(nextAlerts);
 
@@ -123,13 +126,16 @@ export default function ReceiveRequestAlertsScreen() {
           })),
           targetLanguage: language,
         });
-        setTranslatedTitles(translations);
+        if (version === loadVersion.current) setTranslatedTitles(translations);
       }
     } catch (requestError) {
+      if (version !== loadVersion.current) return;
       setError(requestError instanceof Error ? requestError.message : t('Unable to load requests.'));
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (version === loadVersion.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }, [language, t]);
 
@@ -149,6 +155,7 @@ export default function ReceiveRequestAlertsScreen() {
 
       const pollingId = setInterval(() => void loadAlerts(true), 20000);
       return () => {
+        ++loadVersion.current;
         clearInterval(pollingId);
         unsubscribeDeleted?.();
       };
@@ -179,12 +186,12 @@ export default function ReceiveRequestAlertsScreen() {
         <DriverJobSwitcher active="jobs" />
       </View>
 
-      {isLoading ? (
+      {isLoading && alerts.length === 0 ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#F4B900" />
           <Text style={styles.stateText}>{t('Loading job requests…')}</Text>
         </View>
-      ) : error ? (
+      ) : error && alerts.length === 0 ? (
         <View style={styles.centeredState}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.retryButton} onPress={() => void loadAlerts()}>
@@ -207,7 +214,7 @@ export default function ReceiveRequestAlertsScreen() {
             <DriverIcon name="grid" size={34} color="#F1B800" />
           </View>
           <Text style={styles.emptyTitle}>
-            {immediateOnly ? t('No immediate requests') : t('No job requests right now')}
+            {immediateOnly ? t('No immediate requests') : t('No job requests right now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ')}
           </Text>
           <Text style={styles.emptyText}>{t('New matching transport jobs will appear here automatically.')}</Text>
         </ScrollView>
@@ -224,6 +231,7 @@ export default function ReceiveRequestAlertsScreen() {
             />
           }
         >
+          {error ? <Text accessibilityRole="alert" style={styles.errorText}>{error}</Text> : null}
           {visibleAlerts.map((rawAlert) => {
             const alert = rawAlert as PricedAlert;
             const pickup = compactPlace(alert.pickup.address, t('Pickup'));
