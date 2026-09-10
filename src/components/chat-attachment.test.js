@@ -1,5 +1,6 @@
 import React from 'react';
 import { expect, it, jest } from '@jest/globals';
+import { Alert } from 'react-native';
 import { act, create } from 'react-test-renderer';
 import { ChatAttachment } from './chat-attachment';
 import { openRequestFile, downloadRequestFile } from '@/lib/request-files';
@@ -10,7 +11,8 @@ jest.mock('@/lib/request-files', () => ({
   downloadRequestFile: jest.fn(async () => false),
 }));
 
-it('routes the attachment tap to viewing and the separate download button to saving', async () => {
+it('opens thumbnails directly but waits for confirmation before downloading', async () => {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   let tree;
   await act(async () => {
     tree = create(<ChatAttachment url="/request-files/file/content" name="proof.pdf" />);
@@ -19,7 +21,13 @@ it('routes the attachment tap to viewing and the separate download button to sav
   await act(async () => { buttons[0].props.onPress(); });
   expect(openRequestFile).toHaveBeenCalledWith('/request-files/file/content', 'proof.pdf');
   expect(downloadRequestFile).not.toHaveBeenCalled();
-  await act(async () => { buttons.find((node) => node.findAll((child) => child.props.children === 'documents.download').length).props.onPress(); });
+  await act(async () => { buttons.find((node) => node.props.accessibilityLabel === 'documents.download').props.onPress(); });
+  expect(downloadRequestFile).not.toHaveBeenCalled();
+  expect(openRequestFile).toHaveBeenCalledTimes(1);
+  const actions = alert.mock.calls[0][2];
+  expect(actions[0]).toEqual({ text: 'Cancel', style: 'cancel' });
+  await act(async () => { actions[1].onPress(); });
   expect(downloadRequestFile).toHaveBeenCalledWith('/request-files/file/content', 'proof.pdf');
   await act(async () => tree.unmount());
+  alert.mockRestore();
 });

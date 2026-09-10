@@ -93,6 +93,10 @@ async function pickFile() {
   const file = result.assets[0];
   if (file.size !== undefined && file.size > 10 * 1024 * 1024)
     throw new Error('documents.tooLarge');
+  return attachmentForm(file);
+}
+
+function attachmentForm(file: DocumentPicker.DocumentPickerAsset) {
   const form = new FormData();
   if (Platform.OS === 'web' && file.file)
     form.append('file', file.file, file.name);
@@ -121,6 +125,48 @@ export async function sendChatAttachment(roomId: string) {
     { method: 'POST', body: form },
   );
 }
+export async function pickChatAttachments() {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: TYPES,
+    multiple: true,
+    copyToCacheDirectory: true,
+  });
+  if (result.canceled) return [];
+  if (result.assets.some(file => file.size !== undefined && file.size > 10 * 1024 * 1024)) {
+    throw new Error('documents.tooLarge');
+  }
+  return result.assets;
+}
+
+export async function sendSelectedChatAttachments(
+  roomId: string,
+  files: DocumentPicker.DocumentPickerAsset[],
+  onSent: (message: ChatMessage) => void,
+  onProgress?: (completed: number) => void,
+) {
+  // Validate the entire selection before sending anything.
+  if (files.some(file => file.size !== undefined && file.size > 10 * 1024 * 1024)) {
+    throw new Error('documents.tooLarge');
+  }
+  const failed: DocumentPicker.DocumentPickerAsset[] = [];
+  for (const [index, file] of files.entries()) {
+    let message: ChatMessage;
+    try {
+      message = await request<ChatMessage>(
+        `/chat/rooms/${encodeURIComponent(roomId)}/attachments`,
+        { method: 'POST', body: attachmentForm(file) },
+      );
+    } catch {
+      failed.push(file);
+      onProgress?.(index + 1);
+      continue;
+    }
+    onSent(message);
+    onProgress?.(index + 1);
+  }
+  return failed;
+}
+
 function fileUrl(path: string) {
   // Never send an access token to an arbitrary URL from a message.
   if (!/^\/request-files\/[a-zA-Z0-9_-]+\/content$/.test(path))

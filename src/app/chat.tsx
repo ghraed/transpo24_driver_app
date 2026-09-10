@@ -1,5 +1,10 @@
+import { ChatAttachmentGroup } from '@/components/chat-attachment-group';
+import { groupChatAttachments, type ChatMessageRow } from '@/lib/chat-attachment-groups';
+import { ChatWallpaper } from '@/components/chat-wallpaper';
+import { ChatIcon } from '@/components/chat-icon';
+import { DriverIcon } from '@/components/driver-icon';
 import { ChatAttachment, ChatAttachmentButton } from '@/components/chat-attachment';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,11 +12,13 @@ import {
   Alert,
   AppState,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -20,7 +27,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
-import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
+import { useChatAutoScroll } from '@/hooks/use-chat-auto-scroll';
 import {
   blockDriverChatParticipant,
   getDriverChatMessages,
@@ -210,7 +217,6 @@ function buildSourceLanguageCandidates(text: string, targetLanguage: AppLanguage
 }
 
 export default function ChatScreen() {
-  const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
   const { language } = useAppLanguage();
@@ -234,6 +240,25 @@ export default function ChatScreen() {
         }
       : null,
   );
+  const {
+    listRef, onInputFocus, onInputBlur, scrollAfterLayout, onScrollBeginDrag, onScrollEnd,
+  } = useChatAutoScroll<ChatMessageRow>(chatRoom?.id);
+  const chatContainerRef = useRef<View>(null);
+  const [keyboardVerticalOffset, setKeyboardVerticalOffset] = useState(0);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(() => Keyboard.isVisible());
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const shown = Keyboard.addListener('keyboardDidShow', () => setIsKeyboardVisible(true));
+    const hidden = Keyboard.addListener('keyboardDidHide', () => setIsKeyboardVisible(false));
+    return () => { shown.remove(); hidden.remove(); };
+  }, []);
+  const measureChatOffset = useCallback(() => {
+    // Android window measurements exclude the status bar, while keyboard
+    // coordinates include it. Also account for banners above the navigator.
+    chatContainerRef.current?.measureInWindow((_x, y) => {
+      setKeyboardVerticalOffset(y + (Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0));
+    });
+  }, []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -246,6 +271,7 @@ export default function ChatScreen() {
   const [hasMore, setHasMore] = useState<boolean>(false);
   const [translatedMessages, setTranslatedMessages] = useState<Record<string, TranslatedMessage>>({});
   const [translatingMessageIds, setTranslatingMessageIds] = useState<Record<string, boolean>>({});
+  const [showChatOptions, setShowChatOptions] = useState(false);
   const [isReportModalVisible, setIsReportModalVisible] = useState(false);
   const [reportMessageId, setReportMessageId] = useState<string | undefined>();
   const [reportReason, setReportReason] = useState<ChatReportReason>('HARASSMENT');
@@ -647,7 +673,13 @@ export default function ChatScreen() {
 
   const currentUserId = user?.id ?? '';
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => {
+  const messageRows = useMemo(() => groupChatAttachments(messages), [messages]);
+  const renderMessage = ({ item, index }: { item: ChatMessageRow; index: number }) => {
+    const previousRow = messageRows[index - 1];
+    const previousMessage = previousRow?.attachments?.[previousRow.attachments.length - 1] ?? previousRow;
+    const messageDate = new Date(item.createdAt);
+    const showDate = !previousMessage || new Date(previousMessage.createdAt).toDateString() !== messageDate.toDateString();
+    const startsGroup = showDate || previousMessage.senderId !== item.senderId || messageDate.getTime() - new Date(previousMessage.createdAt).getTime() > 5 * 60 * 1000;
     const isDriverMessage =
       item.senderRole === 'DRIVER' || (currentUserId ? item.senderId === currentUserId : false);
     const translatedMessage = translatedMessages[item.id];
@@ -660,42 +692,54 @@ export default function ChatScreen() {
     );
     const isTranslating = Boolean(translatingMessageIds[item.id]);
     const isAttachment = item.type === 'FILE' && Boolean(item.attachmentUrl);
+    const metadata = (
+      <View style={styles.messageMetadata}>
+        <Text style={[styles.messageTime, isAttachment && styles.mediaTime]}>{formatTime(item.attachments?.[item.attachments.length - 1]?.createdAt ?? item.createdAt)}</Text>
+
+      </View>
+    );
     const displayedBody = item.type === 'FILE' ? null : isShowingTranslation ? translatedText : item.body;
 
     return (
-      <View style={[styles.messageRow, isDriverMessage ? styles.messageRowRight : styles.messageRowLeft]}>
-        <Pressable
-          style={[styles.messageBubble, isAttachment ? styles.attachmentBubble : isDriverMessage ? styles.driverBubble : styles.clientBubble]}
-          onLongPress={isDriverMessage ? undefined : () => openReportModal(item.id)}
-          accessibilityHint={isDriverMessage ? undefined : t('Long press to report this message.')}
-        >
-          {item.type === 'FILE' && item.attachmentUrl ? <ChatAttachment url={item.attachmentUrl} name={item.body ?? 'document.pdf'} /> : null}
-          {displayedBody ? (
-            <Text style={[styles.messageText, isDriverMessage && styles.driverMessageText]}>{displayedBody}</Text>
-          ) : null}
-          {isTranslating ? (
-            <Text style={[styles.translationHint, isDriverMessage && styles.driverTranslationHint]}>
-              {t('Translating...')}
-            </Text>
-          ) : null}
-          {isShowingTranslation ? (
-            <View style={[styles.translationBlock, isDriverMessage && styles.driverTranslationBlock]}>
-              <Text style={[styles.translationLabel, isDriverMessage && styles.driverTranslationLabel]}>
-                {t('Translated to {{language}}', {
-                  language: LANGUAGE_CONFIGS[language].nativeLabel,
-                })}
+      <View>
+        {showDate ? (
+          <View style={styles.dateDivider}>
+            <Text style={styles.dateText}>{messageDate.toLocaleDateString(language, { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+          </View>
+        ) : null}
+        <View style={[styles.messageRow, startsGroup && styles.groupStart, isDriverMessage ? styles.messageRowRight : styles.messageRowLeft]}>
+          <Pressable
+            style={[styles.messageBubble, isAttachment ? styles.attachmentBubble : isDriverMessage ? styles.driverBubble : styles.clientBubble, startsGroup && !isAttachment && (isDriverMessage ? styles.driverBubbleStart : styles.clientBubbleStart)]}
+            onLongPress={isDriverMessage || item.attachments ? undefined : () => openReportModal(item.id)}
+            accessibilityHint={isDriverMessage ? undefined : t('Long press to report this message.')}
+          >
+            {startsGroup && !isAttachment ? <View style={[styles.bubbleTail, isDriverMessage ? styles.driverTail : styles.clientTail]} /> : null}
+            {item.attachments ? <ChatAttachmentGroup messages={item.attachments} metadata={metadata} onReport={isDriverMessage ? undefined : id => openReportModal(id)} /> : item.type === 'FILE' && item.attachmentUrl ? <ChatAttachment url={item.attachmentUrl} name={item.body ?? 'document.pdf'} metadata={metadata} /> : null}
+            {displayedBody ? (
+              <Text style={[styles.messageText, isDriverMessage && styles.driverMessageText]}>{displayedBody}</Text>
+            ) : null}
+            {isTranslating ? (
+              <Text style={[styles.translationHint, isDriverMessage && styles.driverTranslationHint]}>
+                {t('Translating...')}
               </Text>
-              {item.body ? (
-                <Text style={[styles.translationText, isDriverMessage && styles.driverTranslationText]}>
-                  {item.body}
+            ) : null}
+            {isShowingTranslation ? (
+              <View style={[styles.translationBlock, isDriverMessage && styles.driverTranslationBlock]}>
+                <Text style={[styles.translationLabel, isDriverMessage && styles.driverTranslationLabel]}>
+                  {t('Translated to {{language}}', {
+                    language: LANGUAGE_CONFIGS[language].nativeLabel,
+                  })}
                 </Text>
-              ) : null}
-            </View>
-          ) : null}
-          <Text style={[styles.messageTime, isDriverMessage && !isAttachment && styles.driverMessageTime]}>
-            {formatTime(item.createdAt)}
-          </Text>
-        </Pressable>
+                {item.body ? (
+                  <Text style={[styles.translationText, isDriverMessage && styles.driverTranslationText]}>
+                    {item.body}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+            {!isAttachment ? metadata : null}
+          </Pressable>
+        </View>
       </View>
     );
   };
@@ -703,6 +747,7 @@ export default function ChatScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.centeredState}>
+        <Stack.Screen options={{ headerShown: true }} />
         <ActivityIndicator size="large" color="#FFC515" />
         <Text style={styles.stateText}>{t('Loading chat...')}</Text>
       </SafeAreaView>
@@ -712,6 +757,7 @@ export default function ChatScreen() {
   if (screenError) {
     return (
       <SafeAreaView style={styles.centeredState}>
+        <Stack.Screen options={{ headerShown: true }} />
         <Text style={styles.errorText}>{screenError}</Text>
         <Pressable style={styles.retryButton} onPress={() => void resolveRoomAndMessages()}>
           <Text style={styles.retryButtonText}>{t('Retry')}</Text>
@@ -723,39 +769,39 @@ export default function ChatScreen() {
   if (!chatRoom) {
     return (
       <SafeAreaView style={styles.centeredState}>
+        <Stack.Screen options={{ headerShown: true }} />
         <Text style={styles.stateText}>{screenError || t('No chat room is available for this job.')}</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView ref={chatContainerRef} style={styles.container} onLayout={measureChatOffset}>
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
+        enabled={Platform.OS !== 'android' || isKeyboardVisible}
+        keyboardVerticalOffset={keyboardVerticalOffset}
       >
+        <ChatWallpaper />
         <View style={styles.header}>
-          <Text style={styles.title}>{t('Chat with client')}</Text>
-          <Text style={styles.subtitle}>{t('Private room for this accepted job.')}</Text>
-          <View style={styles.safetyActions}>
+          <View style={styles.headerIdentity}>
             <Pressable
-              style={styles.safetyButton}
-              onPress={() => openReportModal()}
-              disabled={isSubmittingSafetyAction}
+              style={({ pressed }) => [styles.backButton, pressed && styles.controlPressed]}
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/driver-chats')}
               accessibilityRole="button"
-              accessibilityLabel={t('Report client')}
+              accessibilityLabel={t('Back')}
             >
-              <Text style={styles.safetyButtonText}>{t('Report client')}</Text>
+              <DriverIcon name="arrow-back" size={22} color="#334155" />
             </Pressable>
-            <Pressable
-              style={[styles.safetyButton, chatRoom.isBlockedByCurrentUser && styles.unblockButton]}
-              onPress={confirmBlockChange}
-              disabled={isSubmittingSafetyAction}
-              accessibilityRole="button"
-            >
-              <Text style={styles.safetyButtonText}>
-                {chatRoom.isBlockedByCurrentUser ? t('Unblock client') : t('Block client')}
-              </Text>
+            <View style={styles.avatar}><DriverIcon name="profile" size={25} color="#926B12" /></View>
+            <View style={styles.headerCopy}>
+              <Text style={styles.title}>{t('Chat with client')}</Text>
+              <Text style={styles.subtitle} numberOfLines={1}>{t('Private room for this accepted job.')}</Text>
+            </View>
+            <Pressable style={styles.optionsButton} onPress={() => setShowChatOptions(value => !value)} accessibilityRole="button" accessibilityLabel={t('chat.options')} accessibilityState={{ expanded: showChatOptions }}>
+              <ChatIcon name="more" size={24} color="#334155" />
             </Pressable>
           </View>
           {chatRoom.canSendMessages === false ? (
@@ -767,57 +813,83 @@ export default function ChatScreen() {
           ) : null}
         </View>
 
-        {socketNotice ? <Text style={styles.warningText}>{socketNotice}</Text> : null}
-        <FlatList
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={[styles.messagesContent, messages.length === 0 && styles.emptyMessagesContent]}
-          ListHeaderComponent={
-            hasMore ? (
-              <Pressable
-                style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
-                onPress={() => void loadMoreMessages()}
-                disabled={isLoadingMore}
-              >
-                <Text style={styles.loadMoreButtonText}>
-                  {isLoadingMore ? t('Loading older messages...') : t('Load older messages')}
-                </Text>
+          {showChatOptions ? (
+            <View style={styles.optionsMenu}>
+              <Pressable style={styles.optionItem} disabled={isSubmittingSafetyAction} accessibilityRole="button" onPress={() => { setShowChatOptions(false); openReportModal(); }}>
+                <Text style={styles.optionText}>{t('Report client')}</Text>
               </Pressable>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.stateText}>{t('No messages yet.')}</Text>
-              <Text style={styles.emptyHint}>{t('Start the conversation when the client needs an update.')}</Text>
+              <Pressable style={styles.optionItem} disabled={isSubmittingSafetyAction} accessibilityRole="button" onPress={() => { setShowChatOptions(false); confirmBlockChange(); }}>
+                <Text style={styles.optionText}>{chatRoom.isBlockedByCurrentUser ? t('Unblock client') : t('Block client')}</Text>
+              </Pressable>
             </View>
-          }
-        />
+          ) : null}
+        {showChatOptions ? <Pressable style={styles.optionsDismiss} onPress={() => setShowChatOptions(false)} accessibilityRole="button" accessibilityLabel={t('Cancel')} /> : null}
+        {socketNotice ? <Text style={styles.warningText}>{socketNotice}</Text> : null}
+        <View style={styles.conversation}>
+          <FlatList
+            ref={listRef}
+            onLayout={scrollAfterLayout}
+            onContentSizeChange={scrollAfterLayout}
+            onScrollBeginDrag={onScrollBeginDrag}
+            onScrollEndDrag={onScrollEnd}
+            onMomentumScrollEnd={onScrollEnd}
+            data={messageRows}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={[styles.messagesContent, messages.length === 0 && styles.emptyMessagesContent]}
+            ListHeaderComponent={
+              hasMore ? (
+                <Pressable
+                  style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
+                  onPress={() => void loadMoreMessages()}
+                  disabled={isLoadingMore}
+                >
+                  <Text style={styles.loadMoreButtonText}>
+                    {isLoadingMore ? t('Loading older messages...') : t('Load older messages')}
+                  </Text>
+                </Pressable>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIcon}><DriverIcon name="chat" size={32} color="#947320" /></View>
+                <Text style={styles.stateText}>{t('No messages yet.')}</Text>
+                <Text style={styles.emptyHint}>{t('Start the conversation when the client needs an update.')}</Text>
+              </View>
+            }
+          />
+        </View>
 
         {sendError ? <Text style={styles.errorText}>{sendError}</Text> : null}
 
-        <View
-          style={[
-            styles.inputRow,
-            keyboardInset > 0 ? { paddingBottom: 12 + keyboardInset } : undefined,
-          ]}
-        >
-          <ChatAttachmentButton roomId={chatRoom.id} disabled={isSending || chatRoom.canSendMessages === false} onSent={message => setMessages(previous => mergeMessages(previous, [message]))} />
-          <TextInput
-            style={styles.input}
-            placeholder={t('Type a message')}
-            value={inputValue}
-            onChangeText={setInputValue}
-            editable={!isSending && chatRoom.canSendMessages !== false}
-            multiline
-            maxLength={1000}
-          />
+        <View style={styles.inputRow} onLayout={scrollAfterLayout}>
+          <View style={styles.composerPill}>
+            <TextInput
+              style={styles.input}
+              placeholder={t('Type a message')}
+              placeholderTextColor="#94A3B8"
+              accessibilityLabel={t('Type a message')}
+              value={inputValue}
+              onChangeText={setInputValue}
+              onFocus={onInputFocus}
+              onBlur={onInputBlur}
+              editable={!isSending && chatRoom.canSendMessages !== false}
+              multiline
+              maxLength={1000}
+            />
+            <ChatAttachmentButton roomId={chatRoom.id} disabled={isSending || chatRoom.canSendMessages === false} onSent={message => setMessages(previous => mergeMessages(previous, [message]))} />
+          </View>
           <Pressable
-            style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
+            style={({ pressed }) => [styles.sendButton, !canSend && styles.sendButtonDisabled, pressed && styles.controlPressed]}
+            accessibilityRole="button"
+            accessibilityLabel={isSending ? t('Sending...') : t('Send')}
             onPress={() => void sendMessage()}
             disabled={!canSend}
           >
-            <Text style={styles.sendButtonText}>{isSending ? t('Sending...') : t('Send')}</Text>
+            {isSending ? <ActivityIndicator color="#263449" /> : <ChatIcon name="send" size={23} color={canSend ? "#263449" : "#9CA3AF"} />}
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -898,57 +970,198 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
+  conversation: { flex: 1, overflow: 'hidden' },
+  optionsDismiss: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+  },
+  optionText: {
+    fontSize: 15,
+    color: '#111B21',
+  },
+  optionItem: {
+    minHeight: 48,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+  },
+  optionsMenu: {
+    position: 'absolute',
+    top: 52,
+    end: 8,
+    width: 220,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 6,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#E0E5E2',
+    zIndex: 4,
+  },
+  optionsButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaTime: {
+    color: '#FFFFFF',
+  },
+  messageMetadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    alignSelf: 'flex-end',
+    marginTop: 2,
+  },
+  clientTail: {
+    start: -6,
+    borderStartWidth: 7,
+    borderStartColor: 'transparent',
+    borderTopColor: '#FFFFFF',
+  },
+  driverTail: {
+    end: -6,
+    borderEndWidth: 7,
+    borderEndColor: 'transparent',
+    borderTopColor: '#FFF0BD',
+  },
+  bubbleTail: {
+    position: 'absolute',
+    top: 0,
+    width: 0,
+    height: 0,
+    borderTopWidth: 10,
+    borderBottomWidth: 0,
+  },
+  clientBubbleStart: {
+    borderTopStartRadius: 0,
+  },
+  driverBubbleStart: {
+    borderTopEndRadius: 0,
+  },
+  groupStart: {
+    marginTop: 7,
+  },
+  composerPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    borderRadius: 25,
+    backgroundColor: '#FFFFFF',
+    paddingEnd: 4,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginStart: -10,
+  },
+  emptyIcon: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#FFF0BD',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  dateText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#54656F',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 7,
+    overflow: 'hidden',
+  },
+  dateLine: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#DCE3EC',
+    flex: 1,
+  },
+  dateDivider: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  controlPressed: {
+    opacity: 0.72,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF5D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  headerIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F7F8F9',
+    backgroundColor: '#FFFFFF',
   },
   keyboardContainer: {
     flex: 1,
+    backgroundColor: '#F5F7FA',
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
-    gap: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#DFE3E8',
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 8,
+    gap: 8,
     backgroundColor: '#FFFFFF',
+    zIndex: 3,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#202020',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1E293B',
   },
   subtitle: {
-    fontSize: 13,
-    color: '#707A8C',
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#7B8798',
   },
   safetyActions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 6,
   },
   safetyButton: {
     minHeight: 36,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#B91C1C',
-    borderRadius: 9,
-    paddingHorizontal: 12,
+    borderColor: '#E6EBF1',
+    backgroundColor: '#FAFBFC',
+    borderRadius: 18,
+    paddingHorizontal: 14,
   },
   unblockButton: {
     borderColor: '#9A6500',
   },
   safetyButtonText: {
-    color: '#202020',
-    fontSize: 13,
-    fontWeight: '700',
+    color: '#69768A',
+    fontSize: 12,
+    fontWeight: '600',
   },
   blockedNotice: {
-    color: '#B91C1C',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    color: '#92400E',
+    paddingHorizontal: 8,
   },
   centeredState: {
     flex: 1,
@@ -964,8 +1177,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyHint: {
-    fontSize: 14,
-    color: '#707A8C',
+    fontSize: 13,
+    lineHeight: 21,
+    color: '#8B97A8',
     textAlign: 'center',
   },
   warningText: {
@@ -1013,8 +1227,9 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    gap: 10,
+    paddingTop: 8,
+    paddingBottom: 12,
+    gap: 3,
   },
   emptyMessagesContent: {
     flexGrow: 1,
@@ -1023,6 +1238,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     gap: 8,
+    paddingHorizontal: 28,
   },
   messageRow: {
     width: '100%',
@@ -1034,11 +1250,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   messageBubble: {
-    maxWidth: '82%',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 6,
+    maxWidth: '84%',
+    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingTop: 7,
+    paddingBottom: 4,
+    gap: 2,
   },
   attachmentBubble: {
     backgroundColor: 'transparent',
@@ -1047,16 +1264,14 @@ const styles = StyleSheet.create({
   },
   clientBubble: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DFE3E8',
   },
   driverBubble: {
-    backgroundColor: '#FFC515',
+    backgroundColor: '#FFF0BD',
   },
   messageText: {
-    color: '#202020',
-    fontSize: 15,
-    lineHeight: 20,
+    color: '#111B21',
+    fontSize: 16,
+    lineHeight: 22,
   },
   translationHint: {
     color: '#707A8C',
@@ -1097,19 +1312,21 @@ const styles = StyleSheet.create({
     color: '#171717',
   },
   messageTime: {
-    color: '#707A8C',
-    fontSize: 11,
+    color: '#667781',
+    fontSize: 10,
   },
   driverMessageTime: {
-    color: '#8A6200',
+    color: '#9B8652',
   },
   loadMoreButton: {
     alignSelf: 'center',
-    marginBottom: 12,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: '#DFE3E8',
+    marginBottom: 16,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#E3E8EF',
+    backgroundColor: '#FFFFFF',
   },
   loadMoreButtonDisabled: {
     opacity: 0.7,
@@ -1120,43 +1337,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   inputRow: {
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#DFE3E8',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 6,
+    paddingTop: 5,
+    paddingBottom: 6,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 10,
+    gap: 6,
+    backgroundColor: 'transparent',
   },
   input: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#202020',
-    backgroundColor: '#FFFFFF',
+    minHeight: 48,
+    maxHeight: 124,
+    paddingStart: 16,
+    paddingEnd: 2,
+    paddingTop: 13,
+    paddingBottom: 11,
+    fontSize: 16,
+    lineHeight: 22,
+    color: '#111B21',
   },
   inputDisabled: {
     backgroundColor: '#F1F5F9',
     color: '#707A8C',
   },
   sendButton: {
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFC515',
+    backgroundColor: '#FFC93E',
   },
   sendButtonDisabled: {
-    backgroundColor: '#94A3B8',
+    backgroundColor: '#E5E7EB',
   },
   sendButtonText: {
     color: '#171717',
@@ -1171,8 +1385,8 @@ const styles = StyleSheet.create({
   reportSheet: {
     maxHeight: '92%',
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
   },
   reportSheetContent: {
     padding: 20,

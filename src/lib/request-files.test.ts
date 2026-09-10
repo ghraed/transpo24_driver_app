@@ -8,6 +8,8 @@ import {
   openRequestFile,
   downloadRequestFile,
   sendChatAttachment,
+  pickChatAttachments,
+  sendSelectedChatAttachments,
   uploadRequestDocument,
 } from './request-files';
 jest.mock('@/lib/auth-storage', () => ({
@@ -259,4 +261,46 @@ it('prunes old previews while leaving recent and unrelated cache files alone', a
   await openRequestFile('/request-files/file/content', 'file.pdf');
   expect(FileSystem.deleteAsync).toHaveBeenCalledTimes(1);
   expect(FileSystem.deleteAsync).toHaveBeenCalledWith(expect.stringContaining('-old.pdf'), { idempotent: true });
+});
+
+const selectedFiles = ['one.png', 'two.pdf', 'three.jpg'].map(name => ({
+  uri: `file:///cache/${name}`, name, size: 100, lastModified: 0,
+  mimeType: name.endsWith('.pdf') ? 'application/pdf' : name.endsWith('.jpg') ? 'image/jpeg' : 'image/png',
+}));
+it('enables multi-select and retains all selected files', async () => {
+  jest.mocked(getDocumentAsync).mockResolvedValueOnce({ canceled: false, assets: selectedFiles });
+  expect(await pickChatAttachments()).toEqual(selectedFiles);
+  expect(getDocumentAsync).toHaveBeenCalledWith(expect.objectContaining({ multiple: true, copyToCacheDirectory: true }));
+});
+it('does not create a selection when the picker is cancelled', async () => {
+  jest.mocked(getDocumentAsync).mockResolvedValueOnce({ canceled: true, assets: null });
+  expect(await pickChatAttachments()).toEqual([]);
+});
+it('validates all files before uploading any part of the selection', async () => {
+  const xhr = mockNativeUpload();
+  const files = [selectedFiles[0], { ...selectedFiles[1], size: 11 * 1024 * 1024 }];
+  await expect(sendSelectedChatAttachments('room', files, jest.fn())).rejects.toThrow('documents.tooLarge');
+  expect(xhr.send).not.toHaveBeenCalled();
+});
+it('sends each selected file in order and reports progress', async () => {
+  const xhr = mockNativeUpload();
+  const onSent = jest.fn();
+  const progress = jest.fn();
+  expect(await sendSelectedChatAttachments('room', selectedFiles, onSent, progress)).toEqual([]);
+  expect(xhr.send.mock.calls.map(([form]) => form.getAll('file')[0])).toEqual(selectedFiles.map(file => ({ uri: file.uri, name: file.name, type: file.mimeType })));
+  expect(onSent).toHaveBeenCalledTimes(3);
+  expect(progress.mock.calls).toEqual([[1], [2], [3]]);
+});
+it('keeps only failed uploads for retry and still delivers subsequent files', async () => {
+  const xhr = mockNativeUpload();
+  let index = 0;
+  xhr.send.mockImplementation(() => {
+    xhr.status = ++index === 2 ? 500 : 201;
+    queueMicrotask(() => xhr.onload());
+  });
+  const onSent = jest.fn();
+  const failed = await sendSelectedChatAttachments('room', selectedFiles, onSent);
+  expect(failed).toEqual([selectedFiles[1]]);
+  expect(onSent).toHaveBeenCalledTimes(2);
+  expect(xhr.send).toHaveBeenCalledTimes(3);
 });

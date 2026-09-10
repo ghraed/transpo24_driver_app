@@ -1,0 +1,20 @@
+import React from 'react';
+import { expect, it, jest } from '@jest/globals';
+import { act, create } from 'react-test-renderer';
+import { ChatAttachmentGroup } from './chat-attachment-group';
+import { ChatAttachment } from './chat-attachment';
+import { openRequestFile } from '@/lib/request-files';
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: key => key }) }));
+jest.mock('@/lib/request-files', () => ({ openRequestFile: jest.fn(async () => undefined), downloadRequestFile: jest.fn() }));
+it('opens the full group from +N and makes files beyond the preview viewable', async () => {
+  const messages = Array.from({ length: 6 }, (_, index) => ({ id: `${index}`, body: `${index}.pdf`, attachmentUrl: `/request-files/${index}/content` }));
+  let tree;
+  await act(async () => { tree = create(<ChatAttachmentGroup messages={messages} metadata={null} />); });
+  expect(tree.root.findAllByType(ChatAttachment)).toHaveLength(4);
+  await act(async () => { tree.root.findAllByType(ChatAttachment)[3].props.onOpen(); });
+  const last = tree.root.findAllByType(ChatAttachment).find(node => node.props.url === '/request-files/5/content');
+  expect(last).toBeDefined();
+  await act(async () => { last.findAll(node => node.props.accessibilityLabel === 'documents.open: 5.pdf' && typeof node.props.onPress === 'function')[0].props.onPress(); });
+  expect(openRequestFile).toHaveBeenCalledWith('/request-files/5/content', '5.pdf');
+  await act(async () => tree.unmount());
+});

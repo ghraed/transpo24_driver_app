@@ -1,0 +1,33 @@
+import React from 'react';
+import { beforeEach, expect, it, jest } from '@jest/globals';
+import { act, create } from 'react-test-renderer';
+import { ChatAttachmentButton } from './chat-attachment-picker';
+import { pickChatAttachments, sendSelectedChatAttachments } from '@/lib/request-files';
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: key => key }) }));
+jest.mock('@/lib/request-files', () => ({ pickChatAttachments: jest.fn(), sendSelectedChatAttachments: jest.fn() }));
+const files = ['one.pdf', 'two.pdf'].map(name => ({ name, uri: `file:///cache/${name}`, mimeType: 'application/pdf' }));
+const button = (tree, label) => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
+beforeEach(() => { jest.clearAllMocks(); pickChatAttachments.mockResolvedValue(files); });
+it('requires Send after picking and retries only files that failed', async () => {
+  let tree;
+  await act(async () => { tree = create(<ChatAttachmentButton roomId="room" onSent={jest.fn()} />); });
+  await act(async () => { button(tree, 'documents.attach').props.onPress(); });
+  expect(sendSelectedChatAttachments).not.toHaveBeenCalled();
+  sendSelectedChatAttachments.mockResolvedValueOnce([files[1]]);
+  await act(async () => { button(tree, 'documents.sendSelected').props.onPress(); });
+  expect(sendSelectedChatAttachments.mock.calls[0][1]).toEqual(files);
+  sendSelectedChatAttachments.mockResolvedValueOnce([]);
+  await act(async () => { button(tree, 'documents.sendSelected').props.onPress(); });
+  expect(sendSelectedChatAttachments.mock.calls[1][1]).toEqual([files[1]]);
+  await act(async () => tree.unmount());
+});
+it('omits a removed file from the upload', async () => {
+  let tree;
+  await act(async () => { tree = create(<ChatAttachmentButton roomId="room" onSent={jest.fn()} />); });
+  await act(async () => { button(tree, 'documents.attach').props.onPress(); });
+  await act(async () => { button(tree, 'documents.remove').props.onPress(); });
+  sendSelectedChatAttachments.mockResolvedValueOnce([]);
+  await act(async () => { button(tree, 'documents.sendSelected').props.onPress(); });
+  expect(sendSelectedChatAttachments.mock.calls[0][1]).toEqual([files[1]]);
+  await act(async () => tree.unmount());
+});
