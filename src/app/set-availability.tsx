@@ -1,3 +1,4 @@
+import { CityCoverageEditor } from '@/components/city-coverage-editor';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -46,6 +47,7 @@ import i18n from '@/localization/i18n';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
   DayOfWeek,
+  DriverCityCoverage,
   DriverAvailabilityForm,
   DriverAvailabilityFormDay,
   UpdateDriverAvailabilityPayload,
@@ -170,6 +172,8 @@ export default function SetAvailabilityScreen() {
     weeklySchedule: createDefaultWeeklySchedule(),
   });
 
+  const [cityCoverage, setCityCoverage] = useState<DriverCityCoverage[]>([]);
+  const cities = useMemo(() => driver?.cities ?? [], [driver?.cities]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isGettingLocation, setIsGettingLocation] = useState<boolean>(false);
@@ -219,6 +223,7 @@ export default function SetAvailabilityScreen() {
         };
       }),
     });
+    setCityCoverage((response.cityCoverage ?? []).filter(pin => cities.includes(pin.city)));
     setAddressQuery(response.baseAddress ?? '');
     setMapRegion(buildRegion(response.baseLatitude ?? undefined, response.baseLongitude ?? undefined));
     setSelectedLocation(
@@ -230,7 +235,7 @@ export default function SetAvailabilityScreen() {
           }
         : null,
     );
-  }, [driver?.countryCode]);
+  }, [driver?.countryCode, cities]);
 
   const loadAvailability = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -273,6 +278,13 @@ export default function SetAvailabilityScreen() {
 
     const latitude = parseNumber(form.baseLatitude);
     const longitude = parseNumber(form.baseLongitude);
+
+    if (form.acceptsImmediateRequests && (latitude === undefined || longitude === undefined)) {
+      errors.baseLocation = t('Set a base location for use when GPS is unavailable.');
+    }
+    if (form.acceptsScheduledRequests && (!cities.length || cities.some(city => !cityCoverage.some(pin => pin.city === city)))) {
+      errors.cityCoverage = t('Set a coverage pin for each selected city to receive scheduled requests.');
+    }
 
     if ((latitude === undefined) !== (longitude === undefined)) {
       errors.baseLocation = t('Base latitude and longitude must be provided together.');
@@ -334,7 +346,7 @@ export default function SetAvailabilityScreen() {
     }
 
     return errors;
-  }, [form, t]);
+  }, [form, t, cities, cityCoverage]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -687,6 +699,7 @@ export default function SetAvailabilityScreen() {
       timezone: form.timezone.trim(),
       isOnline: form.isOnline,
       serviceRadiusKm: radiusValue,
+      cityCoverage,
       baseLatitude: latitude,
       baseLongitude: longitude,
       baseAddress: form.baseAddress.trim() || undefined,
@@ -824,6 +837,9 @@ export default function SetAvailabilityScreen() {
           />
           {fieldErrors.serviceRadiusKm ? <Text style={styles.errorText}>{fieldErrors.serviceRadiusKm}</Text> : null}
 
+          <Text style={styles.searchHint}>{t('Immediate pickups use recent GPS, with your base as a fallback. The radius limits pickup distance, not the destination.')}</Text>
+          <CityCoverageEditor cities={cities} country={driver?.countryCode} pins={cityCoverage} radius={form.serviceRadiusKm} onChange={setCityCoverage} />
+          {fieldErrors.cityCoverage ? <Text style={styles.errorText}>{fieldErrors.cityCoverage}</Text> : null}
           <Text style={styles.fieldLabel}>{t('Base address')}</Text>
           <View style={styles.searchContainer}>
             <TextInput

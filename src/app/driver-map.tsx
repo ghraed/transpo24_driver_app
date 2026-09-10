@@ -1,3 +1,6 @@
+import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
+import { RequestCoverageNotice } from '@/components/request-coverage-notice';
+import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 import * as Location from 'expo-location';
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -48,6 +51,10 @@ export default function DriverMapScreen() {
   const MapView = NativeMapView;
   const MapMarker = NativeMarker;
   const mapRef = useRef<any>(null);
+  const loadVersion = useRef(0);
+  const locationVersion = useRef(0);
+  const [requestType, setRequestType] = useState<RequestType>('immediate');
+  const [locationReference, setLocationReference] = useState<'GPS' | 'BASE' | 'NONE'>('NONE');
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [driverLocation, setDriverLocation] = useState<Coordinate | null>(null);
@@ -58,26 +65,34 @@ export default function DriverMapScreen() {
 
   const centerOnDriver = useCallback((coordinate: Coordinate, duration = 350) => {
     setDriverLocation(coordinate);
-    mapRef.current?.animateToRegion?.(asRegion(coordinate), duration);
-  }, []);
+    if (requestType === 'immediate') mapRef.current?.animateToRegion?.(asRegion(coordinate), duration);
+  }, [requestType]);
 
   const loadMap = useCallback(async () => {
+    const version = ++loadVersion.current;
     setIsLoading(true);
+    await syncRequestMatchingLocation().catch(() => undefined);
     const [availabilityResult, alertsResult] = await Promise.allSettled([
       getDriverAvailability(),
       getDriverRequestAlerts(),
     ]);
+    if (version !== loadVersion.current) return;
     if (availabilityResult.status === 'fulfilled') setAvailability(availabilityResult.value);
-    if (alertsResult.status === 'fulfilled') setAlerts(alertsResult.value.alerts ?? []);
+    if (alertsResult.status === 'fulfilled') {
+      setAlerts(alertsResult.value.alerts ?? []);
+      setLocationReference(alertsResult.value.locationReference ?? 'NONE');
+    }
     setIsLoading(false);
   }, []);
 
-  const startLocationTracking = useCallback(async (): Promise<(() => void) | undefined> => {
+  const startLocationTracking = useCallback(async (watch = true): Promise<(() => void) | undefined> => {
+    const version = locationVersion.current;
     setIsLocating(true);
     setLocationMessage('');
 
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
+      if (version !== locationVersion.current) return undefined;
       if (permission.status !== Location.PermissionStatus.GRANTED) {
         setLocationMessage(t('Location permission is needed to center the map on you.'));
         return undefined;
@@ -87,6 +102,7 @@ export default function DriverMapScreen() {
         maxAge: 60_000,
         requiredAccuracy: 200,
       });
+      if (version !== locationVersion.current) return undefined;
       if (lastKnownLocation) {
         centerOnDriver(lastKnownLocation.coords);
       }
@@ -94,7 +110,10 @@ export default function DriverMapScreen() {
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
+      if (version !== locationVersion.current) return undefined;
       centerOnDriver(currentLocation.coords);
+      void loadMap();
+      if (!watch) return undefined;
 
       const subscription = await Location.watchPositionAsync(
         {
@@ -102,22 +121,24 @@ export default function DriverMapScreen() {
           distanceInterval: 10,
           timeInterval: 5_000,
         },
-        (location) => centerOnDriver(location.coords),
-        () => setLocationMessage(t('Unable to update your current location.')),
+        (location) => { if (version === locationVersion.current) centerOnDriver(location.coords); },
+        () => { if (version === locationVersion.current) setLocationMessage(t('Unable to update your current location.')); },
       );
 
       return () => subscription.remove();
     } catch {
+      if (version !== locationVersion.current) return undefined;
       setLocationMessage(t('Unable to get your current location. Check that location services are enabled.'));
       return undefined;
     } finally {
-      setIsLocating(false);
+      if (version === locationVersion.current) setIsLocating(false);
     }
-  }, [centerOnDriver, t]);
+  }, [centerOnDriver, loadMap, t]);
 
   useFocusEffect(
     useCallback(() => {
       void loadMap();
+      const timer = setInterval(() => void loadMap(), 20_000);
       let isFocused = true;
       let stopLocationTracking: (() => void) | undefined;
       void startLocationTracking().then((stop) => {
@@ -130,6 +151,9 @@ export default function DriverMapScreen() {
 
       return () => {
         isFocused = false;
+        ++loadVersion.current;
+        ++locationVersion.current;
+        clearInterval(timer);
         stopLocationTracking?.();
       };
     }, [loadMap, startLocationTracking]),
@@ -141,6 +165,9 @@ export default function DriverMapScreen() {
     try {
       const next = await updateDriverOnlineStatus({ isOnline: !availability.isOnline });
       setAvailability(next);
+      void loadMap();
+    } catch (error) {
+      setLocationMessage(error instanceof Error ? error.message : t('Unable to update availability.'));
     } finally {
       setIsUpdating(false);
     }
@@ -150,11 +177,11 @@ export default function DriverMapScreen() {
     ? asRegion(driverLocation)
     : availability?.baseLatitude != null && availability?.baseLongitude != null
       ? asRegion({ latitude: availability.baseLatitude, longitude: availability.baseLongitude })
-      : undefined;
+      : availability?.cityCoverage?.[0] ? asRegion(availability.cityCoverage[0]) : undefined;
 
-  // The map is a live view: scheduled jobs belong in the Jobs list, not here.
+  // Previously received jobs remain in Jobs; the map displays current matches.
   const jobMarkers = alerts.filter(
-    (alert) => alert.schedule.isImmediate && (hasCoordinate(alert.pickup) || hasCoordinate(alert.dropoff)),
+    (alert) => alert.isCurrentlyEligible !== false && alert.schedule.isImmediate === (requestType === 'immediate') && hasCoordinate(alert.pickup),
   );
 
   return (
@@ -259,6 +286,17 @@ export default function DriverMapScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.coverageOverlay}>
+          <RequestTypeTabs value={requestType} onChange={(type) => {
+            setRequestType(type);
+            const pins = type === 'scheduled' ? (availability?.cityCoverage ?? []) : [];
+            if (pins.length > 1) mapRef.current?.fitToCoordinates?.(pins, { edgePadding: { top: 260, right: 40, bottom: 100, left: 40 }, animated: true });
+            else if (pins[0]) mapRef.current?.animateToRegion?.(asRegion(pins[0]), 350);
+            else if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
+          }} />
+          <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />
+        </View>
+
         <Pressable
           style={[styles.onlinePill, availability && !availability.isOnline && styles.offlinePill]}
           disabled={!availability || isUpdating}
@@ -277,7 +315,7 @@ export default function DriverMapScreen() {
         <Pressable
           accessibilityLabel={t('Center map on my current location')}
           style={styles.locationButton}
-          onPress={() => void startLocationTracking()}
+          onPress={() => void startLocationTracking(false)}
         >
           {isLocating ? (
             <ActivityIndicator size="small" color="#087FFF" />
@@ -295,6 +333,7 @@ export default function DriverMapScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F7F8F9' },
   mapArea: { flex: 1, marginBottom: 76, overflow: 'hidden', backgroundColor: '#CDE9CE' },
+  coverageOverlay: { position: 'absolute', top: 138, left: 22, right: 22 },
   topOverlay: {
     position: 'absolute', top: 0, right: 0, left: 0, height: 94, paddingHorizontal: 28,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

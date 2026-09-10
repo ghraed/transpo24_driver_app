@@ -410,7 +410,10 @@ export interface DriverAvailabilityFormDay {
   endTime: string;
 }
 
+export type DriverCityCoverage = { city: string; latitude: number; longitude: number };
+
 export interface UpdateDriverAvailabilityPayload {
+  cityCoverage: DriverCityCoverage[];
   timezone: string;
   isOnline: boolean;
   serviceRadiusKm: number;
@@ -432,6 +435,7 @@ export interface UpdateDriverOnlineStatusPayload {
 }
 
 export interface DriverAvailabilityResponse {
+  cityCoverage: DriverCityCoverage[];
   id: string | null;
   driverId: string;
   timezone: string;
@@ -550,6 +554,7 @@ export interface TransportedVehicleDetails {
 }
 
 export interface DriverRequestAlertSummary {
+  isCurrentlyEligible?: boolean;
   vehicleDetails?: TransportedVehicleDetails;
   alertId: string;
   requestId: string;
@@ -566,6 +571,7 @@ export interface DriverRequestAlertSummary {
 }
 
 export interface DriverRequestAlertsResponse {
+  locationReference?: 'GPS' | 'BASE' | 'NONE';
   alerts: DriverRequestAlertSummary[];
 }
 

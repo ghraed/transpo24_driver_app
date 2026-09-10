@@ -1,3 +1,6 @@
+import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
+import { RequestCoverageNotice } from '@/components/request-coverage-notice';
+import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -94,7 +97,8 @@ export default function ReceiveRequestAlertsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [immediateOnly, setImmediateOnly] = useState(false);
+  const [requestType, setRequestType] = useState<RequestType>('immediate');
+  const [locationReference, setLocationReference] = useState<'GPS' | 'BASE' | 'NONE'>('NONE');
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
 
   const loadAlerts = useCallback(async (refreshing = false): Promise<void> => {
@@ -107,7 +111,9 @@ export default function ReceiveRequestAlertsScreen() {
     setError('');
 
     try {
+      await syncRequestMatchingLocation().catch(() => undefined);
       const response = await getDriverRequestAlerts();
+      if (version === loadVersion.current) setLocationReference(response.locationReference ?? 'NONE');
       if (version !== loadVersion.current) return;
       const nextAlerts = response.alerts ?? [];
       setAlerts(nextAlerts);
@@ -163,8 +169,8 @@ export default function ReceiveRequestAlertsScreen() {
   );
 
   const visibleAlerts = useMemo(
-    () => (immediateOnly ? alerts.filter((alert) => alert.schedule?.isImmediate === true) : alerts),
-    [alerts, immediateOnly],
+    () => alerts.filter(alert => alert.schedule.isImmediate === (requestType === 'immediate')),
+    [alerts, requestType],
   );
 
   return (
@@ -174,16 +180,11 @@ export default function ReceiveRequestAlertsScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Text style={styles.title}>{t('Job Requests')}</Text>
-          <Pressable
-            accessibilityLabel={t('Filter job requests')}
-            accessibilityState={{ checked: immediateOnly }}
-            style={[styles.filterButton, immediateOnly && styles.filterButtonActive]}
-            onPress={() => setImmediateOnly((value) => !value)}
-          >
-            <DriverIcon name="sliders" size={27} strokeWidth={1.8} />
-          </Pressable>
+
         </View>
         <DriverJobSwitcher active="jobs" />
+        <RequestTypeTabs value={requestType} onChange={setRequestType} />
+        <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />
       </View>
 
       {isLoading && alerts.length === 0 ? (
@@ -214,7 +215,7 @@ export default function ReceiveRequestAlertsScreen() {
             <DriverIcon name="grid" size={34} color="#F1B800" />
           </View>
           <Text style={styles.emptyTitle}>
-            {immediateOnly ? t('No immediate requests') : t('No job requests right now                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ')}
+            {requestType === 'immediate' ? t('No immediate requests') : t('No scheduled requests')}
           </Text>
           <Text style={styles.emptyText}>{t('New matching transport jobs will appear here automatically.')}</Text>
         </ScrollView>
@@ -280,7 +281,7 @@ export default function ReceiveRequestAlertsScreen() {
                   <View style={styles.onWayRow}>
                     <DriverIcon name="location" size={18} color="#F6B900" strokeWidth={1.8} />
                     <Text style={styles.onWayText}>
-                      {alert.schedule?.isImmediate ? t('On your way') : t('Scheduled')}
+                      {alert.isCurrentlyEligible === false ? t('Previously received') : alert.schedule?.isImmediate ? t('Nearby pickup') : t('Scheduled')}
                     </Text>
                   </View>
                   <Text style={styles.matchText}>

@@ -1,3 +1,4 @@
+import { RequestTypeTabs } from '@/components/request-type-tabs';
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals';
@@ -18,6 +19,7 @@ jest.mock('@/components/driver-bottom-nav', () => ({ DriverBottomNav: () => null
 jest.mock('@/components/driver-job-switcher', () => ({ DriverJobSwitcher: () => null }));
 jest.mock('@/components/driver-icon', () => ({ DriverIcon: () => null }));
 jest.mock('@/lib/auth-storage', () => ({ readAccessToken: async () => null }));
+jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: jest.fn(async () => {}) }));
 jest.mock('@/lib/api', () => ({ getDriverAcceptedJobs: jest.fn(), getDriverChatRooms: jest.fn(), getDriverRequestAlerts: jest.fn() }));
 jest.mock('@/services/socketService', () => ({ connectSocket: jest.fn(), onRequestDeleted: jest.fn(() => () => {}) }));
 jest.mock('@/services/translation-service', () => ({ translateDynamicBatch: async () => ({}) }));
@@ -82,16 +84,33 @@ it('removes finished accepted jobs when the server confirms completion', async (
   expect(contains('CMTSNTL9')).toBe(false);
 });
 it('keeps opened scheduled jobs accessible after leaving and reopening Jobs', async () => {
-  await render(Jobs); expect(contains('Test pickup')).toBe(true);
+  await render(Jobs); await selectType('scheduled'); expect(contains('Test pickup')).toBe(true);
   await act(async () => tree.unmount()); tree = null;
-  await render(Jobs); expect(contains('Test pickup')).toBe(true);
+  await render(Jobs); await selectType('scheduled'); expect(contains('Test pickup')).toBe(true);
 });
 it('keeps available jobs on a refresh failure, then removes them when another driver books them', async () => {
   await render(Jobs);
+  await selectType('scheduled');
   getDriverRequestAlerts.mockRejectedValueOnce(new Error('Network unavailable'));
   await act(async () => jest.advanceTimersByTime(20000));
   expect(contains('Test pickup')).toBe(true);
   getDriverRequestAlerts.mockResolvedValue({ alerts: [] });
   await act(async () => jest.advanceTimersByTime(20000));
   expect(contains('Test pickup')).toBe(false);
+});
+
+async function selectType(value) { await act(async () => tree.root.findByType(RequestTypeTabs).props.onChange(value)); }
+it('separates immediate and scheduled requests without hiding previously received jobs', async () => {
+  getDriverRequestAlerts.mockResolvedValue({ alerts: [
+    { ...alert, isCurrentlyEligible: false },
+    { ...alert, alertId: 'immediate', requestId: 'immediate', schedule: { isImmediate: true }, pickup: { ...alert.pickup, address: 'Nearby pickup address' } },
+  ], locationReference: 'BASE' });
+  await render(Jobs);
+  expect(contains('Nearby pickup address')).toBe(true);
+  expect(contains('Test pickup')).toBe(false);
+  expect(contains('GPS unavailable: pickups use your saved base. Tap to edit.')).toBe(true);
+  await selectType('scheduled');
+  expect(contains('Test pickup')).toBe(true);
+  expect(contains('Previously received')).toBe(true);
+  expect(contains('Nearby pickup address')).toBe(false);
 });

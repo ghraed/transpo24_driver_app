@@ -1,3 +1,4 @@
+import { useRequestMatchingLocation } from '@/hooks/use-request-matching-location';
 import '@/location/background-trip-tracking';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
@@ -20,6 +21,7 @@ import { useNotificationNavigation } from '@/notifications/useNotificationNaviga
 function AppNavigator() {
   const {
     accessToken,
+    driver,
     isRestoringSession,
     hasRestoredStoredSession,
     refreshDriverMe,
@@ -33,6 +35,7 @@ function AppNavigator() {
   const lastRegisteredAccessTokenRef = useRef<string | null>(null);
 
   useNotificationNavigation();
+  useRequestMatchingLocation(Boolean(accessToken && driver?.status === 'APPROVED'));
 
   useEffect(() => {
     if (isRestoringSession) return;

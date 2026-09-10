@@ -1453,6 +1453,17 @@ export async function updateDriverAvailability(
   );
 }
 
+export async function updateDriverMatchingLocation(location: { latitude: number; longitude: number; recordedAt: number } | null, accessToken: string): Promise<void> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/availability/location`;
+  const headers = await getAuthHeaders();
+  if (headers.Authorization !== `Bearer ${accessToken}`) return;
+  const response = await fetchWithTimeout(endpoint, {
+    method: location ? 'PUT' : 'DELETE', headers,
+    ...(location ? { body: JSON.stringify(location) } : {}),
+  });
+  if (!response.ok) throw await parseError(response, 'Failed to update matching location.');
+}
+
 export async function updateDriverOnlineStatus(
   payload: UpdateDriverOnlineStatusPayload,
 ): Promise<DriverAvailabilityResponse> {
