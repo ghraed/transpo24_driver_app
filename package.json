@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~56.0.26",
     "@react-native-community/datetimepicker": "^9.1.0",
+    "@react-native-documents/viewer": "^4.0.1",
     "expo": "~56.0.21",
     "expo-constants": "~56.0.25",
     "expo-device": "~56.0.4",

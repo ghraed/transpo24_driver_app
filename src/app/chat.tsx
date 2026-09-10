@@ -659,12 +659,13 @@ export default function ChatScreen() {
       normalizeComparableText(translatedText) !== normalizeComparableText(item.body),
     );
     const isTranslating = Boolean(translatingMessageIds[item.id]);
+    const isAttachment = item.type === 'FILE' && Boolean(item.attachmentUrl);
     const displayedBody = item.type === 'FILE' ? null : isShowingTranslation ? translatedText : item.body;
 
     return (
       <View style={[styles.messageRow, isDriverMessage ? styles.messageRowRight : styles.messageRowLeft]}>
         <Pressable
-          style={[styles.messageBubble, isDriverMessage ? styles.driverBubble : styles.clientBubble]}
+          style={[styles.messageBubble, isAttachment ? styles.attachmentBubble : isDriverMessage ? styles.driverBubble : styles.clientBubble]}
           onLongPress={isDriverMessage ? undefined : () => openReportModal(item.id)}
           accessibilityHint={isDriverMessage ? undefined : t('Long press to report this message.')}
         >
@@ -691,7 +692,7 @@ export default function ChatScreen() {
               ) : null}
             </View>
           ) : null}
-          <Text style={[styles.messageTime, isDriverMessage && styles.driverMessageTime]}>
+          <Text style={[styles.messageTime, isDriverMessage && !isAttachment && styles.driverMessageTime]}>
             {formatTime(item.createdAt)}
           </Text>
         </Pressable>
@@ -1038,6 +1039,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 6,
+  },
+  attachmentBubble: {
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   clientBubble: {
     backgroundColor: '#FFFFFF',

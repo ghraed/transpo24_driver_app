@@ -121,36 +121,125 @@ export async function sendChatAttachment(roomId: string) {
     { method: 'POST', body: form },
   );
 }
-export async function openRequestFile(path: string, fileName: string) {
+function fileUrl(path: string) {
   // Never send an access token to an arbitrary URL from a message.
   if (!/^\/request-files\/[a-zA-Z0-9_-]+\/content$/.test(path))
     throw new Error('documents.failed');
+  return `${baseUrl()}${path}`;
+}
+
+async function loadNativeFile(path: string, fileName: string) {
+  const url = fileUrl(path);
+  if (!FileSystem.cacheDirectory) throw new Error('documents.failed');
+  // Native viewers resolve as soon as they launch. Keep their files available,
+  // and prune abandoned previews on a later attachment operation.
+  const entries = await FileSystem.readDirectoryAsync(FileSystem.cacheDirectory);
+  await Promise.all(entries.filter((name) => {
+    const match = /^private-(\d+)-/.exec(name);
+    return match && Date.now() - Number(match[1]) > 24 * 60 * 60 * 1000;
+  }).map((name) => FileSystem.deleteAsync(`${FileSystem.cacheDirectory}${name}`, { idempotent: true }).catch(() => undefined)));
   const token = await readToken();
-  const headers = { Authorization: `Bearer ${token ?? ''}` };
-  const url = `${baseUrl()}${path}`;
-  if (Platform.OS === 'web') {
-    const response = await fetch(url, { headers });
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-160) || 'document.pdf';
+  const local = `${FileSystem.cacheDirectory}private-${Date.now()}-${Math.random().toString(36).slice(2)}-${safeName}`;
+  const cleanup = () => FileSystem.deleteAsync(local, { idempotent: true }).catch(() => undefined);
+  try {
+    const result = await FileSystem.downloadAsync(url, local, {
+      headers: { Authorization: `Bearer ${token ?? ''}` },
+    });
+    if (result.status !== 200) throw new Error('documents.failed');
+    const mimeType = result.mimeType?.split(';')[0].trim() ||
+      (safeName.toLowerCase().endsWith('.pdf') ? 'application/pdf' :
+        /\.jpe?g$/i.test(safeName) ? 'image/jpeg' :
+          /\.png$/i.test(safeName) ? 'image/png' : 'application/octet-stream');
+    return { uri: result.uri, safeName, mimeType, cleanup };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
+export async function loadRequestImagePreview(path: string, fileName: string) {
+  if (Platform.OS !== 'web') return loadNativeFile(path, fileName);
+  const url = fileUrl(path);
+  const token = await readToken();
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token ?? ''}` } });
+  if (!response.ok) throw new Error('documents.failed');
+  const uri = URL.createObjectURL(await response.blob());
+  return { uri, cleanup: () => URL.revokeObjectURL(uri) };
+}
+
+async function openWebFile(path: string, fileName: string, download: boolean) {
+  const url = fileUrl(path);
+  // Open synchronously before fetching so browsers do not block the preview popup.
+  const preview = download ? null : window.open('about:blank', '_blank');
+  if (!download && !preview) throw new Error('documents.failed');
+  if (preview) preview.opener = null;
+  try {
+    const token = await readToken();
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token ?? ''}` } });
     if (!response.ok) throw new Error('documents.failed');
     const blobUrl = URL.createObjectURL(await response.blob());
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = fileName;
-    link.click();
+    if (preview) preview.location.href = blobUrl;
+    else {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.click();
+    }
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-    return;
+  } catch (error) {
+    preview?.close();
+    throw error;
   }
-  if (!FileSystem.cacheDirectory || !(await Sharing.isAvailableAsync()))
-    throw new Error('documents.failed');
-  const safeName =
-    fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-160) || 'document.pdf';
-  const local = `${FileSystem.cacheDirectory}private-${Date.now()}-${safeName}`;
+}
+
+export async function openRequestFile(path: string, fileName: string) {
+  if (Platform.OS === 'web') return openWebFile(path, fileName, false);
+  const file = await loadNativeFile(path, fileName);
   try {
-    const result = await FileSystem.downloadAsync(url, local, { headers });
-    if (result.status !== 200) throw new Error('documents.failed');
-    await Sharing.shareAsync(result.uri, { dialogTitle: fileName });
+    // Load only on native platforms; the web bundle has no native viewer module.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { viewDocument } = require('@react-native-documents/viewer') as typeof import('@react-native-documents/viewer');
+    await viewDocument({
+      uri: file.uri,
+      mimeType: file.mimeType,
+      headerTitle: fileName,
+      grantPermissions: 'read',
+    });
+  } catch {
+    await file.cleanup();
+    throw new Error('documents.openFailed');
+  }
+}
+
+export async function downloadRequestFile(path: string, fileName: string) {
+  if (Platform.OS === 'web') {
+    await openWebFile(path, fileName, true);
+    return true;
+  }
+  const file = await loadNativeFile(path, fileName);
+  try {
+    if (Platform.OS === 'android') {
+      const saf = FileSystem.StorageAccessFramework;
+      const permission = await saf.requestDirectoryPermissionsAsync();
+      if (!permission.granted) return false;
+      const target = await saf.createFileAsync(
+        permission.directoryUri, file.safeName.replace(/\.[^.]+$/, ''), file.mimeType,
+      );
+      try {
+        const contents = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+        await saf.writeAsStringAsync(target, contents, { encoding: FileSystem.EncodingType.Base64 });
+      } catch (error) {
+        await saf.deleteAsync(target, { idempotent: true }).catch(() => undefined);
+        throw error;
+      }
+      return true;
+    }
+    if (!(await Sharing.isAvailableAsync())) throw new Error('documents.failed');
+    // iOS exposes Save to Files through its system export sheet.
+    await Sharing.shareAsync(file.uri, { dialogTitle: fileName, mimeType: file.mimeType });
+    return false;
   } finally {
-    await FileSystem.deleteAsync(local, { idempotent: true }).catch(
-      () => undefined,
-    );
+    await file.cleanup();
   }
 }
