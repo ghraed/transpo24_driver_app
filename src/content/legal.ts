@@ -346,7 +346,7 @@ UID / Handelsregister-Nr.: CHE-327.671.246`;
 
 export const PRIVACY_POLICY = `TRANSPO24 – PRIVACY POLICY
 
-Effective date: 25 August 2026
+Effective date: 9 September 2026
 
 1. Who We Are
 
@@ -472,7 +472,9 @@ Location data may be used for:
 * fraud prevention;
 * support and dispute investigation.
 
-Live location tracking should only be active where required for an active transport or another clearly disclosed platform function.
+In the Customer App, location permission helps you choose an address; you can also enter an address manually. Customers receive the assigned driver’s trip location through the service. In the Driver App, location centers the map and shares the driver’s position with the customer during an active pickup or delivery. With background location permission, this can continue while the Driver App is minimized or the screen is locked. Background updates are limited to the active journey and stop when it ends or the driver signs out. Device permissions, connectivity and operating-system restrictions affect availability.
+
+You can change location permission in your device settings. Refusing or withdrawing permission can limit map positioning and live trip tracking; it does not authorize advertising or unrelated use of your location.
 
 8. Communication Data
 
@@ -529,6 +531,20 @@ We may process technical information such as:
 * browser information;
 * general app usage information.
 
+10.1 Cookies, Local Storage and Tracking
+
+The public website does not include advertising pixels or optional audience analytics and does not set application cookies or browser-storage identifiers. Website delivery can involve technical request information, such as your IP address, processed by the hosting infrastructure.
+
+The apps store sign-in credentials, session information, language preferences and translation caches to provide their features. These are separate from advertising identifiers. The current apps do not integrate advertising or optional audience-analytics SDKs and do not use cross-company advertising tracking.
+
+There is therefore no optional tracking consent to grant in the current versions. Accepting the Terms & Conditions or reading this policy does not give consent to optional analytics or marketing. If a feature requiring consent is introduced, it must remain off until you make a separate, informed choice, with an equally easy way to refuse and withdraw consent. Apple tracking permission will also be requested before any tracking that requires it.
+
+10.2 Device Permissions
+
+Location, camera, selected photos/documents and notifications support the features you use. Camera and file access let you supply transport photos, chat attachments, delivery evidence or driver verification documents. Notifications provide service and transport updates. The apps do not need microphone access.
+
+You can manage permissions in the app's page in your device settings. A permission grants technical access to a device feature; it is not general consent to process data for unrelated purposes. Turning off a permission affects the related feature. It does not cancel a booking or delete your account.
+
 11. Why We Use Personal Data
 
 We may process personal data for purposes including:
@@ -551,6 +567,12 @@ We may process personal data for purposes including:
 * communicating important service information.
 
 Marketing communications will only be sent where permitted by applicable law and, where required, with the user’s consent.
+
+11.1 Legal Grounds
+
+Where the GDPR applies, we process account, booking, communication and payment information as necessary to enter into or perform the requested service contract (Article 6(1)(b)). Processing required by accounting, tax or other applicable legal duties relies on Article 6(1)(c). Security, abuse prevention and the handling of legal claims may rely on legitimate interests (Article 6(1)(f)), subject to the balancing of those interests against your rights. Where consent is required, the relevant processing relies on Article 6(1)(a) and you may withdraw that consent without affecting earlier lawful processing.
+
+Required information is identified in the relevant feature. Without information necessary to provide a requested service, we may be unable to provide that feature. Optional permissions do not constitute blanket agreement to data processing. Swiss data protection law also applies where relevant.
 
 12. Smart Matching
 
@@ -621,8 +643,11 @@ Data may be processed by providers supporting:
 * OTP verification;
 * KYC;
 * security;
-* analytics;
 * technical support.
+
+Providers Used by Current Features
+
+Depending on the feature and its configuration, these include Stripe for payments, payouts and payment-related verification; Google Maps for address search, maps and routes; Google Cloud Translation for requested translations, including text submitted for translation; Twilio for phone verification; and Expo together with Apple/Google push services for notifications and Expo for app updates. Information necessary for those functions is transmitted to the relevant provider. For example, map services receive address searches or coordinates, translation services receive the text being translated, and notification services receive device tokens and notification payloads. These service integrations are distinct from optional advertising tracking.
 
 Authorities
 
@@ -677,7 +702,7 @@ Personal data is retained only for as long as reasonably necessary for:
 
 Different categories of data may be subject to different retention periods.
 
-Specific retention periods may be updated to reflect technical, legal and regulatory requirements.
+Retention is determined by the category and purpose: account details are needed while the account is active; transport, payment and dispute records may remain necessary after a trip or account closure to meet accounting duties or resolve claims. Verification documents, location records, attachments and security logs require separate limits based on their purpose and applicable obligations. You may request details about retention of your information at privacy@transpo24.ch.
 
 18. Account Deletion
 
@@ -700,7 +725,7 @@ Where retention is no longer necessary, data will be deleted or anonymized as ap
 
 Some service providers may process information outside Switzerland.
 
-Where required, Transpo24 will use legally recognized mechanisms and safeguards for international transfers of personal data.
+Transfers outside Switzerland or the European Economic Area must meet applicable data protection requirements. Depending on the destination and provider, the relevant mechanism may be an applicable adequacy decision or recognized standard contractual clauses with any necessary supplementary safeguards. You may contact privacy@transpo24.ch to ask where your information is processed and obtain information about the safeguards applicable to it.
 
 20. Data Security
 
@@ -733,7 +758,11 @@ Requests may be sent to:
 
 privacy@transpo24.ch
 
-Identity verification may be required before processing a request.
+Identity verification may be required before processing a request, using only information reasonably necessary to verify you. You can request access, correction, erasure, restriction or portability, or object to processing based on legitimate interests, by contacting the address above. You can also use Profile → Delete account in either app or the account-deletion page on the website.
+
+Where the GDPR applies, we respond without undue delay and normally within one month. If a permitted extension is necessary, we will explain it within that month. Applicable Swiss response requirements also apply.
+
+You may lodge a complaint with a competent supervisory authority, including the CNIL in France (www.cnil.fr), or contact the Swiss Federal Data Protection and Information Commissioner (www.edoeb.admin.ch). You do not need to contact us first.
 
 22. Children
 

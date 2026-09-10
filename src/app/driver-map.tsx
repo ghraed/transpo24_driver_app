@@ -15,7 +15,7 @@ import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/ty
 
 type Coordinate = { latitude: number; longitude: number };
 
-const DRIVER_LOCATION_REGION_DELTA = 0.035;
+const DRIVER_LOCATION_REGION_DELTA = 0.02;
 
 const SOFT_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#CDE9CE' }] },
@@ -162,11 +162,18 @@ export default function DriverMapScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.mapArea}>
-        {isNativeMapRuntimeAvailable && MapView && MapMarker ? (
+        {isNativeMapRuntimeAvailable && !initialRegion ? (
+          <View style={styles.mapFallback}>
+            {isLoading || isLocating ? <ActivityIndicator size="large" color="#087FFF" /> : null}
+          </View>
+        ) : isNativeMapRuntimeAvailable && MapView && MapMarker ? (
           <MapView
             ref={mapRef}
             style={StyleSheet.absoluteFill}
-            {...(initialRegion ? { initialRegion } : {})}
+            initialRegion={initialRegion}
+            onMapReady={() => {
+              if (initialRegion) mapRef.current?.animateToRegion?.(initialRegion, 0);
+            }}
             customMapStyle={SOFT_MAP_STYLE}
             showsCompass={false}
             showsMyLocationButton={false}
