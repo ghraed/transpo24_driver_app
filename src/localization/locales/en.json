@@ -1433,5 +1433,20 @@
   "documents.type.PICKUP_AUTHORIZATION": "Pickup authorization",
   "documents.type.INSURANCE": "Insurance document",
   "documents.type.PURCHASE_PROOF": "Proof of purchase",
-  "documents.type.OTHER": "Other document"
+  "documents.type.OTHER": "Other document",
+  "Your privacy controls": "Your privacy controls",
+  "No advertising or optional audience analytics are integrated in this app. Accepting the terms does not give consent to optional tracking.": "No advertising or optional audience analytics are integrated in this app. Accepting the terms does not give consent to optional tracking.",
+  "Manage location, camera, photos and notifications in device settings. Changing a permission affects only the related feature; it does not cancel a booking.": "Manage location, camera, photos and notifications in device settings. Changing a permission affects only the related feature; it does not cancel a booking.",
+  "Manage device permissions": "Manage device permissions",
+  "Request access, correction or deletion": "Request access, correction or deletion",
+  "Use your browser site settings to manage permissions.": "Use your browser site settings to manage permissions.",
+  "Open device settings manually, or email privacy@transpo24.ch for privacy requests.": "Open device settings manually, or email privacy@transpo24.ch for privacy requests.",
+  "Agree to Terms of Service": "Agree to Terms of Service",
+  "Please accept the Terms of Service to create an account.": "Please accept the Terms of Service to create an account.",
+  "Read our": "Read our",
+  "Location during your trip": "Location during your trip",
+  "Transpo24 shares your location with the customer during an active pickup or delivery, including when the app is minimized or the screen is locked. Enable background location in the next system screen.": "Transpo24 shares your location with the customer during an active pickup or delivery, including when the app is minimized or the screen is locked. Enable background location in the next system screen.",
+  "Delivery location is active": "Delivery location is active",
+  "Your location is shared with the customer during this trip.": "Your location is shared with the customer during this trip.",
+  "Keep this screen open for live tracking, or enable background location in device settings.": "Keep this screen open for live tracking, or enable background location in device settings."
 }

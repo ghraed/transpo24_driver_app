@@ -21,7 +21,7 @@
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.FOREGROUND_SERVICE"
+        "com.google.android.gms.permission.AD_ID"
       ]
     },
     "web": {
@@ -36,7 +36,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow Transpo24 - Driver to access your photos so you can select driver documents.",
-          "cameraPermission": "Allow Transpo24 - Driver to access your camera so you can take clear driver document photos."
+          "cameraPermission": "Allow Transpo24 - Driver to access your camera so you can take clear driver document photos.",
+          "microphonePermission": false
         }
       ],
       [
@@ -60,7 +61,11 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Transpo24 - Driver to use your location while the map is open."
+          "locationWhenInUsePermission": "Allow Transpo24 - Driver to use your location to center the map and share your live position with the customer during pickup and delivery.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Allow Transpo24 - Driver to share your location with the customer during an active pickup or delivery, even when the app is in the background."
         }
       ],
       "expo-secure-store"

@@ -106,7 +106,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
       return;
     }
     if (mode === 'register' && !hasAcceptedTerms) {
-      setErrorMessage(t('You must accept the Terms & Conditions and Privacy Policy to create an account.'));
+      setErrorMessage(t('Please accept the Terms of Service to create an account.'));
       return;
     }
 
@@ -286,7 +286,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
                       <Pressable
                         accessibilityRole="checkbox"
                         accessibilityState={{ checked: hasAcceptedTerms }}
-                        accessibilityLabel={t('Accept the Terms & Conditions and Privacy Policy')}
+                        accessibilityLabel={t('Agree to Terms of Service')}
                         style={[styles.checkbox, hasAcceptedTerms && styles.checkboxChecked]}
                         onPress={() => {
                           setHasAcceptedTerms((current) => !current);
@@ -304,7 +304,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
                           >
                             <Text style={styles.termsLink}>{t('Terms & Conditions')}</Text>
                           </Pressable>
-                          <Text style={styles.termsText}>{t('and')}</Text>
+                          <Text style={styles.termsText}>{t('Read our')}</Text>
                           <Pressable
                             accessibilityRole="link"
                             onPress={() => router.push({ pathname: '/legal', params: { document: 'privacy' } } as never)}

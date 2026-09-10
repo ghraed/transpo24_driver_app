@@ -1,3 +1,4 @@
+import { startBackgroundTripTracking, stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -393,6 +394,7 @@ export default function GoToPickupScreen() {
         setRequestStatus(details.requestStatus);
 
         if (isTerminalRequestStatus(details.requestStatus)) {
+          void stopBackgroundTripTracking(validTripId).catch(() => undefined);
           router.replace('/accepted-jobs');
           return;
         }
@@ -454,6 +456,7 @@ export default function GoToPickupScreen() {
         tripStatusUnsub = onTripStatusUpdated((payload) => {
           if (payload.tripId !== validTripId) return;
           setRequestStatus(payload.status);
+          if (isTerminalRequestStatus(payload.status)) void stopBackgroundTripTracking(validTripId).catch(() => undefined);
           if (payload.status === 'DRIVER_ARRIVED_PICKUP' || isDeliveryPhaseRequestStatus(payload.status)) {
             setIsAwaitingArrivalConfirmation(false);
           }
@@ -542,6 +545,11 @@ export default function GoToPickupScreen() {
         }
 
         locationSubscriptionRef.current = subscription;
+        void startBackgroundTripTracking(validTripId, () => active).then((started) => {
+          if (active && !started) setLocationMessage(t('Keep this screen open for live tracking, or enable background location in device settings.'));
+        }).catch(() => {
+          if (active) setLocationMessage(t('Keep this screen open for live tracking, or enable background location in device settings.'));
+        });
       } catch (error) {
         setLocationMessage(
           error instanceof Error

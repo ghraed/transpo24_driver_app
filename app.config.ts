@@ -81,6 +81,18 @@ export default ({ config }: ConfigContext) => {
   } as ExpoConfig;
 
   return withAndroidManifest(expoConfig, (manifestConfig) => {
+    // Older generated projects explicitly removed foreground services. Clear
+    // those stale merge directives so active-delivery tracking can run.
+    const locationPermissions = new Set([
+      'android.permission.FOREGROUND_SERVICE',
+      'android.permission.FOREGROUND_SERVICE_LOCATION',
+      'android.permission.ACCESS_BACKGROUND_LOCATION',
+    ]);
+    for (const permission of manifestConfig.modResults.manifest['uses-permission'] ?? []) {
+      if (locationPermissions.has(permission.$['android:name'])) {
+        delete permission.$['tools:node'];
+      }
+    }
     const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(
       manifestConfig.modResults,
     );

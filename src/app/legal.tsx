@@ -2,6 +2,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PrivacyControls } from '@/components/privacy-controls';
+
 import { PRIVACY_POLICY, TERMS_OF_SERVICE } from '@/content/legal';
 
 type LegalDocument = 'privacy' | 'terms';
@@ -24,6 +26,7 @@ export default function LegalScreen() {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <Stack.Screen options={{ title }} />
       <ScrollView contentContainerStyle={styles.content}>
+        {!isTerms ? <PrivacyControls /> : null}
         <View style={styles.documentCard}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.copy}>{content}</Text>

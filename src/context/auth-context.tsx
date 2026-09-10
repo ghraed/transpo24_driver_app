@@ -1,3 +1,4 @@
+import { stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -218,6 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async (): Promise<void> => {
+    await stopBackgroundTripTracking().catch(() => undefined);
     await Promise.all([
       clearAccessToken(),
       clearTrustedDriverSession(),

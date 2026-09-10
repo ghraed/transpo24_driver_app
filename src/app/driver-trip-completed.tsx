@@ -1,5 +1,6 @@
+import { stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -152,6 +153,9 @@ export default function DriverTripCompletedScreen() {
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
   const deliveredAt = typeof params.deliveredAt === 'string' ? params.deliveredAt : null;
   const hasValidTripId = isValidTripId(tripId);
+  useEffect(() => {
+    if (hasValidTripId) void stopBackgroundTripTracking(tripId).catch(() => undefined);
+  }, [hasValidTripId, tripId]);
 
   const [stripeStatus, setStripeStatus] = useState<StripeConnectStatusResponse | null>(null);
   const [transferResult, setTransferResult] = useState<RetryTransferResponse | null>(null);

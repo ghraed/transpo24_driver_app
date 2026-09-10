@@ -1433,5 +1433,20 @@
   "documents.type.PICKUP_AUTHORIZATION": "Autorisation d’enlèvement",
   "documents.type.INSURANCE": "Document d’assurance",
   "documents.type.PURCHASE_PROOF": "Justificatif d’achat",
-  "documents.type.OTHER": "Autre document"
+  "documents.type.OTHER": "Autre document",
+  "Your privacy controls": "Vos choix de confidentialité",
+  "No advertising or optional audience analytics are integrated in this app. Accepting the terms does not give consent to optional tracking.": "Cette application n’intègre ni publicité ni analyse d’audience facultative. Accepter les conditions ne vaut pas consentement au suivi facultatif.",
+  "Manage location, camera, photos and notifications in device settings. Changing a permission affects only the related feature; it does not cancel a booking.": "Gérez la localisation, l’appareil photo, les photos et les notifications dans les réglages de votre appareil. Modifier une autorisation affecte uniquement la fonction concernée et n’annule pas une réservation.",
+  "Manage device permissions": "Gérer les autorisations de l’appareil",
+  "Request access, correction or deletion": "Demander l’accès, la rectification ou l’effacement",
+  "Use your browser site settings to manage permissions.": "Utilisez les paramètres du site dans votre navigateur pour gérer les autorisations.",
+  "Open device settings manually, or email privacy@transpo24.ch for privacy requests.": "Ouvrez manuellement les réglages de votre appareil ou écrivez à privacy@transpo24.ch pour toute demande concernant vos données.",
+  "Agree to Terms of Service": "Accepter les conditions d’utilisation",
+  "Please accept the Terms of Service to create an account.": "Veuillez accepter les conditions d’utilisation pour créer un compte.",
+  "Read our": "Consultez notre",
+  "Location during your trip": "Localisation pendant votre trajet",
+  "Transpo24 shares your location with the customer during an active pickup or delivery, including when the app is minimized or the screen is locked. Enable background location in the next system screen.": "Transpo24 partage votre position avec le client pendant un enlèvement ou une livraison en cours, même si l’application est en arrière-plan ou l’écran verrouillé. Activez la localisation en arrière-plan dans l’écran système suivant.",
+  "Delivery location is active": "Localisation de livraison active",
+  "Your location is shared with the customer during this trip.": "Votre position est partagée avec le client pendant ce trajet.",
+  "Keep this screen open for live tracking, or enable background location in device settings.": "Gardez cet écran ouvert pour le suivi en direct ou activez la localisation en arrière-plan dans les réglages de l’appareil."
 }

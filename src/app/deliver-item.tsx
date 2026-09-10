@@ -1,3 +1,4 @@
+import { startBackgroundTripTracking, stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
@@ -373,6 +374,7 @@ export default function DeliverItemScreen() {
         currentRequestStatus = details.requestStatus;
         setRequestStatus(details.requestStatus);
         if (isTerminalRequestStatus(details.requestStatus)) {
+          void stopBackgroundTripTracking(tripId).catch(() => undefined);
           router.replace(buildCompletedRoute(tripId, new Date().toISOString()));
           return;
         }
@@ -442,12 +444,14 @@ export default function DeliverItemScreen() {
         offTripStatus = onTripStatusUpdated((rawPayload) => {
           const payload = validateTripStatusUpdatedPayload(rawPayload);
           if (!payload || payload.tripId !== tripId) return;
+          if (isTerminalRequestStatus(payload.status)) void stopBackgroundTripTracking(tripId).catch(() => undefined);
           if (payload.status === 'DELIVERED') {
             router.replace(buildCompletedRoute(tripId, payload.updatedAt));
           }
         });
         offItemDelivered = onItemDelivered((payload) => {
           if (payload.tripId !== tripId) return;
+          void stopBackgroundTripTracking(tripId).catch(() => undefined);
           router.replace(buildCompletedRoute(tripId, payload.deliveredAt));
         });
       } catch {
@@ -518,6 +522,11 @@ export default function DeliverItemScreen() {
           return;
         }
         locationSubscriptionRef.current = subscription;
+        void startBackgroundTripTracking(tripId, () => active).then((started) => {
+          if (active && !started) setLocationMessage(t('Keep this screen open for live tracking, or enable background location in device settings.'));
+        }).catch(() => {
+          if (active) setLocationMessage(t('Keep this screen open for live tracking, or enable background location in device settings.'));
+        });
       } catch (error) {
       setLocationMessage(
         error instanceof Error
@@ -720,6 +729,7 @@ export default function DeliverItemScreen() {
         }
       }
 
+      void stopBackgroundTripTracking(tripId).catch(() => undefined);
       router.replace(buildCompletedRoute(tripId, response.deliveredAt));
     } catch (error) {
       setSubmitError(error instanceof Error ? localizeDeliveryError(error.message, t) : t('Failed to confirm delivery.'));

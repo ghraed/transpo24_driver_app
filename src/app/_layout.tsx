@@ -1,3 +1,4 @@
+import '@/location/background-trip-tracking';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';

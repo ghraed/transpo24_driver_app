@@ -1,3 +1,4 @@
+import { noteForegroundTripLocation } from '@/location/background-trip-tracking';
 import { io, type Socket } from 'socket.io-client';
 
 import { getBackendSocketUrl } from '@/config/backend';
@@ -253,6 +254,7 @@ export function onChatMessageRead(
 
 export function emitDriverLocationUpdate(payload: DriverLocationUpdatePayload): void {
   getSocket().emit('driverLocationUpdate', payload);
+  noteForegroundTripLocation(payload.tripId);
 }
 
 export function emitDriverArrivedPickup(payload: DriverArrivedPickupPayload): void {

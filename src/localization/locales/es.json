@@ -1433,5 +1433,20 @@
   "documents.type.PICKUP_AUTHORIZATION": "Autorización de recogida",
   "documents.type.INSURANCE": "Documento de seguro",
   "documents.type.PURCHASE_PROOF": "Comprobante de compra",
-  "documents.type.OTHER": "Otro documento"
+  "documents.type.OTHER": "Otro documento",
+  "Your privacy controls": "Tus controles de privacidad",
+  "No advertising or optional audience analytics are integrated in this app. Accepting the terms does not give consent to optional tracking.": "Esta aplicación no integra publicidad ni análisis de audiencia opcionales. Aceptar las condiciones no implica consentir el seguimiento opcional.",
+  "Manage location, camera, photos and notifications in device settings. Changing a permission affects only the related feature; it does not cancel a booking.": "Gestiona ubicación, cámara, fotos y notificaciones en los ajustes del dispositivo. Cambiar un permiso solo afecta a la función relacionada; no cancela una reserva.",
+  "Manage device permissions": "Gestionar permisos del dispositivo",
+  "Request access, correction or deletion": "Solicitar acceso, rectificación o supresión",
+  "Use your browser site settings to manage permissions.": "Usa los ajustes del sitio en tu navegador para gestionar los permisos.",
+  "Open device settings manually, or email privacy@transpo24.ch for privacy requests.": "Abre los ajustes del dispositivo manualmente o escribe a privacy@transpo24.ch para solicitudes de privacidad.",
+  "Agree to Terms of Service": "Aceptar los Términos de servicio",
+  "Please accept the Terms of Service to create an account.": "Acepta los Términos de servicio para crear una cuenta.",
+  "Read our": "Lee nuestra",
+  "Location during your trip": "Ubicación durante tu viaje",
+  "Transpo24 shares your location with the customer during an active pickup or delivery, including when the app is minimized or the screen is locked. Enable background location in the next system screen.": "Transpo24 comparte tu ubicación con el cliente durante una recogida o entrega activa, incluso con la aplicación minimizada o la pantalla bloqueada. Activa la ubicación en segundo plano en la siguiente pantalla del sistema.",
+  "Delivery location is active": "Ubicación de entrega activa",
+  "Your location is shared with the customer during this trip.": "Tu ubicación se comparte con el cliente durante este viaje.",
+  "Keep this screen open for live tracking, or enable background location in device settings.": "Mantén esta pantalla abierta para el seguimiento en directo o activa la ubicación en segundo plano en los ajustes del dispositivo."
 }
