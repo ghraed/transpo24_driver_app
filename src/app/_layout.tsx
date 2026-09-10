@@ -1,3 +1,4 @@
+import { BackgroundLocationPrompt } from '@/components/background-location-prompt';
 import { useRequestMatchingLocation } from '@/hooks/use-request-matching-location';
 import '@/location/background-trip-tracking';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
@@ -129,6 +130,7 @@ function AppNavigator() {
     <View style={styles.appContainer}>
       <EnvironmentBanner />
       <OtaUpdateBanner />
+      <BackgroundLocationPrompt key={accessToken ?? 'signed-out'} />
       <View style={styles.navigator}>
         <Stack>
       <Stack.Screen name="index" options={{ title: t('Driver Login') }} />

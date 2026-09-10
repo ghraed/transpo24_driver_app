@@ -1468,5 +1468,6 @@
   "Previously received": "تم استلامه سابقاً",
   "Nearby pickup": "استلام قريب",
   "No scheduled requests": "لا توجد طلبات مجدولة",
-  "Unable to update availability.": "تعذر تحديث التوفر."
+  "Unable to update availability.": "تعذر تحديث التوفر.",
+  "Don't show again": "لا تظهر مرة أخرى"
 }

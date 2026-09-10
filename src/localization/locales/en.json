@@ -1468,5 +1468,6 @@
   "Previously received": "Previously received",
   "Nearby pickup": "Nearby pickup",
   "No scheduled requests": "No scheduled requests",
-  "Unable to update availability.": "Unable to update availability."
+  "Unable to update availability.": "Unable to update availability.",
+  "Don't show again": "Don't show again"
 }

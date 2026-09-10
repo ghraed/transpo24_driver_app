@@ -1468,5 +1468,6 @@
   "Previously received": "Bereits erhalten",
   "Nearby pickup": "Abholung in der Nähe",
   "No scheduled requests": "Keine geplanten Anfragen",
-  "Unable to update availability.": "Verfügbarkeit konnte nicht aktualisiert werden."
+  "Unable to update availability.": "Verfügbarkeit konnte nicht aktualisiert werden.",
+  "Don't show again": "Nicht mehr anzeigen"
 }

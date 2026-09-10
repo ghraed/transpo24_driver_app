@@ -1,15 +1,17 @@
 import { beforeEach, afterEach, expect, jest, test } from '@jest/globals';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
-import { AppState, Alert } from 'react-native';
+import { AppState } from 'react-native';
 import { io } from 'socket.io-client';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { readAccessToken } from '@/lib/auth-storage';
+import { requestBackgroundLocationPrompt } from '@/location/background-location-prompt';
 import {
   BACKGROUND_TRIP_TASK, handleBackgroundLocations, startBackgroundTripTracking,
   stopBackgroundTripTracking, noteForegroundTripLocation,
 } from './background-trip-tracking';
 
+jest.mock('@/location/background-location-prompt', () => ({ requestBackgroundLocationPrompt: jest.fn() }));
 jest.mock('expo', () => ({ requireOptionalNativeModule: () => ({}) }));
 jest.mock('expo-task-manager', () => ({ isAvailableAsync: jest.fn(async () => true), isTaskDefined: () => false, defineTask: jest.fn() }));
 jest.mock('expo-location', () => ({
@@ -100,10 +102,10 @@ test('does not start when the user leaves during permission handling', async () 
 });
 test('does not repeatedly prompt after a refusal on the same trip', async () => {
   Location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation((title, body, buttons) => buttons[0].onPress());
+  requestBackgroundLocationPrompt.mockResolvedValue({ continue: false, dontShowAgain: false });
   expect(await startBackgroundTripTracking('trip')).toBe(false);
   expect(await startBackgroundTripTracking('trip')).toBe(false);
-  expect(alert).toHaveBeenCalledTimes(1);
+  expect(requestBackgroundLocationPrompt).toHaveBeenCalledTimes(1);
   expect(Location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
   expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled();
 });
@@ -119,4 +121,41 @@ test('logout clears tracking and prevents later callbacks from sending', async (
   readAccessToken.mockResolvedValue(null);
   await handleBackgroundLocations([point()]);
   expect(io).not.toHaveBeenCalled();
+});
+
+test('remembers do not show again with Not now across trips without requesting system permission', async () => {
+  Location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+  requestBackgroundLocationPrompt.mockResolvedValue({ continue: false, dontShowAgain: true });
+  expect(await startBackgroundTripTracking('first-trip')).toBe(false);
+  await stopBackgroundTripTracking();
+  expect(store.get('transpo24.driver.backgroundTripPromptChoice')).toBe('decline');
+  expect(await startBackgroundTripTracking('second-trip')).toBe(false);
+  expect(requestBackgroundLocationPrompt).toHaveBeenCalledTimes(1);
+  expect(Location.requestBackgroundPermissionsAsync).not.toHaveBeenCalled();
+});
+test('remembers do not show again with Continue but still requires system permission', async () => {
+  Location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+  Location.requestBackgroundPermissionsAsync.mockResolvedValue({ granted: false });
+  requestBackgroundLocationPrompt.mockResolvedValue({ continue: true, dontShowAgain: true });
+  expect(await startBackgroundTripTracking('first-trip')).toBe(false);
+  await stopBackgroundTripTracking();
+  expect(store.get('transpo24.driver.backgroundTripPromptChoice')).toBe('continue');
+  expect(await startBackgroundTripTracking('second-trip')).toBe(false);
+  expect(requestBackgroundLocationPrompt).toHaveBeenCalledTimes(1);
+  expect(Location.requestBackgroundPermissionsAsync).toHaveBeenCalledTimes(2);
+  expect(Location.startLocationUpdatesAsync).not.toHaveBeenCalled();
+});
+test('shows the explanation on later trips if the checkbox is unchecked', async () => {
+  Location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+  requestBackgroundLocationPrompt.mockResolvedValue({ continue: false, dontShowAgain: false });
+  await startBackgroundTripTracking('first-trip');
+  await startBackgroundTripTracking('second-trip');
+  expect(requestBackgroundLocationPrompt).toHaveBeenCalledTimes(2);
+  expect(store.has('transpo24.driver.backgroundTripPromptChoice')).toBe(false);
+});
+test('uses the preference already on disk without needing an earlier popup in this session', async () => {
+  store.set('transpo24.driver.backgroundTripPromptChoice', 'decline');
+  Location.getBackgroundPermissionsAsync.mockResolvedValue({ granted: false, canAskAgain: true });
+  expect(await startBackgroundTripTracking('new-trip')).toBe(false);
+  expect(requestBackgroundLocationPrompt).not.toHaveBeenCalled();
 });

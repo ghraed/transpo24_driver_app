@@ -1,13 +1,14 @@
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
 import { requireOptionalNativeModule } from 'expo';
-import { Alert, AppState, Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { io } from 'socket.io-client';
 
 import { getBackendSocketUrl } from '@/config/backend';
 import { ApiResponseError, getDriverAcceptedJobDetails } from '@/lib/api';
 import { readAccessToken } from '@/lib/auth-storage';
 import i18n from '@/localization/i18n';
+import { requestBackgroundLocationPrompt } from '@/location/background-location-prompt';
 
 export const BACKGROUND_TRIP_TASK = 'transpo24.driver.active-trip-location';
 // Old binaries and web retain foreground functionality until a native rebuild.
@@ -24,6 +25,7 @@ export function noteForegroundTripLocation(tripId: string): void {
 
 const TRIP_KEY = 'transpo24.driver.backgroundTrip';
 const PROMPT_KEY = 'transpo24.driver.backgroundTripPrompt';
+const PROMPT_CHOICE_KEY = 'transpo24.driver.backgroundTripPromptChoice';
 const MOVING_STATUSES = new Set(['DRIVER_GOING_TO_PICKUP', 'DRIVER_GOING_TO_DROPOFF']);
 let generation = 0;
 let mutations: Promise<unknown> = Promise.resolve();
@@ -49,15 +51,14 @@ export async function stopBackgroundTripTracking(expectedTripId?: string): Promi
 }
 
 async function explainBackgroundPermission(): Promise<boolean> {
-  return new Promise((resolve) => Alert.alert(
-    i18n.t('Location during your trip'),
-    i18n.t('Transpo24 shares your location with the customer during an active pickup or delivery, including when the app is minimized or the screen is locked. Enable background location in the next system screen.'),
-    [
-      { text: i18n.t('Not now'), style: 'cancel', onPress: () => resolve(false) },
-      { text: i18n.t('Continue'), onPress: () => resolve(true) },
-    ],
-    { cancelable: true, onDismiss: () => resolve(false) },
-  ));
+  const savedChoice = await SecureStore.getItemAsync(PROMPT_CHOICE_KEY);
+  if (savedChoice === 'continue') return true;
+  if (savedChoice === 'decline') return false;
+  const choice = await requestBackgroundLocationPrompt();
+  if (choice.dontShowAgain) {
+    await SecureStore.setItemAsync(PROMPT_CHOICE_KEY, choice.continue ? 'continue' : 'decline');
+  }
+  return choice.continue;
 }
 
 export async function startBackgroundTripTracking(

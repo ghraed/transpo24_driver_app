@@ -1468,5 +1468,6 @@
   "Previously received": "Déjà reçue",
   "Nearby pickup": "Collecte à proximité",
   "No scheduled requests": "Aucune demande planifiée",
-  "Unable to update availability.": "Impossible de modifier les disponibilités."
+  "Unable to update availability.": "Impossible de modifier les disponibilités.",
+  "Don't show again": "Ne plus afficher"
 }
