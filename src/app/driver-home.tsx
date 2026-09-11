@@ -1,3 +1,4 @@
+import { TestNotificationButton } from '@/components/test-notification-button';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
@@ -96,6 +97,7 @@ export default function DriverHomeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <TestNotificationButton />
         <Text style={styles.sectionLabel}>{t('Availability')}</Text>
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>

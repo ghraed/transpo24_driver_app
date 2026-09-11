@@ -2160,3 +2160,15 @@ export async function retryTransferForTrip(tripId: string): Promise<RetryTransfe
     'Failed to parse retry transfer response.',
   );
 }
+
+export async function sendTestNotification(token: string): Promise<void> {
+  const endpoint = `${getApiBaseUrl()}/push-tokens/test`;
+  const response = await fetchWithTimeout(endpoint, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ token, app: 'DRIVER' }),
+  });
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to send test notification.');
+  }
+}
