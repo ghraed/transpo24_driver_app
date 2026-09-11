@@ -28,6 +28,15 @@ export default ({ config }: ConfigContext) => {
       throw new Error('Dev Firebase configuration must register com.transpo24.driver.dev.');
     }
   }
+  // Validate on the Android build worker, where EAS file variables exist.
+  if (process.env.EAS_BUILD_PLATFORM === 'android' && !IS_DEV) {
+    const services = JSON.parse(readFileSync(androidGoogleServicesFile, 'utf8'));
+    if (!services.client?.some((client: { client_info?: { android_client_info?: { package_name?: string } } }) =>
+      client.client_info?.android_client_info?.package_name === androidPackage,
+    )) {
+      throw new Error(`Firebase configuration must register ${androidPackage} for push notifications.`);
+    }
+  }
   const existingPlugins = Array.isArray(config.plugins) ? config.plugins : [];
   const pluginsWithoutReactNativeMaps = existingPlugins.filter((plugin) => {
     if (typeof plugin === 'string') {

@@ -16,7 +16,8 @@ import {
 } from '@/lib/auth-storage';
 import { isAuthenticationFailure } from '@/lib/api';
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
-import { initializeNotifications, registerDriverPushNotifications } from '@/notifications/registerPushNotifications';
+import { initializeNotifications } from '@/notifications/registerPushNotifications';
+import { usePushRegistration } from '@/notifications/usePushRegistration';
 import { useNotificationNavigation } from '@/notifications/useNotificationNavigation';
 
 function AppNavigator() {
@@ -33,7 +34,6 @@ function AppNavigator() {
   const router = useRouter();
   const pathname = usePathname();
   const hasResolvedInitialRouteRef = useRef(false);
-  const lastRegisteredAccessTokenRef = useRef<string | null>(null);
 
   useNotificationNavigation();
   useRequestMatchingLocation(Boolean(accessToken && driver?.status === 'APPROVED'));
@@ -97,26 +97,7 @@ function AppNavigator() {
     initializeNotifications();
   }, []);
 
-  useEffect(() => {
-    if (isRestoringSession) {
-      return;
-    }
-
-    if (!accessToken) {
-      lastRegisteredAccessTokenRef.current = null;
-      return;
-    }
-
-    if (lastRegisteredAccessTokenRef.current === accessToken) {
-      return;
-    }
-
-    lastRegisteredAccessTokenRef.current = accessToken;
-    void registerDriverPushNotifications().catch((error: unknown) => {
-      console.warn('Driver push registration failed.', error);
-      lastRegisteredAccessTokenRef.current = null;
-    });
-  }, [accessToken, isRestoringSession]);
+  usePushRegistration(!isRestoringSession ? accessToken : null);
 
   if (isRestoringSession || !localizationReady) {
     return (
