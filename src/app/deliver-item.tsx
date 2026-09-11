@@ -1,9 +1,10 @@
+import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { startBackgroundTripTracking, stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, BackHandler, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
@@ -118,12 +119,7 @@ export default function DeliverItemScreen() {
   const { t, i18n } = useTranslation();
   const params = useLocalSearchParams<DeliverItemParams>();
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
-  const mapsApiKey =
-    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
-    (Platform.OS === 'ios'
-      ? process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim()
-      : process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim()) ||
-    '';
+  const mapsApiKey = GOOGLE_MAPS_API_KEY;
 
   const pickupLocation = useMemo<AddressedLocation | null>(() => {
     const latitude = parseNumber(params.pickupLatitude);

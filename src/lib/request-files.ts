@@ -1,6 +1,5 @@
-import * as DocumentPicker from 'expo-document-picker';
+import type * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import type { ChatMessage } from '@/types/chat';
 import { readAccessToken as readToken } from '@/lib/auth-storage';
@@ -85,7 +84,10 @@ export const acknowledgeDocuments = (id: string) =>
     method: 'POST',
   });
 async function pickFile() {
-  const result = await DocumentPicker.getDocumentAsync({
+  // Load on use so older binaries can still open text chat.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getDocumentAsync } = require('expo-document-picker') as typeof import('expo-document-picker');
+  const result = await getDocumentAsync({
     type: TYPES,
     copyToCacheDirectory: true,
   });
@@ -126,7 +128,10 @@ export async function sendChatAttachment(roomId: string) {
   );
 }
 export async function pickChatAttachments() {
-  const result = await DocumentPicker.getDocumentAsync({
+  // Load on use so older binaries can still open text chat.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getDocumentAsync } = require('expo-document-picker') as typeof import('expo-document-picker');
+  const result = await getDocumentAsync({
     type: TYPES,
     multiple: true,
     copyToCacheDirectory: true,
@@ -281,6 +286,8 @@ export async function downloadRequestFile(path: string, fileName: string) {
       }
       return true;
     }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Sharing = require('expo-sharing') as typeof import('expo-sharing');
     if (!(await Sharing.isAvailableAsync())) throw new Error('documents.failed');
     // iOS exposes Save to Files through its system export sheet.
     await Sharing.shareAsync(file.uri, { dialogTitle: fileName, mimeType: file.mimeType });

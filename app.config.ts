@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 
 const IS_DEV = process.env.APP_VARIANT === 'development';
 
-const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY ?? '';
-const MAPS_IOS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY ?? '';
+const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim() || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
+const MAPS_IOS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY?.trim() || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
 const BUILD_PROFILE = process.env.EAS_BUILD_PROFILE?.trim() ?? '';
 const IS_LOCAL_DEVELOPMENT_BUILD =
   BUILD_PROFILE === 'development' ||

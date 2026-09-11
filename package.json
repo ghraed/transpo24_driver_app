@@ -63,6 +63,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "build:production": "NODE_OPTIONS='--dns-result-order=ipv4first --no-network-family-autoselection' npx eas-cli@24.3.0 build --platform android --profile production",
     "update:production": "eas update --channel production --environment production",
     "update:preview": "eas update --channel preview --environment preview",
     "update:play-test": "eas update --channel play-test --environment preview",

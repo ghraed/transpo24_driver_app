@@ -520,9 +520,13 @@ export default function ChatScreen() {
     }, [resolveRoomAndMessages]),
   );
 
+  // Room metadata changes when messages are marked read; only room identity
+  // should restart the socket subscription.
+  const activeChatRoomId = isAccessibleChatRoom(chatRoom) ? chatRoom.id : '';
+
   useFocusEffect(
     useCallback(() => {
-      if (!accessToken || !chatRoom?.id || !isAccessibleChatRoom(chatRoom)) {
+      if (!accessToken || !activeChatRoomId) {
         return undefined;
       }
 
@@ -537,9 +541,9 @@ export default function ChatScreen() {
         try {
           connectSocket(accessToken);
           await waitForSocketConnection(5000);
-          await joinChatRoomWithAck(chatRoom.id).catch(() => {
-            joinChatRoom(chatRoom.id);
-            return { roomId: chatRoom.id };
+          await joinChatRoomWithAck(activeChatRoomId).catch(() => {
+            joinChatRoom(activeChatRoomId);
+            return { roomId: activeChatRoomId };
           });
 
           if (!isActive) return;
@@ -547,7 +551,7 @@ export default function ChatScreen() {
           unsubscribeCreated = onChatMessageCreated((payload) => {
             const nextMessage = normalizeIncomingChatMessage(payload);
             const incomingRoomId = nextMessage?.chatRoomId || payload.roomId || payload.chatRoomId;
-            if (incomingRoomId !== chatRoom.id) return;
+            if (incomingRoomId !== activeChatRoomId) return;
             if (!nextMessage) return;
             setMessages((current) => mergeMessages(current, [nextMessage]));
             setChatRoom((current) =>
@@ -556,7 +560,7 @@ export default function ChatScreen() {
           });
 
           unsubscribeRead = onChatMessageRead((payload) => {
-            if (payload.roomId !== chatRoom.id) return;
+            if (payload.roomId !== activeChatRoomId) return;
             applyReadEvent(payload);
           });
 
@@ -569,7 +573,7 @@ export default function ChatScreen() {
           });
 
           setSocketNotice('');
-          void markRead(chatRoom.id);
+          void markRead(activeChatRoomId);
         } catch (error) {
           if (!isActive) return;
           setSocketNotice(error instanceof Error ? error.message : t('Socket connection failed.'));
@@ -581,15 +585,15 @@ export default function ChatScreen() {
       appStateSubscription = AppState.addEventListener('change', (nextState) => {
         if (nextState !== 'active') return;
         connectSocket(accessToken);
-        if (chatRoom.id) {
+        if (activeChatRoomId) {
           void waitForSocketConnection(5000)
             .then(() =>
-              joinChatRoomWithAck(chatRoom.id).catch(() => {
-                joinChatRoom(chatRoom.id);
-                return { roomId: chatRoom.id };
+              joinChatRoomWithAck(activeChatRoomId).catch(() => {
+                joinChatRoom(activeChatRoomId);
+                return { roomId: activeChatRoomId };
               }),
             )
-            .then(() => markRead(chatRoom.id))
+            .then(() => markRead(activeChatRoomId))
             .catch((error: unknown) => {
               setSocketNotice(error instanceof Error ? error.message : t('Failed to reconnect chat.'));
             });
@@ -603,9 +607,9 @@ export default function ChatScreen() {
         unsubscribeDisconnect?.();
         unsubscribeError?.();
         appStateSubscription?.remove();
-        leaveChatRoom(chatRoom.id);
+        leaveChatRoom(activeChatRoomId);
       };
-    }, [accessToken, applyReadEvent, chatRoom, markRead, t]),
+    }, [accessToken, applyReadEvent, activeChatRoomId, markRead, t]),
   );
 
   const canSend = useMemo(() => {
