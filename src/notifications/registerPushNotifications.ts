@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { registerPushToken } from '@/lib/api';
 import type { RegisterPushTokenPayload } from '@/notifications/types';
+import { isMissingFirebaseConfiguration, PushConfigurationError } from './push-registration-error';
 
 const ANDROID_CHANNEL_ID = 'transport_jobs';
 const DRIVER_APP_CONTEXT = 'DRIVER';
@@ -52,7 +53,7 @@ async function ensureAndroidChannel(): Promise<void> {
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
     name: 'Transport Jobs',
     importance: Notifications.AndroidImportance.MAX,
-    sound: 'default',
+    // Omitting sound uses Android's default; SDK 56 treats strings as resource filenames.
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#2563EB',
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -136,7 +137,9 @@ export async function registerDriverPushNotifications(requestPermission = true):
     await registerPushToken(payload);
     return pushToken.data;
   } catch (error) {
-    console.warn('Failed to register driver push notifications.', error);
+    if (Platform.OS === 'android' && isMissingFirebaseConfiguration(error)) {
+      throw new PushConfigurationError();
+    }
     throw (error instanceof Error
       ? error
       : new Error('Failed to register driver push notifications.'));

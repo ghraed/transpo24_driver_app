@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { registerDriverPushNotifications as register } from './registerPushNotifications';
 import { usePushRegistration } from './usePushRegistration';
+import { isMissingFirebaseConfiguration, PushConfigurationError } from './push-registration-error';
 
 jest.mock('./registerPushNotifications', () => ({ registerDriverPushNotifications: jest.fn() }));
 jest.mock('expo-notifications', () => ({ addPushTokenListener: jest.fn() }));
@@ -37,6 +38,11 @@ test('waits for authentication', async () => {
   await mount(null);
   expect(register).not.toHaveBeenCalled();
 });
+test('distinguishes native Firebase setup failures from temporary registration errors', () => {
+  expect(isMissingFirebaseConfiguration(new Error('Default FirebaseApp is not initialized in this process com.transpo24.driver.dev.'))).toBe(true);
+  expect(isMissingFirebaseConfiguration(new Error('Unable to get Firebase Messaging instance.'))).toBe(true);
+  expect(isMissingFirebaseConfiguration(new Error('Network request failed'))).toBe(false);
+});
 test('retries temporary failures without requesting permission again', async () => {
   register.mockRejectedValueOnce(new Error('offline'));
   await mount();
@@ -62,4 +68,12 @@ test('cancels pending retries on logout', async () => {
   await act(async () => { renderer.update(<Harness session={null} />); });
   await act(async () => { jest.advanceTimersByTime(60000); });
   expect(register).toHaveBeenCalledTimes(1);
+});
+test('does not retry missing native Firebase configuration on timers, foreground, or token events', async () => {
+  register.mockRejectedValue(new PushConfigurationError());
+  await mount();
+  await act(async () => { jest.advanceTimersByTime(60000); });
+  await act(async () => { onState('active'); onToken({ data: 'token' }); });
+  expect(register).toHaveBeenCalledTimes(1);
+  expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('npm run android:usb'));
 });
