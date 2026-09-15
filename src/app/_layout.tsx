@@ -2,8 +2,9 @@ import { BackgroundLocationPrompt } from '@/components/background-location-promp
 import { useRequestMatchingLocation } from '@/hooks/use-request-matching-location';
 import '@/location/background-trip-tracking';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef } from 'react';
-import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
+import { Image, StyleSheet, View, useColorScheme } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { OtaUpdateBanner } from '@/components/ota-update-banner';
@@ -19,6 +20,9 @@ import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 import { initializeNotifications } from '@/notifications/registerPushNotifications';
 import { usePushRegistration } from '@/notifications/usePushRegistration';
 import { useNotificationNavigation } from '@/notifications/useNotificationNavigation';
+
+// Keep the app icon visible until session and language initialization finish.
+void SplashScreen.preventAutoHideAsync();
 
 function AppNavigator() {
   const {
@@ -99,10 +103,21 @@ function AppNavigator() {
 
   usePushRegistration(!isRestoringSession ? accessToken : null);
 
+  useEffect(() => {
+    if (!isRestoringSession && localizationReady) {
+      SplashScreen.hide();
+    }
+  }, [isRestoringSession, localizationReady]);
+
   if (isRestoringSession || !localizationReady) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#FFC515" />
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={styles.startupIcon}
+          resizeMode="contain"
+          accessibilityLabel="Transpo24 Driver"
+        />
       </View>
     );
   }
@@ -177,6 +192,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
+  },
+  startupIcon: {
+    width: 180,
+    height: 180,
   },
   navigator: {
     flex: 1,

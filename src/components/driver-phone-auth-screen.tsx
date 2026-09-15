@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LoginIntroGate } from '@/components/login-intro-gate';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
@@ -180,157 +179,155 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   const showRequiredPhoneError = hasAttemptedSubmit && !phoneNumber.trim() && !errorMessage;
 
   return (
-    <LoginIntroGate>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[styles.container, keyboardInset > 0 && styles.containerKeyboardOpen, keyboardInset > 0 && { paddingBottom: keyboardInset + 20 }]}>
-            <View style={[styles.brandHeader, keyboardInset > 0 && styles.brandHeaderCompact]}>
-              <Text style={styles.brandName}>Transpo24</Text>
-              <View style={styles.brandAccent} />
-              <Text style={styles.brandRole}>{t('Driver')}</Text>
-            </View>
-            <View style={styles.card}>
-              {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
-              {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
-              {needsDefaultLanguage ? (
-                <View>
-                  <Text style={[styles.title, isRTL && styles.rtl]}>{t('Select language')}</Text>
-                  <Text style={[styles.languageHelp, isRTL && styles.rtl]}>
-                    {t('Choose the app language before confirming the switch.')}
-                  </Text>
-                  <View style={styles.languageChoices}>
-                    {SUPPORTED_LANGUAGES.map((code) => {
-                      const config = LANGUAGE_CONFIGS[code];
-                      return (
-                        <Pressable
-                          key={code}
-                          accessibilityRole="button"
-                          accessibilityLabel={config.nativeLabel}
-                          style={[styles.languageChoice, isChangingLanguage && styles.disabled]}
-                          disabled={isChangingLanguage}
-                          onPress={() => selectDefaultLanguage(code)}
-                        >
-                          <Text style={styles.languageChoiceNative}>{config.nativeLabel}</Text>
-                          <Text style={styles.languageChoiceLabel}>{t(config.label)}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              ) : isLoadingTrustedSession ? (
-                <View style={styles.trustedSessionLoading}>
-                  <ActivityIndicator color={authTheme.accentStrong} />
-                </View>
-              ) : showTrustedSessionChoice ? (
-                <>
-                  {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, styles.choiceError, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
-                  <Pressable
-                    accessibilityRole="button"
-                    style={[styles.choiceButton, isContinuing && styles.disabled]}
-                    disabled={isContinuing}
-                    onPress={() => void continueTrustedSession()}
-                  >
-                    {isContinuing ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>}
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={styles.secondaryButton}
-                    onPress={useDifferentPhoneNumber}
-                  >
-                    <Text style={styles.secondaryButtonText}>{t('Use a different phone number')}</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  {hasTrustedDevice ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      style={styles.useTrustedPhoneButton}
-                      onPress={useTrustedPhoneNumber}
-                    >
-                      <Text style={styles.useTrustedPhoneText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>
-                    </Pressable>
-                  ) : null}
-                  <Text style={[styles.label, isRTL && styles.rtl]}>{t('Phone number')}</Text>
-                  <View style={[styles.phoneField, isRTL && styles.phoneFieldRtl]}>
-                    <TextInput
-                      accessibilityLabel={t('Country calling code')}
-                      style={[styles.dialingCodeInput, isRTL && styles.rtlInput]}
-                      value={dialingCode}
-                      onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
-                      placeholder="+961"
-                      placeholderTextColor="#8A94A6"
-                      autoComplete="tel"
-                      keyboardType="phone-pad"
-                      textContentType="telephoneNumber"
-                    />
-                    <View style={styles.phoneDivider} />
-                    <TextInput
-                      accessibilityLabel={t('Phone number')}
-                      style={[styles.phoneInput, isRTL && styles.rtlInput]}
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
-                      placeholder={t('Mobile number')}
-                      placeholderTextColor="#8A94A6"
-                      autoComplete="tel"
-                      keyboardType="phone-pad"
-                      textContentType="telephoneNumber"
-                      returnKeyType="done"
-                      onSubmitEditing={() => void sendCode()}
-                    />
-                  </View>
-                  {showRequiredPhoneError ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{t('Phone number is required.')}</Text> : null}
-                  {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
-                  {mode === 'register' ? (
-                    <View style={styles.termsRow}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={[styles.container, keyboardInset > 0 && styles.containerKeyboardOpen, keyboardInset > 0 && { paddingBottom: keyboardInset + 20 }]}>
+          <View style={[styles.brandHeader, keyboardInset > 0 && styles.brandHeaderCompact]}>
+            <Text style={styles.brandName}>Transpo24</Text>
+            <View style={styles.brandAccent} />
+            <Text style={styles.brandRole}>{t('Driver')}</Text>
+          </View>
+          <View style={styles.card}>
+            {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
+            {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
+            {needsDefaultLanguage ? (
+              <View>
+                <Text style={[styles.title, isRTL && styles.rtl]}>{t('Select language')}</Text>
+                <Text style={[styles.languageHelp, isRTL && styles.rtl]}>
+                  {t('Choose the app language before confirming the switch.')}
+                </Text>
+                <View style={styles.languageChoices}>
+                  {SUPPORTED_LANGUAGES.map((code) => {
+                    const config = LANGUAGE_CONFIGS[code];
+                    return (
                       <Pressable
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: hasAcceptedTerms }}
-                        accessibilityLabel={t('Agree to Terms of Service')}
-                        style={[styles.checkbox, hasAcceptedTerms && styles.checkboxChecked]}
-                        onPress={() => {
-                          setHasAcceptedTerms((current) => !current);
-                          setErrorMessage('');
-                        }}
+                        key={code}
+                        accessibilityRole="button"
+                        accessibilityLabel={config.nativeLabel}
+                        style={[styles.languageChoice, isChangingLanguage && styles.disabled]}
+                        disabled={isChangingLanguage}
+                        onPress={() => selectDefaultLanguage(code)}
                       >
-                        {hasAcceptedTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                        <Text style={styles.languageChoiceNative}>{config.nativeLabel}</Text>
+                        <Text style={styles.languageChoiceLabel}>{t(config.label)}</Text>
                       </Pressable>
-                      <View style={styles.termsCopy}>
-                        <Text style={styles.termsText}>{t('I agree to the')}</Text>
-                        <View style={styles.termsLinks}>
-                          <Pressable
-                            accessibilityRole="link"
-                            onPress={() => router.push({ pathname: '/legal', params: { document: 'terms' } } as never)}
-                          >
-                            <Text style={styles.termsLink}>{t('Terms & Conditions')}</Text>
-                          </Pressable>
-                          <Text style={styles.termsText}>{t('Read our')}</Text>
-                          <Pressable
-                            accessibilityRole="link"
-                            onPress={() => router.push({ pathname: '/legal', params: { document: 'privacy' } } as never)}
-                          >
-                            <Text style={styles.termsLink}>{t('Privacy Policy')}</Text>
-                          </Pressable>
-                        </View>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : isLoadingTrustedSession ? (
+              <View style={styles.trustedSessionLoading}>
+                <ActivityIndicator color={authTheme.accentStrong} />
+              </View>
+            ) : showTrustedSessionChoice ? (
+              <>
+                {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, styles.choiceError, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
+                <Pressable
+                  accessibilityRole="button"
+                  style={[styles.choiceButton, isContinuing && styles.disabled]}
+                  disabled={isContinuing}
+                  onPress={() => void continueTrustedSession()}
+                >
+                  {isContinuing ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>}
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  style={styles.secondaryButton}
+                  onPress={useDifferentPhoneNumber}
+                >
+                  <Text style={styles.secondaryButtonText}>{t('Use a different phone number')}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                {hasTrustedDevice ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    style={styles.useTrustedPhoneButton}
+                    onPress={useTrustedPhoneNumber}
+                  >
+                    <Text style={styles.useTrustedPhoneText}>{t('Continue as {{phone}}', { phone: trustedPhoneNumber })}</Text>
+                  </Pressable>
+                ) : null}
+                <Text style={[styles.label, isRTL && styles.rtl]}>{t('Phone number')}</Text>
+                <View style={[styles.phoneField, isRTL && styles.phoneFieldRtl]}>
+                  <TextInput
+                    accessibilityLabel={t('Country calling code')}
+                    style={[styles.dialingCodeInput, isRTL && styles.rtlInput]}
+                    value={dialingCode}
+                    onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
+                    placeholder="+961"
+                    placeholderTextColor="#8A94A6"
+                    autoComplete="tel"
+                    keyboardType="phone-pad"
+                    textContentType="telephoneNumber"
+                  />
+                  <View style={styles.phoneDivider} />
+                  <TextInput
+                    accessibilityLabel={t('Phone number')}
+                    style={[styles.phoneInput, isRTL && styles.rtlInput]}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    placeholder={t('Mobile number')}
+                    placeholderTextColor="#8A94A6"
+                    autoComplete="tel"
+                    keyboardType="phone-pad"
+                    textContentType="telephoneNumber"
+                    returnKeyType="done"
+                    onSubmitEditing={() => void sendCode()}
+                  />
+                </View>
+                {showRequiredPhoneError ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{t('Phone number is required.')}</Text> : null}
+                {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
+                {mode === 'register' ? (
+                  <View style={styles.termsRow}>
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: hasAcceptedTerms }}
+                      accessibilityLabel={t('Agree to Terms of Service')}
+                      style={[styles.checkbox, hasAcceptedTerms && styles.checkboxChecked]}
+                      onPress={() => {
+                        setHasAcceptedTerms((current) => !current);
+                        setErrorMessage('');
+                      }}
+                    >
+                      {hasAcceptedTerms ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                    </Pressable>
+                    <View style={styles.termsCopy}>
+                      <Text style={styles.termsText}>{t('I agree to the')}</Text>
+                      <View style={styles.termsLinks}>
+                        <Pressable
+                          accessibilityRole="link"
+                          onPress={() => router.push({ pathname: '/legal', params: { document: 'terms' } } as never)}
+                        >
+                          <Text style={styles.termsLink}>{t('Terms & Conditions')}</Text>
+                        </Pressable>
+                        <Text style={styles.termsText}>{t('Read our')}</Text>
+                        <Pressable
+                          accessibilityRole="link"
+                          onPress={() => router.push({ pathname: '/legal', params: { document: 'privacy' } } as never)}
+                        >
+                          <Text style={styles.termsLink}>{t('Privacy Policy')}</Text>
+                        </Pressable>
                       </View>
                     </View>
-                  ) : null}
-                  <Pressable style={[styles.button, isSubmitting && styles.disabled]} disabled={isSubmitting} onPress={() => void sendCode()}>
-                    {isSubmitting ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Send verification code')}</Text>}
-                  </Pressable>
-                </>
-              )}
-              <View style={styles.footerRow}>
-                {mode === 'login' ? <Text style={[styles.footerText, isRTL && styles.rtl]}>{t('New driver?')}</Text> : null}
-                <Pressable onPress={goToAlternateScreen} accessibilityRole="button">
-                  <Text style={[styles.footerLink, isRTL && styles.rtl]}>{mode === 'login' ? t('Create an account') : t('Already have an account? Sign in')}</Text>
+                  </View>
+                ) : null}
+                <Pressable style={[styles.button, isSubmitting && styles.disabled]} disabled={isSubmitting} onPress={() => void sendCode()}>
+                  {isSubmitting ? <ActivityIndicator color={authTheme.text} /> : <Text style={styles.buttonText}>{t('Send verification code')}</Text>}
                 </Pressable>
-              </View>
+              </>
+            )}
+            <View style={styles.footerRow}>
+              {mode === 'login' ? <Text style={[styles.footerText, isRTL && styles.rtl]}>{t('New driver?')}</Text> : null}
+              <Pressable onPress={goToAlternateScreen} accessibilityRole="button">
+                <Text style={[styles.footerLink, isRTL && styles.rtl]}>{mode === 'login' ? t('Create an account') : t('Already have an account? Sign in')}</Text>
+              </Pressable>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </LoginIntroGate>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
