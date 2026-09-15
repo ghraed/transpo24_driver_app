@@ -21,8 +21,9 @@ import { initializeNotifications } from '@/notifications/registerPushNotificatio
 import { usePushRegistration } from '@/notifications/usePushRegistration';
 import { useNotificationNavigation } from '@/notifications/useNotificationNavigation';
 
-// Keep the app icon visible until session and language initialization finish.
+// Keep the startup branding visible until session and language initialization finish.
 void SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ fade: true, duration: 200 });
 
 function AppNavigator() {
   const {
@@ -113,7 +114,7 @@ function AppNavigator() {
     return (
       <View style={styles.loaderContainer}>
         <Image
-          source={require('@/assets/images/icon.png')}
+          source={require('@/assets/images/driver-startup-logo.png')}
           style={styles.startupIcon}
           resizeMode="contain"
           accessibilityLabel="Transpo24 Driver"
@@ -191,11 +192,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#000000',
   },
   startupIcon: {
-    width: 180,
-    height: 180,
+    width: 280,
+    height: 280,
   },
   navigator: {
     flex: 1,

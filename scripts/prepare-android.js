@@ -8,6 +8,17 @@ const { projectRoot } = require('./local-env');
 function prepareAndroid() {
   const { exp } = getConfig(projectRoot);
   const androidDir = path.join(projectRoot, 'android');
+  const autolinkingPath = path.join(androidDir, 'build/generated/autolinking/autolinking.json');
+  if (fs.existsSync(autolinkingPath)) {
+    const cachedRoot = JSON.parse(fs.readFileSync(autolinkingPath, 'utf8')).root;
+    if (cachedRoot && path.resolve(cachedRoot) !== projectRoot) {
+      // Generated native build files contain absolute paths from the old checkout.
+      for (const directory of ['build', '.gradle', 'app/build', 'app/.cxx']) {
+        fs.rmSync(path.join(androidDir, directory), { recursive: true, force: true });
+      }
+      console.log('Cleared Android build caches from the previous project location.');
+    }
+  }
   const gradlePath = path.join(androidDir, 'app/build.gradle');
   const gradle = fs.existsSync(gradlePath) ? fs.readFileSync(gradlePath, 'utf8') : '';
   const existingPackage = gradle.match(/applicationId\s+["']([^"']+)["']/)?.[1];
