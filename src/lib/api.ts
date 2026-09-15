@@ -808,6 +808,28 @@ export async function updateDriverProfile(
   return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse profile update response.');
 }
 
+export async function updateDriverNickname(
+  nickname: string,
+): Promise<DriverMeResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/nickname`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({ nickname }),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to update driver profile.');
+  }
+
+  return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse profile update response.');
+}
+
 export async function getDriverVehicles(): Promise<DriverVehicle[]> {
   const endpoint = `${getApiBaseUrl()}/driver/me/vehicles`;
   let response: Response;

@@ -1482,5 +1482,10 @@
   "No scheduled requests": "No scheduled requests",
   "Unable to update availability.": "Unable to update availability.",
   "Don't show again": "Don't show again",
-  "Chat with {{nickname}}": "Chat with {{nickname}}"
+  "Chat with {{nickname}}": "Chat with {{nickname}}",
+  "Nickname": "Nickname",
+  "Nickname must be between 2 and 40 characters.": "Nickname must be between 2 and 40 characters.",
+  "Clients will see your nickname on offers and in chats.": "Clients will see your nickname on offers and in chats.",
+  "Edit nickname": "Edit nickname",
+  "Unable to update nickname.": "Unable to update nickname."
 }

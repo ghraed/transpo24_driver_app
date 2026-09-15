@@ -8,6 +8,7 @@ import {
   deleteDriverAccount,
   updateDriverAvailability,
   updateDriverProfile,
+  updateDriverNickname,
   verifyDriverPhoneVerificationCode,
   isAuthenticationFailure,
 } from '@/lib/api';
@@ -49,6 +50,7 @@ interface AuthContextValue {
   deleteAccount: () => Promise<void>;
   restoreSession: () => Promise<void>;
   refreshDriverMe: () => Promise<DriverMeResponse>;
+  saveDriverNickname: (nickname: string) => Promise<DriverMeResponse>;
   saveDriverProfile: (payload: UpdateDriverProfilePayload) => Promise<DriverMeResponse>;
   refreshDriverAvailability: () => Promise<DriverAvailabilityResponse>;
   saveDriverAvailability: (
@@ -201,6 +203,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return me;
   }, [applyDriverMeResponse]);
 
+  const saveDriverNickname = useCallback(async (nickname: string): Promise<DriverMeResponse> => {
+    const updated = await updateDriverNickname(nickname);
+    applyDriverMeResponse(updated);
+    return updated;
+  }, [applyDriverMeResponse]);
+
   const saveDriverProfile = useCallback(async (payload: UpdateDriverProfilePayload): Promise<DriverMeResponse> => {
     const updated = await updateDriverProfile(payload);
     applyDriverMeResponse(updated);
@@ -251,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       restoreSession,
       refreshDriverMe,
       saveDriverProfile,
+      saveDriverNickname,
       refreshDriverAvailability,
       saveDriverAvailability,
     }),
@@ -266,6 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshDriverAvailability,
       restoreSession,
       saveDriverProfile,
+      saveDriverNickname,
       saveDriverAvailability,
       signOut,
       user,

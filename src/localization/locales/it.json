@@ -1048,5 +1048,10 @@
   "No scheduled requests": "Nessuna richiesta programmata",
   "Unable to update availability.": "Impossibile aggiornare la disponibilità.",
   "Don't show again": "Non mostrare più",
-  "Chat with {{nickname}}": "Chat con {{nickname}}"
+  "Chat with {{nickname}}": "Chat con {{nickname}}",
+  "Nickname": "Soprannome",
+  "Nickname must be between 2 and 40 characters.": "Il soprannome deve contenere da 2 a 40 caratteri.",
+  "Clients will see your nickname on offers and in chats.": "I clienti vedranno il tuo soprannome nelle offerte e nelle chat.",
+  "Edit nickname": "Modifica soprannome",
+  "Unable to update nickname.": "Impossibile aggiornare il soprannome."
 }

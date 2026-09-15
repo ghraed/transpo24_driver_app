@@ -1482,5 +1482,10 @@
   "No scheduled requests": "No hay solicitudes programadas",
   "Unable to update availability.": "No se pudo actualizar la disponibilidad.",
   "Don't show again": "No volver a mostrar",
-  "Chat with {{nickname}}": "Chatear con {{nickname}}"
+  "Chat with {{nickname}}": "Chatear con {{nickname}}",
+  "Nickname": "Apodo",
+  "Nickname must be between 2 and 40 characters.": "El apodo debe tener entre 2 y 40 caracteres.",
+  "Clients will see your nickname on offers and in chats.": "Los clientes verán tu apodo en las ofertas y los chats.",
+  "Edit nickname": "Editar apodo",
+  "Unable to update nickname.": "No se pudo actualizar el apodo."
 }

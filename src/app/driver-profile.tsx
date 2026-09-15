@@ -180,6 +180,13 @@ export default function DriverProfileScreen() {
           </Pressable>
         </View>
 
+        <Pressable style={styles.identityCard} accessibilityRole="button" accessibilityLabel={t('Edit nickname')} onPress={() => router.push('/edit-nickname')}>
+          <Text style={styles.sectionTitle}>{t('Nickname')}</Text>
+          <Text style={styles.name}>{driver?.nickname || t('Driver')}</Text>
+          <Text style={styles.memberText}>{t('Clients will see your nickname on offers and in chats.')}</Text>
+          <Text style={styles.editButtonText}>{t('Edit nickname')}</Text>
+        </Pressable>
+
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{summary?.completedTripsCount ?? 0}</Text>

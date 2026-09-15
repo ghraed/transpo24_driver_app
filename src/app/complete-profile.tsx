@@ -82,6 +82,7 @@ function formatDateOnly(date: Date): string {
 
 function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
   return {
+    nickname: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -150,6 +151,7 @@ export default function CompleteProfileScreen() {
     if (hasUserEditedRef.current) return;
 
     setForm({
+      nickname: profile.nickname?.trim() || '',
       firstName: profile.firstName?.trim() || testDefaults.firstName,
       lastName: profile.lastName?.trim() || testDefaults.lastName,
       phone: profile.phone?.trim() || testDefaults.phone,
@@ -211,6 +213,10 @@ export default function CompleteProfileScreen() {
 
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof CompleteDriverProfileForm, string>> = {};
+
+    if (form.nickname.trim().length < 2 || form.nickname.trim().length > 40) {
+      errors.nickname = t('Nickname must be between 2 and 40 characters.');
+    }
 
     if (!form.firstName.trim()) {
       errors.firstName = t('First name is required.');
@@ -304,6 +310,7 @@ export default function CompleteProfileScreen() {
     setSubmitError('');
 
     const payload: UpdateDriverProfilePayload = {
+      nickname: form.nickname.trim(),
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       phone: form.phone.trim(),
@@ -410,6 +417,13 @@ export default function CompleteProfileScreen() {
             {t('Your profile information helps us verify your account and assign suitable transport requests.')}
           </Text>
         </View>
+
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>{t('Nickname')}</Text>
+          <TextInput style={styles.input} accessibilityLabel={t('Nickname')} placeholder={t('Nickname')} value={form.nickname} onChangeText={(value) => onChange('nickname', value)} maxLength={40} autoCorrect={false} />
+          <Text style={styles.helper}>{t('Clients will see your nickname on offers and in chats.')}</Text>
+        </View>
+        {hasAttemptedSubmit && fieldErrors.nickname ? <Text style={styles.errorText}>{fieldErrors.nickname}</Text> : null}
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>{t('First Name')}</Text>

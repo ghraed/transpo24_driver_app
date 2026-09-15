@@ -37,6 +37,7 @@ export type DayOfWeek =
 export type PreferredLanguage = AppLanguage;
 
 export interface RegisterDriverPayload {
+  nickname: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -49,6 +50,7 @@ export interface RegisterDriverPayload {
 }
 
 export interface UpdateDriverProfilePayload {
+  nickname: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -68,6 +70,7 @@ export interface UpdateDriverProfilePayload {
 }
 
 export interface CompleteDriverProfileForm {
+  nickname: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -85,6 +88,7 @@ export interface CompleteDriverProfileForm {
 }
 
 export interface DriverPersonalInfoPayload {
+  nickname: string;
   fullNameOnId: string;
   dateOfBirth: string;
   idOrResidencyNumber: string;
@@ -114,6 +118,7 @@ export interface AuthUser {
 }
 
 export interface DriverProfile {
+  nickname?: string | null;
   id: string;
   userId: string;
   firstName: string;

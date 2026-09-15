@@ -1482,5 +1482,10 @@
   "No scheduled requests": "Aucune demande planifiée",
   "Unable to update availability.": "Impossible de modifier les disponibilités.",
   "Don't show again": "Ne plus afficher",
-  "Chat with {{nickname}}": "Discuter avec {{nickname}}"
+  "Chat with {{nickname}}": "Discuter avec {{nickname}}",
+  "Nickname": "Pseudo",
+  "Nickname must be between 2 and 40 characters.": "Le pseudo doit contenir entre 2 et 40 caractères.",
+  "Clients will see your nickname on offers and in chats.": "Les clients verront votre pseudo dans les offres et les discussions.",
+  "Edit nickname": "Modifier le pseudo",
+  "Unable to update nickname.": "Impossible de modifier le pseudo."
 }

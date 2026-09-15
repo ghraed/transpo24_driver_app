@@ -1482,5 +1482,10 @@
   "No scheduled requests": "Keine geplanten Anfragen",
   "Unable to update availability.": "Verfügbarkeit konnte nicht aktualisiert werden.",
   "Don't show again": "Nicht mehr anzeigen",
-  "Chat with {{nickname}}": "Chat mit {{nickname}}"
+  "Chat with {{nickname}}": "Chat mit {{nickname}}",
+  "Nickname": "Spitzname",
+  "Nickname must be between 2 and 40 characters.": "Der Spitzname muss zwischen 2 und 40 Zeichen lang sein.",
+  "Clients will see your nickname on offers and in chats.": "Kunden sehen deinen Spitznamen in Angeboten und Chats.",
+  "Edit nickname": "Spitznamen ändern",
+  "Unable to update nickname.": "Spitzname konnte nicht aktualisiert werden."
 }

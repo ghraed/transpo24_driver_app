@@ -1482,5 +1482,10 @@
   "No scheduled requests": "لا توجد طلبات مجدولة",
   "Unable to update availability.": "تعذر تحديث التوفر.",
   "Don't show again": "لا تظهر مرة أخرى",
-  "Chat with {{nickname}}": "محادثة مع {{nickname}}"
+  "Chat with {{nickname}}": "محادثة مع {{nickname}}",
+  "Nickname": "الاسم المستعار",
+  "Nickname must be between 2 and 40 characters.": "يجب أن يتراوح الاسم المستعار بين حرفين و40 حرفًا.",
+  "Clients will see your nickname on offers and in chats.": "سيرى العملاء اسمك المستعار في العروض والمحادثات.",
+  "Edit nickname": "تعديل الاسم المستعار",
+  "Unable to update nickname.": "تعذر تحديث الاسم المستعار."
 }
