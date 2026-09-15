@@ -801,7 +801,7 @@ export default function ChatScreen() {
             </Pressable>
             <View style={styles.avatar}><DriverIcon name="profile" size={25} color="#926B12" /></View>
             <View style={styles.headerCopy}>
-              <Text style={styles.title}>{t('Chat with client')}</Text>
+              <Text style={styles.title}>{chatRoom.clientNickname || t('Customer')}</Text>
               <Text style={styles.subtitle} numberOfLines={1}>{t('Private room for this accepted job.')}</Text>
             </View>
             <Pressable style={styles.optionsButton} onPress={() => setShowChatOptions(value => !value)} accessibilityRole="button" accessibilityLabel={t('chat.options')} accessibilityState={{ expanded: showChatOptions }}>

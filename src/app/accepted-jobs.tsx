@@ -349,6 +349,7 @@ export default function AcceptedJobsScreen() {
                     </View>
                   </View>
                 </View>
+                <Text style={styles.metaText}>{job.customerNickname || t('Customer')}</Text>
                 <Text style={styles.itemText}>{itemLabel}</Text>
                 <Text style={styles.metaText}>{t('Pickup')}: {pickupLabel}</Text>
                 <Text style={styles.metaText}>{t('Dropoff')}: {dropoffLabel}</Text>

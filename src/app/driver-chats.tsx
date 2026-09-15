@@ -74,9 +74,10 @@ export default function DriverChatsScreen() {
               </View>
               <View style={styles.chatCopy}>
                 <View style={styles.chatTop}>
-                  <Text style={styles.chatTitle}>{t('Job {{id}}', { id: room.transportRequestId.slice(-6).toUpperCase() })}</Text>
+                  <Text style={styles.chatTitle} numberOfLines={1}>{room.clientNickname || t('Customer')}</Text>
                   <Text style={styles.time}>{messageTime(room, locale)}</Text>
                 </View>
+                <Text style={styles.preview}>{t('Job {{id}}', { id: room.transportRequestId.slice(-6).toUpperCase() })}</Text>
                 <Text style={styles.preview} numberOfLines={1}>
                   {messagePreview(room, t('Photo'), t('Open this conversation'))}
                 </Text>

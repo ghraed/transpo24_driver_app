@@ -554,6 +554,7 @@ export interface TransportedVehicleDetails {
 }
 
 export interface DriverRequestAlertSummary {
+  customerNickname?: string;
   isCurrentlyEligible?: boolean;
   vehicleDetails?: TransportedVehicleDetails;
   alertId: string;
@@ -676,6 +677,7 @@ export interface AcceptedOffer extends DriverOffer {
 }
 
 export interface DriverAcceptedJobSummary {
+  customerNickname?: string;
   vehicleDetails?: TransportedVehicleDetails;
   requestId: string;
   requestStatus: RequestStatus;

@@ -260,6 +260,7 @@ export default function ReceiveRequestAlertsScreen() {
                     <Text style={styles.serviceTitle} numberOfLines={1}>
                       {translatedTitles[alert.alertId] || t(sourceServiceTitle(alert))}
                     </Text>
+                    <Text style={styles.jobId} numberOfLines={1}>{alert.customerNickname || t('Customer')}</Text>
                     <Text style={styles.jobId}>{t('JOB-{{id}}', { id: jobNumber })}</Text>
                   </View>
 

@@ -54,7 +54,7 @@ export function DriverChatButton({
             } as unknown as Href)
           }
         >
-          <Text style={styles.buttonText}>{label || t('Chat with client')}</Text>
+          <Text style={styles.buttonText}>{label || (chatRoom.clientNickname ? t('Chat with {{nickname}}', { nickname: chatRoom.clientNickname }) : t('Chat with client'))}</Text>
           {typeof chatRoom.unreadCount === 'number' && chatRoom.unreadCount > 0 ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}</Text>
