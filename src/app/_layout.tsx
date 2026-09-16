@@ -40,7 +40,7 @@ function AppNavigator() {
   const pathname = usePathname();
   const hasResolvedInitialRouteRef = useRef(false);
 
-  useNotificationNavigation();
+  useNotificationNavigation(!isRestoringSession && localizationReady && Boolean(accessToken));
   useRequestMatchingLocation(Boolean(accessToken && driver?.status === 'APPROVED'));
 
   useEffect(() => {

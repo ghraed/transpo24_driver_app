@@ -1,4 +1,4 @@
-import { useRouter, type Href } from 'expo-router';
+import { useRouter, useRootNavigationState, usePathname, type Href } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 
@@ -85,43 +85,29 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
   }
 }
 
-export function useNotificationNavigation(): void {
+// Keep the response pending while startup/login redirects settle. Expo also retains
+// the response when a notification launches a terminated app.
+export function useNotificationNavigation(ready: boolean): void {
   const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const pathname = usePathname();
+  const response = Notifications.useLastNotificationResponse();
   const lastHandledIdentifierRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const handleResponse = (response: Notifications.NotificationResponse): void => {
-      const identifier = response.notification.request.identifier;
-      if (lastHandledIdentifierRef.current === identifier) {
-        return;
-      }
+    if (!ready || !navigationState?.key || !response) return;
+    if (['/', '/register', '/verify-phone', '/complete-profile'].includes(pathname)) return;
+    if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
 
-      const route = resolveNotificationRoute(
-        toPushNotificationData(response.notification.request.content.data),
-      );
+    const identifier = response.notification.request.identifier;
+    if (lastHandledIdentifierRef.current === identifier) return;
 
-      if (!route) {
-        return;
-      }
+    const route = resolveNotificationRoute(
+      toPushNotificationData(response.notification.request.content.data),
+    ) ?? '/driver-home';
 
-      lastHandledIdentifierRef.current = identifier;
-      router.push(route);
-    };
-
-    void Notifications.getLastNotificationResponseAsync()
-      .then((response) => {
-        if (response) {
-          handleResponse(response);
-        }
-      })
-      .catch((error: unknown) => {
-        console.warn('Failed to inspect the last notification response.', error);
-      });
-
-    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
-
-    return () => {
-      subscription.remove();
-    };
-  }, [router]);
+    router.push(route);
+    lastHandledIdentifierRef.current = identifier;
+    Notifications.clearLastNotificationResponse();
+  }, [ready, navigationState?.key, pathname, response, router]);
 }
