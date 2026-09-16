@@ -1,3 +1,4 @@
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -127,7 +128,12 @@ export async function registerDriverPushNotifications(requestPermission = true):
       throw new Error('Push notification registration is unsupported on this platform.');
     }
 
+    const applicationId = Application.applicationId;
+    if (!applicationId) {
+      throw new Error('Cannot identify this app for notification registration.');
+    }
     const payload: RegisterPushTokenPayload = {
+      applicationId,
       token: pushToken.data,
       platform,
       app: DRIVER_APP_CONTEXT,

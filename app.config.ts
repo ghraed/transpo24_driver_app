@@ -59,6 +59,7 @@ export default ({ config }: ConfigContext) => {
     } : {}),
     ios: {
       ...config.ios,
+      ...(IS_DEV ? { bundleIdentifier: 'com.transpo24.driver.dev' } : {}),
       config: {
         ...config.ios?.config,
         googleMapsApiKey: MAPS_IOS_KEY,

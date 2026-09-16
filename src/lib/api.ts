@@ -1,3 +1,4 @@
+import { assertPushBackend } from '@/notifications/assertPushBackend';
 import { readAccessToken } from './auth-storage';
 import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
 import { getSourceErrorMessage, localizeResponseMessage } from '@/localization/response-message';
@@ -722,6 +723,9 @@ export async function deleteDriverAccount(): Promise<void> {
 }
 
 export async function registerPushToken(payload: RegisterPushTokenPayload): Promise<void> {
+  await assertPushBackend(getApiBaseUrl(), payload.applicationId, async (url) =>
+    fetchWithTimeout(url, { method: 'GET', headers: await getAuthHeaders() }),
+  );
   const endpoint = `${getApiBaseUrl()}/push-tokens`;
   let response: Response;
   try {

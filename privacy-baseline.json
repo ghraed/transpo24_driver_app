@@ -3,9 +3,10 @@
   "scope": "Direct dependencies reviewed for optional analytics and advertising integrations; not certification of providers or transitive SDK behavior.",
   "reviewedDependencies": [
     "@expo/ui",
-    "@react-native-documents/viewer",
     "@react-native-community/datetimepicker",
+    "@react-native-documents/viewer",
     "expo",
+    "expo-application",
     "expo-constants",
     "expo-device",
     "expo-document-picker",
