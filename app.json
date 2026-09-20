@@ -43,10 +43,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#000000",
+          "backgroundColor": "#FFFFFF",
           "image": "./assets/images/driver-startup-logo.png",
-          "imageWidth": 280,
-          "resizeMode": "contain"
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#FFFFFF",
+            "image": "./assets/images/driver-startup-logo.png"
+          }
         }
       ],
       [

@@ -193,11 +193,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
   },
   startupIcon: {
-    width: 280,
-    height: 280,
+    width: 180,
+    height: 180,
   },
   navigator: {
     flex: 1,
