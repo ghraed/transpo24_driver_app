@@ -559,6 +559,7 @@ export interface TransportedVehicleDetails {
 }
 
 export interface DriverRequestAlertSummary {
+  requestCreatedAt?: string;
   customerNickname?: string;
   isCurrentlyEligible?: boolean;
   vehicleDetails?: TransportedVehicleDetails;
@@ -591,6 +592,7 @@ export interface RequestPhoto {
 }
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  requestVersion: string;
   offerStatus: DriverOfferStatus | null;
   customerNote: string | null;
   customer: {
@@ -643,6 +645,7 @@ export type SendOfferNextStep = 'WAIT_FOR_CUSTOMER_RESPONSE';
 export type SupportedOfferCurrency = 'CHF' | 'EUR' | 'AED' | 'SAR' | 'QAR' | 'USD';
 
 export interface SendDriverPriceOfferPayload {
+  requestVersion: string;
   price: number;
   currency: string;
   estimatedPickupAt?: string;

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -15,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { sendDriverPriceOffer } from '@/lib/api';
+import { ApiResponseError, sendDriverPriceOffer } from '@/lib/api';
 import { currencyForCountryCode, getCountryLabel } from '@/lib/country-currency';
 import { formatDateTime } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
@@ -113,6 +114,7 @@ export default function SendPriceOfferScreen() {
   const params = useLocalSearchParams();
 
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
+  const requestVersion = typeof params.requestVersion === 'string' ? params.requestVersion : '';
   const serviceName = typeof params.serviceName === 'string' ? params.serviceName : '';
   const pickupAddress = typeof params.pickupAddress === 'string' ? params.pickupAddress : '';
   const dropoffAddress = typeof params.dropoffAddress === 'string' ? params.dropoffAddress : '';
@@ -276,6 +278,7 @@ export default function SendPriceOfferScreen() {
     }
 
     const payload: SendDriverPriceOfferPayload = {
+      requestVersion,
       price: Number(form.price.trim()),
       currency: offerCurrency,
     };
@@ -311,6 +314,14 @@ export default function SendPriceOfferScreen() {
         },
       });
     } catch (error) {
+      if (error instanceof ApiResponseError && error.code === 'REQUEST_DETAILS_CHANGED') {
+        router.replace({ pathname: '/review-request-details', params: { requestId } });
+        Alert.alert(
+          t('Request details changed'),
+          t('The client changed one or more details of this job request. Review the updated details before sending an offer.'),
+        );
+        return;
+      }
       const message = error instanceof Error ? error.message : t('Failed to send offer.');
       const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (

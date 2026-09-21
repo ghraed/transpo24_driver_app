@@ -273,6 +273,7 @@ export default function ReviewRequestDetailsScreen() {
         pathname: '/send-price-offer',
         params: {
           requestId: response.requestId,
+          requestVersion: details?.requestVersion || '',
           alertId: response.alertId,
           serviceName: details?.service?.nameEn || details?.service?.key || '',
           pickupAddress: details?.pickup?.address || '',

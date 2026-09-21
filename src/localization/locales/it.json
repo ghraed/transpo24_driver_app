@@ -1053,5 +1053,11 @@
   "Nickname must be between 2 and 40 characters.": "Il soprannome deve contenere da 2 a 40 caratteri.",
   "Clients will see your nickname on offers and in chats.": "I clienti vedranno il tuo soprannome nelle offerte e nelle chat.",
   "Edit nickname": "Modifica soprannome",
-  "Unable to update nickname.": "Impossibile aggiornare il soprannome."
+  "Unable to update nickname.": "Impossibile aggiornare il soprannome.",
+  "Location permission denied. You can still select a location on the map.": "Permesso di accesso alla posizione negato. Puoi comunque selezionare una posizione sulla mappa.",
+  "Location services are off. Turn GPS on to use your current location, or select a location on the map.": "I servizi di localizzazione sono disattivati. Attiva il GPS per usare la posizione attuale oppure seleziona una posizione sulla mappa.",
+  "Unable to access current location. You can still select a location manually.": "Impossibile accedere alla posizione attuale. Puoi comunque selezionare una posizione manualmente.",
+  "Created": "Creata",
+  "Request details changed": "Dettagli della richiesta modificati",
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Il cliente ha modificato uno o più dettagli di questa richiesta. Controlla i dettagli aggiornati prima di inviare un’offerta."
 }

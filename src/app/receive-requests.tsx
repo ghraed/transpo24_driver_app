@@ -21,6 +21,7 @@ import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { DriverJobSwitcher } from '@/components/driver-job-switcher';
 import { readAccessToken } from '@/lib/auth-storage';
 import { getDriverRequestAlerts } from '@/lib/api';
+import { formatDateTime } from '@/localization/format';
 import { useAppLanguage } from '@/localization/provider';
 import { translateDynamicBatch } from '@/services/translation-service';
 import { connectSocket, onRequestDeleted } from '@/services/socketService';
@@ -270,6 +271,9 @@ export default function ReceiveRequestAlertsScreen() {
                   </View>
                 </View>
 
+                <Text style={styles.createdAt}>
+                  {t('Created')}: {formatDateTime(alert.requestCreatedAt ?? alert.submittedAt)}
+                </Text>
                 <View style={styles.routeRow}>
                   <Text style={styles.routePlace} numberOfLines={1}>{pickup}</Text>
                   <Text style={styles.routeArrow}>╌╌▸</Text>
@@ -409,6 +413,7 @@ const styles = StyleSheet.create({
     color: '#707A8C',
     fontSize: 15,
   },
+  createdAt: { marginTop: 12, color: '#707A8C', fontSize: 13, lineHeight: 19 },
   routeRow: {
     marginTop: 18,
     flexDirection: 'row',

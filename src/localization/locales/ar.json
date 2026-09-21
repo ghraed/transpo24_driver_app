@@ -1487,5 +1487,8 @@
   "Nickname must be between 2 and 40 characters.": "يجب أن يتراوح الاسم المستعار بين حرفين و40 حرفًا.",
   "Clients will see your nickname on offers and in chats.": "سيرى العملاء اسمك المستعار في العروض والمحادثات.",
   "Edit nickname": "تعديل الاسم المستعار",
-  "Unable to update nickname.": "تعذر تحديث الاسم المستعار."
+  "Unable to update nickname.": "تعذر تحديث الاسم المستعار.",
+  "Created": "تاريخ الإنشاء",
+  "Request details changed": "تغيّرت تفاصيل الطلب",
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "غيّر العميل معلومة أو أكثر في طلب النقل. راجع التفاصيل المحدّثة قبل إرسال عرض."
 }

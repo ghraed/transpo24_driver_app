@@ -1487,5 +1487,8 @@
   "Nickname must be between 2 and 40 characters.": "Le pseudo doit contenir entre 2 et 40 caractères.",
   "Clients will see your nickname on offers and in chats.": "Les clients verront votre pseudo dans les offres et les discussions.",
   "Edit nickname": "Modifier le pseudo",
-  "Unable to update nickname.": "Impossible de modifier le pseudo."
+  "Unable to update nickname.": "Impossible de modifier le pseudo.",
+  "Created": "Créée le",
+  "Request details changed": "Détails de la demande modifiés",
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Le client a modifié un ou plusieurs détails de cette demande. Consultez les détails mis à jour avant d’envoyer une offre."
 }

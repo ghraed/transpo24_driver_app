@@ -1487,5 +1487,8 @@
   "Nickname must be between 2 and 40 characters.": "El apodo debe tener entre 2 y 40 caracteres.",
   "Clients will see your nickname on offers and in chats.": "Los clientes verán tu apodo en las ofertas y los chats.",
   "Edit nickname": "Editar apodo",
-  "Unable to update nickname.": "No se pudo actualizar el apodo."
+  "Unable to update nickname.": "No se pudo actualizar el apodo.",
+  "Created": "Creada",
+  "Request details changed": "Los detalles de la solicitud han cambiado",
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "El cliente ha cambiado uno o más detalles de esta solicitud. Revisa los detalles actualizados antes de enviar una oferta."
 }

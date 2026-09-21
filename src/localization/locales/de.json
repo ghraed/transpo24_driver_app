@@ -1487,5 +1487,8 @@
   "Nickname must be between 2 and 40 characters.": "Der Spitzname muss zwischen 2 und 40 Zeichen lang sein.",
   "Clients will see your nickname on offers and in chats.": "Kunden sehen deinen Spitznamen in Angeboten und Chats.",
   "Edit nickname": "Spitznamen ändern",
-  "Unable to update nickname.": "Spitzname konnte nicht aktualisiert werden."
+  "Unable to update nickname.": "Spitzname konnte nicht aktualisiert werden.",
+  "Created": "Erstellt",
+  "Request details changed": "Auftragsdetails geändert",
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Der Kunde hat eine oder mehrere Angaben zu diesem Auftrag geändert. Prüfen Sie die aktualisierten Details, bevor Sie ein Angebot senden."
 }
