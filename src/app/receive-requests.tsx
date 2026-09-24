@@ -65,8 +65,10 @@ function serviceIcon(alert: DriverRequestAlertSummary): DriverIconName {
 }
 
 function displayPrice(alert: PricedAlert, locale: string): string {
-  if (typeof alert.suggestedPrice !== 'number') return 'CHF —';
-  return `${alert.currency || 'CHF'} ${Math.round(alert.suggestedPrice).toLocaleString(locale)}`;
+  const currency = alert.currency?.trim().toUpperCase();
+  if (!currency || !/^[A-Z]{3}$/.test(currency)) return '—';
+  if (typeof alert.suggestedPrice !== 'number' || !Number.isFinite(alert.suggestedPrice)) return `${currency} —`;
+  return `${currency} ${Math.round(alert.suggestedPrice).toLocaleString(locale)}`;
 }
 
 function formatRouteDistance(alert: DriverRequestAlertSummary): string {
@@ -149,11 +151,12 @@ export default function ReceiveRequestAlertsScreen() {
   useFocusEffect(
     useCallback(() => {
       void loadAlerts();
+      let active = true;
       let unsubscribeDeleted: (() => void) | null = null;
 
       void (async () => {
         const token = await readAccessToken();
-        if (!token) return;
+        if (!active || !token) return;
         connectSocket(token);
         unsubscribeDeleted = onRequestDeleted((payload) => {
           setAlerts((current) => current.filter((alert) => alert.requestId !== payload.requestId));
@@ -162,6 +165,7 @@ export default function ReceiveRequestAlertsScreen() {
 
       const pollingId = setInterval(() => void loadAlerts(true), 20000);
       return () => {
+        active = false;
         ++loadVersion.current;
         clearInterval(pollingId);
         unsubscribeDeleted?.();
@@ -280,6 +284,9 @@ export default function ReceiveRequestAlertsScreen() {
                   <Text style={[styles.routePlace, styles.dropoffPlace]} numberOfLines={1}>{dropoff}</Text>
                 </View>
 
+                <Text style={styles.createdAt}>
+                  {alert.pickupCountryCode || '—'} → {alert.destinationCountryCode || '—'}
+                </Text>
                 <View style={styles.divider} />
 
                 <View style={styles.cardFooter}>

@@ -1,0 +1,45 @@
+import React from 'react';
+import { act, create } from 'react-test-renderer';
+import { TextInput } from 'react-native';
+import Screen from '@/app/send-price-offer';
+import { getDriverRequestDetails, sendDriverPriceOffer } from './api';
+const mockT = key => key;
+const mockRouter = { replace: jest.fn() };
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ requestId: 'swiss-job', requestVersion: 'reviewed-version', currency: 'EUR' }) }));
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { language: 'en' } }) }));
+jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ driver: { countryCode: 'FR' }, signOut: jest.fn() }) }));
+jest.mock('@/hooks/use-android-keyboard-inset', () => ({ useAndroidKeyboardInset: () => 0 }));
+jest.mock('@/lib/api', () => ({ getDriverRequestDetails: jest.fn(), sendDriverPriceOffer: jest.fn(), ApiResponseError: class extends Error {} }));
+jest.mock('@/localization/response-message', () => ({ getSourceErrorMessage: error => error.message }));
+jest.mock('@/services/translation-service', () => ({ translateDynamicBatch: jest.fn() }));
+jest.mock('@/localization/format', () => ({ formatDateTime: value => value }));
+jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
+beforeEach(() => jest.clearAllMocks());
+function submit(tree) { return tree.root.findAll(node => typeof node.props.onPress === 'function' && typeof node.props.disabled === 'boolean')[0]; }
+it('uses the authorized Swiss request currency for a French driver and ignores navigation currency', async () => {
+  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF' });
+  sendDriverPriceOffer.mockResolvedValue({ request: { id: 'swiss-job', status: 'QUOTED' }, offer: { id: 'offer' } });
+  let tree;
+  await act(async () => { tree = create(<Screen />); });
+  expect(getDriverRequestDetails).toHaveBeenCalledWith('swiss-job');
+  await act(async () => tree.root.findAllByType(TextInput)[0].props.onChangeText('100'));
+  await act(async () => submit(tree).props.onPress());
+  expect(sendDriverPriceOffer).toHaveBeenCalledWith('swiss-job', { requestVersion: 'reviewed-version', price: 100, currency: 'CHF' });
+  await act(async () => tree.unmount());
+});
+it.each([null, '', 'invalid'])('prevents offers when persisted currency is %s', async currency => {
+  getDriverRequestDetails.mockResolvedValue({ currency });
+  let tree;
+  await act(async () => { tree = create(<Screen />); });
+  expect(submit(tree).props.disabled).toBe(true);
+  expect(sendDriverPriceOffer).not.toHaveBeenCalled();
+  await act(async () => tree.unmount());
+});
+it('prevents submission when a stale request is denied', async () => {
+  getDriverRequestDetails.mockRejectedValue(new Error('Request is no longer available.'));
+  let tree;
+  await act(async () => { tree = create(<Screen />); });
+  expect(submit(tree).props.disabled).toBe(true);
+  expect(JSON.stringify(tree.toJSON())).toContain('Request is no longer available.');
+  await act(async () => tree.unmount());
+});

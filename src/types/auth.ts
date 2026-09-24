@@ -567,6 +567,9 @@ export interface TransportedVehicleDetails {
 }
 
 export interface DriverRequestAlertSummary {
+  currency?: string | null;
+  pickupCountryCode?: string | null;
+  destinationCountryCode?: string | null;
   requestCreatedAt?: string;
   customerNickname?: string;
   isCurrentlyEligible?: boolean;

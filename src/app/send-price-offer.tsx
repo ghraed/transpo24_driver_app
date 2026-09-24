@@ -16,8 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { ApiResponseError, sendDriverPriceOffer } from '@/lib/api';
-import { currencyForCountryCode, getCountryLabel } from '@/lib/country-currency';
+import { ApiResponseError, getDriverRequestDetails, sendDriverPriceOffer } from '@/lib/api';
+import { requestOfferCurrency } from '@/lib/request-offer-currency';
 import { formatDateTime } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { getSourceErrorMessage } from '@/localization/response-message';
@@ -110,7 +110,7 @@ export default function SendPriceOfferScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { driver, signOut } = useAuth();
+  const { signOut } = useAuth();
   const params = useLocalSearchParams();
 
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
@@ -140,17 +140,23 @@ export default function SendPriceOfferScreen() {
     if (!requestId) return '';
     return requestId.length > 12 ? `${requestId.slice(0, 6)}...${requestId.slice(-4)}` : requestId;
   }, [requestId]);
-  const offerCurrency = useMemo(
-    () => currencyForCountryCode(driver?.countryCode),
-    [driver?.countryCode],
-  );
-  const driverCountryLabel = useMemo(
-    () => getCountryLabel(driver?.countryCode, i18n.resolvedLanguage),
-    [driver?.countryCode, i18n.resolvedLanguage],
-  );
+  const [currencyState, setCurrencyState] = useState({ requestId: '', currency: '', error: '' });
+  const [reloadCurrency, setReloadCurrency] = useState(0);
+  const offerCurrency = currencyState.requestId === requestId ? currencyState.currency : '';
+  useEffect(() => {
+    let active = true;
+    if (!requestId) return;
+    void getDriverRequestDetails(requestId).then((details) => {
+      const currency = requestOfferCurrency(details);
+      if (active) setCurrencyState({ requestId, currency, error: '' });
+    }).catch((error: unknown) => {
+      if (active) setCurrencyState({ requestId, currency: '', error: error instanceof Error ? error.message : t('Failed to load request details.') });
+    });
+    return () => { active = false; };
+  }, [requestId, reloadCurrency, t]);
   const offerEarningsPreview = useMemo(() => {
     const price = Number(form.price.trim());
-    if (!Number.isFinite(price) || price <= 0) {
+    if (!offerCurrency || !Number.isFinite(price) || price <= 0) {
       return null;
     }
 
@@ -160,7 +166,7 @@ export default function SendPriceOfferScreen() {
       platformFee,
       netAmount: Math.round((price - platformFee) * 100) / 100,
     };
-  }, [form.price]);
+  }, [form.price, offerCurrency]);
   const routeDistance = useMemo(
     () => formatRouteDistance(pickupLatitude, pickupLongitude, dropoffLatitude, dropoffLongitude),
     [dropoffLatitude, dropoffLongitude, pickupLatitude, pickupLongitude],
@@ -273,7 +279,7 @@ export default function SendPriceOfferScreen() {
     const validation = validate();
     setErrors(validation);
     setSubmitError('');
-    if (Object.keys(validation).length > 0 || isSubmitting || !requestId.trim()) {
+    if (Object.keys(validation).length > 0 || isSubmitting || !offerCurrency || !requestId.trim()) {
       return;
     }
 
@@ -407,16 +413,20 @@ export default function SendPriceOfferScreen() {
 
             <Text style={styles.label}>{t('Currency *')}</Text>
             <View style={styles.derivedCurrencyCard}>
-              <Text style={styles.derivedCurrencyValue}>{offerCurrency}</Text>
+              <Text style={styles.derivedCurrencyValue}>{offerCurrency || t('Unavailable')}</Text>
               <Text style={styles.derivedCurrencyHint}>
-                {driverCountryLabel
-                  ? t('Offer currency follows your country: {{country}}.', {
-                      country: driverCountryLabel,
-                    })
-                  : t('Offer currency follows your saved country.')}
+                {t('Offer currency follows the request.')}
               </Text>
             </View>
 
+            {currencyState.error ? (
+              <View>
+                <Text style={styles.errorText}>{currencyState.error}</Text>
+                <Pressable onPress={() => setReloadCurrency(value => value + 1)}>
+                  <Text>{t('Retry')}</Text>
+                </Pressable>
+              </View>
+            ) : !offerCurrency ? <Text>{t('Loading...')}</Text> : null}
             {offerEarningsPreview ? (
               <View style={styles.earningsPreview}>
                 <View style={styles.earningsPreviewHeader}>
@@ -501,9 +511,9 @@ export default function SendPriceOfferScreen() {
           {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
           <Pressable
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            style={[styles.submitButton, (isSubmitting || !offerCurrency) && styles.submitButtonDisabled]}
             onPress={() => void onSubmit()}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !offerCurrency}
           >
             <Text style={styles.submitButtonText}>{t('Submit Offer')}</Text>
           </Pressable>

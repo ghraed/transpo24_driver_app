@@ -28,8 +28,6 @@ import {
 } from '@/localization/languages';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import {
-  currencyForCountryCode,
-  getCountryLabel,
   normalizeCountryCode,
 } from '@/lib/country-currency';
 import { nextStepToRoute } from '@/lib/onboarding-route';
@@ -103,7 +101,7 @@ function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
 export default function CompleteProfileScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { driver, refreshDriverMe, saveDriverProfile, signOut } = useAuth();
   const testDefaults = useMemo(() => createTestCompleteProfileDefaults(), []);
 
@@ -472,12 +470,7 @@ export default function CompleteProfileScreen() {
             onChange={(value) => onChange('countryCode', value)}
           />
           <Text style={styles.helper}>
-            {normalizeCountryCode(form.countryCode)
-              ? t('Offer currency will default to {{currency}} for {{country}}.', {
-                  currency: currencyForCountryCode(form.countryCode),
-                  country: getCountryLabel(form.countryCode, i18n.resolvedLanguage) || form.countryCode,
-                })
-              : t('Select your country from the list.')}
+            {t('Offer currency follows the request.')}
           </Text>
         </View>
         {hasAttemptedSubmit && fieldErrors.countryCode ? (
