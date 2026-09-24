@@ -1,6 +1,6 @@
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -153,7 +153,13 @@ export default function ReviewRequestDetailsScreen() {
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
+  const loadGeneration = useRef(0);
+
   const loadDetails = useCallback(async (): Promise<void> => {
+    const generation = ++loadGeneration.current;
+    setDetails(null);
+    setExpandedPhotoUrl('');
+    setTranslatedTextByKey({});
     if (!requestId) {
       setError(t('Missing request ID.'));
       setIsLoading(false);
@@ -165,12 +171,13 @@ export default function ReviewRequestDetailsScreen() {
 
     try {
       const response = await getDriverRequestDetails(requestId);
-      setDetails(response);
+      if (generation === loadGeneration.current) setDetails(response);
     } catch (requestError) {
+      if (generation !== loadGeneration.current) return;
       const message = requestError instanceof Error ? requestError.message : t('Failed to load request details.');
       setError(message);
     } finally {
-      setIsLoading(false);
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
   }, [requestId, t]);
 
@@ -181,6 +188,7 @@ export default function ReviewRequestDetailsScreen() {
 
     return () => {
       clearTimeout(loadTimeout);
+      loadGeneration.current += 1;
     };
   }, [loadDetails]);
 
@@ -286,6 +294,8 @@ export default function ReviewRequestDetailsScreen() {
         },
       });
     } catch (requestError) {
+      setDetails(null);
+      setExpandedPhotoUrl('');
       const message = requestError instanceof Error ? requestError.message : t('Failed to accept this request.');
       setError(message);
     } finally {
@@ -311,6 +321,9 @@ export default function ReviewRequestDetailsScreen() {
           <Text style={styles.errorText}>{error}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadDetails()}>
             <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
+          </Pressable>
+          <Pressable style={styles.primaryButton} onPress={() => router.replace('/receive-requests')}>
+            <Text style={styles.secondaryButtonText}>{t('Back')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
