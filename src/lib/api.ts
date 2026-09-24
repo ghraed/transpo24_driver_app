@@ -94,6 +94,9 @@ function getApiBaseUrl(): string {
 }
 
 function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): string {
+  if (errorData.code === 'TENANT_MISMATCH') return 'This account belongs to another Transpo24 market. Choose your account’s home market and try again.';
+  if (errorData.code === 'TENANT_INACTIVE' || errorData.code === 'TENANT_NOT_FOUND') return 'This market is unavailable. Choose an active market and try again.';
+  if (errorData.code === 'ROUTE_BLOCKED') return 'Transport on this route is currently unavailable.';
   if (Array.isArray(errorData.message)) {
     return normalizeBackendErrorMessage(errorData.message[0] ?? fallback, fallback);
   }

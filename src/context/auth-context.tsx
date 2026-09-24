@@ -2,6 +2,7 @@ import { stopBackgroundTripTracking } from '@/location/background-trip-tracking'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import {
+  ApiResponseError,
   getDriverAvailability,
   getDriverMe,
   continueDriverTrustedSession,
@@ -45,7 +46,7 @@ interface AuthContextValue {
   isRestoringSession: boolean;
   hasRestoredStoredSession: boolean;
   authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
-  continueWithTrustedSession: () => Promise<TrustedSessionContinuationResult>;
+  continueWithTrustedSession: (marketCode: string) => Promise<TrustedSessionContinuationResult>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   restoreSession: () => Promise<void>;
@@ -156,13 +157,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
   }, []);
 
-  const continueWithTrustedSession = useCallback(async (): Promise<TrustedSessionContinuationResult> => {
+  const continueWithTrustedSession = useCallback(async (marketCode: string): Promise<TrustedSessionContinuationResult> => {
     try {
       const trustedSession = await readTrustedDriverSession();
       if (!trustedSession) return { status: 'invalid' };
+      if (!marketCode.trim()) return { status: 'unavailable', message: 'Choose your market' };
 
       const renewed = await continueDriverTrustedSession({
         accessToken: trustedSession.accessToken,
+        marketCode,
       });
       await Promise.all([
         persistAccessToken(renewed.accessToken),
@@ -177,6 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(renewed.accessToken);
       return { status: 'restored', nextStep: renewed.nextStep };
     } catch (error) {
+      if (error instanceof ApiResponseError && ['TENANT_MISMATCH', 'TENANT_INACTIVE', 'TENANT_NOT_FOUND'].includes(error.code ?? '')) {
+        return { status: 'unavailable', message: error.message };
+      }
       if (!isAuthenticationFailure(error)) {
         return {
           status: 'unavailable',

@@ -46,7 +46,7 @@ export default function DriverProfileScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const { locale } = useAppLanguage();
-  const { deleteAccount, driver, signOut } = useAuth();
+  const { deleteAccount, driver, user, signOut } = useAuth();
   const [summary, setSummary] = useState<DriverEarningsSummary | null>(null);
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -180,6 +180,10 @@ export default function DriverProfileScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.identityCard}>
+          <Text style={styles.memberText}>{t('Home market')}</Text>
+          <Text style={styles.name}>{user?.tenant?.name || user?.tenantCode || t('Not assigned')}</Text>
+        </View>
         <Pressable style={styles.identityCard} accessibilityRole="button" accessibilityLabel={t('Edit nickname')} onPress={() => router.push('/edit-nickname')}>
           <Text style={styles.sectionTitle}>{t('Nickname')}</Text>
           <Text style={styles.name}>{driver?.nickname || t('Driver')}</Text>

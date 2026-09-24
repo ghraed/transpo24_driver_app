@@ -29,9 +29,11 @@ const RESEND_SECONDS = 60;
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
-  const { phoneNumber: rawPhoneNumber } = useLocalSearchParams<{
+  const { phoneNumber: rawPhoneNumber, marketCode: rawMarketCode } = useLocalSearchParams<{
     phoneNumber?: string;
+    marketCode?: string;
   }>();
+  const marketCode = typeof rawMarketCode === 'string' ? rawMarketCode : '';
   const phoneNumber = typeof rawPhoneNumber === 'string' ? rawPhoneNumber : '';
   const { t } = useTranslation();
   const { authenticateWithPhone } = useAuth();
@@ -77,6 +79,7 @@ export default function VerifyPhoneScreen() {
       try {
         const nextStep = await authenticateWithPhone({
           phoneNumber,
+          marketCode,
           code: candidate,
         });
 
@@ -110,7 +113,7 @@ export default function VerifyPhoneScreen() {
         setIsVerifying(false);
       }
     },
-    [authenticateWithPhone, code, isVerifying, phoneNumber, router, t],
+    [authenticateWithPhone, code, isVerifying, marketCode, phoneNumber, router, t],
   );
 
   const resend = useCallback(async () => {
@@ -118,7 +121,7 @@ export default function VerifyPhoneScreen() {
     setIsResending(true);
     setError('');
     try {
-      await sendDriverPhoneVerificationCode({ phoneNumber });
+      await sendDriverPhoneVerificationCode({ phoneNumber, marketCode });
       setDeadline(Date.now() + RESEND_SECONDS * 1000);
       setNow(Date.now());
       setCode('');
@@ -132,7 +135,7 @@ export default function VerifyPhoneScreen() {
     } finally {
       setIsResending(false);
     }
-  }, [isResending, phoneNumber, secondsRemaining, t]);
+  }, [isResending, marketCode, phoneNumber, secondsRemaining, t]);
 
   const cells = useMemo(
     () => Array.from({ length: 6 }, (_, index) => code[index] || ''),
@@ -162,7 +165,7 @@ export default function VerifyPhoneScreen() {
     [code, verify],
   );
 
-  if (!phoneNumber) return <Redirect href="/" />;
+  if (!phoneNumber || !marketCode) return <Redirect href="/" />;
 
   return (
     <SafeAreaView style={styles.safeArea}>

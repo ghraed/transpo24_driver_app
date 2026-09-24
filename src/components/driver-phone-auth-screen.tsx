@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { MarketSelector } from '@/components/market-selector';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
@@ -54,6 +55,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   } = useAppLanguage();
   const { continueWithTrustedSession } = useAuth();
   const keyboardInset = useAndroidKeyboardInset();
+  const [marketCode, setMarketCode] = useState('');
   const [dialingCode, setDialingCode] = useState('+961');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -98,6 +100,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
 
   const sendCode = useCallback(async (): Promise<void> => {
     if (isSubmitting) return;
+    if (!marketCode) { setErrorMessage(t('Choose your market')); return; }
 
     setHasAttemptedSubmit(true);
     if (!phoneNumber.trim()) {
@@ -114,8 +117,8 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     const normalizedPhoneNumber = buildInternationalPhoneNumber(dialingCode, phoneNumber);
 
     try {
-      await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber });
-      const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber } };
+      await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber, marketCode });
+      const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber, marketCode } };
       if (mode === 'login') {
         router.push(destination);
       } else {
@@ -126,14 +129,15 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [dialingCode, hasAcceptedTerms, isSubmitting, mode, phoneNumber, router, t]);
+  }, [marketCode, dialingCode, hasAcceptedTerms, isSubmitting, mode, phoneNumber, router, t]);
 
   const continueTrustedSession = useCallback(async (): Promise<void> => {
     if (!hasTrustedDevice || isContinuing) return;
+    if (!marketCode) { setErrorMessage(t('Choose your market')); return; }
 
     setErrorMessage('');
     setIsContinuing(true);
-    const result = await continueWithTrustedSession();
+    const result = await continueWithTrustedSession(marketCode);
     if (result.status === 'restored') {
       router.replace(nextStepToRoute(result.nextStep));
     } else if (result.status === 'invalid') {
@@ -147,7 +151,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
       );
     }
     setIsContinuing(false);
-  }, [continueWithTrustedSession, hasTrustedDevice, isContinuing, router, t]);
+  }, [marketCode, continueWithTrustedSession, hasTrustedDevice, isContinuing, router, t]);
 
   const useDifferentPhoneNumber = useCallback(() => {
     setErrorMessage('');
@@ -188,6 +192,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
             <Text style={styles.brandRole}>{t('Driver')}</Text>
           </View>
           <View style={styles.card}>
+            <MarketSelector value={marketCode} onChange={setMarketCode} disabled={isSubmitting || isContinuing} />
             {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
             {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
             {needsDefaultLanguage ? (

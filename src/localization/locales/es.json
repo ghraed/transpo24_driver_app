@@ -1490,5 +1490,14 @@
   "Unable to update nickname.": "No se pudo actualizar el apodo.",
   "Created": "Creada",
   "Request details changed": "Los detalles de la solicitud han cambiado",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "El cliente ha cambiado uno o más detalles de esta solicitud. Revisa los detalles actualizados antes de enviar una oferta."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "El cliente ha cambiado uno o más detalles de esta solicitud. Revisa los detalles actualizados antes de enviar una oferta.",
+  "Home market": "Home market",
+  "Choose your market": "Choose your market",
+  "Unable to load markets. Tap to retry.": "Unable to load markets. Tap to retry.",
+  "No markets are currently available.": "No markets are currently available.",
+  "Not assigned": "Not assigned",
+  "Transport on this route is currently unavailable.": "Transport on this route is currently unavailable.",
+  "This account belongs to another Transpo24 market. Choose your account’s home market and try again.": "This account belongs to another Transpo24 market. Choose your account’s home market and try again.",
+  "This market is unavailable. Choose an active market and try again.": "This market is unavailable. Choose an active market and try again.",
+  "Choose the market your account belongs to. Operational coverage is approved separately.": "Elige el mercado de tu cuenta. Las zonas operativas se aprueban por separado."
 }

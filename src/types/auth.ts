@@ -37,6 +37,7 @@ export type DayOfWeek =
 export type PreferredLanguage = AppLanguage;
 
 export interface RegisterDriverPayload {
+  marketCode?: string;
   nickname: string;
   firstName: string;
   lastName: string;
@@ -97,20 +98,26 @@ export interface DriverPersonalInfoPayload {
 }
 
 export interface LoginPayload {
+  marketCode?: string;
   email: string;
   password: string;
 }
 
 export interface SendPhoneCodePayload {
+  marketCode?: string;
   phoneNumber: string;
 }
 
 export interface VerifyPhoneCodePayload {
+  marketCode?: string;
   phoneNumber: string;
   code: string;
 }
 
 export interface AuthUser {
+  tenantId?: string | null;
+  tenantCode?: string | null;
+  tenant?: { code: string; name: string } | null;
   id: string;
   email: string;
   role: UserRole;
@@ -487,6 +494,7 @@ export interface DriverAuthResponse {
 }
 
 export interface ContinueDriverSessionPayload {
+  marketCode?: string;
   accessToken: string;
 }
 
