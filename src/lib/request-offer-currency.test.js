@@ -1,8 +1,8 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { TextInput } from 'react-native';
+import { Text, TextInput } from 'react-native';
 import Screen from '@/app/send-price-offer';
-import { getDriverRequestDetails, sendDriverPriceOffer } from './api';
+import { ApiResponseError, getDriverRequestDetails, sendDriverPriceOffer } from './api';
 const mockT = key => key;
 const mockRouter = { replace: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({ requestId: 'swiss-job', requestVersion: 'reviewed-version', currency: 'EUR' }) }));
@@ -41,5 +41,30 @@ it('prevents submission when a stale request is denied', async () => {
   await act(async () => { tree = create(<Screen />); });
   expect(submit(tree).props.disabled).toBe(true);
   expect(JSON.stringify(tree.toJSON())).toContain('Request is no longer available.');
+  await act(async () => tree.unmount());
+});
+
+it.each(['ROUTE_BLOCKED', 'REQUEST_NOT_AVAILABLE', 'REQUEST_ACCESS_DENIED', 'DRIVER_COUNTRY_NOT_APPROVED', 'DRIVER_ROUTE_NOT_APPROVED', undefined])('requires fresh authorization after offer rejection %s', async code => {
+  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF' });
+  const error = new ApiResponseError('Request unavailable.');
+  error.code = code;
+  error.status = code ? 403 : 404;
+  sendDriverPriceOffer.mockRejectedValue(error);
+  let tree;
+  await act(async () => { tree = create(<Screen />); });
+  await act(async () => tree.root.findAllByType(TextInput)[0].props.onChangeText('100'));
+  await act(async () => submit(tree).props.onPress());
+  expect(submit(tree).props.disabled).toBe(true);
+  expect(JSON.stringify(tree.toJSON())).toContain('Request unavailable.');
+  const button = label => tree.root.findAll(node => typeof node.props.onPress === 'function').find(node => node.findAllByType(Text).some(text => text.props.children === label));
+  await act(async () => button('Go Back to Available Requests').props.onPress());
+  expect(mockRouter.replace).toHaveBeenCalledWith('/receive-requests');
+  getDriverRequestDetails.mockRejectedValueOnce(error);
+  await act(async () => button('Retry').props.onPress());
+  expect(submit(tree).props.disabled).toBe(true);
+  await act(async () => button('Retry').props.onPress());
+  expect(submit(tree).props.disabled).toBe(false);
+  expect(getDriverRequestDetails).toHaveBeenCalledTimes(3);
+  expect(sendDriverPriceOffer).toHaveBeenCalledTimes(1);
   await act(async () => tree.unmount());
 });

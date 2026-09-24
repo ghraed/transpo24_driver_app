@@ -328,6 +328,14 @@ export default function SendPriceOfferScreen() {
         );
         return;
       }
+      if (error instanceof ApiResponseError && (
+        error.status === 404 ||
+        ['ROUTE_BLOCKED', 'REQUEST_NOT_AVAILABLE', 'REQUEST_ACCESS_DENIED',
+          'DRIVER_COUNTRY_NOT_APPROVED', 'DRIVER_ROUTE_NOT_APPROVED'].includes(error.code ?? '')
+      )) {
+        setCurrencyState({ requestId, currency: '', error: error.message });
+        return;
+      }
       const message = error instanceof Error ? error.message : t('Failed to send offer.');
       const normalized = getSourceErrorMessage(error, message).toLowerCase();
       if (
@@ -424,6 +432,9 @@ export default function SendPriceOfferScreen() {
                 <Text style={styles.errorText}>{currencyState.error}</Text>
                 <Pressable onPress={() => setReloadCurrency(value => value + 1)}>
                   <Text>{t('Retry')}</Text>
+                </Pressable>
+                <Pressable onPress={() => router.replace('/receive-requests')}>
+                  <Text>{t('Go Back to Available Requests')}</Text>
                 </Pressable>
               </View>
             ) : !offerCurrency ? <Text>{t('Loading...')}</Text> : null}
