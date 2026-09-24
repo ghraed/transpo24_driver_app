@@ -2204,3 +2204,42 @@ export async function sendTestNotification(token: string): Promise<void> {
     throw await parseError(response, 'Failed to send test notification.');
   }
 }
+
+export type CoverageStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+export interface OperationalCountry {
+  id: string;
+  countryCode: string;
+  canPickup: boolean;
+  canDropoff: boolean;
+  status: CoverageStatus;
+}
+export interface RoutePermission {
+  id: string;
+  fromCountryCode: string;
+  toCountryCode: string;
+  status: CoverageStatus;
+}
+export interface OperationalCoverage {
+  countries: OperationalCountry[];
+  routes: RoutePermission[];
+}
+async function coverageRequest<T>(suffix: string, body?: object): Promise<T> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/operational-coverage${suffix}`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: body ? 'POST' : 'GET',
+      headers: await getAuthHeaders(),
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+  if (!response.ok) throw await parseError(response, 'Unable to update operational coverage.');
+  return parseJsonResponse<T>(response, 'Unable to read operational coverage.');
+}
+export const getOperationalCoverage = () => coverageRequest<OperationalCoverage>('');
+export const requestOperationalCountry = (countryCode: string, canPickup: boolean, canDropoff: boolean) =>
+  coverageRequest<OperationalCountry>('/countries', { countryCode, canPickup, canDropoff });
+export const requestRoutePermission = (fromCountryCode: string, toCountryCode: string) =>
+  coverageRequest<RoutePermission>('/routes', { fromCountryCode, toCountryCode });

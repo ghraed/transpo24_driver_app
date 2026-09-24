@@ -101,6 +101,8 @@ export default function DriverProfileScreen() {
   ], [documents]);
 
   const menuItems: MenuItem[] = [
+    { label: 'Operational countries', icon: 'document', onPress: () => router.push('/operational-countries' as never) },
+    { label: 'Route permissions', icon: 'document', onPress: () => router.push('/route-permissions' as never) },
     { label: 'My Vehicle', icon: 'truck', onPress: () => router.push('/my-vehicles') },
     { label: 'Documents', icon: 'document', onPress: () => router.push('/vehicle-documents') },
     { label: 'Earnings History', icon: 'money', onPress: () => router.push('/earnings-history') },
