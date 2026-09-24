@@ -1,7 +1,7 @@
 import { RequestDocuments } from '@/components/request-documents';
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -153,6 +153,7 @@ export default function AcceptedJobDetailsScreen() {
   const params = useLocalSearchParams<{ requestId?: string }>();
   const requestId = typeof params.requestId === 'string' ? params.requestId : '';
 
+  const loadVersion = useRef(0);
   const [details, setDetails] = useState<DriverAcceptedJobDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -166,6 +167,10 @@ export default function AcceptedJobDetailsScreen() {
   } | null>(null);
 
   const loadDetails = useCallback(async (): Promise<void> => {
+    const version = ++loadVersion.current;
+    setDetails(null);
+    setActiveMapLocation(null);
+    setExpandedPhotoUrl('');
     if (!requestId.trim()) {
       setError(t('Missing request ID.'));
       setIsLoading(false);
@@ -177,8 +182,10 @@ export default function AcceptedJobDetailsScreen() {
 
     try {
       const response = await getDriverAcceptedJobDetails(requestId);
+      if (version !== loadVersion.current) return;
       setDetails(response);
     } catch (requestError) {
+      if (version !== loadVersion.current) return;
       const message = requestError instanceof Error ? requestError.message : t('Failed to load accepted job details.');
       const normalized = getSourceErrorMessage(requestError, message).toLowerCase();
       if (
@@ -192,13 +199,14 @@ export default function AcceptedJobDetailsScreen() {
       }
       setError(message);
     } finally {
-      setIsLoading(false);
+      if (version === loadVersion.current) setIsLoading(false);
     }
   }, [requestId, router, signOut, t]);
 
   useFocusEffect(
     useCallback(() => {
       void loadDetails();
+      return () => { loadVersion.current += 1; };
     }, [loadDetails]),
   );
 
@@ -329,6 +337,9 @@ export default function AcceptedJobDetailsScreen() {
           <Text style={styles.errorText}>{error || t('Accepted job not found.')}</Text>
           <Pressable style={styles.primaryButton} onPress={() => void loadDetails()}>
             <Text style={styles.primaryButtonText}>{t('Retry')}</Text>
+          </Pressable>
+          <Pressable style={styles.secondaryButton} onPress={() => router.replace('/accepted-jobs')}>
+            <Text style={styles.secondaryButtonText}>{t('Back to Accepted Jobs')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
