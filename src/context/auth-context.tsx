@@ -46,7 +46,7 @@ interface AuthContextValue {
   isRestoringSession: boolean;
   hasRestoredStoredSession: boolean;
   authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
-  continueWithTrustedSession: (marketCode: string) => Promise<TrustedSessionContinuationResult>;
+  continueWithTrustedSession: (marketCode?: string) => Promise<TrustedSessionContinuationResult>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   restoreSession: () => Promise<void>;
@@ -157,11 +157,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
   }, []);
 
-  const continueWithTrustedSession = useCallback(async (marketCode: string): Promise<TrustedSessionContinuationResult> => {
+  const continueWithTrustedSession = useCallback(async (marketCode?: string): Promise<TrustedSessionContinuationResult> => {
     try {
       const trustedSession = await readTrustedDriverSession();
       if (!trustedSession) return { status: 'invalid' };
-      if (!marketCode.trim()) return { status: 'unavailable', message: 'Choose your market' };
 
       const renewed = await continueDriverTrustedSession({
         accessToken: trustedSession.accessToken,

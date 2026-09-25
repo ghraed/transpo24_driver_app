@@ -100,7 +100,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
 
   const sendCode = useCallback(async (): Promise<void> => {
     if (isSubmitting) return;
-    if (!marketCode) { setErrorMessage(t('Choose your market')); return; }
+    if (mode === 'register' && !marketCode) { setErrorMessage(t('Choose your market')); return; }
 
     setHasAttemptedSubmit(true);
     if (!phoneNumber.trim()) {
@@ -117,8 +117,8 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     const normalizedPhoneNumber = buildInternationalPhoneNumber(dialingCode, phoneNumber);
 
     try {
-      await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber, marketCode });
-      const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber, marketCode } };
+      await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber, ...(mode === 'register' ? { marketCode } : {}) });
+      const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber, ...(mode === 'register' ? { marketCode } : {}) } };
       if (mode === 'login') {
         router.push(destination);
       } else {
@@ -133,11 +133,10 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
 
   const continueTrustedSession = useCallback(async (): Promise<void> => {
     if (!hasTrustedDevice || isContinuing) return;
-    if (!marketCode) { setErrorMessage(t('Choose your market')); return; }
 
     setErrorMessage('');
     setIsContinuing(true);
-    const result = await continueWithTrustedSession(marketCode);
+    const result = await continueWithTrustedSession();
     if (result.status === 'restored') {
       router.replace(nextStepToRoute(result.nextStep));
     } else if (result.status === 'invalid') {
@@ -151,7 +150,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
       );
     }
     setIsContinuing(false);
-  }, [marketCode, continueWithTrustedSession, hasTrustedDevice, isContinuing, router, t]);
+  }, [continueWithTrustedSession, hasTrustedDevice, isContinuing, router, t]);
 
   const useDifferentPhoneNumber = useCallback(() => {
     setErrorMessage('');
@@ -192,7 +191,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
             <Text style={styles.brandRole}>{t('Driver')}</Text>
           </View>
           <View style={styles.card}>
-            <MarketSelector value={marketCode} onChange={setMarketCode} disabled={isSubmitting || isContinuing} />
+            {mode === 'register' && <MarketSelector value={marketCode} onChange={setMarketCode} disabled={isSubmitting || isContinuing} />}
             {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
             {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
             {needsDefaultLanguage ? (

@@ -33,7 +33,7 @@ export default function VerifyPhoneScreen() {
     phoneNumber?: string;
     marketCode?: string;
   }>();
-  const marketCode = typeof rawMarketCode === 'string' ? rawMarketCode : '';
+  const marketCode = typeof rawMarketCode === 'string' && rawMarketCode ? rawMarketCode : undefined;
   const phoneNumber = typeof rawPhoneNumber === 'string' ? rawPhoneNumber : '';
   const { t } = useTranslation();
   const { authenticateWithPhone } = useAuth();
@@ -165,7 +165,7 @@ export default function VerifyPhoneScreen() {
     [code, verify],
   );
 
-  if (!phoneNumber || !marketCode) return <Redirect href="/" />;
+  if (!phoneNumber) return <Redirect href="/" />;
 
   return (
     <SafeAreaView style={styles.safeArea}>

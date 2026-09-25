@@ -18,7 +18,7 @@ jest.mock('@/hooks/use-android-keyboard-inset', () => ({ useAndroidKeyboardInset
 let tree;
 beforeEach(() => { jest.clearAllMocks(); readTrustedDriverSession.mockResolvedValue(null); });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; });
-it.each(['login', 'register'])('requires a market and preserves it through %s OTP navigation', async mode => {
+it.each(['register'])('requires a market and preserves it through %s OTP navigation', async mode => {
   await act(async () => { tree = create(<DriverPhoneAuthScreen mode={mode} />); });
   const phone = () => tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Phone number');
   await act(async () => phone().props.onChangeText('70123456'));
@@ -30,13 +30,23 @@ it.each(['login', 'register'])('requires a market and preserves it through %s OT
   expect(sendDriverPhoneVerificationCode).toHaveBeenCalledWith({ phoneNumber: '+96170123456', marketCode: 'FR' });
   expect(mockRouter[mode === 'login' ? 'push' : 'replace']).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+96170123456', marketCode: 'FR' } });
 });
-it('sends explicit market to trusted continuation and stays on login after a mismatch', async () => {
+it('continues a trusted session without asking for a market', async () => {
   readTrustedDriverSession.mockResolvedValue({ phoneNumber: '+33123456789' });
   mockContinue.mockResolvedValue({ status: 'unavailable', message: 'Choose your home market' });
   await act(async () => { tree = create(<DriverPhoneAuthScreen mode="login" />); });
-  await act(async () => tree.root.findByType(MarketSelector).props.onChange('LB'));
+  expect(tree.root.findAllByType(MarketSelector)).toHaveLength(0);
   await act(async () => tree.root.findAll(node => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0].props.onPress());
-  expect(mockContinue).toHaveBeenCalledWith('LB');
+  expect(mockContinue).toHaveBeenCalledWith();
   expect(mockRouter.replace).not.toHaveBeenCalled();
   expect(JSON.stringify(tree.toJSON())).toContain('Choose your home market');
+});
+
+it('logs in by phone without a market selector or market payload', async () => {
+  await act(async () => { tree = create(<DriverPhoneAuthScreen mode="login" />); });
+  expect(tree.root.findAllByType(MarketSelector)).toHaveLength(0);
+  const phone = () => tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Phone number');
+  await act(async () => phone().props.onChangeText('70123456'));
+  await act(async () => phone().props.onSubmitEditing());
+  expect(sendDriverPhoneVerificationCode).toHaveBeenCalledWith({ phoneNumber: '+96170123456' });
+  expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+96170123456' } });
 });
