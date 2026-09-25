@@ -368,7 +368,13 @@ export default function GoToPickupScreen() {
   useEffect(() => {
     let active = true;
 
-    const setup = async (): Promise<(() => void) | void> => {
+    let disconnectUnsub: (() => void) | null = null;
+    let socketErrorUnsub: (() => void) | null = null;
+    let arrivedUnsub: (() => void) | null = null;
+    let tripStatusUnsub: (() => void) | null = null;
+    let itemPickedUpUnsub: (() => void) | null = null;
+
+    const setup = async (): Promise<void> => {
       if (isInvalidRoute || !pickupLocation || !dropoffLocation || !deliverRoute) {
         setIsLoadingLocation(false);
         return;
@@ -425,25 +431,24 @@ export default function GoToPickupScreen() {
         return;
       }
 
-      let disconnectUnsub: (() => void) | null = null;
-      let socketErrorUnsub: (() => void) | null = null;
-      let arrivedUnsub: (() => void) | null = null;
-      let tripStatusUnsub: (() => void) | null = null;
-      let itemPickedUpUnsub: (() => void) | null = null;
+      if (!active) return;
 
       try {
         connectSocket(accessToken);
         joinTripRoom(validTripId);
 
         disconnectUnsub = onSocketDisconnect(() => {
+          if (!active) return;
           setSocketError(t('Socket disconnected. Reconnecting...'));
         });
 
         socketErrorUnsub = onSocketError((message) => {
+          if (!active) return;
           setSocketError(message || t('Socket connection failed.'));
         });
 
         arrivedUnsub = onDriverArrivedPickupConfirmed((payload) => {
+          if (!active) return;
           const validated = validateDriverArrivedPickupConfirmedPayload(payload);
           if (!validated || validated.tripId !== validTripId) return;
           setRequestStatus('DRIVER_ARRIVED_PICKUP');
@@ -454,6 +459,7 @@ export default function GoToPickupScreen() {
         });
 
         tripStatusUnsub = onTripStatusUpdated((payload) => {
+          if (!active) return;
           if (payload.tripId !== validTripId) return;
           setRequestStatus(payload.status);
           if (isTerminalRequestStatus(payload.status)) void stopBackgroundTripTracking(validTripId).catch(() => undefined);
@@ -466,6 +472,7 @@ export default function GoToPickupScreen() {
         });
 
         itemPickedUpUnsub = onItemPickedUp((payload) => {
+          if (!active) return;
           if (payload.tripId !== validTripId) return;
           router.replace(deliverRoute);
         });
@@ -561,24 +568,17 @@ export default function GoToPickupScreen() {
           setIsLoadingLocation(false);
         }
       }
-
-      return () => {
-        disconnectUnsub?.();
-        socketErrorUnsub?.();
-        arrivedUnsub?.();
-        tripStatusUnsub?.();
-        itemPickedUpUnsub?.();
-      };
     };
 
-    let teardown: (() => void) | void;
-    void setup().then((cleanup) => {
-      teardown = cleanup;
-    });
+    void setup();
 
     return () => {
       active = false;
-      if (teardown) teardown();
+      disconnectUnsub?.();
+      socketErrorUnsub?.();
+      arrivedUnsub?.();
+      tripStatusUnsub?.();
+      itemPickedUpUnsub?.();
       if (locationSubscriptionRef.current) {
         locationSubscriptionRef.current.remove();
         locationSubscriptionRef.current = null;

@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -73,33 +73,41 @@ export function DriverPayoutStatusCard({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
 
+  // Serialize the whole workflow, including status checks before a transfer.
+  const workflowBusyRef = useRef(false);
+  const workflowGenerationRef = useRef(0);
+  const workflowFocusedRef = useRef(false);
+
   const loadWorkflow = useCallback(
     async ({
       attemptRelease,
-      silent,
     }: {
       attemptRelease: boolean;
-      silent: boolean;
     }) => {
-      if (silent) {
-        setIsRefreshing(true);
-      } else {
-      }
+      if (!workflowFocusedRef.current || workflowBusyRef.current) return;
+      workflowBusyRef.current = true;
+      const generation = workflowGenerationRef.current;
+      const isCurrent = () => workflowFocusedRef.current && generation === workflowGenerationRef.current;
+
+      setIsRefreshing(true);
 
       setScreenError('');
       setTransferError('');
 
       try {
         let currentStripeStatus = await getStripeConnectStatus();
+        if (!isCurrent()) return;
 
         if (currentStripeStatus.stripeAccountId) {
           try {
             await syncStripeConnectAccount();
+            if (!isCurrent()) return;
             currentStripeStatus = await getStripeConnectStatus();
           } catch {
           }
         }
 
+        if (!isCurrent()) return;
         setStripeStatus(currentStripeStatus);
 
         if (!isEligibleForRelease) {
@@ -119,21 +127,26 @@ export function DriverPayoutStatusCard({
         setIsReleasing(true);
         try {
           const payoutRelease = await retryTransferForTrip(normalizedTripId);
-          setTransferResult(payoutRelease);
+          if (isCurrent()) setTransferResult(payoutRelease);
         } catch (error) {
+          if (!isCurrent()) return;
           setTransferResult(null);
           setTransferError(
             error instanceof Error ? error.message : t('Failed to release held trip funds.'),
           );
         } finally {
-          setIsReleasing(false);
+          if (isCurrent()) setIsReleasing(false);
         }
       } catch (error) {
+        if (!isCurrent()) return;
         setScreenError(
           error instanceof Error ? error.message : t('Failed to load payout status.'),
         );
       } finally {
-        setIsRefreshing(false);
+        if (isCurrent()) {
+          workflowBusyRef.current = false;
+          setIsRefreshing(false);
+        }
       }
     },
     [isEligibleForRelease, normalizedTripId, t],
@@ -141,7 +154,17 @@ export function DriverPayoutStatusCard({
 
   useFocusEffect(
     useCallback(() => {
-      void loadWorkflow({ attemptRelease: false, silent: false });
+      workflowFocusedRef.current = true;
+      workflowBusyRef.current = false;
+      setStripeStatus(null);
+      setTransferResult(null);
+      setIsReleasing(false);
+      void loadWorkflow({ attemptRelease: false });
+      return () => {
+        workflowFocusedRef.current = false;
+        workflowGenerationRef.current += 1;
+        workflowBusyRef.current = false;
+      };
     }, [loadWorkflow]),
   );
 
@@ -211,7 +234,7 @@ export function DriverPayoutStatusCard({
       {screenError ? <Text style={styles.errorText}>{screenError}</Text> : null}
 
       <View style={styles.actionsRow}>
-        <Pressable style={styles.secondaryButton} onPress={() => void loadWorkflow({ attemptRelease: false, silent: true })}>
+        <Pressable style={styles.secondaryButton} disabled={isRefreshing || isReleasing} onPress={() => void loadWorkflow({ attemptRelease: false })}>
           <Text style={styles.secondaryButtonText}>
             {isRefreshing ? t('Loading') : t('Refresh payout status')}
           </Text>
@@ -226,8 +249,8 @@ export function DriverPayoutStatusCard({
       {isEligibleForRelease ? (
         <Pressable
           style={[styles.primaryButton, isReleasing && styles.primaryButtonDisabled]}
-          onPress={() => void loadWorkflow({ attemptRelease: true, silent: true })}
-          disabled={isReleasing}
+          onPress={() => void loadWorkflow({ attemptRelease: true })}
+          disabled={isReleasing || isRefreshing}
         >
           {isReleasing ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryButtonText}>{t('Release Payout')}</Text>}
         </Pressable>

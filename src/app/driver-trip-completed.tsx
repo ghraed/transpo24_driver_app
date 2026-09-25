@@ -1,6 +1,6 @@
 import { stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -165,6 +165,11 @@ export default function DriverTripCompletedScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
 
+  // Serialize the whole workflow, including status checks before a transfer.
+  const workflowBusyRef = useRef(false);
+  const workflowGenerationRef = useRef(0);
+  const workflowFocusedRef = useRef(false);
+
   const loadWorkflow = useCallback(
     async ({
       attemptRelease,
@@ -173,6 +178,11 @@ export default function DriverTripCompletedScreen() {
       attemptRelease: boolean;
       silent: boolean;
     }) => {
+      if (!workflowFocusedRef.current || workflowBusyRef.current) return;
+      workflowBusyRef.current = true;
+      const generation = workflowGenerationRef.current;
+      const isCurrent = () => workflowFocusedRef.current && generation === workflowGenerationRef.current;
+
       if (silent) {
         setIsRefreshing(true);
       } else {
@@ -184,16 +194,19 @@ export default function DriverTripCompletedScreen() {
 
       try {
         let currentStripeStatus = await getStripeConnectStatus();
+        if (!isCurrent()) return;
 
         if (currentStripeStatus.stripeAccountId) {
           try {
             await syncStripeConnectAccount();
+            if (!isCurrent()) return;
             currentStripeStatus = await getStripeConnectStatus();
           } catch {
             // Keep the most recent cached status if sync fails.
           }
         }
 
+        if (!isCurrent()) return;
         setStripeStatus(currentStripeStatus);
 
         if (!hasValidTripId) {
@@ -213,8 +226,9 @@ export default function DriverTripCompletedScreen() {
         setIsReleasing(true);
         try {
           const payoutRelease = await retryTransferForTrip(tripId);
-          setTransferResult(payoutRelease);
+          if (isCurrent()) setTransferResult(payoutRelease);
         } catch (error) {
+          if (!isCurrent()) return;
           setTransferResult(null);
           setTransferError(
             error instanceof Error
@@ -222,17 +236,21 @@ export default function DriverTripCompletedScreen() {
               : t('Failed to release held trip funds.'),
           );
         } finally {
-          setIsReleasing(false);
+          if (isCurrent()) setIsReleasing(false);
         }
       } catch (error) {
+        if (!isCurrent()) return;
         setScreenError(
           error instanceof Error
             ? getPayoutErrorMessage(error.message, t)
             : t('Failed to load payout workflow.'),
         );
       } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        if (isCurrent()) {
+          workflowBusyRef.current = false;
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
       }
     },
     [hasValidTripId, t, tripId],
@@ -240,7 +258,17 @@ export default function DriverTripCompletedScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      workflowFocusedRef.current = true;
+      workflowBusyRef.current = false;
+      setStripeStatus(null);
+      setTransferResult(null);
+      setIsReleasing(false);
       void loadWorkflow({ attemptRelease: false, silent: false });
+      return () => {
+        workflowFocusedRef.current = false;
+        workflowGenerationRef.current += 1;
+        workflowBusyRef.current = false;
+      };
     }, [loadWorkflow]),
   );
 
@@ -317,7 +345,7 @@ export default function DriverTripCompletedScreen() {
           {stripeStatus?.payoutsEnabled && hasValidTripId && !transferResult?.transferred ? (
             <Pressable
               style={[styles.secondaryButton, isReleasing && styles.disabledButton]}
-              disabled={isReleasing}
+              disabled={isReleasing || isRefreshing}
               onPress={() => void handleReleaseFunds()}
             >
               {isReleasing ? (

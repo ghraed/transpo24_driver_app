@@ -246,8 +246,8 @@ export default function DeliverItemScreen() {
     router.replace('/driver-home');
   }, [router]);
 
-  const ensureDriverGoingToDropoff = useCallback(async (currentStatus?: string | null): Promise<void> => {
-    const effectiveStatus = currentStatus ?? requestStatus;
+  const ensureDriverGoingToDropoff = useCallback(async (currentStatus: string | null): Promise<void> => {
+    const effectiveStatus = currentStatus;
 
     if (effectiveStatus === 'DRIVER_GOING_TO_DROPOFF' || effectiveStatus === 'IN_TRANSIT') {
       return;
@@ -272,7 +272,7 @@ export default function DeliverItemScreen() {
 
       throw error;
     }
-  }, [requestStatus, setRequestStatus, setRouteBlockedMessage, t, tripId]);
+  }, [setRequestStatus, setRouteBlockedMessage, t, tripId]);
 
   const refreshDriverLocation = useCallback(async (showLoader = false): Promise<GeoLocation | null> => {
     if (showLoader) {
@@ -354,7 +354,10 @@ export default function DeliverItemScreen() {
   useEffect(() => {
     let active = true;
 
-    const setup = async (): Promise<(() => void) | void> => {
+    let offTripStatus: (() => void) | null = null;
+    let offItemDelivered: (() => void) | null = null;
+
+    const setup = async (): Promise<void> => {
       if (isInvalidRoute) {
         setIsLoadingLocation(false);
         setIsStartingDelivery(false);
@@ -434,10 +437,11 @@ export default function DeliverItemScreen() {
         if (active) setIsStartingDelivery(false);
       }
 
-      let offTripStatus: (() => void) | null = null;
-      let offItemDelivered: (() => void) | null = null;
+      if (!active) return;
+
       try {
         offTripStatus = onTripStatusUpdated((rawPayload) => {
+          if (!active) return;
           const payload = validateTripStatusUpdatedPayload(rawPayload);
           if (!payload || payload.tripId !== tripId) return;
           if (isTerminalRequestStatus(payload.status)) void stopBackgroundTripTracking(tripId).catch(() => undefined);
@@ -446,6 +450,7 @@ export default function DeliverItemScreen() {
           }
         });
         offItemDelivered = onItemDelivered((payload) => {
+          if (!active) return;
           if (payload.tripId !== tripId) return;
           void stopBackgroundTripTracking(tripId).catch(() => undefined);
           router.replace(buildCompletedRoute(tripId, payload.deliveredAt));
@@ -534,21 +539,14 @@ export default function DeliverItemScreen() {
           setIsLoadingLocation(false);
         }
       }
-
-      return () => {
-        offTripStatus?.();
-        offItemDelivered?.();
-      };
     };
 
-    let teardown: (() => void) | void;
-    void setup().then((cleanup) => {
-      teardown = cleanup;
-    });
+    void setup();
 
     return () => {
       active = false;
-      if (teardown) teardown();
+      offTripStatus?.();
+      offItemDelivered?.();
       if (locationSubscriptionRef.current) {
         locationSubscriptionRef.current.remove();
         locationSubscriptionRef.current = null;
@@ -708,7 +706,7 @@ export default function DeliverItemScreen() {
         return;
       }
 
-      await ensureDriverGoingToDropoff();
+      await ensureDriverGoingToDropoff(requestStatus);
       let response: Awaited<ReturnType<typeof deliverItem>>;
       try {
         response = await deliverItem(tripId, payload);
@@ -718,7 +716,7 @@ export default function DeliverItemScreen() {
         if (
           normalizedMessage.includes('trip status must be driver_going_to_dropoff before confirming delivery')
         ) {
-          await ensureDriverGoingToDropoff();
+          await ensureDriverGoingToDropoff(requestStatus);
           response = await deliverItem(tripId, payload);
         } else {
           throw error;
