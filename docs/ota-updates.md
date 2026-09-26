@@ -19,7 +19,7 @@ The recent driver builds inspected on 2026-09-07 (production version code 5 and
 production-apk version code 6) have no update channel or runtime version. They
 cannot receive this setup over OTA. Install a newly built binary first.
 
-Run commands from `driver_mobile`, not `client_mobile/app`.
+Run commands from `driver_mobile`, not `client_mobile`.
 
 1. Build an APK with the new configuration:
 
