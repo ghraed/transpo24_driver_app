@@ -287,7 +287,10 @@ export default function DriverMapScreen() {
         </View>
 
         <View style={styles.coverageOverlay}>
-          <RequestTypeTabs value={requestType} onChange={(type) => {
+          <RequestTypeTabs value={requestType} counts={{
+            immediate: alerts.filter(alert => alert.isCurrentlyEligible !== false && alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
+            scheduled: alerts.filter(alert => alert.isCurrentlyEligible !== false && !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
+          }} onChange={(type) => {
             setRequestType(type);
             const pins = type === 'scheduled' ? (availability?.cityCoverage ?? []) : [];
             if (pins.length > 1) mapRef.current?.fitToCoordinates?.(pins, { edgePadding: { top: 260, right: 40, bottom: 100, left: 40 }, animated: true });

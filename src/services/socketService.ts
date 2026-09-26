@@ -296,6 +296,12 @@ export function onOfferAccepted(callback: (payload: OfferAcceptedPayload) => voi
   return () => instance.off('offerAccepted', callback);
 }
 
+export function onRequestNew(callback: () => void): () => void {
+  const instance = getSocket();
+  instance.on('requestNew', callback);
+  return () => instance.off('requestNew', callback);
+}
+
 export function onRequestDeleted(
   callback: (payload: RequestDeletedPayload) => void,
 ): () => void {

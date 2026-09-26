@@ -2,12 +2,12 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 export type RequestType = 'immediate' | 'scheduled';
-export function RequestTypeTabs({ value, onChange }: { value: RequestType; onChange: (value: RequestType) => void }) {
+export function RequestTypeTabs({ value, onChange, counts }: { value: RequestType; onChange: (value: RequestType) => void; counts?: Record<RequestType, number> }) {
   const { t } = useTranslation();
   return <View style={styles.row} accessibilityRole="tablist">
     {(['immediate', 'scheduled'] as const).map(type => <Pressable key={type} accessibilityRole="tab" accessibilityState={{ selected: value === type }}
       onPress={() => onChange(type)} style={[styles.tab, value === type && styles.selected]}>
-      <Text style={styles.text}>{t(type === 'immediate' ? 'Immediate' : 'Scheduled')}</Text>
+      <Text style={styles.text}>{t(type === 'immediate' ? 'Immediate' : 'Scheduled')}{counts ? ` (${counts[type]})` : ''}</Text>
     </Pressable>)}
   </View>;
 }

@@ -24,7 +24,7 @@ import { getDriverRequestAlerts } from '@/lib/api';
 import { formatDateTime } from '@/localization/format';
 import { useAppLanguage } from '@/localization/provider';
 import { translateDynamicBatch } from '@/services/translation-service';
-import { connectSocket, onRequestDeleted } from '@/services/socketService';
+import { connectSocket, onRequestDeleted, onRequestNew } from '@/services/socketService';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 import { calculateDistanceMeters } from '@/utils/locationValidation';
 
@@ -149,22 +149,27 @@ export default function ReceiveRequestAlertsScreen() {
   useFocusEffect(
     useCallback(() => {
       void loadAlerts();
+      let active = true;
+      let unsubscribeNew: (() => void) | null = null;
       let unsubscribeDeleted: (() => void) | null = null;
 
       void (async () => {
         const token = await readAccessToken();
-        if (!token) return;
+        if (!active || !token) return;
         connectSocket(token);
+        unsubscribeNew = onRequestNew(() => void loadAlerts(true));
         unsubscribeDeleted = onRequestDeleted((payload) => {
           setAlerts((current) => current.filter((alert) => alert.requestId !== payload.requestId));
         });
-      })();
+      })().catch(() => { /* Polling covers an unavailable realtime connection. */ });
 
       const pollingId = setInterval(() => void loadAlerts(true), 20000);
       return () => {
+        active = false;
         ++loadVersion.current;
         clearInterval(pollingId);
         unsubscribeDeleted?.();
+        unsubscribeNew?.();
       };
     }, [loadAlerts]),
   );
@@ -184,7 +189,10 @@ export default function ReceiveRequestAlertsScreen() {
 
         </View>
         <DriverJobSwitcher active="jobs" />
-        <RequestTypeTabs value={requestType} onChange={setRequestType} />
+        <RequestTypeTabs value={requestType} onChange={setRequestType} counts={{
+          immediate: alerts.filter(alert => alert.schedule.isImmediate).length,
+          scheduled: alerts.filter(alert => !alert.schedule.isImmediate).length,
+        }} />
         <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />
       </View>
 

@@ -2,6 +2,7 @@ import { RequestTypeTabs } from '@/components/request-type-tabs';
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals';
+import { onRequestNew } from '@/services/socketService';
 import AcceptedJobs from '../src/app/accepted-jobs';
 import Jobs from '../src/app/receive-requests';
 import { getDriverAcceptedJobs, getDriverChatRooms, getDriverRequestAlerts } from '@/lib/api';
@@ -18,10 +19,10 @@ jest.mock('@/localization/response-message', () => ({ getSourceErrorMessage: e =
 jest.mock('@/components/driver-bottom-nav', () => ({ DriverBottomNav: () => null, DRIVER_BOTTOM_NAV_HEIGHT: 76 }));
 jest.mock('@/components/driver-job-switcher', () => ({ DriverJobSwitcher: () => null }));
 jest.mock('@/components/driver-icon', () => ({ DriverIcon: () => null }));
-jest.mock('@/lib/auth-storage', () => ({ readAccessToken: async () => null }));
+jest.mock('@/lib/auth-storage', () => ({ readAccessToken: async () => "token" }));
 jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: jest.fn(async () => {}) }));
 jest.mock('@/lib/api', () => ({ getDriverAcceptedJobs: jest.fn(), getDriverChatRooms: jest.fn(), getDriverRequestAlerts: jest.fn() }));
-jest.mock('@/services/socketService', () => ({ connectSocket: jest.fn(), onRequestDeleted: jest.fn(() => () => {}) }));
+jest.mock('@/services/socketService', () => ({ connectSocket: jest.fn(), onRequestNew: jest.fn(() => () => {}), onRequestDeleted: jest.fn(() => () => {}) }));
 jest.mock('@/services/translation-service', () => ({ translateDynamicBatch: async () => ({}) }));
 
 const job = {
@@ -113,4 +114,19 @@ it('separates immediate and scheduled requests without hiding previously receive
   expect(contains('Test pickup')).toBe(true);
   expect(contains('Previously received')).toBe(true);
   expect(contains('Nearby pickup address')).toBe(false);
+});
+
+it('shows scheduled-job counts even while Immediate is selected and refreshes on new jobs', async () => {
+  const unsubscribe = jest.fn();
+  onRequestNew.mockReturnValueOnce(unsubscribe);
+  await render(Jobs);
+  expect(contains('Immediate (0)')).toBe(true);
+  expect(contains('Scheduled (1)')).toBe(true);
+  getDriverRequestAlerts.mockResolvedValue({ alerts: [alert, { ...alert, alertId: 'new', requestId: 'new', pickup: { ...alert.pickup, address: 'New goods pickup' } }] });
+  await act(async () => onRequestNew.mock.calls[0][0]());
+  expect(contains('Scheduled (2)')).toBe(true);
+  await selectType('scheduled');
+  expect(contains('New goods pickup')).toBe(true);
+  await act(async () => tree.unmount()); tree = null;
+  expect(unsubscribe).toHaveBeenCalledTimes(1);
 });
