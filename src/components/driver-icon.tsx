@@ -11,9 +11,11 @@ export type DriverIconName =
   | 'chevron-right'
   | 'clock'
   | 'document'
+  | 'edit'
   | 'filter'
   | 'grid'
   | 'help'
+  | 'info'
   | 'location'
   | 'logout'
   | 'map'
@@ -45,9 +47,11 @@ const symbols: Record<DriverIconName, SymbolViewProps['name']> = {
   'chevron-right': { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
   clock: { ios: 'clock', android: 'schedule', web: 'schedule' },
   document: { ios: 'doc.text', android: 'description', web: 'description' },
+  edit: { ios: 'pencil', android: 'edit', web: 'edit' },
   filter: { ios: 'line.3.horizontal.decrease', android: 'filter_alt', web: 'filter_alt' },
   grid: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' },
   help: { ios: 'questionmark.circle', android: 'help', web: 'help' },
+  info: { ios: 'info.circle', android: 'info', web: 'info' },
   location: { ios: 'location', android: 'location_on', web: 'location_on' },
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' },
   map: { ios: 'map', android: 'map', web: 'map' },

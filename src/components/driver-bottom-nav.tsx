@@ -44,8 +44,10 @@ export function DriverBottomNav() {
             }}
             style={({ pressed }) => [styles.tab, framed && styles.selectedTab, pressed && styles.pressed]}
           >
-            <DriverIcon name={tab.icon} size={29} color={color} strokeWidth={1.8} />
-            <Text style={[styles.label, selected && styles.selectedLabel]}>{t(tab.label)}</Text>
+            {({ pressed }) => <>
+              <DriverIcon name={tab.icon} size={29} color={pressed ? '#FFFFFF' : color} strokeWidth={1.8} />
+              <Text style={[styles.label, selected && styles.selectedLabel, pressed && styles.pressedLabel]}>{t(tab.label)}</Text>
+            </>}
           </Pressable>
         );
       })}
@@ -81,8 +83,10 @@ const styles = StyleSheet.create({
     borderColor: '#171717',
   },
   pressed: {
-    opacity: 0.65,
+    backgroundColor: '#F2B900',
+    borderColor: '#F2B900',
   },
+  pressedLabel: { color: '#FFFFFF' },
   label: {
     color: '#9CA6B5',
     fontSize: 12,

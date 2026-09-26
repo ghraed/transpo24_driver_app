@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DeleteAccountDialog } from '@/components/delete-account-dialog';
 import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
 import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { useAuth } from '@/context/auth-context';
@@ -51,6 +52,7 @@ export default function DriverProfileScreen() {
   const [documents, setDocuments] = useState<DriverDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
 
   const loadProfileStats = useCallback(async () => {
     setIsLoading(true);
@@ -117,31 +119,21 @@ export default function DriverProfileScreen() {
   const fullName = `${driver?.firstName ?? ''} ${driver?.lastName ?? ''}`.trim() || t('Driver');
   const joinedDate = formatJoinedDate(driver?.createdAt, locale);
 
-  const onDeleteAccount = (): void => {
+  const onDeleteAccount = async (): Promise<void> => {
     if (isDeletingAccount) return;
-    Alert.alert(
-      t('Delete account?'),
-      t('This permanently deletes your profile and documents, signs you out on all devices, and cannot be undone.'),
-      [
-        { text: t('Cancel'), style: 'cancel' },
-        {
-          text: t('Delete account'),
-          style: 'destructive',
-          onPress: () => {
-            setIsDeletingAccount(true);
-            void deleteAccount()
-              .then(() => router.replace('/'))
-              .catch((error) => {
-                Alert.alert(
-                  t('Unable to delete account'),
-                  error instanceof Error ? error.message : t('Please try again.'),
-                );
-              })
-              .finally(() => setIsDeletingAccount(false));
-          },
-        },
-      ],
-    );
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount();
+      setIsDeleteAccountOpen(false);
+      router.replace('/');
+    } catch (error) {
+      Alert.alert(
+        t('Unable to delete account'),
+        error instanceof Error ? error.message : t('Please try again.'),
+      );
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   return (
@@ -149,12 +141,12 @@ export default function DriverProfileScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.header}>
-        <Pressable accessibilityLabel={t('Go back')} hitSlop={12} onPress={() => router.back()}>
-          <DriverIcon name="arrow-back" size={29} strokeWidth={2.2} />
+        <Pressable accessibilityRole="button" style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]} accessibilityLabel={t('Go back')} onPress={() => router.back()}>
+          {({ pressed }) => (<DriverIcon name="arrow-back" color={pressed ? '#FFFFFF' : '#202124'} size={29} strokeWidth={2.2} />)}
         </Pressable>
         <Text style={styles.headerTitle}>{t('Profile')}</Text>
-        <Pressable accessibilityLabel={t('Open settings')} hitSlop={12} onPress={() => router.push('/driver-home')}>
-          <DriverIcon name="settings" size={29} strokeWidth={1.9} />
+        <Pressable accessibilityRole="button" style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]} accessibilityLabel={t('Open settings')} onPress={() => router.push('/driver-home')}>
+          {({ pressed }) => (<DriverIcon name="settings" color={pressed ? '#FFFFFF' : '#202124'} size={29} strokeWidth={1.9} />)}
         </Pressable>
       </View>
 
@@ -177,21 +169,37 @@ export default function DriverProfileScreen() {
               · {joinedDate ? t('Member since {{date}}', { date: joinedDate }) : t('Member')}
             </Text>
           </View>
-          <Pressable style={styles.editButton} onPress={() => router.push('/complete-profile')}>
-            <Text style={styles.editButtonText}>{t('Edit Profile')}</Text>
+          <Pressable accessibilityRole="button" style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]} onPress={() => router.push('/complete-profile')}>
+            {({ pressed }) => <Text style={[styles.editButtonText, pressed && styles.pressedText]}>{t('Edit Profile')}</Text>}
           </Pressable>
         </View>
 
-        <View style={styles.identityCard}>
-          <Text style={styles.memberText}>{t('Home market')}</Text>
-          <Text style={styles.name}>{user?.tenant?.name || user?.tenantCode || t('Not assigned')}</Text>
+        <View style={[styles.identityCard, styles.detailCard]}>
+          <Text style={styles.detailTitle}>{t('Home market')}</Text>
+          <Text style={styles.detailValue}>{user?.tenant?.name || user?.tenantCode || t('Not assigned')}</Text>
         </View>
-        <Pressable style={styles.identityCard} accessibilityRole="button" accessibilityLabel={t('Edit nickname')} onPress={() => router.push('/edit-nickname')}>
-          <Text style={styles.sectionTitle}>{t('Nickname')}</Text>
-          <Text style={styles.name}>{driver?.nickname || t('Driver')}</Text>
-          <Text style={styles.memberText}>{t('Clients will see your nickname on offers and in chats.')}</Text>
-          <Text style={styles.editButtonText}>{t('Edit nickname')}</Text>
-        </Pressable>
+        <View style={[styles.identityCard, styles.detailCard]}>
+          <View style={styles.detailHeader}>
+            <Text style={[styles.detailTitle, styles.detailHeaderTitle]}>{t('Nickname')}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('Edit nickname')}
+              onPress={() => router.push('/edit-nickname')}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
+            >
+              {({ pressed }) => <DriverIcon name="edit" size={22} color={pressed ? '#FFFFFF' : '#707A8C'} />}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('Clients will see your nickname on offers and in chats.')}
+              onPress={() => Alert.alert(t('Nickname'), t('Clients will see your nickname on offers and in chats.'))}
+              style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
+            >
+              {({ pressed }) => <DriverIcon name="info" size={22} color={pressed ? '#FFFFFF' : '#707A8C'} />}
+            </Pressable>
+          </View>
+          <Text style={styles.detailValue}>{driver?.nickname || t('Driver')}</Text>
+        </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -245,35 +253,47 @@ export default function DriverProfileScreen() {
               style={({ pressed }) => [
                 styles.menuRow,
                 index < menuItems.length - 1 && styles.menuDivider,
-                pressed && styles.menuPressed,
+                pressed && styles.buttonPressed,
               ]}
             >
-              <DriverIcon name={item.icon} size={27} color="#727C8D" strokeWidth={1.8} />
-              <Text style={styles.menuLabel}>{t(item.label)}</Text>
-              <DriverIcon name="chevron-right" size={23} color="#9CA6B5" strokeWidth={1.8} />
+              {({ pressed }) => <>
+                <DriverIcon name={item.icon} size={27} color={pressed ? '#FFFFFF' : '#727C8D'} strokeWidth={1.8} />
+                <Text style={[styles.menuLabel, pressed && styles.pressedText]}>{t(item.label)}</Text>
+                <DriverIcon name="chevron-right" size={23} color={pressed ? '#FFFFFF' : '#9CA6B5'} strokeWidth={1.8} />
+              </>}
             </Pressable>
           ))}
         </View>
 
         <Pressable
-          style={styles.logoutButton}
+          style={({ pressed }) => [styles.logoutButton, pressed && styles.buttonPressed]}
           onPress={() => void signOut().then(() => router.replace('/'))}
         >
-          <DriverIcon name="logout" size={24} color="#FF3535" strokeWidth={1.8} />
-          <Text style={styles.logoutText}>{t('Log Out')}</Text>
+          {({ pressed }) => <>
+            <DriverIcon name="logout" size={24} color={pressed ? '#FFFFFF' : '#FF3535'} strokeWidth={1.8} />
+            <Text style={[styles.logoutText, pressed && styles.pressedText]}>{t('Log Out')}</Text>
+          </>}
         </Pressable>
         <Pressable
-          style={styles.deleteAccountButton}
-          onPress={onDeleteAccount}
+          style={({ pressed }) => [styles.deleteAccountButton, pressed && styles.buttonPressed]}
+          onPress={() => setIsDeleteAccountOpen(true)}
           disabled={isDeletingAccount}
         >
-          {isDeletingAccount ? (
+          {({ pressed }) => isDeletingAccount ? (
             <ActivityIndicator color="#C82424" />
           ) : (
-            <Text style={styles.deleteAccountText}>{t('Delete account')}</Text>
+            <Text style={[styles.deleteAccountText, pressed && styles.pressedText]}>{t('Delete account')}</Text>
           )}
         </Pressable>
       </ScrollView>
+
+      {isDeleteAccountOpen ? (
+        <DeleteAccountDialog
+          isDeleting={isDeletingAccount}
+          onCancel={() => setIsDeleteAccountOpen(false)}
+          onConfirm={() => void onDeleteAccount()}
+        />
+      ) : null}
 
       <DriverBottomNav />
     </SafeAreaView>
@@ -304,6 +324,12 @@ const styles = StyleSheet.create({
     borderColor: '#DFE3E8',
     backgroundColor: '#FFFFFF',
   },
+  detailCard: { alignItems: 'stretch', minHeight: 0, marginTop: 12, paddingVertical: 14, gap: 4 },
+  detailTitle: { textAlign: 'left', color: '#202020', fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  detailHeaderTitle: { flex: 1 },
+  detailValue: { textAlign: 'left', color: '#1B1B1B', fontSize: 18, lineHeight: 24, fontWeight: '800' },
+  detailHeader: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center' },
+  iconButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   avatarWrap: { width: 110, height: 110 },
   avatar: {
     width: 98,
@@ -401,7 +427,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#D9DEE5' },
-  menuPressed: { backgroundColor: '#F6F7F8' },
+  buttonPressed: { backgroundColor: '#F2B900', borderColor: '#F2B900' },
+  pressedText: { color: '#FFFFFF' },
   menuLabel: { flex: 1, marginLeft: 17, color: '#242424', fontSize: 16 },
   logoutButton: {
     minHeight: 88,

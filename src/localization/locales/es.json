@@ -1499,5 +1499,8 @@
   "Transport on this route is currently unavailable.": "Transport on this route is currently unavailable.",
   "This account belongs to another Transpo24 market. Choose your account’s home market and try again.": "This account belongs to another Transpo24 market. Choose your account’s home market and try again.",
   "This market is unavailable. Choose an active market and try again.": "This market is unavailable. Choose an active market and try again.",
-  "Choose the market your account belongs to. Operational coverage is approved separately.": "Elige el mercado de tu cuenta. Las zonas operativas se aprueban por separado."
+  "Choose the market your account belongs to. Operational coverage is approved separately.": "Elige el mercado de tu cuenta. Las zonas operativas se aprueban por separado.",
+  "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Eliminar tu cuenta borra o anonimiza permanentemente tus datos personales y cierra tu sesión en todos los dispositivos. Esta acción no se puede deshacer. Primero completa o cancela cualquier solicitud de transporte activa.",
+  "Type {{confirmation}} to confirm.": "Escribe {{confirmation}} para confirmar.",
+  "Account deletion confirmation": "Confirmación de eliminación de cuenta"
 }
