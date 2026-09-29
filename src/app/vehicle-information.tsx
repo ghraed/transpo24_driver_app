@@ -40,7 +40,7 @@ import {
   type VehicleModelType,
 } from '@/lib/vehicle-catalog';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { getMissingRequiredVehicleUploads } from '@/lib/vehicle-document-requirements';
+import { getLatestVehicleDocument, getMissingRequiredVehicleUploads, REQUIRED_VEHICLE_UPLOADS } from '@/lib/vehicle-document-requirements';
 import i18n from '@/localization/i18n';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
@@ -841,6 +841,13 @@ export default function VehicleInformationScreen() {
     onTakeImage: () => Promise<void>;
   }) => {
     const localAsset = vehicleForm[field];
+    const documentType = REQUIRED_VEHICLE_UPLOADS.find((upload) => upload.field === field)?.type;
+    const rejectedDocument = documentType
+      ? getLatestVehicleDocument(existingVehicle, documentType)
+      : undefined;
+    const rejectionReason = rejectedDocument?.status === 'REJECTED'
+      ? rejectedDocument.rejectionReason
+      : null;
     const previewUri = localAsset?.uri || remoteUrl;
     return (
       <View style={styles.docRow}>
@@ -860,6 +867,9 @@ export default function VehicleInformationScreen() {
           </View>
         )}
         {localAsset ? <Text style={styles.fileName}>{localAsset.fileName ?? t('Selected file')}</Text> : null}
+        {rejectionReason && !localAsset ? (
+          <Text style={styles.errorText}>{t('Rejection reason')}: {rejectionReason}</Text>
+        ) : null}
         {hasAttemptedSubmit && fieldErrors[field] ? (
           <Text style={styles.errorText}>{fieldErrors[field]}</Text>
         ) : null}
@@ -1148,7 +1158,7 @@ export default function VehicleInformationScreen() {
               </Text>
             ) : null}
             <Text style={styles.infoText}>
-              {t('Replace rejected vehicle photos and documents before resubmitting.')}
+              {t('Replace only the rejected vehicle photos or documents before resubmitting.')}
             </Text>
           </View>
         ) : null}

@@ -1,5 +1,6 @@
 import type {
   CreateDriverVehicleForm,
+  DriverDocument,
   DriverDocumentType,
   DriverVehicle,
 } from '@/types/auth';
@@ -18,10 +19,20 @@ export const REQUIRED_VEHICLE_UPLOADS = [
   label: string;
 }[];
 
+export function getLatestVehicleDocument(
+  vehicle: DriverVehicle | null,
+  type: DriverDocumentType,
+): DriverDocument | undefined {
+  return vehicle?.documents?.filter((document) => document.type === type)
+    .reduce<DriverDocument | undefined>((latest, document) => {
+      if (!latest || document.createdAt >= latest.createdAt) return document;
+      return latest;
+    }, undefined);
+}
+
 function hasUsableDocument(vehicle: DriverVehicle | null, type: DriverDocumentType): boolean {
-  return vehicle?.documents?.some(
-    (document) => document.type === type && document.status !== 'REJECTED',
-  ) ?? false;
+  const document = getLatestVehicleDocument(vehicle, type);
+  return Boolean(document && document.status !== 'REJECTED');
 }
 
 export function getMissingRequiredVehicleUploads(

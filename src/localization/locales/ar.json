@@ -1516,5 +1516,7 @@
   "Registration checklist": "قائمة خطوات التسجيل",
   "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "جهّز هويتك ورخصة القيادة وتسجيل المركبة والتأمين وصور المركبة.",
   "Review time varies. Check your status in the app after submitting.": "تختلف مدة المراجعة. تحقق من حالة طلبك في التطبيق بعد الإرسال.",
-  "After approval, set your availability to start receiving requests.": "بعد الموافقة، حدّد أوقات توفرك لبدء تلقي الطلبات."
+  "After approval, set your availability to start receiving requests.": "بعد الموافقة، حدّد أوقات توفرك لبدء تلقي الطلبات.",
+  "Replace only the rejected items below, then submit again.": "استبدل العناصر المرفوضة أدناه فقط، ثم أعد الإرسال.",
+  "Replace only the rejected vehicle photos or documents before resubmitting.": "استبدل صور أو مستندات المركبة المرفوضة فقط قبل إعادة الإرسال."
 }

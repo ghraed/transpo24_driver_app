@@ -86,3 +86,37 @@ it('routes an approved driver to the next step after refreshing', async () => {
   await act(async () => button('Refresh status').props.onPress());
   expect(mockRouter.replace).toHaveBeenCalledWith('/set-availability');
 });
+
+
+it('lists only rejected personal documents and opens personal corrections', async () => {
+  getDriverDocumentsStatus.mockResolvedValue({
+    uploadedDocuments: [
+      { id: 'id-1', type: 'ID_FRONT', status: 'REJECTED', rejectionReason: 'ID is blurry.' },
+      { id: 'selfie-1', type: 'PERSONAL_SELFIE', status: 'APPROVED', rejectionReason: null },
+    ],
+  });
+  await renderScreen();
+  const rendered = JSON.stringify(tree.toJSON());
+  expect(rendered).toContain('ID or residency front photo');
+  expect(rendered).toContain('ID is blurry.');
+  expect(rendered).not.toContain('Personal selfie');
+  await act(async () => button('Fix submission').props.onPress());
+  expect(mockRouter.replace).toHaveBeenCalledWith('/vehicle-documents');
+});
+
+it('opens vehicle corrections directly when only a vehicle file was rejected', async () => {
+  getDriverDocumentsStatus.mockResolvedValue({ uploadedDocuments: [] });
+  getDriverVehicles.mockResolvedValue([{
+    id: 'vehicle-1', status: 'REJECTED', rejectionReason: 'Rear image is blurry.',
+    documents: [
+      { id: 'rear-1', type: 'VEHICLE_REAR_PHOTO', status: 'REJECTED', rejectionReason: 'Rear image is blurry.', createdAt: '2026-02-01' },
+      { id: 'front-1', type: 'VEHICLE_FRONT_PHOTO', status: 'APPROVED', rejectionReason: null, createdAt: '2026-02-01' },
+    ],
+  }]);
+  await renderScreen();
+  const rendered = JSON.stringify(tree.toJSON());
+  expect(rendered).toContain('Rear photo');
+  expect(rendered).not.toContain('Front photo');
+  await act(async () => button('Fix submission').props.onPress());
+  expect(mockRouter.replace).toHaveBeenCalledWith('/vehicle-information?flow=onboarding');
+});

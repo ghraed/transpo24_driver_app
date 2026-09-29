@@ -1516,5 +1516,7 @@
   "Registration checklist": "Lista de pasos del registro",
   "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "Ten preparados tu documento de identidad, permiso de conducir, registro y seguro del vehículo, y fotos del vehículo.",
   "Review time varies. Check your status in the app after submitting.": "El tiempo de revisión varía. Consulta tu estado en la aplicación después de enviar la solicitud.",
-  "After approval, set your availability to start receiving requests.": "Tras la aprobación, configura tu disponibilidad para empezar a recibir solicitudes."
+  "After approval, set your availability to start receiving requests.": "Tras la aprobación, configura tu disponibilidad para empezar a recibir solicitudes.",
+  "Replace only the rejected items below, then submit again.": "Sustituye solo los elementos rechazados que aparecen abajo y vuelve a enviar la solicitud.",
+  "Replace only the rejected vehicle photos or documents before resubmitting.": "Sustituye solo las fotos o los documentos del vehículo rechazados antes de volver a enviarlos."
 }

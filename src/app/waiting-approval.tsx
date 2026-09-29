@@ -8,6 +8,7 @@ import { DRIVER_ONBOARDING_STEP_LABELS, REVIEW_TIMING_MESSAGE } from '@/componen
 import { useAuth } from '@/context/auth-context';
 import { getDriverDocumentsStatus, getDriverVehicles } from '@/lib/api';
 import { nextStepToRoute } from '@/lib/onboarding-route';
+import { getRejectedReviewItems, type ReviewCorrectionItem } from '@/lib/driver-review-corrections';
 
 export default function WaitingApprovalScreen() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function WaitingApprovalScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingReason, setIsLoadingReason] = useState(false);
   const [reviewReason, setReviewReason] = useState<string | null>(null);
+  const [correctionItems, setCorrectionItems] = useState<ReviewCorrectionItem[]>([]);
+  const [hasVehicleCorrection, setHasVehicleCorrection] = useState(false);
   const [reviewDetailsLoadFailed, setReviewDetailsLoadFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -38,6 +41,14 @@ export default function WaitingApprovalScreen() {
         )?.rejectionReason
       : null;
 
+    const vehicles = vehiclesResult.status === 'fulfilled' ? vehiclesResult.value : [];
+    setCorrectionItems(getRejectedReviewItems(
+      documentsResult.status === 'fulfilled' ? documentsResult.value : null,
+      vehicles,
+    ));
+    setHasVehicleCorrection(Boolean(vehicleReason || vehicles.some((vehicle) =>
+      vehicle.documents?.some((document) => document.status === 'REJECTED'),
+    )));
     setReviewReason(documentReason?.trim() || vehicleReason?.trim() || null);
     setReviewDetailsLoadFailed(documentsResult.status === 'rejected' && vehiclesResult.status === 'rejected');
     setIsLoadingReason(false);
@@ -53,7 +64,7 @@ export default function WaitingApprovalScreen() {
     if (driver?.status === 'REJECTED') {
       return {
         title: t('Review Declined'),
-        subtitle: t('Review the reason below, correct your documents and vehicle details, then submit again.'),
+        subtitle: t('Replace only the rejected items below, then submit again.'),
       };
     }
 
@@ -109,15 +120,26 @@ export default function WaitingApprovalScreen() {
                 {isLoadingReason ? (
                   <ActivityIndicator color="#A66F00" />
                 ) : (
-                  <Text style={styles.reasonText}>
-                    {reviewReason || t('No specific reason was provided. Review your documents and vehicle details before submitting again.')}
-                  </Text>
+                  correctionItems.length > 0 ? correctionItems.map((item) => (
+                    <View key={item.key} style={styles.correctionItem}>
+                      <Text style={styles.correctionLabel}>{t(item.label)}</Text>
+                      {item.reason ? <Text style={styles.reasonText}>{item.reason}</Text> : null}
+                    </View>
+                  )) : (
+                    <Text style={styles.reasonText}>
+                      {reviewReason || t('No specific reason was provided. Review your documents and vehicle details before submitting again.')}
+                    </Text>
+                  )
                 )}
               </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('Fix submission')}
-                onPress={() => router.replace('/vehicle-documents')}
+                onPress={() => router.replace(
+                  correctionItems.some((item) => item.area === 'personal') || !hasVehicleCorrection
+                    ? '/vehicle-documents'
+                    : '/vehicle-information?flow=onboarding',
+                )}
                 style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
               >
                 <Text style={styles.primaryButtonText}>{t('Fix submission')}</Text>
@@ -175,6 +197,8 @@ const styles = StyleSheet.create({
   reasonCard: { backgroundColor: '#FFF8E5', borderRadius: 10, padding: 14, gap: 6 },
   reasonTitle: { color: '#705000', fontSize: 14, fontWeight: '700' },
   reasonText: { color: '#3F3520', lineHeight: 20 },
+  correctionItem: { paddingTop: 4, gap: 2 },
+  correctionLabel: { color: '#705000', fontWeight: '700' },
   primaryButton: {
     alignItems: 'center', borderRadius: 10, backgroundColor: '#F1B900', paddingHorizontal: 16, paddingVertical: 14,
   },

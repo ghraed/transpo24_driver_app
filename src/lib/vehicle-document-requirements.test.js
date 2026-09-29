@@ -66,3 +66,15 @@ it('recognizes a complete persisted document set using the same rule as submissi
   expect(getMissingRequiredVehicleUploads(vehicle, {})).toEqual([]);
   expect(hasCompleteVehicleDocuments(vehicle)).toBe(true);
 });
+
+
+it('uses the newest document when an older approved file was later rejected', () => {
+  const vehicle = {
+    documents: [
+      { type: 'VEHICLE_FRONT_PHOTO', status: 'REJECTED', createdAt: '2026-02-01' },
+      { type: 'VEHICLE_FRONT_PHOTO', status: 'APPROVED', createdAt: '2026-01-01' },
+    ],
+  };
+  expect(getMissingRequiredVehicleUploads(vehicle, {}).map(item => item.field)).toContain('frontPhoto');
+  expect(hasCompleteVehicleDocuments(vehicle)).toBe(false);
+});
