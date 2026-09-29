@@ -1,7 +1,7 @@
-import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DRIVER_ONBOARDING_STEP_LABELS, REVIEW_TIMING_MESSAGE } from '@/components/driver-onboarding-checklist';
@@ -21,6 +21,14 @@ export default function WaitingApprovalScreen() {
   const [hasVehicleCorrection, setHasVehicleCorrection] = useState(false);
   const [reviewDetailsLoadFailed, setReviewDetailsLoadFailed] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const refreshInProgress = useRef(false);
+  const refreshQueued = useRef(false);
+  const isFocused = useRef(false);
+  const focusVersion = useRef(0);
+  const driverStatus = useRef(driver?.status);
+  useEffect(() => {
+    driverStatus.current = driver?.status;
+  }, [driver?.status]);
 
   const loadReviewReason = useCallback(async () => {
     setIsLoadingReason(true);
@@ -54,12 +62,6 @@ export default function WaitingApprovalScreen() {
     setIsLoadingReason(false);
   }, []);
 
-  useEffect(() => {
-    if (driver?.status !== 'REJECTED') return;
-    const timer = setTimeout(() => void loadReviewReason(), 0);
-    return () => clearTimeout(timer);
-  }, [driver?.status, loadReviewReason]);
-
   const statusCopy = useMemo(() => {
     if (driver?.status === 'REJECTED') {
       return {
@@ -81,25 +83,54 @@ export default function WaitingApprovalScreen() {
     };
   }, [driver?.status, t]);
 
-  const handleRefreshStatus = async () => {
-    if (isRefreshing) return;
-
+  const handleRefreshStatus = useCallback(async () => {
+    if (refreshInProgress.current) {
+      refreshQueued.current = true;
+      return;
+    }
+    refreshInProgress.current = true;
     setIsRefreshing(true);
-    setErrorMessage('');
 
     try {
-      const response = await refreshDriverMe();
-      if (response.nextStep !== 'WAITING_APPROVAL') {
-        router.replace(nextStepToRoute(response.nextStep));
-      } else if (response.driver.status === 'REJECTED') {
-        await loadReviewReason();
-      }
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : t('Failed to refresh approval status.'));
+      do {
+        refreshQueued.current = false;
+        const currentFocusVersion = focusVersion.current;
+        setErrorMessage('');
+        try {
+          const response = await refreshDriverMe();
+          if (!isFocused.current || currentFocusVersion !== focusVersion.current) continue;
+          if (response.nextStep !== 'WAITING_APPROVAL') {
+            router.replace(nextStepToRoute(response.nextStep));
+            break;
+          }
+          if (response.driver.status === 'REJECTED') await loadReviewReason();
+        } catch (error) {
+          if (isFocused.current && currentFocusVersion === focusVersion.current) {
+            setErrorMessage(error instanceof Error ? error.message : t('Failed to refresh approval status.'));
+            if (driverStatus.current === 'REJECTED') await loadReviewReason();
+          }
+        }
+      } while (isFocused.current && refreshQueued.current);
     } finally {
-      setIsRefreshing(false);
+      refreshQueued.current = false;
+      refreshInProgress.current = false;
+      if (isFocused.current) setIsRefreshing(false);
     }
-  };
+  }, [loadReviewReason, refreshDriverMe, router, t]);
+
+  useFocusEffect(useCallback(() => {
+    isFocused.current = true;
+    focusVersion.current += 1;
+    void handleRefreshStatus();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void handleRefreshStatus();
+    });
+    return () => {
+      isFocused.current = false;
+      focusVersion.current += 1;
+      subscription.remove();
+    };
+  }, [handleRefreshStatus]));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,7 +139,7 @@ export default function WaitingApprovalScreen() {
           <Text style={styles.progress}>{t(DRIVER_ONBOARDING_STEP_LABELS[5])}</Text>
           <Text style={styles.title}>{statusCopy.title}</Text>
           <Text style={styles.subtitle}>{statusCopy.subtitle}</Text>
-          <Text style={styles.statusText}>{t('Current status')}: {driver?.status ?? 'PENDING_REVIEW'}</Text>
+          <Text style={styles.statusText}>{t('Current status')}: {driver?.status === 'REJECTED' ? t('Review Declined') : driver?.status === 'APPROVED' ? t('Approved') : t('Pending review')}</Text>
           {driver?.status !== 'REJECTED' && driver?.status !== 'APPROVED' ? (
             <Text style={styles.reviewTiming}>{t(REVIEW_TIMING_MESSAGE)}</Text>
           ) : null}
@@ -166,16 +197,6 @@ export default function WaitingApprovalScreen() {
               </Text>
             )}
           </Pressable>
-
-          {driver?.status !== 'REJECTED' ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.replace('/receive-requests')}
-              style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryButtonPressed]}
-            >
-              <Text style={styles.secondaryButtonText}>{t('Back to home')}</Text>
-            </Pressable>
-          ) : null}
 
           {reviewDetailsLoadFailed ? <Text accessibilityRole="alert" style={styles.errorText}>{t('Unable to load review details. Refresh to try again.')}</Text> : null}
           {errorMessage ? <Text accessibilityRole="alert" style={styles.errorText}>{errorMessage}</Text> : null}

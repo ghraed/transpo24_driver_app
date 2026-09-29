@@ -1,4 +1,5 @@
 import React from 'react';
+import { AppState } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
 import WaitingApprovalScreen from './waiting-approval';
@@ -7,9 +8,19 @@ import { getDriverDocumentsStatus, getDriverVehicles } from '@/lib/api';
 const mockRouter = { replace: jest.fn() };
 const mockRefreshDriverMe = jest.fn();
 let mockDriverStatus = 'REJECTED';
+let mockFocused = true;
+let mockFocusVersion = 0;
+let mockAppStateHandler;
+const mockT = key => key;
 
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
-jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: key => key }) }));
+jest.mock('expo-router', () => ({
+  useRouter: () => mockRouter,
+  useFocusEffect: callback => require('react').useEffect(
+    () => mockFocused ? callback() : undefined,
+    [callback, mockFocusVersion],
+  ),
+}));
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT }) }));
 jest.mock('@/context/auth-context', () => ({
   useAuth: () => ({ driver: { status: mockDriverStatus }, refreshDriverMe: mockRefreshDriverMe }),
 }));
@@ -22,6 +33,13 @@ let tree;
 beforeEach(() => {
   jest.clearAllMocks();
   mockDriverStatus = 'REJECTED';
+  mockFocused = true;
+  mockFocusVersion = 0;
+  mockAppStateHandler = undefined;
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((event, handler) => {
+    if (event === 'change') mockAppStateHandler = handler;
+    return { remove: jest.fn() };
+  });
   getDriverDocumentsStatus.mockResolvedValue({
     uploadedDocuments: [{ status: 'REJECTED', rejectionReason: 'Replace the blurry ID photo.' }],
   });
@@ -34,6 +52,7 @@ beforeEach(() => {
 afterEach(async () => {
   if (tree) await act(async () => tree.unmount());
   tree = null;
+  jest.restoreAllMocks();
 });
 
 const button = label => tree.root.findAll(
@@ -70,21 +89,78 @@ it('keeps the correction action available when review details cannot be loaded',
   expect(button('Fix submission')).toBeDefined();
 });
 
-it('does not offer corrections to a driver still under review', async () => {
+it('keeps pending drivers in review and checks status on focus', async () => {
   mockDriverStatus = 'PENDING_REVIEW';
+  mockRefreshDriverMe.mockResolvedValue({ driver: { status: 'PENDING_REVIEW' }, nextStep: 'WAITING_APPROVAL' });
   await renderScreen();
-  expect(JSON.stringify(tree.toJSON())).toContain('Step 6 of 7: Admin review');
-  expect(JSON.stringify(tree.toJSON())).toContain('Review time varies. Check your status in the app after submitting.');
+  const rendered = JSON.stringify(tree.toJSON());
+  expect(rendered).toContain('Step 6 of 7: Admin review');
+  expect(rendered).toContain('Review time varies. Check your status in the app after submitting.');
+  expect(rendered).toContain('Pending review');
+  expect(rendered).not.toContain('Back to home');
   expect(button('Fix submission')).toBeUndefined();
+  expect(mockRefreshDriverMe).toHaveBeenCalledTimes(1);
+  expect(mockRouter.replace).not.toHaveBeenCalledWith('/receive-requests');
   expect(getDriverDocumentsStatus).not.toHaveBeenCalled();
   expect(getDriverVehicles).not.toHaveBeenCalled();
 });
 
-it('routes an approved driver to the next step after refreshing', async () => {
+it('refreshes again when the screen regains focus or the app becomes active', async () => {
+  mockDriverStatus = 'PENDING_REVIEW';
+  mockRefreshDriverMe.mockResolvedValue({ driver: { status: 'PENDING_REVIEW' }, nextStep: 'WAITING_APPROVAL' });
+  await renderScreen();
+  await act(async () => {
+    mockFocused = false;
+    mockFocusVersion += 1;
+    tree.update(<WaitingApprovalScreen />);
+  });
+  await act(async () => {
+    mockFocused = true;
+    mockFocusVersion += 1;
+    tree.update(<WaitingApprovalScreen />);
+  });
+  expect(mockRefreshDriverMe).toHaveBeenCalledTimes(2);
+  await act(async () => mockAppStateHandler('active'));
+  expect(mockRefreshDriverMe).toHaveBeenCalledTimes(3);
+});
+
+it('ignores a stale approval response and refreshes after returning to the screen', async () => {
+  mockDriverStatus = 'PENDING_REVIEW';
+  let finishFirstRefresh;
+  mockRefreshDriverMe.mockImplementationOnce(() => new Promise((resolve) => {
+    finishFirstRefresh = resolve;
+  })).mockResolvedValue({ driver: { status: 'PENDING_REVIEW' }, nextStep: 'WAITING_APPROVAL' });
+  await renderScreen();
+  await act(async () => {
+    mockFocused = false;
+    mockFocusVersion += 1;
+    tree.update(<WaitingApprovalScreen />);
+  });
+  await act(async () => {
+    mockFocused = true;
+    mockFocusVersion += 1;
+    tree.update(<WaitingApprovalScreen />);
+  });
+  await act(async () => finishFirstRefresh({ driver: { status: 'APPROVED' }, nextStep: 'HOME' }));
+  expect(mockRouter.replace).not.toHaveBeenCalledWith('/receive-requests');
+  expect(mockRefreshDriverMe).toHaveBeenCalledTimes(2);
+});
+
+it('routes an approved driver onward without a manual refresh', async () => {
   mockRefreshDriverMe.mockResolvedValue({ driver: { status: 'APPROVED' }, nextStep: 'SET_AVAILABILITY' });
-  await act(async () => { tree = create(<WaitingApprovalScreen />); });
-  await act(async () => button('Refresh status').props.onPress());
+  await renderScreen();
   expect(mockRouter.replace).toHaveBeenCalledWith('/set-availability');
+});
+
+it('keeps the manual refresh action for retrying after a status error', async () => {
+  mockDriverStatus = 'PENDING_REVIEW';
+  mockRefreshDriverMe.mockRejectedValueOnce(new Error('Network unavailable'))
+    .mockResolvedValue({ driver: { status: 'PENDING_REVIEW' }, nextStep: 'WAITING_APPROVAL' });
+  await renderScreen();
+  expect(JSON.stringify(tree.toJSON())).toContain('Network unavailable');
+  await act(async () => button('Refresh status').props.onPress());
+  expect(mockRefreshDriverMe).toHaveBeenCalledTimes(2);
+  expect(JSON.stringify(tree.toJSON())).not.toContain('Network unavailable');
 });
 
 
