@@ -11,6 +11,51 @@ const COMPLETE_PROFILE_DRAFT_KEY = 'transpo24.driver.completeProfileDraft';
 const VEHICLE_INFORMATION_DRAFT_KEY = 'transpo24.driver.vehicleInformationDraft';
 const LOAD_CAPACITY_DRAFT_KEY = 'transpo24.driver.loadCapacityDraft';
 let completeProfileDraftWrite: Promise<void> = Promise.resolve();
+let vehicleDraftWrite: Promise<void> = Promise.resolve();
+let capacityDraftWrite: Promise<void> = Promise.resolve();
+
+function scopedDraftKey(prefix: string, vehicleId: string): string {
+  const encodedId = [...vehicleId].map((character) =>
+    character.codePointAt(0)!.toString(16).padStart(6, '0')).join('');
+  return `${prefix}.${encodedId}`;
+}
+
+async function readDraftIds(prefix: string): Promise<string[]> {
+  const raw = await SecureStore.getItemAsync(`${prefix}.index`);
+  if (!raw) return [];
+  try {
+    const ids: unknown = JSON.parse(raw);
+    return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+async function persistScopedDraft(prefix: string, vehicleId: string, draft: string): Promise<void> {
+  const ids = await readDraftIds(prefix);
+  if (!ids.includes(vehicleId)) {
+    await SecureStore.setItemAsync(`${prefix}.index`, JSON.stringify([...ids, vehicleId]));
+  }
+  await SecureStore.setItemAsync(scopedDraftKey(prefix, vehicleId), draft);
+}
+
+async function clearScopedDraft(prefix: string, vehicleId?: string): Promise<void> {
+  const ids = await readDraftIds(prefix);
+  if (vehicleId) {
+    await SecureStore.deleteItemAsync(scopedDraftKey(prefix, vehicleId));
+    const remaining = ids.filter((id) => id !== vehicleId);
+    if (remaining.length) {
+      await SecureStore.setItemAsync(`${prefix}.index`, JSON.stringify(remaining));
+    } else {
+      await SecureStore.deleteItemAsync(`${prefix}.index`);
+    }
+    return;
+  }
+  await Promise.all(ids.map((id) => SecureStore.deleteItemAsync(scopedDraftKey(prefix, id))));
+  await SecureStore.deleteItemAsync(`${prefix}.index`);
+  // Remove drafts written by older app versions; they are not tied to a vehicle.
+  await SecureStore.deleteItemAsync(prefix);
+}
 
 export async function persistAccessToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
@@ -141,28 +186,38 @@ export async function clearOnboardingDocumentsDraft(): Promise<void> {
   await SecureStore.deleteItemAsync(ONBOARDING_DOCUMENTS_DRAFT_KEY);
 }
 
-export async function persistVehicleInformationDraft(draft: string): Promise<void> {
-  await SecureStore.setItemAsync(VEHICLE_INFORMATION_DRAFT_KEY, draft);
+export function persistVehicleInformationDraft(vehicleId: string, draft: string): Promise<void> {
+  vehicleDraftWrite = vehicleDraftWrite.catch(() => {}).then(() =>
+    persistScopedDraft(VEHICLE_INFORMATION_DRAFT_KEY, vehicleId, draft));
+  return vehicleDraftWrite;
 }
 
-export async function readVehicleInformationDraft(): Promise<string | null> {
-  return SecureStore.getItemAsync(VEHICLE_INFORMATION_DRAFT_KEY);
+export async function readVehicleInformationDraft(vehicleId: string): Promise<string | null> {
+  await vehicleDraftWrite.catch(() => {});
+  return SecureStore.getItemAsync(scopedDraftKey(VEHICLE_INFORMATION_DRAFT_KEY, vehicleId));
 }
 
-export async function clearVehicleInformationDraft(): Promise<void> {
-  await SecureStore.deleteItemAsync(VEHICLE_INFORMATION_DRAFT_KEY);
+export function clearVehicleInformationDraft(vehicleId?: string): Promise<void> {
+  vehicleDraftWrite = vehicleDraftWrite.catch(() => {}).then(() =>
+    clearScopedDraft(VEHICLE_INFORMATION_DRAFT_KEY, vehicleId));
+  return vehicleDraftWrite;
 }
 
-export async function persistLoadCapacityDraft(draft: string): Promise<void> {
-  await SecureStore.setItemAsync(LOAD_CAPACITY_DRAFT_KEY, draft);
+export function persistLoadCapacityDraft(vehicleId: string, draft: string): Promise<void> {
+  capacityDraftWrite = capacityDraftWrite.catch(() => {}).then(() =>
+    persistScopedDraft(LOAD_CAPACITY_DRAFT_KEY, vehicleId, draft));
+  return capacityDraftWrite;
 }
 
-export async function readLoadCapacityDraft(): Promise<string | null> {
-  return SecureStore.getItemAsync(LOAD_CAPACITY_DRAFT_KEY);
+export async function readLoadCapacityDraft(vehicleId: string): Promise<string | null> {
+  await capacityDraftWrite.catch(() => {});
+  return SecureStore.getItemAsync(scopedDraftKey(LOAD_CAPACITY_DRAFT_KEY, vehicleId));
 }
 
-export async function clearLoadCapacityDraft(): Promise<void> {
-  await SecureStore.deleteItemAsync(LOAD_CAPACITY_DRAFT_KEY);
+export function clearLoadCapacityDraft(vehicleId?: string): Promise<void> {
+  capacityDraftWrite = capacityDraftWrite.catch(() => {}).then(() =>
+    clearScopedDraft(LOAD_CAPACITY_DRAFT_KEY, vehicleId));
+  return capacityDraftWrite;
 }
 
 export async function clearDriverOnboardingDrafts(): Promise<void> {

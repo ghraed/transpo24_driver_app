@@ -97,7 +97,7 @@ export default function CheckDetailsScreen() {
   const finishSubmission = async () => {
     await Promise.allSettled([
       clearLastOnboardingRoute(),
-      clearLoadCapacityDraft(),
+      clearLoadCapacityDraft(vehicleId),
       clearOnboardingDocumentsStatus(),
     ]);
     router.replace('/waiting-approval');

@@ -61,17 +61,10 @@ function toNumericInput(value?: number | null): string {
   return String(value);
 }
 
-function createTestCapacityDefaults(vehicle: DriverVehicle): CapacityFormState {
-  const isCarrier = isCarCarrierVehicleType(vehicle.vehicleType);
-
+function createEmptyCapacityForm(): CapacityFormState {
   return {
-    name: `${vehicle.brand} ${vehicle.model} Test Capacity`.trim(),
-    maxLoadKg: isCarrier ? '2200' : '1200',
-    cargoLengthM: isCarrier ? '' : '2.4',
-    cargoWidthM: isCarrier ? '' : '1.6',
-    cargoHeightM: isCarrier ? '' : '1.5',
-    allowedCargoTypes: isCarrier ? ['VEHICLE'] : ['GOODS', 'FURNITURE'],
-    isDefault: true,
+    name: '', maxLoadKg: '', cargoLengthM: '', cargoWidthM: '', cargoHeightM: '',
+    allowedCargoTypes: [], isDefault: true,
   };
 }
 
@@ -79,36 +72,36 @@ function buildFormState(
   vehicle: DriverVehicle,
   capacity?: VehicleLoadCapacity | null,
 ): CapacityFormState {
-  const testDefaults = createTestCapacityDefaults(vehicle);
+  const defaults = createEmptyCapacityForm();
 
   return {
-    name: capacity?.name ?? vehicle.loadProfileName ?? testDefaults.name,
-    maxLoadKg: toNumericInput(capacity?.maxLoadKg ?? vehicle.capacityKg) || testDefaults.maxLoadKg,
+    name: capacity?.name ?? vehicle.loadProfileName ?? defaults.name,
+    maxLoadKg: toNumericInput(capacity?.maxLoadKg ?? vehicle.capacityKg) || defaults.maxLoadKg,
     cargoLengthM: toNumericInput(
       capacity?.cargoLengthM ??
         (vehicle.lengthCm !== null && vehicle.lengthCm !== undefined
           ? Number((vehicle.lengthCm / 100).toFixed(2))
           : null),
-    ) || testDefaults.cargoLengthM,
+    ) || defaults.cargoLengthM,
     cargoWidthM: toNumericInput(
       capacity?.cargoWidthM ??
         (vehicle.widthCm !== null && vehicle.widthCm !== undefined
           ? Number((vehicle.widthCm / 100).toFixed(2))
           : null),
-    ) || testDefaults.cargoWidthM,
+    ) || defaults.cargoWidthM,
     cargoHeightM: toNumericInput(
       capacity?.cargoHeightM ??
         (vehicle.heightCm !== null && vehicle.heightCm !== undefined
           ? Number((vehicle.heightCm / 100).toFixed(2))
           : null),
-    ) || testDefaults.cargoHeightM,
+    ) || defaults.cargoHeightM,
     allowedCargoTypes:
       capacity?.allowedCargoTypes?.length
         ? capacity.allowedCargoTypes
         : vehicle.allowedCargoTypes?.length
           ? vehicle.allowedCargoTypes
-          : testDefaults.allowedCargoTypes,
-    isDefault: Boolean(capacity?.isDefault ?? vehicle.isDefaultLoadProfile ?? testDefaults.isDefault),
+          : defaults.allowedCargoTypes,
+    isDefault: Boolean(capacity?.isDefault ?? vehicle.isDefaultLoadProfile ?? defaults.isDefault),
   };
 }
 
@@ -152,6 +145,7 @@ export default function LoadCapacityScreen() {
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
   const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
+  const [hydratedVehicleId, setHydratedVehicleId] = useState('');
 
   useEffect(() => {
     if (flow !== 'onboarding' || !vehicleId) return;
@@ -170,11 +164,12 @@ export default function LoadCapacityScreen() {
     }
 
     setIsLoading(true);
+    setHasHydratedDraft(false);
     setLoadError('');
 
     try {
       const currentVehicle = await getDriverVehicle(vehicleId);
-      const draftRaw = flow === 'onboarding' ? await readLoadCapacityDraft() : null;
+      const draftRaw = flow === 'onboarding' ? await readLoadCapacityDraft(vehicleId) : null;
       const draft = draftRaw ? (JSON.parse(draftRaw) as CapacityFormState) : null;
       let capacity: VehicleLoadCapacity | null = null;
 
@@ -193,6 +188,8 @@ export default function LoadCapacityScreen() {
         ? { ...buildFormState(currentVehicle, capacity), ...draft }
         : buildFormState(currentVehicle, capacity);
       setForm(nextForm);
+      setHydratedVehicleId(vehicleId);
+      setHasHydratedDraft(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to load vehicle capacity.');
       const normalized = getSourceErrorMessage(error, message).toLowerCase();
@@ -203,15 +200,14 @@ export default function LoadCapacityScreen() {
       }
       setLoadError(message);
     } finally {
-      setHasHydratedDraft(true);
       setIsLoading(false);
     }
   }, [flow, router, signOut, t, vehicleId]);
 
   useEffect(() => {
-    if (flow !== 'onboarding' || !hasHydratedDraft || !form) return;
-    void persistLoadCapacityDraft(JSON.stringify(form));
-  }, [flow, form, hasHydratedDraft]);
+    if (flow !== 'onboarding' || !hasHydratedDraft || hydratedVehicleId !== vehicleId || !form) return;
+    void persistLoadCapacityDraft(vehicleId, JSON.stringify(form)).catch(() => {});
+  }, [flow, form, hasHydratedDraft, hydratedVehicleId, vehicleId]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -308,7 +304,7 @@ export default function LoadCapacityScreen() {
       setExistingCapacity(response);
       if (flow === 'onboarding') {
         try {
-          await clearLoadCapacityDraft();
+          await clearLoadCapacityDraft(vehicleId);
         } catch {
           // The server has saved the capacity; draft cleanup can be retried later.
         }

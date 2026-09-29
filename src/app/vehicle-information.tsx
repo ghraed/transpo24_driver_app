@@ -28,7 +28,6 @@ import {
 } from '@/lib/auth-storage';
 import {
   createDriverVehicle,
-  deleteDriverVehicle,
   getDriverVehicles,
   getDriverVehicle,
   updateDriverVehicle,
@@ -74,20 +73,10 @@ const VEHICLE_CONDITION_OPTIONS: { label: string; value: VehicleCondition }[] = 
 
 const OTHER_OPTION = 'OTHER';
 
-function createTestVehicleFormDefaults(): CreateDriverVehicleForm {
-  const nextYear = new Date();
-  nextYear.setFullYear(nextYear.getFullYear() + 1);
-  const defaultExpiryDate = nextYear.toISOString().slice(0, 10);
-
+function createEmptyVehicleForm(): CreateDriverVehicleForm {
   return {
-    vehicleType: 'PICKUP',
-    brand: 'Toyota',
-    model: 'Hilux',
-    year: String(new Date().getFullYear()),
-    licensePlateNumber: 'TEST-1234',
-    condition: 'EXCELLENT',
-    insuranceExpiryDate: defaultExpiryDate,
-    registrationExpiryDate: defaultExpiryDate,
+    vehicleType: '', brand: '', model: '', year: '', licensePlateNumber: '',
+    condition: '', insuranceExpiryDate: '', registrationExpiryDate: '',
   };
 }
 
@@ -164,19 +153,6 @@ function formatSelectorLabel(value: string, options: SelectorOption[]): string {
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
-function buildRollbackPayload(vehicle: DriverVehicle): CreateDriverVehiclePayload {
-  return {
-    vehicleType: vehicle.vehicleType,
-    brand: vehicle.brand,
-    model: vehicle.model,
-    year: vehicle.year,
-    licensePlateNumber: vehicle.licensePlateNumber,
-    condition: vehicle.condition,
-    insuranceExpiryDate: vehicle.insuranceExpiryDate ?? undefined,
-    registrationExpiryDate: vehicle.registrationExpiryDate ?? undefined,
-  };
-}
-
 export default function VehicleInformationScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
@@ -186,10 +162,11 @@ export default function VehicleInformationScreen() {
     typeof params.vehicleId === 'string' && params.vehicleId.trim() ? params.vehicleId : undefined;
   const flow = params.flow === 'management' ? 'management' : 'onboarding';
   const { signOut } = useAuth();
-  const testDefaults = useMemo(() => createTestVehicleFormDefaults(), []);
+  const emptyForm = useMemo(() => createEmptyVehicleForm(), []);
 
-  const [vehicleForm, setVehicleForm] = useState<CreateDriverVehicleForm>(testDefaults);
+  const [vehicleForm, setVehicleForm] = useState<CreateDriverVehicleForm>(emptyForm);
   const [existingVehicle, setExistingVehicle] = useState<DriverVehicle | null>(null);
+  const [savedVehicleForRetry, setSavedVehicleForRetry] = useState<{ vehicle: DriverVehicle; payloadKey: string } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(vehicleId));
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
@@ -204,6 +181,7 @@ export default function VehicleInformationScreen() {
   const [brandSelection, setBrandSelection] = useState<string>('');
   const [modelSelection, setModelSelection] = useState<string>('');
   const [hasHydratedDraft, setHasHydratedDraft] = useState<boolean>(false);
+  const [draftVehicleId, setDraftVehicleId] = useState(vehicleId ?? 'new');
 
   const isEditing = Boolean(vehicleId);
 
@@ -218,11 +196,11 @@ export default function VehicleInformationScreen() {
 
   const loadVehicle = useCallback(async (): Promise<void> => {
     setIsLoading(true);
+    setHasHydratedDraft(false);
+    setSavedVehicleForRetry(null);
     setLoadError('');
 
     try {
-      const draftRaw = flow === 'onboarding' ? await readVehicleInformationDraft() : null;
-      const draft = draftRaw ? (JSON.parse(draftRaw) as CreateDriverVehicleForm) : null;
       let resolvedVehicleId = vehicleId;
 
       if (!resolvedVehicleId && flow === 'onboarding') {
@@ -235,13 +213,20 @@ export default function VehicleInformationScreen() {
         resolvedVehicleId = latestVehicle?.id;
       }
 
+      const resolvedDraftVehicleId = resolvedVehicleId ?? 'new';
+      const draftRaw = flow === 'onboarding'
+        ? await readVehicleInformationDraft(resolvedDraftVehicleId) : null;
+      const draft = draftRaw ? (JSON.parse(draftRaw) as CreateDriverVehicleForm) : null;
+      setDraftVehicleId(resolvedDraftVehicleId);
+
       if (!resolvedVehicleId) {
         setExistingVehicle(null);
         const nextForm = {
-          ...testDefaults,
+          ...emptyForm,
           ...draft,
         };
         setVehicleForm(nextForm);
+        setHasHydratedDraft(true);
         const nextBrandOptions = getBrandsForVehicleType(nextForm.vehicleType);
         const matchedBrand = nextBrandOptions.includes(nextForm.brand as VehicleBrand);
         setBrandSelection(matchedBrand ? nextForm.brand : nextForm.brand ? OTHER_OPTION : '');
@@ -272,12 +257,13 @@ export default function VehicleInformationScreen() {
         registrationBackDocument: undefined,
         insuranceDocument: undefined,
         insuranceExpiryDate:
-          vehicle.insuranceExpiryDate?.slice(0, 10) ?? testDefaults.insuranceExpiryDate,
+          vehicle.insuranceExpiryDate?.slice(0, 10) ?? emptyForm.insuranceExpiryDate,
         registrationExpiryDate:
-          vehicle.registrationExpiryDate?.slice(0, 10) ?? testDefaults.registrationExpiryDate,
+          vehicle.registrationExpiryDate?.slice(0, 10) ?? emptyForm.registrationExpiryDate,
       };
       const nextForm = draft ? { ...baseForm, ...draft } : baseForm;
       setVehicleForm(nextForm);
+      setHasHydratedDraft(true);
       const brandOptions = getBrandsForVehicleType(nextForm.vehicleType);
       const matchedBrand = brandOptions.includes(nextForm.brand as VehicleBrand);
       setBrandSelection(matchedBrand ? nextForm.brand : nextForm.brand ? OTHER_OPTION : '');
@@ -293,15 +279,14 @@ export default function VehicleInformationScreen() {
         error instanceof Error ? error.message : t('Failed to load vehicle information.');
       setLoadError(message);
     } finally {
-      setHasHydratedDraft(true);
       setIsLoading(false);
     }
-  }, [flow, t, testDefaults, vehicleId]);
+  }, [emptyForm, flow, t, vehicleId]);
 
   useEffect(() => {
     if (flow !== 'onboarding' || !hasHydratedDraft) return;
-    void persistVehicleInformationDraft(JSON.stringify(vehicleForm));
-  }, [flow, hasHydratedDraft, vehicleForm]);
+    void persistVehicleInformationDraft(draftVehicleId, JSON.stringify(vehicleForm)).catch(() => {});
+  }, [draftVehicleId, flow, hasHydratedDraft, vehicleForm]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -711,23 +696,33 @@ export default function VehicleInformationScreen() {
     setSubmitError('');
     setSubmitSuccess('');
 
-    let savedVehicle: DriverVehicle | null = null;
-    let shouldRollbackCreatedVehicle = false;
-
+    let uploadInProgress = false;
     try {
       const payload = buildPayload();
-      const targetVehicleId =
-        isEditing && vehicleId
-          ? vehicleId
-          : flow === 'onboarding' && existingVehicle?.id
-            ? existingVehicle.id
-            : undefined;
-      const vehicle = targetVehicleId
-        ? await updateDriverVehicle(targetVehicleId, payload)
-        : await createDriverVehicle(payload);
-      savedVehicle = vehicle;
-      shouldRollbackCreatedVehicle = !targetVehicleId;
+      const payloadKey = JSON.stringify(payload);
+      const targetVehicleId = vehicleId ?? existingVehicle?.id;
+      const vehicle = savedVehicleForRetry?.payloadKey === payloadKey
+        ? savedVehicleForRetry.vehicle
+        : targetVehicleId
+          ? await updateDriverVehicle(targetVehicleId, payload)
+          : await createDriverVehicle(payload);
+      setSavedVehicleForRetry({ vehicle, payloadKey });
+      setExistingVehicle(vehicle);
+      if (!targetVehicleId && flow === 'onboarding') {
+        // Keep the saved ID and local upload assets available if the upload fails.
+        setDraftVehicleId(vehicle.id);
+        try {
+          await persistVehicleInformationDraft(vehicle.id, JSON.stringify(vehicleForm));
+        } catch { /* The server vehicle remains saved even if local storage fails. */ }
+        try {
+          await persistLastOnboardingRoute(
+            `/vehicle-information?vehicleId=${encodeURIComponent(vehicle.id)}&flow=onboarding`,
+          );
+        } catch { /* The current screen still has the saved vehicle ID. */ }
+        try { await clearVehicleInformationDraft('new'); } catch { /* Cleanup is best effort. */ }
+      }
       const shouldUploadDocuments =
+        Boolean(savedVehicleForRetry) ||
         Boolean(vehicleForm.frontPhoto) ||
         Boolean(vehicleForm.rearPhoto) ||
         Boolean(vehicleForm.sidePhoto) ||
@@ -740,7 +735,8 @@ export default function VehicleInformationScreen() {
           (existingVehicle?.registrationExpiryDate?.slice(0, 10) ?? '');
 
       if (shouldUploadDocuments) {
-        await uploadDriverVehicleDocuments(vehicle.id, {
+        uploadInProgress = true;
+        const uploadResponse = await uploadDriverVehicleDocuments(vehicle.id, {
           frontPhoto: vehicleForm.frontPhoto,
           rearPhoto: vehicleForm.rearPhoto,
           sidePhoto: vehicleForm.sidePhoto,
@@ -751,10 +747,13 @@ export default function VehicleInformationScreen() {
           insuranceExpiryDate: vehicleForm.insuranceExpiryDate || undefined,
           registrationExpiryDate: vehicleForm.registrationExpiryDate || undefined,
         });
+        setExistingVehicle(uploadResponse.vehicle);
+        uploadInProgress = false;
       }
+      setSavedVehicleForRetry(null);
 
       if (flow === 'onboarding') {
-        await clearVehicleInformationDraft();
+        try { await clearVehicleInformationDraft(vehicle.id); } catch { /* Server save succeeded. */ }
       }
 
       setSubmitSuccess(
@@ -776,27 +775,6 @@ export default function VehicleInformationScreen() {
         }
       }, 500);
     } catch (error) {
-      if (savedVehicle) {
-        try {
-          if (shouldRollbackCreatedVehicle) {
-            await deleteDriverVehicle(savedVehicle.id);
-          } else if (existingVehicle) {
-            await updateDriverVehicle(savedVehicle.id, buildRollbackPayload(existingVehicle));
-          }
-        } catch (rollbackError) {
-          const rollbackMessage =
-            rollbackError instanceof Error
-              ? rollbackError.message
-              : t('Failed to save vehicle.');
-          setSubmitError(
-            `${error instanceof Error ? error.message : t('Failed to save vehicle.')} ` +
-              `${t('Please try again.')} ${rollbackMessage}`,
-          );
-          setIsSaving(false);
-          return;
-        }
-      }
-
       const message = error instanceof Error ? error.message : t('Failed to save vehicle.');
       const normalized = getSourceErrorMessage(error, message).toLowerCase();
 
@@ -810,7 +788,9 @@ export default function VehicleInformationScreen() {
         return;
       }
 
-      setSubmitError(message);
+      setSubmitError(uploadInProgress
+        ? `${t('Vehicle saved successfully.')} ${message} ${t('Please try again.')}`
+        : message);
     } finally {
       setIsSaving(false);
     }

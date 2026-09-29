@@ -3,7 +3,7 @@ import { act, create } from 'react-test-renderer';
 
 import LoadCapacityScreen from './load-capacity';
 import { getDriverVehicle, getVehicleLoadCapacity, saveVehicleLoadCapacity } from '@/lib/api';
-import { clearLoadCapacityDraft } from '@/lib/auth-storage';
+import { clearLoadCapacityDraft, readLoadCapacityDraft } from '@/lib/auth-storage';
 
 const mockRouter = { replace: jest.fn() };
 const mockT = key => key;
@@ -37,6 +37,8 @@ let tree;
 beforeEach(() => {
   jest.clearAllMocks();
   getDriverVehicle.mockResolvedValue(mockVehicle);
+  readLoadCapacityDraft.mockResolvedValue(null);
+  clearLoadCapacityDraft.mockResolvedValue(undefined);
   getVehicleLoadCapacity.mockResolvedValue(null);
   saveVehicleLoadCapacity.mockResolvedValue({ allowedCargoTypes: ['GOODS'] });
 });
@@ -55,4 +57,18 @@ it('keeps the server-saved capacity and opens check details even if draft cleanu
   await act(async () => saveButton.props.onPress());
   expect(saveVehicleLoadCapacity).toHaveBeenCalledTimes(1);
   expect(mockRouter.replace).toHaveBeenCalledWith('/check-details?vehicleId=vehicle-1');
+});
+
+it('leaves new capacity measurements empty and reads only this vehicle draft', async () => {
+  getDriverVehicle.mockResolvedValue({ ...mockVehicle,
+    capacityKg: null, lengthCm: null, widthCm: null, heightCm: null,
+    allowedCargoTypes: [],
+  });
+  await act(async () => { tree = create(<LoadCapacityScreen />); });
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+  expect(readLoadCapacityDraft).toHaveBeenCalledWith('vehicle-1');
+  const inputs = tree.root.findAllByType('TextInput').map(node => node.props.value);
+  expect(inputs.slice(0, 5)).toEqual(['', '', '', '', '']);
+  const rendered = JSON.stringify(tree.toJSON());
+  expect(rendered).toContain('Maximum load capacity is required');
 });

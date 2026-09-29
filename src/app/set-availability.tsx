@@ -716,20 +716,19 @@ export default function SetAvailabilityScreen() {
 
     try {
       const response = await saveDriverAvailability(payload);
+      if (response.nextStep === 'SET_AVAILABILITY') {
+        setSubmitError(t('Please complete all required availability fields.'));
+        return;
+      }
+
       setSubmitSuccess(
         t('Availability saved. Online: {{online}} | Radius: {{radius}} km', {
           online: response.isOnline ? t('YES') : t('NO'),
           radius: response.serviceRadiusKm,
         }),
       );
-
-      if (response.nextStep === 'SET_AVAILABILITY') {
-        setSubmitError(t('Please complete all required availability fields.'));
-        return;
-      }
-
       if (response.nextStep === 'HOME') {
-        await clearLastOnboardingRoute();
+        try { await clearLastOnboardingRoute(); } catch { /* Server save succeeded. */ }
       }
 
       router.replace(nextStepToRoute(response.nextStep));
@@ -752,13 +751,6 @@ export default function SetAvailabilityScreen() {
         setTimeout(() => {
           router.replace('/complete-profile');
         }, 700);
-        return;
-      }
-
-      if (normalized.includes('vehicle') || normalized.includes('documents')) {
-        setSubmitSuccess(t('Continuing to approval despite backend document prerequisite.'));
-        setSubmitError('');
-        router.replace('/waiting-approval');
         return;
       }
 
