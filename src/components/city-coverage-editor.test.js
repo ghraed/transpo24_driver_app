@@ -10,7 +10,7 @@ jest.mock('@/components/native-maps', () => ({ NativeMapView: 'MapView', NativeM
 let tree;
 const onChange = jest.fn();
 const pins = [{ city: 'Zurich', latitude: 47.38, longitude: 8.54 }];
-beforeEach(() => { jest.clearAllMocks(); resolvePlaceFromQuery.mockResolvedValue({ latitude: 46.2, longitude: 6.14 }); });
+beforeEach(() => { jest.clearAllMocks(); resolvePlaceFromQuery.mockResolvedValue({ latitude: 46.2, longitude: 6.14, address: 'Geneva, CH', placeId: 'geneva' }); });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; });
 async function render() { await act(async () => { tree = create(<CityCoverageEditor cities={['Zurich', 'Geneva']} country="CH" pins={pins} radius="30" onChange={onChange} />); }); }
 function text(node) { return typeof node === 'string' ? node : Array.isArray(node) ? node.map(text).join('') : node ? text(node.children) : ''; }
@@ -39,6 +39,6 @@ it('discards a delayed search response after the driver chooses another city', a
   await press('GenevaSet pin');
   await press('Find coverage pin');
   await press('ZurichAdjust pin');
-  await act(async () => resolve({ latitude: 46.2, longitude: 6.14 }));
+  await act(async () => resolve({ latitude: 46.2, longitude: 6.14, address: 'Geneva, CH', placeId: 'geneva' }));
   expect(onChange).not.toHaveBeenCalled();
 });

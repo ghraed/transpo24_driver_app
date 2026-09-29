@@ -46,6 +46,7 @@ export function calculateDistanceMeters(origin: GeoLocation, destination: GeoLoc
 }
 
 export function canMarkArrived(driverLocation: GeoLocation, pickupLocation: GeoLocation): boolean {
+  if (!isValidGeoLocation(driverLocation) || !isValidGeoLocation(pickupLocation)) return false;
   return calculateDistanceMeters(driverLocation, pickupLocation) <= PICKUP_ARRIVAL_RADIUS_METERS;
 }
 
