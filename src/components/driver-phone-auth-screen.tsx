@@ -20,6 +20,7 @@ import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
 import { readLastOnboardingRoute, readTrustedDriverSession } from '@/lib/auth-storage';
+import { callingCodeForCountry } from '@/lib/country-calling-code';
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
 import {
@@ -58,7 +59,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   const { continueWithTrustedSession } = useAuth();
   const keyboardInset = useAndroidKeyboardInset();
   const [marketCode, setMarketCode] = useState('');
-  const [dialingCode, setDialingCode] = useState('+961');
+  const [dialingCode, setDialingCode] = useState(mode === 'login' ? '+961' : '');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +108,10 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     setHasAttemptedSubmit(true);
     if (!phoneNumber.trim()) {
       setErrorMessage(t('Phone number is required.'));
+      return;
+    }
+    if (!normalizeDialingCode(dialingCode) && !phoneNumber.trim().startsWith('+')) {
+      setErrorMessage(t('Country calling code is required.'));
       return;
     }
     if (mode === 'register' && !hasAcceptedTerms) {
@@ -178,6 +183,11 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     void setLanguage(nextLanguage);
   }, [setLanguage]);
 
+  const selectMarket = useCallback((code: string, countryCode?: string) => {
+    setMarketCode(code);
+    setDialingCode(code ? callingCodeForCountry(countryCode) : '');
+  }, []);
+
   const showRequiredPhoneError = hasAttemptedSubmit && !phoneNumber.trim() && !errorMessage;
 
   return (
@@ -190,7 +200,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
             <Text style={styles.brandRole}>{t('Driver')}</Text>
           </View>
           <View style={styles.card}>
-            {mode === 'register' && <MarketSelector value={marketCode} onChange={setMarketCode} disabled={isSubmitting || isContinuing} />}
+            {mode === 'register' && <MarketSelector value={marketCode} onChange={selectMarket} disabled={isSubmitting || isContinuing} />}
             {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
             {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t(DRIVER_ONBOARDING_STEP_LABELS[0])}</Text> : null}
             {mode === 'register' && !needsDefaultLanguage ? <DriverOnboardingChecklist isRTL={isRTL} /> : null}
@@ -260,7 +270,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
                     style={[styles.dialingCodeInput, isRTL && styles.rtlInput]}
                     value={dialingCode}
                     onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
-                    placeholder="+961"
+                    placeholder={mode === 'login' ? '+961' : '+'}
                     placeholderTextColor="#8A94A6"
                     autoComplete="tel"
                     keyboardType="phone-pad"

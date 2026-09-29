@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { fetchMarkets, getSelectedMarket, saveSelectedMarket, type PublicMarket } from '@/lib/markets';
 
 export function MarketSelector({ value, onChange, disabled }: {
-  value: string; onChange: (code: string) => void; disabled: boolean;
+  value: string; onChange: (code: string, countryCode?: string) => void; disabled: boolean;
 }) {
   const { t } = useTranslation();
   const [markets, setMarkets] = useState<PublicMarket[]>([]);
@@ -18,7 +18,8 @@ export function MarketSelector({ value, onChange, disabled }: {
     void Promise.all([fetchMarkets(), getSelectedMarket()]).then(([items, saved]) => {
       if (!active) return;
       setMarkets(items);
-      onChange(items.some((item) => item.code === saved) ? saved! : '');
+      const savedMarket = items.find((item) => item.code === saved);
+      onChange(savedMarket?.code ?? '', savedMarket?.countryCode);
     }).catch(() => { if (active) setError(true); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [attempt, onChange]);
@@ -37,7 +38,7 @@ export function MarketSelector({ value, onChange, disabled }: {
         <ScrollView style={{ marginTop: 16 }}>
           {!markets.length && <Text>{t('No markets are currently available.')}</Text>}
           {markets.map((market) => <Pressable key={market.code} accessibilityLabel={`${market.name} (${market.code})`} accessibilityRole="button" accessibilityState={{ selected: market.code === value }} style={{ paddingVertical: 18 }} onPress={() => {
-            void saveSelectedMarket(market.code).then(() => { onChange(market.code); setVisible(false); }).catch(() => { setVisible(false); setError(true); });
+            void saveSelectedMarket(market.code).then(() => { onChange(market.code, market.countryCode); setVisible(false); }).catch(() => { setVisible(false); setError(true); });
           }}><Text>{market.name} ({market.code}) {market.code === value ? '✓' : ''}</Text></Pressable>)}
         </ScrollView>
         <Pressable onPress={() => setVisible(false)} accessibilityRole="button" style={{ paddingVertical: 16 }}><Text>{t('Close')}</Text></Pressable>

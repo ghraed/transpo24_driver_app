@@ -24,13 +24,38 @@ it.each(['register'])('requires a market and preserves it through %s OTP navigat
   await act(async () => phone().props.onChangeText('70123456'));
   await act(async () => phone().props.onSubmitEditing());
   expect(sendDriverPhoneVerificationCode).not.toHaveBeenCalled();
-  await act(async () => tree.root.findByType(MarketSelector).props.onChange('FR'));
+  await act(async () => tree.root.findByType(MarketSelector).props.onChange('FR', 'FR'));
   if (mode === 'register') await act(async () => tree.root.findAll(node => node.props.accessibilityRole === 'checkbox' && typeof node.props.onPress === 'function')[0].props.onPress());
   await act(async () => phone().props.onSubmitEditing());
-  expect(sendDriverPhoneVerificationCode).toHaveBeenCalledWith({ phoneNumber: '+96170123456', marketCode: 'FR' });
-  expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+96170123456', marketCode: 'FR' } });
+  expect(sendDriverPhoneVerificationCode).toHaveBeenCalledWith({ phoneNumber: '+3370123456', marketCode: 'FR' });
+  expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+3370123456', marketCode: 'FR' } });
   expect(mockRouter.replace).not.toHaveBeenCalled();
 });
+it('updates the default prefix when the market changes and keeps a manually edited prefix until then', async () => {
+  await act(async () => { tree = create(<DriverPhoneAuthScreen mode="register" />); });
+  const prefix = () => tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Country calling code');
+  const selectMarket = async (code, countryCode) => act(async () => tree.root.findByType(MarketSelector).props.onChange(code, countryCode));
+  expect(prefix().props.value).toBe('');
+  await selectMarket('FR', 'FR');
+  expect(prefix().props.value).toBe('+33');
+  await act(async () => prefix().props.onChangeText('+44'));
+  expect(prefix().props.value).toBe('+44');
+  await selectMarket('LB', 'LB');
+  expect(prefix().props.value).toBe('+961');
+  await selectMarket('UNKNOWN', 'ZZ');
+  expect(prefix().props.value).toBe('');
+});
+
+it('asks for a calling code when an unsupported market has no default', async () => {
+  await act(async () => { tree = create(<DriverPhoneAuthScreen mode="register" />); });
+  await act(async () => tree.root.findByType(MarketSelector).props.onChange('UNKNOWN', 'ZZ'));
+  const phone = tree.root.findAllByType(TextInput).find(node => node.props.accessibilityLabel === 'Phone number');
+  await act(async () => phone.props.onChangeText('70123456'));
+  await act(async () => phone.props.onSubmitEditing());
+  expect(sendDriverPhoneVerificationCode).not.toHaveBeenCalled();
+  expect(JSON.stringify(tree.toJSON())).toContain('Country calling code is required.');
+});
+
 it('continues a trusted session without asking for a market', async () => {
   readTrustedDriverSession.mockResolvedValue({ phoneNumber: '+33123456789' });
   mockContinue.mockResolvedValue({ status: 'unavailable', message: 'Choose your home market' });
@@ -75,6 +100,7 @@ it('shows the full registration checklist and review timing before phone verific
     'Step 7 of 7: Availability',
   ];
   expect(rendered).toContain('Registration checklist');
+  expect(rendered).toContain('Plan for about 15–20 minutes to fill in the forms and upload your documents and photos.');
   for (const stage of stages) expect(rendered).toContain(stage);
   expect(rendered).toContain('Review times vary. Check your status in the app; you may also receive a notification when a decision is made.');
   expect(rendered).toContain('After approval, set your availability to start receiving requests.');
