@@ -20,6 +20,7 @@ import { DRIVER_IMAGE_GUIDANCE, MAX_DRIVER_IMAGE_BYTES, prepareDriverUploadImage
 import { dateOnlyForPicker, formatLocalDateOnly } from '@/lib/local-date-only';
 import {
   getDriverDocumentsStatus,
+  updateDriverDocumentDates,
   uploadDriverDocument,
 } from '@/lib/api';
 import {
@@ -158,6 +159,10 @@ export default function VehicleDocumentsScreen() {
           // Older drafts could contain automatically generated expiry dates.
           idExpiryDate: draft.dateDraftVersion === 2 ? draft.idExpiryDate ?? '' : '',
           drivingLicenseExpiryDate: draft.dateDraftVersion === 2 ? draft.drivingLicenseExpiryDate ?? '' : '',
+          // Older drafts may require a second upload solely because the licence date changed.
+          replacementDocumentTypes: (draft.replacementDocumentTypes ?? []).filter(
+            (type) => type !== 'DRIVING_LICENSE',
+          ),
           dateDraftVersion: 2,
         }));
       }
@@ -305,11 +310,12 @@ export default function VehicleDocumentsScreen() {
     value: OnboardingDocumentsForm[K],
   ): void => {
     setSubmitError('');
+    setSubmitSuccess('');
     setOnboardingDocumentsForm((prev) => {
       const changed = prev[key] !== value;
-      const affectedTypes: UploadableDocumentType[] = key === 'idDocumentKind' || key === 'idExpiryDate'
+      const affectedTypes: UploadableDocumentType[] = key === 'idDocumentKind'
         ? ['ID_FRONT', 'ID_BACK']
-        : key === 'drivingLicenseExpiryDate' ? ['DRIVING_LICENSE'] : [];
+        : [];
       const replacements = changed
         ? affectedTypes.filter((type) => documentsStatus?.uploadedDocuments.some((document) => document.type === type))
         : [];
@@ -531,7 +537,31 @@ export default function VehicleDocumentsScreen() {
         }
       }
 
-      const status = await getDriverDocumentsStatus();
+      let status = await getDriverDocumentsStatus();
+      const requestedDates: { idExpiryDate?: string; drivingLicenseExpiryDate?: string } = {};
+      if (
+        onboardingDocumentsForm.idDocumentKind === 'RESIDENCY_CARD' &&
+        onboardingDocumentsForm.idExpiryDate &&
+        ['ID_FRONT', 'ID_BACK'].some((type) =>
+          status.uploadedDocuments.some((document) =>
+            document.type === type && toDateOnly(document.expiresAt) !== onboardingDocumentsForm.idExpiryDate,
+          ),
+        )
+      ) {
+        requestedDates.idExpiryDate = onboardingDocumentsForm.idExpiryDate;
+      }
+      if (
+        onboardingDocumentsForm.drivingLicenseExpiryDate &&
+        status.uploadedDocuments.some((document) =>
+          document.type === 'DRIVING_LICENSE' &&
+          toDateOnly(document.expiresAt) !== onboardingDocumentsForm.drivingLicenseExpiryDate,
+        )
+      ) {
+        requestedDates.drivingLicenseExpiryDate = onboardingDocumentsForm.drivingLicenseExpiryDate;
+      }
+      if (Object.keys(requestedDates).length > 0) {
+        status = await updateDriverDocumentDates(requestedDates);
+      }
       applyDocumentsStatus(status);
       await persistOnboardingDocumentsStatus(JSON.stringify(status));
 

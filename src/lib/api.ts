@@ -1339,6 +1339,33 @@ export async function getDriverDocumentsStatus(): Promise<DriverDocumentsStatusR
   return normalizeDriverDocumentsStatus(data);
 }
 
+export async function updateDriverDocumentDates(payload: {
+  idExpiryDate?: string;
+  drivingLicenseExpiryDate?: string;
+}): Promise<DriverDocumentsStatusResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/onboarding/documents/dates`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'PATCH',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to update document expiry dates.');
+  }
+
+  const data = await parseJsonResponse<DriverDocumentsStatusResponse>(
+    response,
+    'Failed to parse document status response.',
+  );
+  return normalizeDriverDocumentsStatus(data);
+}
+
 export async function uploadDriverDocument(payload: {
   documentType: 'PERSONAL_SELFIE' | 'ID_FRONT' | 'ID_BACK' | 'DRIVING_LICENSE' | 'SELF_IDENTITY_VERIFICATION';
   file: LocalDocumentAsset;

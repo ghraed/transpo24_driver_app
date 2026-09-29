@@ -524,6 +524,7 @@
   "Failed to upload driver document.": "No se pudo cargar el documento del controlador.",
   "Failed to upload driver vehicle documents.": "No se pudieron cargar los documentos del vehículo del conductor.",
   "Failed to verify driver documents.": "No se pudieron verificar los documentos del conductor.",
+  "Failed to update document expiry dates.": "No se pudieron actualizar las fechas de vencimiento de los documentos.",
   "File-based routing": "Enrutamiento basado en archivos",
   "Filter job requests": "Filtrar solicitudes de trabajo",
   "First name": "Nombre de pila",

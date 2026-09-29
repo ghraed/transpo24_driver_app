@@ -524,6 +524,7 @@
   "Failed to upload driver document.": "Failed to upload driver document.",
   "Failed to upload driver vehicle documents.": "Failed to upload driver vehicle documents.",
   "Failed to verify driver documents.": "Failed to verify driver documents.",
+  "Failed to update document expiry dates.": "Failed to update document expiry dates.",
   "File-based routing": "File-based routing",
   "Filter job requests": "Filter job requests",
   "First name": "First name",

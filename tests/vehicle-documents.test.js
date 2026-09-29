@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import VehicleDocumentsScreen from '../src/app/vehicle-documents';
-import { getDriverDocumentsStatus, uploadDriverDocument } from '@/lib/api';
+import { getDriverDocumentsStatus, updateDriverDocumentDates, uploadDriverDocument } from '@/lib/api';
 import { readOnboardingDocumentsDraft } from '@/lib/auth-storage';
 
 const mockRouter = { replace: jest.fn() };
@@ -31,7 +31,7 @@ jest.mock('@/lib/driver-upload-image', () => ({
   prepareDriverUploadImage: jest.fn(),
 }));
 jest.mock('@/lib/api', () => ({
-  getDriverDocumentsStatus: jest.fn(), uploadDriverDocument: jest.fn(),
+  getDriverDocumentsStatus: jest.fn(), updateDriverDocumentDates: jest.fn(), uploadDriverDocument: jest.fn(),
 }));
 jest.mock('@/lib/auth-storage', () => ({
   readOnboardingDocumentsDraft: jest.fn().mockResolvedValue(null),
@@ -116,4 +116,90 @@ it('discards expiry dates from legacy drafts that may have been auto-filled', as
   expect(rendered).toContain('Select residency expiry date');
   expect(rendered).toContain('Select driving license expiry date');
   expect(rendered).not.toContain('2027-09-29');
+});
+
+const uploadedStatus = {
+  ...mockStatus,
+  identityDocumentKind: 'NATIONAL_ID',
+  missingDocuments: [],
+  canSubmitForReview: true,
+  uploadedDocuments: mockStatus.requiredDocuments.map(type => ({
+    type, status: 'UPLOADED', expiresAt: null,
+  })),
+};
+
+function nextButton() {
+  let next = tree.root.findAllByType(Text).find(node => node.props.children === 'Next');
+  while (next && next.props.disabled === undefined) next = next.parent;
+  return next;
+}
+
+it('lets a driver set the licence expiry after uploading images and continue without re-uploading', async () => {
+  getDriverDocumentsStatus.mockResolvedValue(uploadedStatus);
+  updateDriverDocumentDates.mockResolvedValue({
+    ...uploadedStatus,
+    uploadedDocuments: uploadedStatus.uploadedDocuments.map(document =>
+      document.type === 'DRIVING_LICENSE'
+        ? { ...document, expiresAt: '2030-01-01T00:00:00.000Z' }
+        : document,
+    ),
+  });
+  await renderScreen();
+  let dateField = tree.root.findAllByType(Text).find(node => node.props.children === 'Select driving license expiry date');
+  while (dateField && typeof dateField.props.onPress !== 'function') dateField = dateField.parent;
+  await act(async () => dateField.props.onPress());
+  const picker = tree.root.findAll(node => node.props.mode === 'date' && typeof node.props.onChange === 'function')[0];
+  await act(async () => picker.props.onChange({ type: 'set' }, new Date(2030, 0, 1)));
+
+  expect(JSON.stringify(tree.toJSON())).not.toContain('Re-upload affected documents after changing their details.');
+  expect(nextButton().props.disabled).toBe(false);
+  await act(async () => nextButton().props.onPress());
+  expect(updateDriverDocumentDates).toHaveBeenCalledWith({ drivingLicenseExpiryDate: '2030-01-01' });
+  expect(uploadDriverDocument).not.toHaveBeenCalled();
+  expect(mockRouter.replace).toHaveBeenCalledWith('/vehicle-information?flow=onboarding');
+});
+
+it('recovers a saved draft stuck on the old licence re-upload requirement', async () => {
+  getDriverDocumentsStatus.mockResolvedValue(uploadedStatus);
+  readOnboardingDocumentsDraft.mockResolvedValue(JSON.stringify({
+    dateDraftVersion: 2,
+    idDocumentKind: 'NATIONAL_ID',
+    drivingLicenseExpiryDate: '2030-01-01',
+    replacementDocumentTypes: ['DRIVING_LICENSE'],
+  }));
+  await renderScreen();
+  expect(nextButton().props.disabled).toBe(false);
+  expect(JSON.stringify(tree.toJSON())).not.toContain('Re-upload affected documents after changing their details.');
+});
+
+it('saves a changed residency expiry for both uploaded ID images on Next', async () => {
+  const residencyStatus = { ...uploadedStatus, identityDocumentKind: 'RESIDENCY_CARD' };
+  getDriverDocumentsStatus.mockResolvedValue(residencyStatus);
+  readOnboardingDocumentsDraft.mockResolvedValue(JSON.stringify({
+    dateDraftVersion: 2,
+    idDocumentKind: 'RESIDENCY_CARD',
+    idExpiryDate: '2030-01-01',
+    replacementDocumentTypes: [],
+  }));
+  updateDriverDocumentDates.mockResolvedValue(residencyStatus);
+  await renderScreen();
+  expect(nextButton().props.disabled).toBe(false);
+  await act(async () => nextButton().props.onPress());
+  expect(updateDriverDocumentDates).toHaveBeenCalledWith({ idExpiryDate: '2030-01-01' });
+  expect(mockRouter.replace).toHaveBeenCalledWith('/vehicle-information?flow=onboarding');
+});
+
+it('keeps the driver on the document screen when saving an expiry date fails', async () => {
+  getDriverDocumentsStatus.mockResolvedValue(uploadedStatus);
+  readOnboardingDocumentsDraft.mockResolvedValue(JSON.stringify({
+    dateDraftVersion: 2,
+    idDocumentKind: 'NATIONAL_ID',
+    drivingLicenseExpiryDate: '2030-01-01',
+    replacementDocumentTypes: ['DRIVING_LICENSE'],
+  }));
+  updateDriverDocumentDates.mockRejectedValue(new Error('Connection lost'));
+  await renderScreen();
+  await act(async () => nextButton().props.onPress());
+  expect(JSON.stringify(tree.toJSON())).toContain('Connection lost');
+  expect(mockRouter.replace).not.toHaveBeenCalled();
 });

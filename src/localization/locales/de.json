@@ -524,6 +524,7 @@
   "Failed to upload driver document.": "Treiberdokument konnte nicht hochgeladen werden.",
   "Failed to upload driver vehicle documents.": "Die Fahrzeugdokumente des Fahrers konnten nicht hochgeladen werden.",
   "Failed to verify driver documents.": "Die Überprüfung der Fahrerdokumente ist fehlgeschlagen.",
+  "Failed to update document expiry dates.": "Die Ablaufdaten der Dokumente konnten nicht aktualisiert werden.",
   "File-based routing": "Dateibasiertes Routing",
   "Filter job requests": "Auftragsanfragen filtern",
   "First name": "Vorname",

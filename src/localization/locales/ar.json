@@ -524,6 +524,7 @@
   "Failed to upload driver document.": "تعذر تحميل مستند السائق.",
   "Failed to upload driver vehicle documents.": "فشل رفع مستندات مركبة السائق.",
   "Failed to verify driver documents.": "فشل في التحقق من وثائق السائق.",
+  "Failed to update document expiry dates.": "تعذر تحديث تواريخ انتهاء صلاحية المستندات.",
   "File-based routing": "التوجيه القائم على الملف",
   "Filter job requests": "تصفية طلبات العمل",
   "First name": "الاسم الأول",
