@@ -4,7 +4,7 @@ import type {
   DriverVehicle,
 } from '@/types/auth';
 
-const REQUIRED_VEHICLE_UPLOADS = [
+export const REQUIRED_VEHICLE_UPLOADS = [
   { field: 'frontPhoto', type: 'VEHICLE_FRONT_PHOTO', label: 'Front photo' },
   { field: 'rearPhoto', type: 'VEHICLE_REAR_PHOTO', label: 'Rear photo' },
   { field: 'sidePhoto', type: 'VEHICLE_SIDE_PHOTO', label: 'Side photo' },
@@ -18,16 +18,21 @@ const REQUIRED_VEHICLE_UPLOADS = [
   label: string;
 }[];
 
-export function getRejectedVehicleUploadsToReplace(
+function hasUsableDocument(vehicle: DriverVehicle | null, type: DriverDocumentType): boolean {
+  return vehicle?.documents?.some(
+    (document) => document.type === type && document.status !== 'REJECTED',
+  ) ?? false;
+}
+
+export function getMissingRequiredVehicleUploads(
   vehicle: DriverVehicle | null,
   form: CreateDriverVehicleForm,
-): { field: (typeof REQUIRED_VEHICLE_UPLOADS)[number]['field']; label: string }[] {
-  if (vehicle?.status !== 'REJECTED') return [];
+): (typeof REQUIRED_VEHICLE_UPLOADS)[number][] {
+  return REQUIRED_VEHICLE_UPLOADS.filter(
+    ({ field, type }) => !form[field] && !hasUsableDocument(vehicle, type),
+  );
+}
 
-  return REQUIRED_VEHICLE_UPLOADS.filter(({ field, type }) => {
-    if (form[field]) return false;
-    return !vehicle.documents?.some(
-      (document) => document.type === type && document.status !== 'REJECTED',
-    );
-  });
+export function hasCompleteVehicleDocuments(vehicle: DriverVehicle): boolean {
+  return REQUIRED_VEHICLE_UPLOADS.every(({ type }) => hasUsableDocument(vehicle, type));
 }

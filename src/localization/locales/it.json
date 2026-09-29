@@ -1081,4 +1081,6 @@
 ,
   "{{label}} must be replaced before resubmitting.": "{{label}} deve essere sostituito prima di inviare nuovamente la richiesta.",
   "Replace rejected vehicle photos and documents before resubmitting.": "Sostituisci le foto e i documenti del veicolo rifiutati prima di inviare nuovamente la richiesta."
+,
+  "Missing vehicle photos and documents": "Foto e documenti del veicolo mancanti"
 }

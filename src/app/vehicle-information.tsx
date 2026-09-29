@@ -39,7 +39,7 @@ import {
   type VehicleModelType,
 } from '@/lib/vehicle-catalog';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { getRejectedVehicleUploadsToReplace } from '@/lib/vehicle-review-recovery';
+import { getMissingRequiredVehicleUploads } from '@/lib/vehicle-document-requirements';
 import i18n from '@/localization/i18n';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
@@ -310,6 +310,13 @@ export default function VehicleInformationScreen() {
     return () => clearTimeout(timeoutId);
   }, [loadVehicle]);
 
+  const missingRequiredVehicleUploads = useMemo(
+    () => flow === 'onboarding'
+      ? getMissingRequiredVehicleUploads(existingVehicle, vehicleForm)
+      : [],
+    [existingVehicle, flow, vehicleForm],
+  );
+
   const fieldErrors = useMemo(() => {
     const errors: Record<string, string> = {};
     const currentYear = new Date().getFullYear();
@@ -426,8 +433,10 @@ export default function VehicleInformationScreen() {
       existingVehicle?.insuranceDocumentUrl,
     );
 
-    for (const { field, label } of getRejectedVehicleUploadsToReplace(existingVehicle, vehicleForm)) {
-      errors[field] = t('{{label}} must be replaced before resubmitting.', { label: t(label) });
+    for (const { field, label } of missingRequiredVehicleUploads) {
+      errors[field] = existingVehicle?.status === 'REJECTED'
+        ? t('{{label}} must be replaced before resubmitting.', { label: t(label) })
+        : t('{{label}} is required.', { label: t(label) });
     }
 
     const validateDate = (value: string, key: DateFieldKey, label: string): void => {
@@ -459,6 +468,7 @@ export default function VehicleInformationScreen() {
     brandOtherValue,
     brandSelection,
     existingVehicle,
+    missingRequiredVehicleUploads,
     modelOtherValue,
     modelSelection,
     t,
@@ -833,7 +843,7 @@ export default function VehicleInformationScreen() {
     const previewUri = localAsset?.uri || remoteUrl;
     return (
       <View style={styles.docRow}>
-        <Text style={styles.fieldLabel}>{label}</Text>
+        <Text style={styles.fieldLabel}>{flow === 'onboarding' ? label + ' *' : label}</Text>
         <Text style={styles.helper}>{helper}</Text>
         {previewUri ? (
           <Image
@@ -1026,6 +1036,15 @@ export default function VehicleInformationScreen() {
           ) : null}
         </View>
 
+        {flow === 'onboarding' && missingRequiredVehicleUploads.length > 0 ? (
+          <View style={styles.missingUploadsCard}>
+            <Text style={styles.missingUploadsTitle}>{t('Missing vehicle photos and documents')}</Text>
+            <Text style={styles.missingUploadsText}>
+              {missingRequiredVehicleUploads.map(({ label }) => t(label)).join(', ')}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('Vehicle Photos')}</Text>
           {renderUploadCard({
@@ -1141,6 +1160,8 @@ export default function VehicleInformationScreen() {
         <Pressable
           style={[styles.primaryButton, isSaving && styles.buttonDisabled]}
           disabled={isSaving}
+          accessibilityRole="button"
+          accessibilityLabel={flow === 'onboarding' ? t('Next') : t(isEditing ? 'Save Changes' : 'Save Vehicle')}
           onPress={() => void onSaveVehicle()}
         >
           {isSaving ? (
@@ -1280,6 +1301,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#202020' },
+  missingUploadsCard: { marginBottom: 16, padding: 14, borderRadius: 12, backgroundColor: '#FFF8E5', gap: 6 },
+  missingUploadsTitle: { fontSize: 14, fontWeight: '700', color: '#705000' },
+  missingUploadsText: { fontSize: 13, lineHeight: 19, color: '#3F3520' },
   requiredLabel: { color: '#707A8C', fontSize: 12 },
   fieldLabel: { color: '#505A6A', fontSize: 13, fontWeight: '600' },
   input: {

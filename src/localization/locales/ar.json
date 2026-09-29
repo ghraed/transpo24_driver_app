@@ -1512,4 +1512,6 @@
 ,
   "{{label}} must be replaced before resubmitting.": "يجب استبدال {{label}} قبل إعادة تقديم الطلب.",
   "Replace rejected vehicle photos and documents before resubmitting.": "استبدل صور المركبة ومستنداتها المرفوضة قبل إعادة تقديم الطلب."
+,
+  "Missing vehicle photos and documents": "صور ومستندات المركبة الناقصة"
 }

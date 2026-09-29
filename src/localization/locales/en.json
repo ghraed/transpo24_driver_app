@@ -1512,4 +1512,6 @@
 ,
   "{{label}} must be replaced before resubmitting.": "{{label}} must be replaced before resubmitting.",
   "Replace rejected vehicle photos and documents before resubmitting.": "Replace rejected vehicle photos and documents before resubmitting."
+,
+  "Missing vehicle photos and documents": "Missing vehicle photos and documents"
 }

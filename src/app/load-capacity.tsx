@@ -43,8 +43,8 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
+import { hasCompleteVehicleDocuments } from '@/lib/vehicle-document-requirements';
 import type {
-  DriverDocumentType,
   DriverVehicle,
   VehicleCargoType,
   VehicleLoadCapacity,
@@ -59,26 +59,6 @@ interface CapacityFormState {
   cargoHeightM: string;
   allowedCargoTypes: VehicleCargoType[];
   isDefault: boolean;
-}
-
-const REQUIRED_VEHICLE_DOCUMENT_TYPES: DriverDocumentType[] = [
-  'VEHICLE_FRONT_PHOTO',
-  'VEHICLE_REAR_PHOTO',
-  'VEHICLE_SIDE_PHOTO',
-  'VEHICLE_LICENSE_PLATE_PHOTO',
-  'VEHICLE_REGISTRATION_FRONT',
-  'VEHICLE_REGISTRATION_BACK',
-  'VEHICLE_INSURANCE_DOCUMENT',
-];
-
-function hasCompleteVehicleDocuments(vehicle: DriverVehicle): boolean {
-  const eligibleTypes = new Set(
-    (vehicle.documents ?? [])
-      .filter((document) => document.status !== 'REJECTED')
-      .map((document) => document.type),
-  );
-
-  return REQUIRED_VEHICLE_DOCUMENT_TYPES.every((type) => eligibleTypes.has(type));
 }
 
 function hasCompleteLoadCapacityProfile(vehicle: DriverVehicle): boolean {
