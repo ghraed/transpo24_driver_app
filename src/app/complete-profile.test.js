@@ -73,6 +73,7 @@ it('restores only locally edited fields over the server profile after reopening'
   mockDraftValue = JSON.stringify({ nickname: 'Draft Nick' });
   await renderScreen();
   expect(readCompleteProfileDraft).toHaveBeenCalled();
+  expect(JSON.stringify(tree.toJSON())).toContain('Step 2 of 7: Profile');
   expect(input('Nickname').props.value).toBe('Draft Nick');
   expect(input('First name').props.value).toBe('Server First');
 

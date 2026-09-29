@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 
+import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import {
   clearVehicleInformationDraft,
@@ -910,7 +911,7 @@ export default function VehicleInformationScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.progress}>
-            {flow === 'management' ? t('Vehicle Management') : t('Step 2 of 3: Vehicle Information')}
+            {flow === 'management' ? t('Vehicle Management') : t(DRIVER_ONBOARDING_STEP_LABELS[3])}
           </Text>
           <Text style={styles.title}>{isEditing ? t('Edit Vehicle') : t('Add Vehicle')}</Text>
           <Text style={styles.subtitle}>

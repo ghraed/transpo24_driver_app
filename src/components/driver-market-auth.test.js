@@ -59,3 +59,27 @@ it('logs in by phone without a market selector or market payload', async () => {
   expect(sendDriverPhoneVerificationCode).toHaveBeenCalledWith({ phoneNumber: '+96170123456' });
   expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+96170123456' } });
 });
+
+
+it('shows the full registration checklist and review timing before phone verification', async () => {
+  await act(async () => { tree = create(<DriverPhoneAuthScreen mode="register" />); });
+  const rendered = JSON.stringify(tree.toJSON());
+  const stages = [
+    'Step 1 of 7: Verify phone',
+    'Step 2 of 7: Profile',
+    'Step 3 of 7: Personal documents',
+    'Step 4 of 7: Vehicle details',
+    'Step 5 of 7: Load capacity',
+    'Step 6 of 7: Admin review',
+    'Step 7 of 7: Availability',
+  ];
+  expect(rendered).toContain('Registration checklist');
+  for (const stage of stages) expect(rendered).toContain(stage);
+  expect(rendered).toContain('Review time varies. Check your status in the app after submitting.');
+  expect(rendered).toContain('After approval, set your availability to start receiving requests.');
+});
+
+it('does not show registration steps on the login screen', async () => {
+  await act(async () => { tree = create(<DriverPhoneAuthScreen mode="login" />); });
+  expect(JSON.stringify(tree.toJSON())).not.toContain('Registration checklist');
+});

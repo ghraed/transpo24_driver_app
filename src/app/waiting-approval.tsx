@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DRIVER_ONBOARDING_STEP_LABELS, REVIEW_TIMING_MESSAGE } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import { getDriverDocumentsStatus, getDriverVehicles } from '@/lib/api';
 import { nextStepToRoute } from '@/lib/onboarding-route';
@@ -93,9 +94,13 @@ export default function WaitingApprovalScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.card}>
+          <Text style={styles.progress}>{t(DRIVER_ONBOARDING_STEP_LABELS[5])}</Text>
           <Text style={styles.title}>{statusCopy.title}</Text>
           <Text style={styles.subtitle}>{statusCopy.subtitle}</Text>
           <Text style={styles.statusText}>{t('Current status')}: {driver?.status ?? 'PENDING_REVIEW'}</Text>
+          {driver?.status !== 'REJECTED' && driver?.status !== 'APPROVED' ? (
+            <Text style={styles.reviewTiming}>{t(REVIEW_TIMING_MESSAGE)}</Text>
+          ) : null}
 
           {driver?.status === 'REJECTED' ? (
             <>
@@ -162,6 +167,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   content: { padding: 20, flexGrow: 1 },
   card: { borderWidth: 1, borderColor: '#DFE3E8', borderRadius: 12, padding: 16, gap: 12 },
+  progress: { color: '#A66F00', fontSize: 13, fontWeight: '700' },
+  reviewTiming: { color: '#705000', backgroundColor: '#FFF8E5', borderRadius: 10, padding: 12, lineHeight: 20 },
   title: { fontSize: 24, fontWeight: '700', color: '#202020' },
   subtitle: { color: '#707A8C', lineHeight: 20 },
   statusText: { color: '#505A6A', fontSize: 13, fontWeight: '600' },

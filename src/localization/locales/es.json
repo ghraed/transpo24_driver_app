@@ -1068,11 +1068,6 @@
   "startTime and endTime must be in HH:mm format.": "startTime y endTime deben estar en formato HH:mm.",
   "State": "Estado",
   "Status": "Estado",
-  "Step 0 of 3: Verify Mobile": "Paso 0 de 3: Verificar el móvil",
-  "Step 1 of 3: Profile": "Paso 1 de 3: Perfil",
-  "Step 2 of 3: Documents": "Paso 2 de 3: Documentos",
-  "Step 2 of 3: Vehicle Information": "Paso 2 de 3: Información del vehículo",
-  "Step 3 of 3: Availability": "Paso 3 de 3: Disponibilidad",
   "Stripe accepted the payout release request for this completed trip.": "Stripe aceptó la solicitud de pago correspondiente a este viaje completado.",
   "Stripe account status": "Estado de la cuenta Stripe",
   "Stripe Connect": "Stripe Connect",
@@ -1502,16 +1497,24 @@
   "Choose the market your account belongs to. Operational coverage is approved separately.": "Elige el mercado de tu cuenta. Las zonas operativas se aprueban por separado.",
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Eliminar tu cuenta borra o anonimiza permanentemente tus datos personales y cierra tu sesión en todos los dispositivos. Esta acción no se puede deshacer. Primero completa o cancela cualquier solicitud de transporte activa.",
   "Type {{confirmation}} to confirm.": "Escribe {{confirmation}} para confirmar.",
-  "Account deletion confirmation": "Confirmación de eliminación de cuenta"
-,
+  "Account deletion confirmation": "Confirmación de eliminación de cuenta",
   "Review the reason below, correct your documents and vehicle details, then submit again.": "Revisa el motivo a continuación, corrige tus documentos y los datos del vehículo, y vuelve a enviar la solicitud.",
   "Reason for decline": "Motivo del rechazo",
   "No specific reason was provided. Review your documents and vehicle details before submitting again.": "No se indicó un motivo específico. Revisa tus documentos y los datos del vehículo antes de volver a enviar la solicitud.",
   "Fix submission": "Corregir solicitud",
-  "Unable to load review details. Refresh to try again.": "No se pudieron cargar los detalles de la revisión. Actualiza el estado para intentarlo de nuevo."
-,
+  "Unable to load review details. Refresh to try again.": "No se pudieron cargar los detalles de la revisión. Actualiza el estado para intentarlo de nuevo.",
   "{{label}} must be replaced before resubmitting.": "Debes reemplazar {{label}} antes de volver a enviar la solicitud.",
-  "Replace rejected vehicle photos and documents before resubmitting.": "Reemplaza las fotos y los documentos rechazados del vehículo antes de volver a enviarla."
-,
-  "Missing vehicle photos and documents": "Faltan fotos y documentos del vehículo"
+  "Replace rejected vehicle photos and documents before resubmitting.": "Reemplaza las fotos y los documentos rechazados del vehículo antes de volver a enviarla.",
+  "Missing vehicle photos and documents": "Faltan fotos y documentos del vehículo",
+  "Step 1 of 7: Verify phone": "Paso 1 de 7: Verificar el teléfono",
+  "Step 2 of 7: Profile": "Paso 2 de 7: Perfil",
+  "Step 3 of 7: Personal documents": "Paso 3 de 7: Documentos personales",
+  "Step 4 of 7: Vehicle details": "Paso 4 de 7: Datos del vehículo",
+  "Step 5 of 7: Load capacity": "Paso 5 de 7: Capacidad de carga",
+  "Step 6 of 7: Admin review": "Paso 6 de 7: Revisión administrativa",
+  "Step 7 of 7: Availability": "Paso 7 de 7: Disponibilidad",
+  "Registration checklist": "Lista de pasos del registro",
+  "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "Ten preparados tu documento de identidad, permiso de conducir, registro y seguro del vehículo, y fotos del vehículo.",
+  "Review time varies. Check your status in the app after submitting.": "El tiempo de revisión varía. Consulta tu estado en la aplicación después de enviar la solicitud.",
+  "After approval, set your availability to start receiving requests.": "Tras la aprobación, configura tu disponibilidad para empezar a recibir solicitudes."
 }

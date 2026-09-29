@@ -1068,11 +1068,6 @@
   "startTime and endTime must be in HH:mm format.": "startTime und endTime müssen im Format HH:mm vorliegen.",
   "State": "Status",
   "Status": "Status",
-  "Step 0 of 3: Verify Mobile": "Schritt 0 von 3: Mobilnummer bestätigen",
-  "Step 1 of 3: Profile": "Schritt 1 von 3: Profil",
-  "Step 2 of 3: Documents": "Schritt 2 von 3: Dokumente",
-  "Step 2 of 3: Vehicle Information": "Schritt 2 von 3: Fahrzeuginformationen",
-  "Step 3 of 3: Availability": "Schritt 3 von 3: Verfügbarkeit",
   "Stripe accepted the payout release request for this completed trip.": "Stripe hat die Auszahlungsfreigabe fur diese abgeschlossene Fahrt akzeptiert.",
   "Stripe account status": "Stripe-Kontostatus",
   "Stripe Connect": "Stripe Connect",
@@ -1502,16 +1497,24 @@
   "Choose the market your account belongs to. Operational coverage is approved separately.": "Wählen Sie den Markt Ihres Kontos. Einsatzgebiete werden separat genehmigt.",
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Wenn du dein Konto löschst, werden deine persönlichen Daten dauerhaft entfernt oder anonymisiert und du wirst auf allen Geräten abgemeldet. Dies kann nicht rückgängig gemacht werden. Schließe zuerst alle aktiven Transportaufträge ab oder storniere sie.",
   "Type {{confirmation}} to confirm.": "Gib zur Bestätigung {{confirmation}} ein.",
-  "Account deletion confirmation": "Bestätigung der Kontolöschung"
-,
+  "Account deletion confirmation": "Bestätigung der Kontolöschung",
   "Review the reason below, correct your documents and vehicle details, then submit again.": "Prüfen Sie den Grund unten, korrigieren Sie Ihre Dokumente und Fahrzeugdaten und reichen Sie den Antrag erneut ein.",
   "Reason for decline": "Grund der Ablehnung",
   "No specific reason was provided. Review your documents and vehicle details before submitting again.": "Es wurde kein konkreter Grund angegeben. Prüfen Sie Ihre Dokumente und Fahrzeugdaten, bevor Sie den Antrag erneut einreichen.",
   "Fix submission": "Antrag korrigieren",
-  "Unable to load review details. Refresh to try again.": "Prüfungsdetails konnten nicht geladen werden. Aktualisieren Sie den Status und versuchen Sie es erneut."
-,
+  "Unable to load review details. Refresh to try again.": "Prüfungsdetails konnten nicht geladen werden. Aktualisieren Sie den Status und versuchen Sie es erneut.",
   "{{label}} must be replaced before resubmitting.": "{{label}} muss vor der erneuten Einreichung ersetzt werden.",
-  "Replace rejected vehicle photos and documents before resubmitting.": "Ersetzen Sie abgelehnte Fahrzeugfotos und Dokumente vor der erneuten Einreichung."
-,
-  "Missing vehicle photos and documents": "Fehlende Fahrzeugfotos und -dokumente"
+  "Replace rejected vehicle photos and documents before resubmitting.": "Ersetzen Sie abgelehnte Fahrzeugfotos und Dokumente vor der erneuten Einreichung.",
+  "Missing vehicle photos and documents": "Fehlende Fahrzeugfotos und -dokumente",
+  "Step 1 of 7: Verify phone": "Schritt 1 von 7: Telefonnummer bestätigen",
+  "Step 2 of 7: Profile": "Schritt 2 von 7: Profil",
+  "Step 3 of 7: Personal documents": "Schritt 3 von 7: Persönliche Dokumente",
+  "Step 4 of 7: Vehicle details": "Schritt 4 von 7: Fahrzeugdaten",
+  "Step 5 of 7: Load capacity": "Schritt 5 von 7: Ladekapazität",
+  "Step 6 of 7: Admin review": "Schritt 6 von 7: Prüfung durch das Team",
+  "Step 7 of 7: Availability": "Schritt 7 von 7: Verfügbarkeit",
+  "Registration checklist": "Checkliste für die Registrierung",
+  "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "Halten Sie Ihren Ausweis, Führerschein, Fahrzeugschein, Versicherungsnachweis und Fahrzeugfotos bereit.",
+  "Review time varies. Check your status in the app after submitting.": "Die Dauer der Prüfung variiert. Prüfen Sie nach dem Einreichen Ihren Status in der App.",
+  "After approval, set your availability to start receiving requests.": "Legen Sie nach der Genehmigung Ihre Verfügbarkeit fest, um Anfragen zu erhalten."
 }

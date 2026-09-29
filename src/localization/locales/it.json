@@ -1071,16 +1071,24 @@
   "Choose the market your account belongs to. Operational coverage is approved separately.": "Scegli il mercato del tuo account. Le aree operative vengono approvate separatamente.",
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Eliminando il tuo account, i tuoi dati personali verranno rimossi o anonimizzati in modo permanente e verrai disconnesso da tutti i dispositivi. Questa azione è irreversibile. Prima completa o annulla le richieste di trasporto attive.",
   "Type {{confirmation}} to confirm.": "Digita {{confirmation}} per confermare.",
-  "Account deletion confirmation": "Conferma eliminazione account"
-,
+  "Account deletion confirmation": "Conferma eliminazione account",
   "Review the reason below, correct your documents and vehicle details, then submit again.": "Leggi il motivo qui sotto, correggi i documenti e i dati del veicolo, poi invia nuovamente la richiesta.",
   "Reason for decline": "Motivo del rifiuto",
   "No specific reason was provided. Review your documents and vehicle details before submitting again.": "Non è stato fornito un motivo specifico. Controlla i documenti e i dati del veicolo prima di inviare nuovamente la richiesta.",
   "Fix submission": "Correggi la richiesta",
-  "Unable to load review details. Refresh to try again.": "Impossibile caricare i dettagli della revisione. Aggiorna lo stato e riprova."
-,
+  "Unable to load review details. Refresh to try again.": "Impossibile caricare i dettagli della revisione. Aggiorna lo stato e riprova.",
   "{{label}} must be replaced before resubmitting.": "{{label}} deve essere sostituito prima di inviare nuovamente la richiesta.",
-  "Replace rejected vehicle photos and documents before resubmitting.": "Sostituisci le foto e i documenti del veicolo rifiutati prima di inviare nuovamente la richiesta."
-,
-  "Missing vehicle photos and documents": "Foto e documenti del veicolo mancanti"
+  "Replace rejected vehicle photos and documents before resubmitting.": "Sostituisci le foto e i documenti del veicolo rifiutati prima di inviare nuovamente la richiesta.",
+  "Missing vehicle photos and documents": "Foto e documenti del veicolo mancanti",
+  "Step 1 of 7: Verify phone": "Passaggio 1 di 7: Verifica del telefono",
+  "Step 2 of 7: Profile": "Passaggio 2 di 7: Profilo",
+  "Step 3 of 7: Personal documents": "Passaggio 3 di 7: Documenti personali",
+  "Step 4 of 7: Vehicle details": "Passaggio 4 di 7: Dati del veicolo",
+  "Step 5 of 7: Load capacity": "Passaggio 5 di 7: Capacità di carico",
+  "Step 6 of 7: Admin review": "Passaggio 6 di 7: Revisione amministrativa",
+  "Step 7 of 7: Availability": "Passaggio 7 di 7: Disponibilità",
+  "Registration checklist": "Elenco dei passaggi per la registrazione",
+  "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "Tieni pronti documento di identità, patente, libretto, assicurazione e foto del veicolo.",
+  "Review time varies. Check your status in the app after submitting.": "I tempi di revisione variano. Controlla lo stato nell’app dopo l’invio.",
+  "After approval, set your availability to start receiving requests.": "Dopo l’approvazione, imposta la tua disponibilità per iniziare a ricevere richieste."
 }

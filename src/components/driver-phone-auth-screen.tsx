@@ -6,6 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MarketSelector } from '@/components/market-selector';
+import { DriverOnboardingChecklist, DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
@@ -185,8 +187,8 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={[styles.container, keyboardInset > 0 && styles.containerKeyboardOpen, keyboardInset > 0 && { paddingBottom: keyboardInset + 20 }]}>
-          <View style={[styles.brandHeader, keyboardInset > 0 && styles.brandHeaderCompact]}>
+        <ScrollView contentContainerStyle={[styles.container, keyboardInset > 0 && styles.containerKeyboardOpen, keyboardInset > 0 && { paddingBottom: keyboardInset + 20 }]} keyboardShouldPersistTaps="handled">
+          <View style={[styles.brandHeader, (mode === 'register' || keyboardInset > 0) && styles.brandHeaderCompact]}>
             <Text style={styles.brandName}>Transpo24</Text>
             <View style={styles.brandAccent} />
             <Text style={styles.brandRole}>{t('Driver')}</Text>
@@ -194,7 +196,8 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
           <View style={styles.card}>
             {mode === 'register' && <MarketSelector value={marketCode} onChange={setMarketCode} disabled={isSubmitting || isContinuing} />}
             {mode === 'login' ? <Text style={[styles.title, isRTL && styles.rtl]}>{t('Continue as a driver')}</Text> : null}
-            {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t('Step 0 of 3: Verify Mobile')}</Text> : null}
+            {mode === 'register' ? <Text style={[styles.progress, isRTL && styles.rtl]}>{t(DRIVER_ONBOARDING_STEP_LABELS[0])}</Text> : null}
+            {mode === 'register' && !needsDefaultLanguage ? <DriverOnboardingChecklist isRTL={isRTL} /> : null}
             {needsDefaultLanguage ? (
               <View>
                 <Text style={[styles.title, isRTL && styles.rtl]}>{t('Select language')}</Text>
@@ -330,7 +333,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
               </Pressable>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -339,7 +342,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: authTheme.surface },
-  container: { flex: 1, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 22, backgroundColor: authTheme.surface },
+  container: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 12, paddingBottom: 22, backgroundColor: authTheme.surface },
   containerKeyboardOpen: { paddingTop: 0 },
   brandHeader: { height: 224, alignItems: 'center', justifyContent: 'center' },
   brandHeaderCompact: { height: 108 },

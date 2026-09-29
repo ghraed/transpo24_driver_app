@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
+import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import {
@@ -454,7 +455,7 @@ export default function LoadCapacityScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.progress}>
-            {flow === 'onboarding' ? t('Next Step: Define Load Capacity') : t('Vehicle Capacity Management')}
+            {flow === 'onboarding' ? t(DRIVER_ONBOARDING_STEP_LABELS[4]) : t('Vehicle Capacity Management')}
           </Text>
           <Text style={styles.title}>{t('Define Load Capacity')}</Text>
           <Text style={styles.subtitle}>

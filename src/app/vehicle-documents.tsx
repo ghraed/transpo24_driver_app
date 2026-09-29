@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import {
   getDriverDocumentsStatus,
   uploadDriverDocument,
@@ -551,7 +552,7 @@ export default function VehicleDocumentsScreen() {
           <Pressable style={styles.backButton} onPress={() => router.replace('/complete-profile')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.progress}>{t('Step 2 of 3: Documents')}</Text>
+          <Text style={styles.progress}>{t(DRIVER_ONBOARDING_STEP_LABELS[2])}</Text>
           <Text style={styles.title}>{t('Upload Driver Documents')}</Text>
           <Text style={styles.subtitle}>
             {t('Upload the documents needed for verification, then continue to vehicle information.')}

@@ -1068,11 +1068,6 @@
   "startTime and endTime must be in HH:mm format.": "startTime et endTime doivent être au format HH:mm.",
   "State": "État",
   "Status": "Statut",
-  "Step 0 of 3: Verify Mobile": "Étape 0 sur 3 : vérifier le mobile",
-  "Step 1 of 3: Profile": "Étape 1 sur 3 : Profil",
-  "Step 2 of 3: Documents": "Étape 2 sur 3 : Documents",
-  "Step 2 of 3: Vehicle Information": "Étape 2 sur 3 : Informations sur le véhicule",
-  "Step 3 of 3: Availability": "Étape 3 sur 3 : Disponibilité",
   "Stripe accepted the payout release request for this completed trip.": "Stripe a accepte la demande de liberation du paiement pour ce trajet termine.",
   "Stripe account status": "Statut du compte Stripe",
   "Stripe Connect": "Bande Connecter",
@@ -1502,16 +1497,24 @@
   "Choose the market your account belongs to. Operational coverage is approved separately.": "Choisissez le marché de votre compte. Les zones d’activité sont approuvées séparément.",
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "La suppression de votre compte efface ou anonymise définitivement vos données personnelles et vous déconnecte de tous les appareils. Cette action est irréversible. Terminez ou annulez toute demande de transport active au préalable.",
   "Type {{confirmation}} to confirm.": "Saisissez {{confirmation}} pour confirmer.",
-  "Account deletion confirmation": "Confirmation de suppression du compte"
-,
+  "Account deletion confirmation": "Confirmation de suppression du compte",
   "Review the reason below, correct your documents and vehicle details, then submit again.": "Consultez le motif ci-dessous, corrigez vos documents et les informations du véhicule, puis soumettez à nouveau.",
   "Reason for decline": "Motif du refus",
   "No specific reason was provided. Review your documents and vehicle details before submitting again.": "Aucun motif précis n’a été fourni. Vérifiez vos documents et les informations du véhicule avant de soumettre à nouveau.",
   "Fix submission": "Corriger la demande",
-  "Unable to load review details. Refresh to try again.": "Impossible de charger les détails de l’examen. Actualisez le statut pour réessayer."
-,
+  "Unable to load review details. Refresh to try again.": "Impossible de charger les détails de l’examen. Actualisez le statut pour réessayer.",
   "{{label}} must be replaced before resubmitting.": "{{label}} doit être remplacé avant une nouvelle soumission.",
-  "Replace rejected vehicle photos and documents before resubmitting.": "Remplacez les photos et documents du véhicule refusés avant de soumettre à nouveau."
-,
-  "Missing vehicle photos and documents": "Photos et documents du véhicule manquants"
+  "Replace rejected vehicle photos and documents before resubmitting.": "Remplacez les photos et documents du véhicule refusés avant de soumettre à nouveau.",
+  "Missing vehicle photos and documents": "Photos et documents du véhicule manquants",
+  "Step 1 of 7: Verify phone": "Étape 1 sur 7 : Vérification du téléphone",
+  "Step 2 of 7: Profile": "Étape 2 sur 7 : Profil",
+  "Step 3 of 7: Personal documents": "Étape 3 sur 7 : Documents personnels",
+  "Step 4 of 7: Vehicle details": "Étape 4 sur 7 : Informations sur le véhicule",
+  "Step 5 of 7: Load capacity": "Étape 5 sur 7 : Capacité de chargement",
+  "Step 6 of 7: Admin review": "Étape 6 sur 7 : Examen par l’équipe",
+  "Step 7 of 7: Availability": "Étape 7 sur 7 : Disponibilité",
+  "Registration checklist": "Liste des étapes d’inscription",
+  "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "Préparez votre pièce d’identité, votre permis de conduire, la carte grise, l’assurance et des photos du véhicule.",
+  "Review time varies. Check your status in the app after submitting.": "Le délai d’examen varie. Consultez votre statut dans l’application après l’envoi.",
+  "After approval, set your availability to start receiving requests.": "Après approbation, définissez vos disponibilités pour commencer à recevoir des demandes."
 }

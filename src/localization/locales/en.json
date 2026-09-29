@@ -1068,11 +1068,6 @@
   "startTime and endTime must be in HH:mm format.": "startTime and endTime must be in HH:mm format.",
   "State": "State",
   "Status": "Status",
-  "Step 0 of 3: Verify Mobile": "Step 0 of 3: Verify Mobile",
-  "Step 1 of 3: Profile": "Step 1 of 3: Profile",
-  "Step 2 of 3: Documents": "Step 2 of 3: Documents",
-  "Step 2 of 3: Vehicle Information": "Step 2 of 3: Vehicle Information",
-  "Step 3 of 3: Availability": "Step 3 of 3: Availability",
   "Stripe accepted the payout release request for this completed trip.": "Stripe accepted the payout release request for this completed trip.",
   "Stripe account status": "Stripe account status",
   "Stripe Connect": "Stripe Connect",
@@ -1502,16 +1497,24 @@
   "Choose the market your account belongs to. Operational coverage is approved separately.": "Choose the market your account belongs to. Operational coverage is approved separately.",
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.",
   "Type {{confirmation}} to confirm.": "Type {{confirmation}} to confirm.",
-  "Account deletion confirmation": "Account deletion confirmation"
-,
+  "Account deletion confirmation": "Account deletion confirmation",
   "Review the reason below, correct your documents and vehicle details, then submit again.": "Review the reason below, correct your documents and vehicle details, then submit again.",
   "Reason for decline": "Reason for decline",
   "No specific reason was provided. Review your documents and vehicle details before submitting again.": "No specific reason was provided. Review your documents and vehicle details before submitting again.",
   "Fix submission": "Fix submission",
-  "Unable to load review details. Refresh to try again.": "Unable to load review details. Refresh to try again."
-,
+  "Unable to load review details. Refresh to try again.": "Unable to load review details. Refresh to try again.",
   "{{label}} must be replaced before resubmitting.": "{{label}} must be replaced before resubmitting.",
-  "Replace rejected vehicle photos and documents before resubmitting.": "Replace rejected vehicle photos and documents before resubmitting."
-,
-  "Missing vehicle photos and documents": "Missing vehicle photos and documents"
+  "Replace rejected vehicle photos and documents before resubmitting.": "Replace rejected vehicle photos and documents before resubmitting.",
+  "Missing vehicle photos and documents": "Missing vehicle photos and documents",
+  "Step 1 of 7: Verify phone": "Step 1 of 7: Verify phone",
+  "Step 2 of 7: Profile": "Step 2 of 7: Profile",
+  "Step 3 of 7: Personal documents": "Step 3 of 7: Personal documents",
+  "Step 4 of 7: Vehicle details": "Step 4 of 7: Vehicle details",
+  "Step 5 of 7: Load capacity": "Step 5 of 7: Load capacity",
+  "Step 6 of 7: Admin review": "Step 6 of 7: Admin review",
+  "Step 7 of 7: Availability": "Step 7 of 7: Availability",
+  "Registration checklist": "Registration checklist",
+  "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.": "Have your ID, driving licence, vehicle registration, insurance, and vehicle photos ready.",
+  "Review time varies. Check your status in the app after submitting.": "Review time varies. Check your status in the app after submitting.",
+  "After approval, set your availability to start receiving requests.": "After approval, set your availability to start receiving requests."
 }

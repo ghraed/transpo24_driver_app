@@ -47,6 +47,7 @@ it('names missing uploads on the vehicle screen and blocks Next before creating 
   await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
 
   const rendered = JSON.stringify(tree.toJSON());
+  expect(rendered).toContain('Step 4 of 7: Vehicle details');
   expect(rendered).toContain('Missing vehicle photos and documents');
   expect(rendered).toContain('Front photo');
   expect(rendered).toContain('Insurance document');

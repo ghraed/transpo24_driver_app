@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import {
   clearLastOnboardingRoute,
@@ -182,6 +183,8 @@ export default function VerifyPhoneScreen() {
             <Text style={styles.backText}>{t('Change phone number')}</Text>
           </Pressable>
 
+          <Text style={styles.progress}>{t(DRIVER_ONBOARDING_STEP_LABELS[0])}</Text>
+
           <View style={styles.icon}>
             <Text style={styles.iconText}>✓</Text>
           </View>
@@ -275,6 +278,7 @@ export default function VerifyPhoneScreen() {
 }
 
 const styles = StyleSheet.create({
+  progress: { color: '#9A6500', fontSize: 13, fontWeight: '700', marginBottom: 12 },
   flex: {
     flex: 1,
   },

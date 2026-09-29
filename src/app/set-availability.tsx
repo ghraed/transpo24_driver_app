@@ -29,6 +29,7 @@ import {
 } from '@/components/native-maps';
 import { getBackendApiBaseUrl } from '@/config/backend';
 import { HAS_GOOGLE_MAPS_API_KEY } from '@/config/maps';
+import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import {
   clearLastOnboardingRoute,
@@ -803,7 +804,7 @@ export default function SetAvailabilityScreen() {
           <Pressable style={styles.backButton} onPress={() => router.replace('/vehicle-documents')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.progress}>{t('Step 3 of 3: Availability')}</Text>
+          <Text style={styles.progress}>{t(DRIVER_ONBOARDING_STEP_LABELS[6])}</Text>
           <Text style={styles.title}>{t('Set Your Availability')}</Text>
           <Text style={styles.subtitle}>
             {t('Choose when and where you can receive transport requests.')}

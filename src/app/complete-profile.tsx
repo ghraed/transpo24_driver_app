@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { CountryPicker } from '@/components/country-picker';
+import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
 import { useAuth } from '@/context/auth-context';
 import {
   clearCompleteProfileDraft,
@@ -441,7 +442,7 @@ export default function CompleteProfileScreen() {
           <Pressable style={styles.backButton} onPress={() => router.replace('/register')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-          <Text style={styles.progress}>{t('Step 1 of 3: Profile')}</Text>
+          <Text style={styles.progress}>{t(DRIVER_ONBOARDING_STEP_LABELS[1])}</Text>
           <Text style={styles.title}>{t('Complete Your Profile')}</Text>
           <Text style={styles.subtitle}>
             {t('Add your details so we can verify and prepare your driver account.')}

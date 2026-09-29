@@ -73,6 +73,8 @@ it('keeps the correction action available when review details cannot be loaded',
 it('does not offer corrections to a driver still under review', async () => {
   mockDriverStatus = 'PENDING_REVIEW';
   await renderScreen();
+  expect(JSON.stringify(tree.toJSON())).toContain('Step 6 of 7: Admin review');
+  expect(JSON.stringify(tree.toJSON())).toContain('Review time varies. Check your status in the app after submitting.');
   expect(button('Fix submission')).toBeUndefined();
   expect(getDriverDocumentsStatus).not.toHaveBeenCalled();
   expect(getDriverVehicles).not.toHaveBeenCalled();
