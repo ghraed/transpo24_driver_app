@@ -95,7 +95,7 @@ it('keeps pending drivers in review and checks status on focus', async () => {
   await renderScreen();
   const rendered = JSON.stringify(tree.toJSON());
   expect(rendered).toContain('Step 6 of 7: Admin review');
-  expect(rendered).toContain('Review time varies. Check your status in the app after submitting.');
+  expect(rendered).toContain('Review times vary. Check your status in the app; you may also receive a notification when a decision is made.');
   expect(rendered).toContain('Pending review');
   expect(rendered).not.toContain('Back to home');
   expect(button('Fix submission')).toBeUndefined();

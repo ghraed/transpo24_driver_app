@@ -1,5 +1,5 @@
 {
-  "reviewedOn": "2026-09-10",
+  "reviewedOn": "2026-09-29",
   "scope": "Direct dependencies reviewed for optional analytics and advertising integrations; not certification of providers or transitive SDK behavior.",
   "reviewedDependencies": [
     "@expo/ui",
@@ -14,6 +14,7 @@
     "expo-font",
     "expo-glass-effect",
     "expo-image",
+    "expo-image-manipulator",
     "expo-image-picker",
     "expo-linking",
     "expo-localization",

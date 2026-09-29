@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 
 import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
+import { DRIVER_IMAGE_GUIDANCE, MAX_DRIVER_IMAGE_BYTES, prepareDriverUploadImage } from '@/lib/driver-upload-image';
+import { dateOnlyForPicker, formatLocalDateOnly } from '@/lib/local-date-only';
 import {
   getDriverDocumentsStatus,
   uploadDriverDocument,
@@ -36,7 +38,6 @@ import type {
   LocalDocumentAsset,
 } from '@/types/auth';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const PHOTO_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 type UploadableOnboardingField =
   | 'personalSelfie'
@@ -72,33 +73,13 @@ interface OnboardingDocumentsForm {
   idDocumentKind: IdentityDocumentKind | '';
   idExpiryDate: string;
   drivingLicenseExpiryDate: string;
+  replacementDocumentTypes: UploadableDocumentType[];
+  dateDraftVersion: 2;
 }
 
 function toDateOnly(isoDate: string | null | undefined): string {
   if (!isoDate) return '';
   return isoDate.slice(0, 10);
-}
-
-function normalizeDateValue(value: string): Date {
-  if (!value) return new Date();
-  return new Date(value);
-}
-
-function addYearsToToday(years: number): string {
-  const value = new Date();
-  value.setFullYear(value.getFullYear() + years);
-  return value.toISOString().slice(0, 10);
-}
-
-function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
-  return {
-    uri: asset.uri,
-    fileName: asset.fileName ?? undefined,
-    mimeType: asset.mimeType ?? undefined,
-    fileSize: asset.fileSize ?? undefined,
-    width: asset.width,
-    height: asset.height,
-  };
 }
 
 export default function VehicleDocumentsScreen() {
@@ -109,9 +90,11 @@ export default function VehicleDocumentsScreen() {
   const { t } = useTranslation();
 
   const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<OnboardingDocumentsForm>({
-    idDocumentKind: 'NATIONAL_ID',
+    idDocumentKind: '',
     idExpiryDate: '',
     drivingLicenseExpiryDate: '',
+    replacementDocumentTypes: [],
+    dateDraftVersion: 2,
   });
   const [documentsStatus, setDocumentsStatus] = useState<DriverDocumentsStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -137,22 +120,27 @@ export default function VehicleDocumentsScreen() {
 
     setOnboardingDocumentsForm((prev) => ({
       ...prev,
-      idDocumentKind: status.identityDocumentKind ?? prev.idDocumentKind ?? 'NATIONAL_ID',
+      idDocumentKind: prev.idDocumentKind || status.identityDocumentKind || '',
+      replacementDocumentTypes: Array.from(new Set([
+        ...(prev.replacementDocumentTypes ?? []),
+        ...(prev.idDocumentKind && status.identityDocumentKind && prev.idDocumentKind !== status.identityDocumentKind
+          ? (['ID_FRONT', 'ID_BACK'] as const).filter((type) =>
+              status.uploadedDocuments.some((document) => document.type === type))
+          : []),
+      ])),
       idExpiryDate:
         prev.idExpiryDate ||
         toDateOnly(
           status.uploadedDocuments.find((document) => document.type === 'ID_FRONT')?.expiresAt ??
             status.uploadedDocuments.find((document) => document.type === 'ID_BACK')?.expiresAt ??
             null,
-        ) ||
-        addYearsToToday(1),
+        ),
       drivingLicenseExpiryDate:
         prev.drivingLicenseExpiryDate ||
         toDateOnly(
           status.uploadedDocuments.find((document) => document.type === 'DRIVING_LICENSE')
             ?.expiresAt ?? null,
-        ) ||
-        addYearsToToday(1),
+        ),
     }));
   }, []);
 
@@ -163,10 +151,14 @@ export default function VehicleDocumentsScreen() {
     try {
       const draftRaw = await readOnboardingDocumentsDraft();
       if (draftRaw) {
-        const draft = JSON.parse(draftRaw) as OnboardingDocumentsForm;
+        const draft = JSON.parse(draftRaw) as Partial<OnboardingDocumentsForm>;
         setOnboardingDocumentsForm((prev) => ({
           ...prev,
           ...draft,
+          // Older drafts could contain automatically generated expiry dates.
+          idExpiryDate: draft.dateDraftVersion === 2 ? draft.idExpiryDate ?? '' : '',
+          drivingLicenseExpiryDate: draft.dateDraftVersion === 2 ? draft.drivingLicenseExpiryDate ?? '' : '',
+          dateDraftVersion: 2,
         }));
       }
 
@@ -227,7 +219,7 @@ export default function VehicleDocumentsScreen() {
         return;
       }
 
-      if (asset.fileSize && asset.fileSize > MAX_IMAGE_BYTES) {
+      if (asset.fileSize && asset.fileSize > MAX_DRIVER_IMAGE_BYTES) {
         errors[fieldKey] = t('{{label}} must be 5 MB or smaller.', { label });
       }
     };
@@ -265,7 +257,7 @@ export default function VehicleDocumentsScreen() {
       const mime = drivingLicenseAsset.mimeType ?? '';
       if (!PHOTO_ALLOWED_TYPES.has(mime)) {
         errors.drivingLicense = t('Driving license must be JPEG, PNG, or WEBP.');
-      } else if (drivingLicenseAsset.fileSize && drivingLicenseAsset.fileSize > MAX_IMAGE_BYTES) {
+      } else if (drivingLicenseAsset.fileSize && drivingLicenseAsset.fileSize > MAX_DRIVER_IMAGE_BYTES) {
         errors.drivingLicense = t('Driving license image must be 5 MB or smaller.');
       }
     }
@@ -312,17 +304,29 @@ export default function VehicleDocumentsScreen() {
     key: K,
     value: OnboardingDocumentsForm[K],
   ): void => {
+    setSubmitError('');
     setOnboardingDocumentsForm((prev) => {
+      const changed = prev[key] !== value;
+      const affectedTypes: UploadableDocumentType[] = key === 'idDocumentKind' || key === 'idExpiryDate'
+        ? ['ID_FRONT', 'ID_BACK']
+        : key === 'drivingLicenseExpiryDate' ? ['DRIVING_LICENSE'] : [];
+      const replacements = changed
+        ? affectedTypes.filter((type) => documentsStatus?.uploadedDocuments.some((document) => document.type === type))
+        : [];
+      const replacementDocumentTypes = Array.from(new Set([
+        ...(prev.replacementDocumentTypes ?? []),
+        ...replacements,
+      ]));
       if (key === 'idDocumentKind') {
         const nextKind = value as OnboardingDocumentsForm['idDocumentKind'];
         return {
           ...prev,
           idDocumentKind: nextKind,
-          idExpiryDate: nextKind === 'RESIDENCY_CARD' ? prev.idExpiryDate : '',
+          idExpiryDate: nextKind === prev.idDocumentKind ? prev.idExpiryDate : '',
+          replacementDocumentTypes,
         };
       }
-
-      return { ...prev, [key]: value };
+      return { ...prev, [key]: value, replacementDocumentTypes };
     });
   };
 
@@ -381,6 +385,7 @@ export default function VehicleDocumentsScreen() {
         setOnboardingDocumentsForm((prev) => ({
           ...prev,
           [fieldKey]: undefined,
+          replacementDocumentTypes: (prev.replacementDocumentTypes ?? []).filter((documentType) => documentType !== type),
         }));
         setSubmitSuccess(t('Document uploaded successfully.'));
         return true;
@@ -402,10 +407,27 @@ export default function VehicleDocumentsScreen() {
     ],
   );
 
+  const canSelectOnboardingDocument = (key: UploadableOnboardingField): boolean => {
+    if (key !== 'idFront' && key !== 'idBack') return true;
+    if (!onboardingDocumentsForm.idDocumentKind) {
+      setSubmitError(t('Choose whether you have a national ID or residency card.'));
+      return false;
+    }
+    if (onboardingDocumentsForm.idDocumentKind === 'RESIDENCY_CARD' && !onboardingDocumentsForm.idExpiryDate) {
+      setSubmitError(t('Residency expiry date is required.'));
+      return false;
+    }
+    if (fieldErrors.idExpiryDate) {
+      setSubmitError(fieldErrors.idExpiryDate);
+      return false;
+    }
+    return true;
+  };
+
   const pickOnboardingDocument = async (
     key: UploadableOnboardingField,
   ): Promise<void> => {
-    if (activeOnboardingUploadType) return;
+    if (activeOnboardingUploadType || !canSelectOnboardingDocument(key)) return;
 
     setSubmitError('');
     setSubmitSuccess('');
@@ -425,15 +447,20 @@ export default function VehicleDocumentsScreen() {
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    const normalizedAsset = toAssetFromImagePicker(asset);
-    setOnboardingDocument(key, normalizedAsset);
-    await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
+    try {
+      const normalizedAsset = await prepareDriverUploadImage(asset);
+      setOnboardingDocument(key, normalizedAsset);
+      await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
+    } catch (error) {
+      setSubmitError(t(error instanceof Error && error.message === 'Image files must be 5 MB or smaller.'
+        ? error.message : 'Failed to upload driver document.'));
+    }
   };
 
   const takeOnboardingDocumentImage = async (
     key: UploadableOnboardingField,
   ): Promise<void> => {
-    if (activeOnboardingUploadType) return;
+    if (activeOnboardingUploadType || !canSelectOnboardingDocument(key)) return;
 
     setSubmitError('');
     setSubmitSuccess('');
@@ -447,15 +474,20 @@ export default function VehicleDocumentsScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
-      quality: 1,
+      quality: 0.9,
     });
 
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    const normalizedAsset = toAssetFromImagePicker(asset);
-    setOnboardingDocument(key, normalizedAsset);
-    await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
+    try {
+      const normalizedAsset = await prepareDriverUploadImage(asset);
+      setOnboardingDocument(key, normalizedAsset);
+      await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
+    } catch (error) {
+      setSubmitError(t(error instanceof Error && error.message === 'Image files must be 5 MB or smaller.'
+        ? error.message : 'Failed to upload driver document.'));
+    }
   };
 
   const hasRequiredDocumentsReadyForUpload = Boolean(documentsStatus) &&
@@ -469,7 +501,11 @@ export default function VehicleDocumentsScreen() {
       return fieldKey ? Boolean(onboardingDocumentsForm[fieldKey]) : false;
     });
 
+  const hasReplacementFilesReady = (onboardingDocumentsForm.replacementDocumentTypes ?? []).every((type) =>
+    Boolean(onboardingDocumentsForm[FIELD_BY_DOCUMENT_TYPE[type]]),
+  );
   const canContinue =
+    hasReplacementFilesReady &&
     !isBusy &&
     !isContinuing &&
     !isLoading &&
@@ -568,6 +604,7 @@ export default function VehicleDocumentsScreen() {
           <Text style={styles.helper}>
             {t('Select or take clear images of the required personal documents before submitting your account for review.')}
           </Text>
+          <Text style={styles.helper}>{t(DRIVER_IMAGE_GUIDANCE)}</Text>
 
           {renderOnboardingDocumentPicker(
             t('Recent personal photo / selfie *'),
@@ -581,17 +618,6 @@ export default function VehicleDocumentsScreen() {
           {fieldErrors.personalSelfie ? (
             <Text style={styles.errorText}>{fieldErrors.personalSelfie}</Text>
           ) : null}
-
-          {renderOnboardingDocumentPicker(
-            t('ID or residency card front *'),
-            t('Upload clear photos of the front and back sides. The document must not be expired.'),
-            'ID_FRONT',
-            onboardingDocumentsForm.idFront,
-            getUploadedOnboardingDocument('ID_FRONT'),
-            () => void pickOnboardingDocument('idFront'),
-            () => void takeOnboardingDocumentImage('idFront'),
-          )}
-          {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
 
           <Text style={styles.fieldLabel}>{t('Document type *')}</Text>
           <View style={styles.optionWrap}>
@@ -642,6 +668,17 @@ export default function VehicleDocumentsScreen() {
           ) : null}
 
           {renderOnboardingDocumentPicker(
+            t('ID or residency card front *'),
+            t('Upload clear photos of the front and back sides. The document must not be expired.'),
+            'ID_FRONT',
+            onboardingDocumentsForm.idFront,
+            getUploadedOnboardingDocument('ID_FRONT'),
+            () => void pickOnboardingDocument('idFront'),
+            () => void takeOnboardingDocumentImage('idFront'),
+          )}
+          {fieldErrors.idFront ? <Text style={styles.errorText}>{fieldErrors.idFront}</Text> : null}
+
+          {renderOnboardingDocumentPicker(
             t('ID or residency card back *'),
             t('Upload clear photos of the front and back sides. The document must not be expired.'),
             'ID_BACK',
@@ -686,6 +723,10 @@ export default function VehicleDocumentsScreen() {
             <Text style={styles.errorText}>{fieldErrors.drivingLicenseExpiryDate}</Text>
           ) : null}
 
+          {(onboardingDocumentsForm.replacementDocumentTypes ?? []).length > 0 ? (
+            <Text style={styles.errorText}>{t('Re-upload affected documents after changing their details.')}</Text>
+          ) : null}
+
           {documentsStatus?.missingDocumentLabels?.length ? (
             <Text style={styles.helper}>
               {t('Missing documents')}: {documentsStatus.missingDocumentLabels.join(', ')}
@@ -719,7 +760,7 @@ export default function VehicleDocumentsScreen() {
         <DateTimePicker
           mode="date"
           display="default"
-          value={normalizeDateValue(onboardingDocumentsForm[activeDateField])}
+          value={dateOnlyForPicker(onboardingDocumentsForm[activeDateField])}
           minimumDate={new Date()}
           onChange={(event, selectedDate) => {
             if (event.type === 'dismissed') {
@@ -728,7 +769,7 @@ export default function VehicleDocumentsScreen() {
             }
 
             if (selectedDate) {
-              onOnboardingDocumentChange(activeDateField, toDateOnly(selectedDate.toISOString()));
+              onOnboardingDocumentChange(activeDateField, formatLocalDateOnly(selectedDate));
             }
             setActiveDateField(null);
           }}
@@ -776,6 +817,8 @@ export default function VehicleDocumentsScreen() {
         ) : null}
         <View style={styles.docButtonsRow}>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t('Select')} ${label}`}
             style={styles.uploadButtonSmall}
             onPress={onPick}
             disabled={Boolean(activeOnboardingUploadType)}
@@ -783,6 +826,8 @@ export default function VehicleDocumentsScreen() {
             <Text style={styles.uploadButtonText}>{asset || uploaded ? t('Replace') : t('Select')}</Text>
           </Pressable>
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t('Take image')} ${label}`}
             style={styles.uploadButtonSmall}
             onPress={onTakeImage}
             disabled={Boolean(activeOnboardingUploadType)}

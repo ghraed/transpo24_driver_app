@@ -28,7 +28,8 @@ it.each(['register'])('requires a market and preserves it through %s OTP navigat
   if (mode === 'register') await act(async () => tree.root.findAll(node => node.props.accessibilityRole === 'checkbox' && typeof node.props.onPress === 'function')[0].props.onPress());
   await act(async () => phone().props.onSubmitEditing());
   expect(sendDriverPhoneVerificationCode).toHaveBeenCalledWith({ phoneNumber: '+96170123456', marketCode: 'FR' });
-  expect(mockRouter[mode === 'login' ? 'push' : 'replace']).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+96170123456', marketCode: 'FR' } });
+  expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/verify-phone', params: { phoneNumber: '+96170123456', marketCode: 'FR' } });
+  expect(mockRouter.replace).not.toHaveBeenCalled();
 });
 it('continues a trusted session without asking for a market', async () => {
   readTrustedDriverSession.mockResolvedValue({ phoneNumber: '+33123456789' });
@@ -75,7 +76,7 @@ it('shows the full registration checklist and review timing before phone verific
   ];
   expect(rendered).toContain('Registration checklist');
   for (const stage of stages) expect(rendered).toContain(stage);
-  expect(rendered).toContain('Review time varies. Check your status in the app after submitting.');
+  expect(rendered).toContain('Review times vary. Check your status in the app; you may also receive a notification when a decision is made.');
   expect(rendered).toContain('After approval, set your availability to start receiving requests.');
 });
 

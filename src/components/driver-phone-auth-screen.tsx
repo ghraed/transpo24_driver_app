@@ -121,11 +121,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     try {
       await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber, ...(mode === 'register' ? { marketCode } : {}) });
       const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber, ...(mode === 'register' ? { marketCode } : {}) } };
-      if (mode === 'login') {
-        router.push(destination);
-      } else {
-        router.replace(destination);
-      }
+      router.push(destination);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : t('Unable to send the verification code.'));
     } finally {

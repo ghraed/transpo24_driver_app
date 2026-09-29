@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 
 import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-checklist';
+import { DRIVER_IMAGE_GUIDANCE, MAX_DRIVER_IMAGE_BYTES, prepareDriverUploadImage } from '@/lib/driver-upload-image';
+import { dateOnlyForPicker, formatLocalDateOnly } from '@/lib/local-date-only';
 import { useAuth } from '@/context/auth-context';
 import {
   clearVehicleInformationDraft,
@@ -51,7 +53,6 @@ import type {
   VehicleType,
 } from '@/types/auth';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const VEHICLE_TYPE_OPTIONS: { label: string; value: VehicleType }[] = [
@@ -111,17 +112,6 @@ function getModelsForVehicleSelection(
   return VEHICLE_MODELS_BY_BRAND_AND_TYPE[brand as VehicleBrand][modelType];
 }
 
-function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
-  return {
-    uri: asset.uri,
-    fileName: asset.fileName ?? undefined,
-    mimeType: asset.mimeType ?? undefined,
-    fileSize: asset.fileSize ?? undefined,
-    width: asset.width,
-    height: asset.height,
-  };
-}
-
 function formatDate(value: string): string {
   if (!value) return i18n.t('Select date');
   return value;
@@ -142,11 +132,6 @@ function readAssetLabel(asset?: LocalDocumentAsset, fallback?: string | null): s
     return i18n.t('Uploaded file');
   }
   return i18n.t('No file selected');
-}
-
-function normalizeDateValue(value: string): Date {
-  if (!value) return new Date();
-  return new Date(value);
 }
 
 function formatSelectorLabel(value: string, options: SelectorOption[]): string {
@@ -321,7 +306,7 @@ export default function VehicleInformationScreen() {
         errors[fieldKey] = t('{{label}} must be JPEG, PNG, or WEBP.', { label });
         return;
       }
-      if (asset.fileSize && asset.fileSize > MAX_IMAGE_BYTES) {
+      if (asset.fileSize && asset.fileSize > MAX_DRIVER_IMAGE_BYTES) {
         errors[fieldKey] = t('{{label}} must be 5 MB or smaller.', { label });
       }
     };
@@ -644,7 +629,12 @@ export default function VehicleInformationScreen() {
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    onVehicleChange(key, toAssetFromImagePicker(asset));
+    try {
+      onVehicleChange(key, await prepareDriverUploadImage(asset));
+    } catch (error) {
+      setSubmitError(t(error instanceof Error && error.message === 'Image files must be 5 MB or smaller.'
+        ? error.message : 'Failed to upload driver document.'));
+    }
   };
 
   const takeVehicleDocumentImage = async (
@@ -666,13 +656,18 @@ export default function VehicleInformationScreen() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
-      quality: 1,
+      quality: 0.9,
     });
 
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    onVehicleChange(key, toAssetFromImagePicker(asset));
+    try {
+      onVehicleChange(key, await prepareDriverUploadImage(asset));
+    } catch (error) {
+      setSubmitError(t(error instanceof Error && error.message === 'Image files must be 5 MB or smaller.'
+        ? error.message : 'Failed to upload driver document.'));
+    }
   };
 
   const buildPayload = (): CreateDriverVehiclePayload => ({
@@ -1040,6 +1035,7 @@ export default function VehicleInformationScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('Vehicle Photos')}</Text>
+          <Text style={styles.helper}>{t(DRIVER_IMAGE_GUIDANCE)}</Text>
           {renderUploadCard({
             field: 'frontPhoto',
             label: t('Front photo'),
@@ -1076,6 +1072,7 @@ export default function VehicleInformationScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('Vehicle Documents')}</Text>
+          <Text style={styles.helper}>{t(DRIVER_IMAGE_GUIDANCE)}</Text>
           {renderUploadCard({
             field: 'registrationFrontDocument',
             label: t('Registration card front side'),
@@ -1175,7 +1172,7 @@ export default function VehicleInformationScreen() {
         <DateTimePicker
           mode="date"
           display="default"
-          value={normalizeDateValue(vehicleForm[activeDateField])}
+          value={dateOnlyForPicker(vehicleForm[activeDateField])}
           minimumDate={new Date()}
           onChange={(event, selectedDate) => {
             if (event.type === 'dismissed') {
@@ -1184,7 +1181,7 @@ export default function VehicleInformationScreen() {
             }
 
             if (selectedDate) {
-              onVehicleChange(activeDateField, selectedDate.toISOString().slice(0, 10));
+              onVehicleChange(activeDateField, formatLocalDateOnly(selectedDate));
             }
             setActiveDateField(null);
           }}

@@ -11,7 +11,7 @@ export const DRIVER_ONBOARDING_STEP_LABELS = [
   'Step 7 of 7: Availability',
 ] as const;
 
-export const REVIEW_TIMING_MESSAGE = 'Review time varies. Check your status in the app after submitting.';
+export const REVIEW_TIMING_MESSAGE = 'Review times vary. Check your status in the app; you may also receive a notification when a decision is made.';
 
 export function DriverOnboardingChecklist({ isRTL = false }: { isRTL?: boolean }) {
   const { t } = useTranslation();
