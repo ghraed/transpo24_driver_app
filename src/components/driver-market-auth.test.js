@@ -4,7 +4,7 @@ import { TextInput } from 'react-native';
 import { DriverPhoneAuthScreen } from './driver-phone-auth-screen';
 import { MarketSelector } from './market-selector';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
-import { readTrustedDriverSession } from '@/lib/auth-storage';
+import { readLastOnboardingRoute, readTrustedDriverSession } from '@/lib/auth-storage';
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
 const mockContinue = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
@@ -12,7 +12,7 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: key => key }) })
 jest.mock('@/components/market-selector', () => ({ MarketSelector: () => null }));
 jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ continueWithTrustedSession: mockContinue }) }));
 jest.mock('@/lib/api', () => ({ sendDriverPhoneVerificationCode: jest.fn() }));
-jest.mock('@/lib/auth-storage', () => ({ readTrustedDriverSession: jest.fn() }));
+jest.mock('@/lib/auth-storage', () => ({ readTrustedDriverSession: jest.fn(), readLastOnboardingRoute: jest.fn().mockResolvedValue(null) }));
 jest.mock('@/localization/provider', () => ({ useAppLanguage: () => ({ hasSavedLanguage: true, isRTL: false }) }));
 jest.mock('@/hooks/use-android-keyboard-inset', () => ({ useAndroidKeyboardInset: () => 0 }));
 let tree;
@@ -39,6 +39,15 @@ it('continues a trusted session without asking for a market', async () => {
   expect(mockContinue).toHaveBeenCalledWith();
   expect(mockRouter.replace).not.toHaveBeenCalled();
   expect(JSON.stringify(tree.toJSON())).toContain('Choose your home market');
+});
+
+it('resumes a declined driver at the saved correction step from a trusted session', async () => {
+  readTrustedDriverSession.mockResolvedValue({ phoneNumber: '+33123456789' });
+  readLastOnboardingRoute.mockResolvedValue('/load-capacity?vehicleId=vehicle-1&flow=onboarding');
+  mockContinue.mockResolvedValue({ status: 'restored', nextStep: 'WAITING_APPROVAL', driverStatus: 'REJECTED' });
+  await act(async () => { tree = create(<DriverPhoneAuthScreen mode="login" />); });
+  await act(async () => tree.root.findAll(node => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0].props.onPress());
+  expect(mockRouter.replace).toHaveBeenCalledWith('/load-capacity?vehicleId=vehicle-1&flow=onboarding');
 });
 
 it('logs in by phone without a market selector or market payload', async () => {

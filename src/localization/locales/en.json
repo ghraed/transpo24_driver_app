@@ -1503,4 +1503,13 @@
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.",
   "Type {{confirmation}} to confirm.": "Type {{confirmation}} to confirm.",
   "Account deletion confirmation": "Account deletion confirmation"
+,
+  "Review the reason below, correct your documents and vehicle details, then submit again.": "Review the reason below, correct your documents and vehicle details, then submit again.",
+  "Reason for decline": "Reason for decline",
+  "No specific reason was provided. Review your documents and vehicle details before submitting again.": "No specific reason was provided. Review your documents and vehicle details before submitting again.",
+  "Fix submission": "Fix submission",
+  "Unable to load review details. Refresh to try again.": "Unable to load review details. Refresh to try again."
+,
+  "{{label}} must be replaced before resubmitting.": "{{label}} must be replaced before resubmitting.",
+  "Replace rejected vehicle photos and documents before resubmitting.": "Replace rejected vehicle photos and documents before resubmitting."
 }

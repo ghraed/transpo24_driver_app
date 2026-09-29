@@ -77,7 +77,7 @@ export default function VerifyPhoneScreen() {
       setError('');
 
       try {
-        const nextStep = await authenticateWithPhone({
+        const { nextStep, driverStatus } = await authenticateWithPhone({
           phoneNumber,
           marketCode,
           code: candidate,
@@ -93,7 +93,7 @@ export default function VerifyPhoneScreen() {
         }
 
         const savedRoute = await readLastOnboardingRoute();
-        const targetRoute = resolveDriverEntryRoute(nextStep, savedRoute);
+        const targetRoute = resolveDriverEntryRoute(nextStep, savedRoute, driverStatus);
 
         if (nextStep === 'HOME') {
           await clearLastOnboardingRoute();

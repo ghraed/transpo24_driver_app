@@ -1503,4 +1503,13 @@
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "حذف حسابك يزيل بياناتك الشخصية أو يجعلها مجهولة الهوية بشكل دائم ويسجّل خروجك من جميع الأجهزة. لا يمكن التراجع عن هذا الإجراء. أكمل أو ألغِ أي طلب نقل نشط أولاً.",
   "Type {{confirmation}} to confirm.": "اكتب {{confirmation}} للتأكيد.",
   "Account deletion confirmation": "تأكيد حذف الحساب"
+,
+  "Review the reason below, correct your documents and vehicle details, then submit again.": "راجع السبب أدناه، وصحّح مستنداتك وبيانات مركبتك، ثم أعد تقديم الطلب.",
+  "Reason for decline": "سبب الرفض",
+  "No specific reason was provided. Review your documents and vehicle details before submitting again.": "لم يُذكر سبب محدد. راجع مستنداتك وبيانات مركبتك قبل إعادة التقديم.",
+  "Fix submission": "تصحيح الطلب",
+  "Unable to load review details. Refresh to try again.": "تعذّر تحميل تفاصيل المراجعة. حدّث الحالة للمحاولة مجددًا."
+,
+  "{{label}} must be replaced before resubmitting.": "يجب استبدال {{label}} قبل إعادة تقديم الطلب.",
+  "Replace rejected vehicle photos and documents before resubmitting.": "استبدل صور المركبة ومستنداتها المرفوضة قبل إعادة تقديم الطلب."
 }

@@ -39,6 +39,7 @@ import {
   type VehicleModelType,
 } from '@/lib/vehicle-catalog';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
+import { getRejectedVehicleUploadsToReplace } from '@/lib/vehicle-review-recovery';
 import i18n from '@/localization/i18n';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
@@ -424,6 +425,10 @@ export default function VehicleInformationScreen() {
       'Insurance document',
       existingVehicle?.insuranceDocumentUrl,
     );
+
+    for (const { field, label } of getRejectedVehicleUploadsToReplace(existingVehicle, vehicleForm)) {
+      errors[field] = t('{{label}} must be replaced before resubmitting.', { label: t(label) });
+    }
 
     const validateDate = (value: string, key: DateFieldKey, label: string): void => {
       if (!value.trim()) return;
@@ -1115,10 +1120,17 @@ export default function VehicleInformationScreen() {
           ) : null}
         </View>
 
-        {existingVehicle?.status === 'REJECTED' && existingVehicle.rejectionReason ? (
-          <Text style={styles.errorText}>
-            {t('Rejection reason')}: {existingVehicle.rejectionReason}
-          </Text>
+        {existingVehicle?.status === 'REJECTED' ? (
+          <View>
+            {existingVehicle.rejectionReason ? (
+              <Text style={styles.errorText}>
+                {t('Rejection reason')}: {existingVehicle.rejectionReason}
+              </Text>
+            ) : null}
+            <Text style={styles.infoText}>
+              {t('Replace rejected vehicle photos and documents before resubmitting.')}
+            </Text>
+          </View>
         ) : null}
         {existingVehicle?.status === 'PENDING_REVIEW' ? (
           <Text style={styles.infoText}>{t('Your vehicle is pending approval.')}</Text>

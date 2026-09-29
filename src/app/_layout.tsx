@@ -68,7 +68,7 @@ function AppNavigator() {
       try {
         const response = await refreshDriverMe();
         const savedRoute = await readLastOnboardingRoute();
-        const targetRoute = resolveDriverEntryRoute(response.nextStep, savedRoute);
+        const targetRoute = resolveDriverEntryRoute(response.nextStep, savedRoute, response.driver.status);
 
         if (response.nextStep === 'HOME') {
           await clearLastOnboardingRoute();

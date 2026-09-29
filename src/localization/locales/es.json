@@ -1503,4 +1503,13 @@
   "Deleting your account permanently removes or anonymizes your personal details and signs you out on all devices. This cannot be undone. Complete or cancel any active transport request first.": "Eliminar tu cuenta borra o anonimiza permanentemente tus datos personales y cierra tu sesión en todos los dispositivos. Esta acción no se puede deshacer. Primero completa o cancela cualquier solicitud de transporte activa.",
   "Type {{confirmation}} to confirm.": "Escribe {{confirmation}} para confirmar.",
   "Account deletion confirmation": "Confirmación de eliminación de cuenta"
+,
+  "Review the reason below, correct your documents and vehicle details, then submit again.": "Revisa el motivo a continuación, corrige tus documentos y los datos del vehículo, y vuelve a enviar la solicitud.",
+  "Reason for decline": "Motivo del rechazo",
+  "No specific reason was provided. Review your documents and vehicle details before submitting again.": "No se indicó un motivo específico. Revisa tus documentos y los datos del vehículo antes de volver a enviar la solicitud.",
+  "Fix submission": "Corregir solicitud",
+  "Unable to load review details. Refresh to try again.": "No se pudieron cargar los detalles de la revisión. Actualiza el estado para intentarlo de nuevo."
+,
+  "{{label}} must be replaced before resubmitting.": "Debes reemplazar {{label}} antes de volver a enviar la solicitud.",
+  "Replace rejected vehicle photos and documents before resubmitting.": "Reemplaza las fotos y los documentos rechazados del vehículo antes de volver a enviarla."
 }

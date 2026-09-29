@@ -1,4 +1,4 @@
-import type { DriverNextStep } from '@/types/auth';
+import type { DriverNextStep, DriverStatus } from '@/types/auth';
 
 export type DriverAppRoute =
   | '/'
@@ -51,6 +51,7 @@ export function isOnboardingRoute(route: string | null | undefined): route is Dr
 export function resolveDriverEntryRoute(
   nextStep: DriverNextStep,
   savedRoute: string | null | undefined,
+  status?: DriverStatus,
 ): DriverAppRoute | string {
   if (!savedRoute || !isOnboardingRoute(savedRoute)) {
     return nextStepToRoute(nextStep);
@@ -80,6 +81,16 @@ export function resolveDriverEntryRoute(
       }
       return '/set-availability';
     case 'WAITING_APPROVAL':
+      if (status === 'REJECTED' && (
+        savedRoute === '/vehicle-documents' ||
+        savedRoute.startsWith('/vehicle-documents?') ||
+        savedRoute === '/vehicle-information' ||
+        savedRoute.startsWith('/vehicle-information?') ||
+        savedRoute === '/load-capacity' ||
+        savedRoute.startsWith('/load-capacity?')
+      )) {
+        return savedRoute;
+      }
       return '/waiting-approval';
     case 'HOME':
       return '/receive-requests';

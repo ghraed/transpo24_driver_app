@@ -16,6 +16,7 @@ import {
 import {
   clearAccessToken,
   clearDriverOnboardingDrafts,
+  clearLastOnboardingRoute,
   clearTrustedDriverSession,
   persistAccessToken,
   persistTrustedDriverSession,
@@ -27,6 +28,7 @@ import type {
   DriverAvailabilityResponse,
   DriverMeResponse,
   DriverNextStep,
+  DriverStatus,
   DriverProfile,
   UpdateDriverAvailabilityPayload,
   UpdateDriverProfilePayload,
@@ -34,7 +36,7 @@ import type {
 } from '@/types/auth';
 
 export type TrustedSessionContinuationResult =
-  | { status: 'restored'; nextStep: DriverNextStep }
+  | { status: 'restored'; nextStep: DriverNextStep; driverStatus: DriverStatus }
   | { status: 'invalid' }
   | { status: 'unavailable'; message: string };
 
@@ -45,7 +47,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isRestoringSession: boolean;
   hasRestoredStoredSession: boolean;
-  authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<DriverNextStep>;
+  authenticateWithPhone: (payload: VerifyPhoneCodePayload) => Promise<{ nextStep: DriverNextStep; driverStatus: DriverStatus }>;
   continueWithTrustedSession: (marketCode?: string) => Promise<TrustedSessionContinuationResult>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -134,8 +136,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const authenticateWithPhone = useCallback(async (
     payload: VerifyPhoneCodePayload,
-  ): Promise<DriverNextStep> => {
+  ): Promise<{ nextStep: DriverNextStep; driverStatus: DriverStatus }> => {
     const response = await verifyDriverPhoneVerificationCode(payload);
+    const previousSession = await readTrustedDriverSession();
+    if (previousSession?.phoneNumber !== response.driver.phone) {
+      await Promise.all([clearDriverOnboardingDrafts(), clearLastOnboardingRoute()]);
+    }
 
     await Promise.all([
       persistAccessToken(response.accessToken),
@@ -144,17 +150,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber: response.driver.phone,
       }),
     ]);
-    await clearDriverOnboardingDrafts();
     setHasRestoredStoredSession(false);
     setAccessToken(response.accessToken);
     setUser(response.user);
     setDriver(response.driver ?? null);
 
-    if (response.nextStep) {
-      return response.nextStep;
-    }
-
-    return response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME';
+    return {
+      nextStep: response.nextStep ?? (response.user.role === 'DRIVER' ? 'COMPLETE_PROFILE' : 'HOME'),
+      driverStatus: response.driver.status,
+    };
   }, []);
 
   const continueWithTrustedSession = useCallback(async (marketCode?: string): Promise<TrustedSessionContinuationResult> => {
@@ -177,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setDriver(renewed.driver);
       setHasRestoredStoredSession(true);
       setAccessToken(renewed.accessToken);
-      return { status: 'restored', nextStep: renewed.nextStep };
+      return { status: 'restored', nextStep: renewed.nextStep, driverStatus: renewed.driver.status };
     } catch (error) {
       if (error instanceof ApiResponseError && ['TENANT_MISMATCH', 'TENANT_INACTIVE', 'TENANT_NOT_FOUND'].includes(error.code ?? '')) {
         return { status: 'unavailable', message: error.message };
@@ -237,6 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearAccessToken(),
       clearTrustedDriverSession(),
       clearDriverOnboardingDrafts(),
+      clearLastOnboardingRoute(),
     ]);
     setHasRestoredStoredSession(false);
     setAccessToken(null);
