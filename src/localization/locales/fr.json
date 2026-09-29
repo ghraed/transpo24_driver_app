@@ -1547,5 +1547,7 @@
   "Driving license": "Permis de conduire",
   "Self identity verification": "Vérification d’identité par selfie",
   "Under review": "En cours d’examen",
-  "Select a supported language.": "Choisissez une langue prise en charge."
+  "Select a supported language.": "Choisissez une langue prise en charge.",
+  "Immediate pickup fallback address": "Adresse de secours pour les enlèvements immédiats",
+  "This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.": "Cette adresse sert aux enlèvements immédiats uniquement si aucune position GPS récente n'est disponible. Avec le GPS, votre position actuelle est utilisée. Les enlèvements programmés utilisent plutôt les repères de couverture de vos villes."
 }

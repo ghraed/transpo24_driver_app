@@ -1,4 +1,6 @@
 import { CityCoverageEditor } from '@/components/city-coverage-editor';
+import { DriverIcon } from '@/components/driver-icon';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -9,6 +11,7 @@ import {
   ActivityIndicator,
   AppState,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -102,6 +105,17 @@ function toMinutes(time: string): number {
   return hour * 60 + minute;
 }
 
+function timeToDate(time: string, fallback: string): Date {
+  const [hour, minute] = (TIME_REGEX.test(time) ? time : fallback).split(':').map(Number);
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+  return date;
+}
+
+function formatTime(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
 function detectDefaultTimezone(countryCode?: string | null): string {
   if (countryCode?.toUpperCase() === 'CH') {
     return 'Europe/Zurich';
@@ -173,6 +187,8 @@ export default function SetAvailabilityScreen() {
     weeklySchedule: createDefaultWeeklySchedule(),
   });
 
+  const [activeTimeField, setActiveTimeField] = useState<{ dayOfWeek: DayOfWeek; field: 'startTime' | 'endTime' } | null>(null);
+  const [pickerValue, setPickerValue] = useState<Date>(() => new Date());
   const [cityCoverage, setCityCoverage] = useState<DriverCityCoverage[]>([]);
   const cities = useMemo(() => driver?.cities ?? [], [driver?.cities]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -183,6 +199,7 @@ export default function SetAvailabilityScreen() {
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
   const [selectedLocation, setSelectedLocation] = useState<SelectedBaseLocation | null>(null);
   const [addressQuery, setAddressQuery] = useState<string>('');
+  const [showBaseAddressInfo, setShowBaseAddressInfo] = useState(false);
   const [mapRegion, setMapRegion] = useState<Region>(DEFAULT_MAP_REGION);
   const [locationMessage, setLocationMessage] = useState<string>('');
   const [isLocationServicesDisabled, setIsLocationServicesDisabled] = useState<boolean>(false);
@@ -368,6 +385,24 @@ export default function SetAvailabilityScreen() {
         entry.dayOfWeek === dayOfWeek ? { ...entry, ...patch } : entry,
       ),
     }));
+  };
+
+  const openTimePicker = (dayOfWeek: DayOfWeek, field: 'startTime' | 'endTime', time: string): void => {
+    const value = timeToDate(time, field === 'startTime' ? '08:00' : '18:00');
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        mode: 'time',
+        is24Hour: true,
+        value,
+        onValueChange: (_, selectedDate) => {
+          onScheduleChange(dayOfWeek, { [field]: formatTime(selectedDate) });
+        },
+      });
+      return;
+    }
+
+    setPickerValue(value);
+    setActiveTimeField({ dayOfWeek, field });
   };
 
   const applySelectedLocation = useCallback((location: SelectedBaseLocation | null): void => {
@@ -833,7 +868,24 @@ export default function SetAvailabilityScreen() {
           <Text style={styles.searchHint}>{t('Immediate pickups use recent GPS, with your base as a fallback. The radius limits pickup distance, not the destination.')}</Text>
           <CityCoverageEditor cities={cities} country={driver?.countryCode} pins={cityCoverage} radius={form.serviceRadiusKm} onChange={setCityCoverage} />
           {fieldErrors.cityCoverage ? <Text style={styles.errorText}>{fieldErrors.cityCoverage}</Text> : null}
-          <Text style={styles.fieldLabel}>{t('Base address')}</Text>
+          <View style={styles.addressLabelRow}>
+            <Text style={styles.fieldLabel}>{t('Immediate pickup fallback address')}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('Immediate pickup fallback address')}
+              accessibilityHint={t('This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.')}
+              accessibilityState={{ expanded: showBaseAddressInfo }}
+              onPress={() => setShowBaseAddressInfo((visible) => !visible)}
+              style={styles.addressInfoButton}
+            >
+              <DriverIcon name="info" size={20} color="#505A6A" />
+            </Pressable>
+          </View>
+          {showBaseAddressInfo ? (
+            <Text style={styles.addressInfoText}>
+              {t('This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.')}
+            </Text>
+          ) : null}
           <View style={styles.searchContainer}>
             <TextInput
               value={addressQuery}
@@ -1022,24 +1074,50 @@ export default function SetAvailabilityScreen() {
                   <View style={styles.row}>
                     <View style={styles.halfWidth}>
                       <Text style={styles.fieldLabel}>{t('Start (HH:mm)')}</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={day.startTime}
-                        onChangeText={(value) => onScheduleChange(day.dayOfWeek, { startTime: value })}
-                        placeholder="08:00"
-                        autoCapitalize="none"
-                      />
+                      {Platform.OS === 'web' ? (
+                        React.createElement('input', {
+                          type: 'time',
+                          lang: 'en-GB',
+                          value: day.startTime,
+                          onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                            onScheduleChange(day.dayOfWeek, { startTime: event.target.value }),
+                          'aria-label': `${t(day.label)} ${t('Start (HH:mm)')}`,
+                          style: webTimeInputStyle,
+                        })
+                      ) : (
+                        <Pressable
+                          style={styles.input}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t(day.label)} ${t('Start (HH:mm)')}`}
+                          onPress={() => openTimePicker(day.dayOfWeek, 'startTime', day.startTime)}
+                        >
+                          <Text style={styles.timeInputText}>{day.startTime || '08:00'}</Text>
+                        </Pressable>
+                      )}
                       {fieldErrors[startKey] ? <Text style={styles.errorText}>{fieldErrors[startKey]}</Text> : null}
                     </View>
                     <View style={styles.halfWidth}>
                       <Text style={styles.fieldLabel}>{t('End (HH:mm)')}</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={day.endTime}
-                        onChangeText={(value) => onScheduleChange(day.dayOfWeek, { endTime: value })}
-                        placeholder="18:00"
-                        autoCapitalize="none"
-                      />
+                      {Platform.OS === 'web' ? (
+                        React.createElement('input', {
+                          type: 'time',
+                          lang: 'en-GB',
+                          value: day.endTime,
+                          onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                            onScheduleChange(day.dayOfWeek, { endTime: event.target.value }),
+                          'aria-label': `${t(day.label)} ${t('End (HH:mm)')}`,
+                          style: webTimeInputStyle,
+                        })
+                      ) : (
+                        <Pressable
+                          style={styles.input}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t(day.label)} ${t('End (HH:mm)')}`}
+                          onPress={() => openTimePicker(day.dayOfWeek, 'endTime', day.endTime)}
+                        >
+                          <Text style={styles.timeInputText}>{day.endTime || '18:00'}</Text>
+                        </Pressable>
+                      )}
                       {fieldErrors[endKey] ? <Text style={styles.errorText}>{fieldErrors[endKey]}</Text> : null}
                     </View>
                   </View>
@@ -1082,9 +1160,49 @@ export default function SetAvailabilityScreen() {
 
         {isSaving ? <Text style={styles.statusText}>{t('Saving availability...')}</Text> : null}
       </ScrollView>
+      {Platform.OS === 'ios' ? (
+        <Modal visible={activeTimeField !== null} transparent animationType="fade" onRequestClose={() => setActiveTimeField(null)}>
+          <View style={styles.timeModalBackdrop}>
+            <View style={styles.timeModalContent}>
+              {activeTimeField ? (
+                <DateTimePicker
+                  mode="time"
+                  display="spinner"
+                  locale="en_GB"
+                  themeVariant="light"
+                  value={pickerValue}
+                  onValueChange={(_, selectedDate) => setPickerValue(selectedDate)}
+                />
+              ) : null}
+              <Pressable
+                style={styles.timeDoneButton}
+                onPress={() => {
+                  if (activeTimeField) {
+                    onScheduleChange(activeTimeField.dayOfWeek, { [activeTimeField.field]: formatTime(pickerValue) });
+                  }
+                  setActiveTimeField(null);
+                }}
+              >
+                <Text style={styles.timeDoneText}>{t('Done')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
+
+const webTimeInputStyle: React.CSSProperties = {
+  border: '1px solid #DFE3E8',
+  borderRadius: 10,
+  padding: '11px 12px',
+  fontSize: 15,
+  color: '#202020',
+  backgroundColor: '#FFFFFF',
+  width: '100%',
+  boxSizing: 'border-box',
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -1162,6 +1280,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  addressLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  addressInfoButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addressInfoText: {
+    color: '#505A6A',
+    fontSize: 13,
+    lineHeight: 19,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#DFE3E8',
@@ -1169,6 +1304,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 15,
+  },
+  timeInputText: {
+    fontSize: 15,
+    color: '#202020',
+  },
+  timeModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  timeModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 16,
+  },
+  timeDoneButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  timeDoneText: {
+    color: '#8A6200',
+    fontSize: 16,
+    fontWeight: '700',
   },
   searchContainer: {
     backgroundColor: '#FFFFFF',

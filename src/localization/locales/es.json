@@ -1547,5 +1547,7 @@
   "Driving license": "Licencia de conducir",
   "Self identity verification": "Verificación de identidad por selfie",
   "Under review": "En revisión",
-  "Select a supported language.": "Selecciona un idioma compatible."
+  "Select a supported language.": "Selecciona un idioma compatible.",
+  "Immediate pickup fallback address": "Dirección de respaldo para recogidas inmediatas",
+  "This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.": "Esta dirección se usa para recogidas inmediatas solo cuando no hay una ubicación GPS reciente. Con GPS, se usa tu ubicación actual. Las recogidas programadas usan los puntos de cobertura de tus ciudades."
 }

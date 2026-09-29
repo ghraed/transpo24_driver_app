@@ -1121,5 +1121,7 @@
   "Driving license": "Patente di guida",
   "Self identity verification": "Verifica dell’identità tramite selfie",
   "Under review": "In revisione",
-  "Select a supported language.": "Seleziona una lingua supportata."
+  "Select a supported language.": "Seleziona una lingua supportata.",
+  "Immediate pickup fallback address": "Indirizzo di riserva per i ritiri immediati",
+  "This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.": "Questo indirizzo viene usato per i ritiri immediati solo quando non è disponibile una posizione GPS recente. Con il GPS viene usata la tua posizione attuale. I ritiri programmati usano invece i punti di copertura delle tue città."
 }

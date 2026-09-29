@@ -1547,5 +1547,7 @@
   "Driving license": "رخصة القيادة",
   "Self identity verification": "التحقق الذاتي من الهوية",
   "Under review": "قيد المراجعة",
-  "Select a supported language.": "اختر لغة مدعومة."
+  "Select a supported language.": "اختر لغة مدعومة.",
+  "Immediate pickup fallback address": "العنوان البديل لطلبات الاستلام الفورية",
+  "This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.": "يُستخدم هذا العنوان لطلبات الاستلام الفورية فقط عندما لا يتوفر موقع GPS حديث. عند توفر GPS، يُستخدم موقعك الحالي. أما الطلبات المجدولة فتستخدم نقاط التغطية للمدن بدلاً منه."
 }

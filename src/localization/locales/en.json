@@ -1547,5 +1547,7 @@
   "Driving license": "Driving license",
   "Self identity verification": "Self identity verification",
   "Under review": "Under review",
-  "Select a supported language.": "Select a supported language."
+  "Select a supported language.": "Select a supported language.",
+  "Immediate pickup fallback address": "Immediate pickup fallback address",
+  "This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead.": "This address is used for immediate pickups only when a recent GPS location is unavailable. With GPS, your current location is used. Scheduled pickups use your city coverage pins instead."
 }
