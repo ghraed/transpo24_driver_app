@@ -498,6 +498,10 @@ function normalizeDriverVehicle(vehicle: DriverVehicle): DriverVehicle {
     status: vehicle.verificationStatus ?? vehicle.status ?? null,
     verificationStatus: vehicle.verificationStatus ?? vehicle.status ?? null,
     rejectionReason: vehicle.rejectionReason ?? null,
+    documents: vehicle.documents?.map((document) => ({
+      ...document,
+      url: toAbsoluteApiUrl(document.url) ?? document.url,
+    })) ?? [],
   };
 }
 
@@ -861,8 +865,7 @@ export async function getDriverVehicles(): Promise<DriverVehicle[]> {
     'Failed to parse vehicles response.',
   );
   return (data.vehicles ?? []).map((item) => ({
-    ...normalizeDriverVehicle(item.vehicle),
-    documents: item.documents,
+    ...normalizeDriverVehicle({ ...item.vehicle, documents: item.documents }),
   }));
 }
 
@@ -931,7 +934,7 @@ export async function getDriverVehicle(vehicleId: string): Promise<DriverVehicle
     response,
     'Failed to parse driver vehicle response.',
   );
-  return normalizeDriverVehicle(data.vehicle);
+  return normalizeDriverVehicle({ ...data.vehicle, documents: data.documents });
 }
 
 export async function createDriverVehicle(
@@ -957,7 +960,7 @@ export async function createDriverVehicle(
     response,
     'Failed to parse create vehicle response.',
   );
-  return normalizeDriverVehicle(data.vehicle);
+  return normalizeDriverVehicle({ ...data.vehicle, documents: data.documents });
 }
 
 export async function updateDriverVehicle(
@@ -984,7 +987,7 @@ export async function updateDriverVehicle(
     response,
     'Failed to parse update vehicle response.',
   );
-  return normalizeDriverVehicle(data.vehicle);
+  return normalizeDriverVehicle({ ...data.vehicle, documents: data.documents });
 }
 
 export async function deleteDriverVehicle(vehicleId: string): Promise<DriverVehicle> {
@@ -1009,7 +1012,7 @@ export async function deleteDriverVehicle(vehicleId: string): Promise<DriverVehi
   );
 
   if ('vehicle' in data && data.vehicle) {
-    return normalizeDriverVehicle(data.vehicle);
+    return normalizeDriverVehicle({ ...data.vehicle, documents: data.documents });
   }
 
   return normalizeDriverVehicle(data as DriverVehicle);
@@ -1035,7 +1038,7 @@ export async function activateDriverVehicle(vehicleId: string): Promise<DriverVe
     response,
     'Failed to parse activate vehicle response.',
   );
-  return normalizeDriverVehicle(data.vehicle);
+  return normalizeDriverVehicle({ ...data.vehicle, documents: data.documents });
 }
 
 export async function approveDriverVehicleForTesting(vehicleId: string): Promise<DriverVehicle> {
@@ -1414,14 +1417,14 @@ export async function uploadDriverDocument(payload: {
   }
 }
 
-export async function submitDriverDocumentsForReview(): Promise<DriverDocumentsStatusResponse> {
+export async function submitDriverDocumentsForReview(vehicleId: string): Promise<DriverDocumentsStatusResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/onboarding/submit-review`;
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: await getAuthHeaders(),
-      body: JSON.stringify({}),
+      body: JSON.stringify({ vehicleId }),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);

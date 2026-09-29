@@ -67,7 +67,7 @@ export function CityCoverageEditor({ cities, country, pins, radius, onChange }: 
       const place = suggestion ? await resolvePlaceSuggestion(suggestion) : await resolvePlaceFromQuery(query);
       if (version !== searchVersion.current) return;
       update(city, place.latitude, place.longitude);
-      setQuery(place.address);
+      setQuery(place.address || query);
     } catch {
       if (version === searchVersion.current) setError(t('Unable to find this location. Try a more specific address.'));
     } finally {

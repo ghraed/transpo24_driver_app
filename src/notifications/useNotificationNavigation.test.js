@@ -92,3 +92,9 @@ test('does not replay a consumed tap after remounting', async () => {
   await render();
   expect(mockPush).toHaveBeenCalledTimes(1);
 });
+
+test.each(['DRIVER_APPROVED', 'DRIVER_REVIEW_DECLINED'])('opens review status for %s', async type => {
+  mockResponse = response({ type });
+  await render();
+  expect(mockPush).toHaveBeenCalledWith('/waiting-approval');
+});

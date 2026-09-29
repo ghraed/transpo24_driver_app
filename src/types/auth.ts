@@ -65,6 +65,7 @@ export interface UpdateDriverProfilePayload {
   addressLine1?: string;
   addressLine2?: string;
   postalCode?: string;
+  preferredLanguages?: string[];
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   profilePhotoUrl?: string | null;
@@ -142,7 +143,7 @@ export interface DriverProfile {
   addressLine1: string | null;
   addressLine2: string | null;
   postalCode: string | null;
-  preferredLanguage: string | null;
+  preferredLanguages: string[];
   emergencyContactName: string | null;
   emergencyContactPhone: string | null;
   profilePhotoUrl: string | null;
@@ -312,6 +313,7 @@ export interface DriverDocumentsStatusResponse {
   missingDocumentLabels: string[];
   canSubmitForReview: boolean;
   submittedForReviewAt: string | null;
+  reviewVehicleId: string | null;
   nextStep: DriverNextStep;
 }
 
@@ -351,6 +353,14 @@ export interface DriverVehicle {
   verificationStatus?: VehicleReviewStatus | null;
   rejectionReason: string | null;
   isActive: boolean;
+  completeness?: {
+    hasBasicInfo: boolean;
+    hasLoadCapacityProfile: boolean;
+    hasRequiredPhotos: boolean;
+    hasRequiredDocuments: boolean;
+    isComplete: boolean;
+    missingFields: string[];
+  };
   createdAt: string;
   updatedAt: string;
   documents?: DriverDocument[];

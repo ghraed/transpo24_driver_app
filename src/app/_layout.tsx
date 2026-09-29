@@ -141,6 +141,7 @@ function AppNavigator() {
       <Stack.Screen name="my-vehicles" options={{ title: t('My Vehicles') }} />
       <Stack.Screen name="manage-load-capacities" options={{ title: t('Manage Load Capacities') }} />
       <Stack.Screen name="load-capacity" options={{ title: t('Define Load Capacity') }} />
+      <Stack.Screen name="check-details" options={{ title: t('Check your details') }} />
       <Stack.Screen name="set-availability" options={{ title: t('Set Availability') }} />
       <Stack.Screen name="waiting-approval" options={{ title: t('Waiting Approval') }} />
       <Stack.Screen name="driver-home" options={{ title: t('Settings'), headerShown: false }} />

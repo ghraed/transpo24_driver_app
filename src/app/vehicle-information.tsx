@@ -181,7 +181,7 @@ export default function VehicleInformationScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ vehicleId?: string; flow?: string }>();
+  const params = useLocalSearchParams<{ vehicleId?: string; flow?: string; returnTo?: string }>();
   const vehicleId =
     typeof params.vehicleId === 'string' && params.vehicleId.trim() ? params.vehicleId : undefined;
   const flow = params.flow === 'management' ? 'management' : 'onboarding';
@@ -770,7 +770,9 @@ export default function VehicleInformationScreen() {
             );
           }
         } else {
-          router.replace(`/load-capacity?vehicleId=${vehicle.id}&flow=onboarding`);
+          router.replace(params.returnTo === 'check-details'
+            ? `/check-details?vehicleId=${encodeURIComponent(vehicle.id)}`
+            : `/load-capacity?vehicleId=${vehicle.id}&flow=onboarding`);
         }
       }, 500);
     } catch (error) {

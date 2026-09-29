@@ -7,6 +7,7 @@ export type DriverAppRoute =
   | '/vehicle-documents'
   | '/vehicle-information'
   | '/load-capacity'
+  | '/check-details'
   | '/set-availability'
   | '/waiting-approval'
   | '/driver-home'
@@ -17,6 +18,7 @@ const ONBOARDING_ROUTE_PREFIXES: DriverAppRoute[] = [
   '/vehicle-documents',
   '/vehicle-information',
   '/load-capacity',
+  '/check-details',
   '/set-availability',
   '/waiting-approval',
   '/driver-home',
@@ -69,6 +71,8 @@ export function resolveDriverEntryRoute(
         savedRoute.startsWith('/vehicle-information?') ||
         savedRoute === '/load-capacity' ||
         savedRoute.startsWith('/load-capacity?') ||
+        savedRoute === '/check-details' ||
+        savedRoute.startsWith('/check-details?') ||
         savedRoute === '/set-availability' ||
         savedRoute.startsWith('/set-availability?')
       ) {
@@ -87,7 +91,9 @@ export function resolveDriverEntryRoute(
         savedRoute === '/vehicle-information' ||
         savedRoute.startsWith('/vehicle-information?') ||
         savedRoute === '/load-capacity' ||
-        savedRoute.startsWith('/load-capacity?')
+        savedRoute.startsWith('/load-capacity?') ||
+        savedRoute === '/check-details' ||
+        savedRoute.startsWith('/check-details?')
       )) {
         return savedRoute;
       }

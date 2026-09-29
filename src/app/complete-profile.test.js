@@ -20,13 +20,14 @@ const mockDriver = {
   fullNameOnId: 'Server First Driver',
   idOrResidencyNumberMasked: '***1234',
   dateOfBirth: '1990-01-01T00:00:00.000Z',
+  preferredLanguages: ['fr'],
 };
 let mockCurrentDriver = mockDriver;
 const mockRefreshDriverMe = jest.fn();
 const mockSaveDriverProfile = jest.fn();
 let mockDraftValue = null;
 
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({}) }));
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: mockT }),
   initReactI18next: { type: '3rdParty', init: () => {} },
@@ -132,4 +133,17 @@ it('ignores a damaged draft and loads the server profile', async () => {
   mockDraftValue = '{invalid';
   await renderScreen();
   expect(input('Nickname').props.value).toBe('Server Nick');
+});
+
+it('sends the preferred language selected in the profile', async () => {
+  await renderScreen();
+  expect(JSON.stringify(tree.toJSON())).toContain('Français');
+  const languagePicker = tree.root.findAll(node => typeof node.props.onPress === 'function'
+    && node.findAllByType && node.findAllByType('Text').some(child => child.props.children === 'Français'))[0];
+  await act(async () => languagePicker.props.onPress());
+  const spanishOption = tree.root.findAll(node => typeof node.props.onPress === 'function'
+    && node.findAllByType && node.findAllByType('Text').some(child => child.props.children === 'Español'))[0];
+  await act(async () => spanishOption.props.onPress());
+  await act(async () => continueButton().props.onPress());
+  expect(mockSaveDriverProfile).toHaveBeenCalledWith(expect.objectContaining({ preferredLanguages: ['es'] }));
 });

@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -103,6 +103,9 @@ function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocum
 
 export default function VehicleDocumentsScreen() {
   const router = useRouter();
+  const { returnTo, vehicleId } = useLocalSearchParams<{ returnTo?: string; vehicleId?: string }>();
+  const checkDetailsRoute = returnTo === 'check-details' && typeof vehicleId === 'string'
+    ? ({ pathname: '/check-details', params: { vehicleId } } as Href) : null;
   const { t } = useTranslation();
 
   const [onboardingDocumentsForm, setOnboardingDocumentsForm] = useState<OnboardingDocumentsForm>({
@@ -506,7 +509,7 @@ export default function VehicleDocumentsScreen() {
       }
 
       await clearOnboardingDocumentsDraft();
-      router.push('/vehicle-information?flow=onboarding');
+      router.replace(checkDetailsRoute ?? '/vehicle-information?flow=onboarding');
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('Failed to verify driver documents.');

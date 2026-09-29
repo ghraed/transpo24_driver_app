@@ -20,17 +20,12 @@ import { DRIVER_ONBOARDING_STEP_LABELS } from '@/components/driver-onboarding-ch
 import { useAuth } from '@/context/auth-context';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import {
-  getDriverDocumentsStatus,
-  getDriverVehicles,
   getDriverVehicle,
   getVehicleLoadCapacity,
   saveVehicleLoadCapacity,
-  submitDriverDocumentsForReview,
 } from '@/lib/api';
 import {
   clearLoadCapacityDraft,
-  clearLastOnboardingRoute,
-  clearOnboardingDocumentsStatus,
   persistLastOnboardingRoute,
   persistLoadCapacityDraft,
   readLoadCapacityDraft,
@@ -44,7 +39,6 @@ import {
   VEHICLE_TYPE_LABELS,
 } from '@/lib/vehicle-load-capacity';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { hasCompleteVehicleDocuments } from '@/lib/vehicle-document-requirements';
 import type {
   DriverVehicle,
   VehicleCargoType,
@@ -60,27 +54,6 @@ interface CapacityFormState {
   cargoHeightM: string;
   allowedCargoTypes: VehicleCargoType[];
   isDefault: boolean;
-}
-
-function hasCompleteLoadCapacityProfile(vehicle: DriverVehicle): boolean {
-  if (!vehicle.allowedCargoTypes?.length) {
-    return false;
-  }
-
-  if (isCarCarrierVehicleType(vehicle.vehicleType)) {
-    return true;
-  }
-
-  return Boolean(
-    vehicle.capacityKg &&
-      vehicle.capacityKg > 0 &&
-      vehicle.lengthCm &&
-      vehicle.lengthCm > 0 &&
-      vehicle.widthCm &&
-      vehicle.widthCm > 0 &&
-      vehicle.heightCm &&
-      vehicle.heightCm > 0,
-  );
 }
 
 function toNumericInput(value?: number | null): string {
@@ -320,30 +293,6 @@ export default function LoadCapacityScreen() {
     setSubmitSuccess('');
 
     try {
-      const previousSnapshot: VehicleLoadCapacityPayload = {
-        name: existingCapacity?.name ?? vehicle.loadProfileName ?? undefined,
-        maxLoadKg:
-          existingCapacity?.maxLoadKg ?? vehicle.capacityKg ?? undefined,
-        cargoLengthM:
-          existingCapacity?.cargoLengthM ??
-          (vehicle.lengthCm !== null && vehicle.lengthCm !== undefined
-            ? Number((vehicle.lengthCm / 100).toFixed(2))
-            : undefined),
-        cargoWidthM:
-          existingCapacity?.cargoWidthM ??
-          (vehicle.widthCm !== null && vehicle.widthCm !== undefined
-            ? Number((vehicle.widthCm / 100).toFixed(2))
-            : undefined),
-        cargoHeightM:
-          existingCapacity?.cargoHeightM ??
-          (vehicle.heightCm !== null && vehicle.heightCm !== undefined
-            ? Number((vehicle.heightCm / 100).toFixed(2))
-            : undefined),
-        dimensionsAreStandard:
-          existingCapacity?.dimensionsAreStandard ?? Boolean(vehicle.dimensionsAreStandard),
-        allowedCargoTypes: existingCapacity?.allowedCargoTypes ?? vehicle.allowedCargoTypes ?? [],
-        isDefault: existingCapacity?.isDefault ?? Boolean(vehicle.isDefaultLoadProfile),
-      };
       const payload: VehicleLoadCapacityPayload = {
         name: form.name.trim() || undefined,
         maxLoadKg: parsePositiveNumber(form.maxLoadKg),
@@ -359,45 +308,12 @@ export default function LoadCapacityScreen() {
       setExistingCapacity(response);
       if (flow === 'onboarding') {
         try {
-          const [documentsStatus, refreshedVehicle, refreshedVehicles] = await Promise.all([
-            getDriverDocumentsStatus(),
-            getDriverVehicle(vehicleId),
-            getDriverVehicles(),
-          ]);
-          const reviewVehicle =
-            refreshedVehicles.find((candidate) => candidate.id === vehicleId) ?? refreshedVehicle;
-
-          if (documentsStatus.missingDocuments.length > 0) {
-            throw new Error(
-              t('Missing required documents: {{documents}}.', {
-                documents: documentsStatus.missingDocuments.join(', '),
-              }),
-            );
-          }
-
-          if (!hasCompleteVehicleDocuments(reviewVehicle)) {
-            throw new Error(t('The selected vehicle does not have all required documents.'));
-          }
-
-          if (!hasCompleteLoadCapacityProfile(refreshedVehicle)) {
-            throw new Error(t('The selected vehicle does not have a complete load-capacity profile.'));
-          }
-
-          await submitDriverDocumentsForReview();
-          await Promise.all([
-            clearLoadCapacityDraft(),
-            clearLastOnboardingRoute(),
-            clearOnboardingDocumentsStatus(),
-          ]);
-          setSubmitSuccess(t('Submitted for review successfully.'));
-          setTimeout(() => {
-            router.replace('/waiting-approval');
-          }, 500);
-          return;
-        } catch (error) {
-          await saveVehicleLoadCapacity(vehicleId, previousSnapshot);
-          throw error;
+          await clearLoadCapacityDraft();
+        } catch {
+          // The server has saved the capacity; draft cleanup can be retried later.
         }
+        router.replace(`/check-details?vehicleId=${encodeURIComponent(vehicleId)}`);
+        return;
       }
 
       setSubmitSuccess(
@@ -599,7 +515,7 @@ export default function LoadCapacityScreen() {
           ) : (
             <Text style={styles.primaryButtonText}>
               {flow === 'onboarding'
-                ? t('Submit for Review')
+                ? t('Continue to check details')
                 : existingCapacity
                   ? t('Save Capacity Changes')
                   : t('Save Load Capacity')}

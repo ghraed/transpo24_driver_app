@@ -30,6 +30,9 @@ function resolveTripId(data: PushNotificationData): string | null {
 
 function resolveNotificationRoute(data: PushNotificationData): Href | null {
   switch (data.type) {
+    case 'DRIVER_APPROVED':
+    case 'DRIVER_REVIEW_DECLINED':
+      return '/waiting-approval';
     case 'NEW_TRANSPORT_REQUEST':
       if (typeof data.requestId === 'string' && data.requestId.trim()) {
         return {

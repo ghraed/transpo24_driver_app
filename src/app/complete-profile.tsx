@@ -1,5 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -105,6 +105,9 @@ function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
 export default function CompleteProfileScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
+  const { returnTo, vehicleId } = useLocalSearchParams<{ returnTo?: string; vehicleId?: string }>();
+  const checkDetailsRoute = returnTo === 'check-details' && typeof vehicleId === 'string'
+    ? ({ pathname: '/check-details', params: { vehicleId } } as Href) : null;
   const { t } = useTranslation();
   const { driver, refreshDriverMe, saveDriverProfile, signOut } = useAuth();
   const testDefaults = useMemo(() => createTestCompleteProfileDefaults(), []);
@@ -169,7 +172,7 @@ export default function CompleteProfileScreen() {
       addressLine1: profile.addressLine1?.trim() || testDefaults.addressLine1,
       addressLine2: profile.addressLine2?.trim() || testDefaults.addressLine2,
       postalCode: profile.postalCode?.trim() || testDefaults.postalCode,
-      preferredLanguage: profile.preferredLanguage?.trim() || testDefaults.preferredLanguage,
+      preferredLanguage: profile.preferredLanguages?.[0]?.trim() || testDefaults.preferredLanguage,
       emergencyContactName:
         profile.emergencyContactName?.trim() || testDefaults.emergencyContactName,
       emergencyContactPhone:
@@ -287,7 +290,7 @@ export default function CompleteProfileScreen() {
       form.preferredLanguage.trim() &&
       !isSupportedLanguage(form.preferredLanguage.trim().toLowerCase())
     ) {
-      errors.preferredLanguage = t('Preferred language must be one of: en, ar, fr, de, es.');
+      errors.preferredLanguage = t('Select a supported language.');
     }
 
     return errors;
@@ -354,6 +357,7 @@ export default function CompleteProfileScreen() {
       addressLine1: form.addressLine1.trim() || undefined,
       addressLine2: form.addressLine2.trim() || undefined,
       postalCode: form.postalCode.trim() || undefined,
+      preferredLanguages: [form.preferredLanguage.trim().toLowerCase()],
       emergencyContactName: form.emergencyContactName.trim() || undefined,
       emergencyContactPhone: form.emergencyContactPhone.trim() || undefined,
       profilePhotoUrl: undefined,
@@ -379,7 +383,7 @@ export default function CompleteProfileScreen() {
         await clearLastOnboardingRoute();
       }
 
-      router.replace(nextStepToRoute(response.nextStep));
+      router.replace(checkDetailsRoute ?? nextStepToRoute(response.nextStep));
     } catch (error) {
       const message = error instanceof Error ? error.message : t('Failed to save profile.');
       const normalized = getSourceErrorMessage(error, message).toLowerCase();
