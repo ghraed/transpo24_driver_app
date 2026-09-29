@@ -2,7 +2,7 @@ import React from 'react';
 import { AppState } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
-import WaitingApprovalScreen from './waiting-approval';
+import WaitingApprovalScreen from '../src/app/waiting-approval';
 import { getDriverDocumentsStatus, getDriverVehicles } from '@/lib/api';
 
 const mockRouter = { replace: jest.fn() };

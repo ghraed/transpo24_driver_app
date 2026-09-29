@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 
-import CompleteProfileScreen from './complete-profile';
+import CompleteProfileScreen from '../src/app/complete-profile';
 import {
   clearCompleteProfileDraft,
   persistCompleteProfileDraft,

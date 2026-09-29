@@ -2,7 +2,7 @@ import React from 'react';
 import { AppState } from 'react-native';
 import { act, create } from 'react-test-renderer';
 
-import SetAvailabilityScreen from './set-availability';
+import SetAvailabilityScreen from '../src/app/set-availability';
 
 const mockRouter = { replace: jest.fn() };
 const mockRefreshAvailability = jest.fn();

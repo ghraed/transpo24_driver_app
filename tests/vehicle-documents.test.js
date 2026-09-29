@@ -3,7 +3,7 @@ import { act, create } from 'react-test-renderer';
 import { Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-import VehicleDocumentsScreen from './vehicle-documents';
+import VehicleDocumentsScreen from '../src/app/vehicle-documents';
 import { getDriverDocumentsStatus, uploadDriverDocument } from '@/lib/api';
 import { readOnboardingDocumentsDraft } from '@/lib/auth-storage';
 

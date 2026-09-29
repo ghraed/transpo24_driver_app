@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 
-import VehicleInformationScreen from './vehicle-information';
+import VehicleInformationScreen from '../src/app/vehicle-information';
 import { createDriverVehicle, deleteDriverVehicle, getDriverVehicle, getDriverVehicles, updateDriverVehicle, uploadDriverVehicleDocuments } from '@/lib/api';
 import { clearVehicleInformationDraft, persistVehicleInformationDraft, readVehicleInformationDraft } from '@/lib/auth-storage';
 

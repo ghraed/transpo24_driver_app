@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 
-import CheckDetailsScreen from './check-details';
+import CheckDetailsScreen from '../src/app/check-details';
 import { getDriverDocumentsStatus, getDriverVehicle, submitDriverDocumentsForReview } from '@/lib/api';
 
 const mockRouter = { replace: jest.fn(), push: jest.fn() };

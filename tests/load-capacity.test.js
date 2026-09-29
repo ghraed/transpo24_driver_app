@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 
-import LoadCapacityScreen from './load-capacity';
+import LoadCapacityScreen from '../src/app/load-capacity';
 import { getDriverVehicle, getVehicleLoadCapacity, saveVehicleLoadCapacity } from '@/lib/api';
 import { clearLoadCapacityDraft, readLoadCapacityDraft } from '@/lib/auth-storage';
 
