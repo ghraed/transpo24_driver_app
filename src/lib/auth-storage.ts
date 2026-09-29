@@ -7,8 +7,10 @@ const REMEMBERED_PASSWORD_KEY = 'transpo24.driver.rememberedPassword';
 const LAST_ONBOARDING_ROUTE_KEY = 'transpo24.driver.lastOnboardingRoute';
 const ONBOARDING_DOCUMENTS_STATUS_KEY = 'transpo24.driver.onboardingDocumentsStatus';
 const ONBOARDING_DOCUMENTS_DRAFT_KEY = 'transpo24.driver.onboardingDocumentsDraft';
+const COMPLETE_PROFILE_DRAFT_KEY = 'transpo24.driver.completeProfileDraft';
 const VEHICLE_INFORMATION_DRAFT_KEY = 'transpo24.driver.vehicleInformationDraft';
 const LOAD_CAPACITY_DRAFT_KEY = 'transpo24.driver.loadCapacityDraft';
+let completeProfileDraftWrite: Promise<void> = Promise.resolve();
 
 export async function persistAccessToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
@@ -108,6 +110,25 @@ export async function clearOnboardingDocumentsStatus(): Promise<void> {
   await SecureStore.deleteItemAsync(ONBOARDING_DOCUMENTS_STATUS_KEY);
 }
 
+export function persistCompleteProfileDraft(draft: string): Promise<void> {
+  completeProfileDraftWrite = completeProfileDraftWrite
+    .catch(() => {})
+    .then(() => SecureStore.setItemAsync(COMPLETE_PROFILE_DRAFT_KEY, draft));
+  return completeProfileDraftWrite;
+}
+
+export async function readCompleteProfileDraft(): Promise<string | null> {
+  await completeProfileDraftWrite.catch(() => {});
+  return SecureStore.getItemAsync(COMPLETE_PROFILE_DRAFT_KEY);
+}
+
+export function clearCompleteProfileDraft(): Promise<void> {
+  completeProfileDraftWrite = completeProfileDraftWrite
+    .catch(() => {})
+    .then(() => SecureStore.deleteItemAsync(COMPLETE_PROFILE_DRAFT_KEY));
+  return completeProfileDraftWrite;
+}
+
 export async function persistOnboardingDocumentsDraft(draft: string): Promise<void> {
   await SecureStore.setItemAsync(ONBOARDING_DOCUMENTS_DRAFT_KEY, draft);
 }
@@ -146,6 +167,7 @@ export async function clearLoadCapacityDraft(): Promise<void> {
 
 export async function clearDriverOnboardingDrafts(): Promise<void> {
   await Promise.all([
+    clearCompleteProfileDraft(),
     clearOnboardingDocumentsStatus(),
     clearOnboardingDocumentsDraft(),
     clearVehicleInformationDraft(),

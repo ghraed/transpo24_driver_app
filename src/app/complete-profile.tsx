@@ -18,8 +18,11 @@ import {
 import { CountryPicker } from '@/components/country-picker';
 import { useAuth } from '@/context/auth-context';
 import {
+  clearCompleteProfileDraft,
   clearLastOnboardingRoute,
+  persistCompleteProfileDraft,
   persistLastOnboardingRoute,
+  readCompleteProfileDraft,
 } from '@/lib/auth-storage';
 import {
   LANGUAGE_CONFIGS,
@@ -117,6 +120,8 @@ export default function CompleteProfileScreen() {
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState<boolean>(false);
   const [languageSearch, setLanguageSearch] = useState<string>('');
   const hasUserEditedRef = useRef<boolean>(false);
+  const draftRef = useRef<Partial<CompleteDriverProfileForm>>({});
+  const draftWriteRef = useRef<Promise<void>>(Promise.resolve());
   const maximumDobDate = useMemo(() => {
     const date = new Date();
     date.setFullYear(date.getFullYear() - 18);
@@ -168,32 +173,49 @@ export default function CompleteProfileScreen() {
         profile.emergencyContactName?.trim() || testDefaults.emergencyContactName,
       emergencyContactPhone:
         profile.emergencyContactPhone?.trim() || testDefaults.emergencyContactPhone,
+      ...draftRef.current,
     });
   }, [testDefaults]);
 
   const loadProfile = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      const rawDraft = await readCompleteProfileDraft();
+      if (rawDraft) {
+        const parsed: unknown = JSON.parse(rawDraft);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const restored: Partial<CompleteDriverProfileForm> = {};
+          for (const key of Object.keys(testDefaults) as (keyof CompleteDriverProfileForm)[]) {
+            const value = (parsed as Record<string, unknown>)[key];
+            if (typeof value === 'string') restored[key] = value;
+          }
+          draftRef.current = restored;
+        }
+      }
+    } catch {
+      // A damaged or inaccessible draft must not prevent the server profile from loading.
+    }
+
     if (driver) {
       applyFormFromProfile(driver);
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
+    } else if (Object.keys(draftRef.current).length > 0) {
+      setForm({ ...testDefaults, ...draftRef.current });
     }
-    setLoadError('');
 
     try {
       const response = await refreshDriverMe();
       applyFormFromProfile(response.driver);
     } catch (error) {
-      if (driver) {
-        applyFormFromProfile(driver);
-      } else {
+      if (!driver && Object.keys(draftRef.current).length === 0) {
         const message = error instanceof Error ? error.message : t('Failed to load profile.');
         setLoadError(message);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [applyFormFromProfile, driver, refreshDriverMe, t]);
+  }, [applyFormFromProfile, driver, refreshDriverMe, t, testDefaults]);
 
   useEffect(() => {
     void persistLastOnboardingRoute('/complete-profile');
@@ -283,6 +305,11 @@ export default function CompleteProfileScreen() {
   ): void => {
     hasUserEditedRef.current = true;
     setSubmitError('');
+    draftRef.current = { ...draftRef.current, [key]: value };
+    const draft = JSON.stringify(draftRef.current);
+    draftWriteRef.current = draftWriteRef.current
+      .catch(() => {})
+      .then(() => persistCompleteProfileDraft(draft));
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -337,6 +364,14 @@ export default function CompleteProfileScreen() {
       if (response.nextStep === 'COMPLETE_PROFILE') {
         setSubmitError(t('Complete the required fields highlighted below.'));
         return;
+      }
+
+      await draftWriteRef.current.catch(() => {});
+      try {
+        await clearCompleteProfileDraft();
+        draftRef.current = {};
+      } catch {
+        // The profile is saved on the server; draft cleanup can be retried later.
       }
 
       if (response.nextStep === 'HOME') {
