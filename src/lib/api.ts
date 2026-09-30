@@ -2242,12 +2242,14 @@ export interface OperationalCountry {
   canPickup: boolean;
   canDropoff: boolean;
   status: CoverageStatus;
+  isAutoHomeGrant?: boolean;
 }
 export interface RoutePermission {
   id: string;
   fromCountryCode: string;
   toCountryCode: string;
   status: CoverageStatus;
+  isAutoHomeGrant?: boolean;
 }
 export interface OperationalCoverage {
   countries: OperationalCountry[];

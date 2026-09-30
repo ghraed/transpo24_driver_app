@@ -72,7 +72,7 @@ export function OperationalCoverageScreen({ mode }: { mode: 'countries' | 'route
       <Pressable accessibilityRole="button" onPress={() => router.back()}><Text style={styles.link}>{t('Go back')}</Text></Pressable>
       <Text style={styles.title}>{t(routes ? 'Route permissions' : 'Operational countries')}</Text>
       <Text>{t('Operational approval does not change your home market. Only approved coverage and routes can qualify for jobs.')}</Text>
-      {routes && <Text>{t('Route permissions are directional. The reverse direction requires a separate request. Same-country routes also require approval.')}</Text>}
+      {routes && <Text>{t('Approved drivers receive home-market route access automatically unless an administrator restricts it. Other routes require approval and directions are separate.')}</Text>}
       {loading && <ActivityIndicator accessibilityLabel={t('Loading')} />}
       {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!!notice && <Text accessibilityLiveRegion="polite">{notice}</Text>}
@@ -80,9 +80,9 @@ export function OperationalCoverageScreen({ mode }: { mode: 'countries' | 'route
       {data && <>
         {routes ? data.routes.map(row => <View key={row.id} style={styles.card}>
           <Text style={styles.heading}>{row.fromCountryCode} → {row.toCountryCode}</Text>
-          <Text>{t(statusLabels[row.status])}</Text>
+          <Text>{t(statusLabels[row.status])}{row.isAutoHomeGrant ? ` · ${t('Automatic home-market approval')}` : ''}</Text>
         </View>) : data.countries.map(row => <View key={row.id} style={styles.card}>
-          <Text style={styles.heading}>{row.countryCode} · {t(statusLabels[row.status])}</Text>
+          <Text style={styles.heading}>{row.countryCode} · {t(statusLabels[row.status])}{row.isAutoHomeGrant ? ` · ${t('Automatic home-market approval')}` : ''}</Text>
           <Text>{t('Pickup')}: {t(row.canPickup ? 'Yes' : 'No')} · {t('Dropoff')}: {t(row.canDropoff ? 'Yes' : 'No')}</Text>
         </View>)}
         {data[mode].length === 0 && <Text>{t('No requests yet.')}</Text>}

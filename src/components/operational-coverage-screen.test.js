@@ -62,3 +62,15 @@ it('keeps failed submissions editable for retry', async () => {
   expect(button(tree).props.disabled).toBe(false);
   await act(async () => tree.unmount());
 });
+
+it('labels automatic domestic approvals on both screens', async () => {
+  getOperationalCoverage.mockResolvedValue({
+    countries: [{ id: 'home-country', countryCode: 'LB', status: 'APPROVED', canPickup: true, canDropoff: true, isAutoHomeGrant: true }],
+    routes: [{ id: 'home-route', fromCountryCode: 'LB', toCountryCode: 'LB', status: 'APPROVED', isAutoHomeGrant: true }],
+  });
+  const countries = await mount('countries');
+  const routes = await mount('routes');
+  expect(JSON.stringify(countries.toJSON())).toContain('Automatic home-market approval');
+  expect(JSON.stringify(routes.toJSON())).toContain('Automatic home-market approval');
+  await act(async () => { countries.unmount(); routes.unmount(); });
+});
