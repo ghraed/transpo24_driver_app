@@ -1,8 +1,10 @@
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -29,6 +31,7 @@ type SendOfferFormState = {
   price: string;
   estimatedPickupAt: string;
   estimatedDeliveryAt: string;
+  estimatedDurationHours: string;
   estimatedDurationMinutes: string;
   message: string;
 };
@@ -59,6 +62,14 @@ function parseOptionalIsoDate(rawValue: string): Date | null {
   const parsed = new Date(trimmed);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed;
+}
+
+type EstimateField = 'estimatedPickupAt' | 'estimatedDeliveryAt';
+
+function getDurationMinutes(hours: string, minutes: string): number | null {
+  if (!hours.trim() && !minutes.trim()) return null;
+  if ((hours.trim() && !/^\d+$/.test(hours.trim())) || (minutes.trim() && !/^\d+$/.test(minutes.trim()))) return NaN;
+  return Number(hours || 0) * 60 + Number(minutes || 0);
 }
 
 function normalizeDynamicText(value: unknown): string {
@@ -128,12 +139,15 @@ export default function SendPriceOfferScreen() {
     price: '',
     estimatedPickupAt: '',
     estimatedDeliveryAt: '',
+    estimatedDurationHours: '',
     estimatedDurationMinutes: '',
     message: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeEstimate, setActiveEstimate] = useState<EstimateField | null>(null);
+  const [pickerValue, setPickerValue] = useState(new Date());
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
   const requestIdShort = useMemo(() => {
@@ -171,6 +185,45 @@ export default function SendPriceOfferScreen() {
     () => formatRouteDistance(pickupLatitude, pickupLongitude, dropoffLatitude, dropoffLongitude),
     [dropoffLatitude, dropoffLongitude, pickupLatitude, pickupLongitude],
   );
+
+  const setEstimate = (field: EstimateField, value: Date): void => {
+    setForm((prev) => ({ ...prev, [field]: value.toISOString() }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const clearEstimate = (field: EstimateField): void => {
+    setForm((prev) => ({ ...prev, [field]: '' }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const openEstimatePicker = (field: EstimateField): void => {
+    const now = new Date();
+    const pickup = parseOptionalIsoDate(form.estimatedPickupAt);
+    const minimum = field === 'estimatedDeliveryAt' && pickup && pickup > now ? pickup : now;
+    const existing = parseOptionalIsoDate(form[field]);
+    const initial = existing && existing > minimum ? existing : new Date(minimum.getTime() + 60 * 60 * 1000);
+
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        mode: 'date',
+        value: initial,
+        minimumDate: minimum,
+        onValueChange: (_, selectedDate) => {
+          const selectedDay = new Date(selectedDate);
+          selectedDay.setHours(initial.getHours(), initial.getMinutes(), 0, 0);
+          DateTimePickerAndroid.open({
+            mode: 'time',
+            value: selectedDay,
+            onValueChange: (_, selectedTime) => setEstimate(field, selectedTime),
+          });
+        },
+      });
+      return;
+    }
+
+    setPickerValue(initial);
+    setActiveEstimate(field);
+  };
 
   useEffect(() => {
     let active = true;
@@ -259,10 +312,12 @@ export default function SendPriceOfferScreen() {
       nextErrors.estimatedDeliveryAt = t('Estimated delivery must be after estimated pickup.');
     }
 
-    if (form.estimatedDurationMinutes.trim()) {
-      const duration = Number(form.estimatedDurationMinutes.trim());
+    const duration = getDurationMinutes(form.estimatedDurationHours, form.estimatedDurationMinutes);
+    if (duration !== null) {
       if (!Number.isInteger(duration)) {
         nextErrors.estimatedDurationMinutes = t('Estimated duration must be a whole number.');
+      } else if (Number(form.estimatedDurationMinutes || 0) > 59) {
+        nextErrors.estimatedDurationMinutes = t('Minutes must be between 0 and 59.');
       } else if (duration < 1 || duration > 10080) {
         nextErrors.estimatedDurationMinutes = t('Estimated duration must be between 1 and 10080 minutes.');
       }
@@ -299,8 +354,9 @@ export default function SendPriceOfferScreen() {
       payload.estimatedDeliveryAt = deliveryDate.toISOString();
     }
 
-    if (form.estimatedDurationMinutes.trim()) {
-      payload.estimatedDurationMinutes = Number(form.estimatedDurationMinutes.trim());
+    const duration = getDurationMinutes(form.estimatedDurationHours, form.estimatedDurationMinutes);
+    if (duration !== null) {
+      payload.estimatedDurationMinutes = duration;
     }
 
     const trimmedMessage = form.message.trim();
@@ -479,33 +535,38 @@ export default function SendPriceOfferScreen() {
             ) : null}
 
             <Text style={styles.label}>{t('Estimated pickup date/time (optional)')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.estimatedPickupAt}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedPickupAt: value }))}
-              placeholder="2026-07-14T15:00:00Z"
-              autoCapitalize="none"
-            />
+            <View style={styles.dateRow}>
+              <Pressable style={[styles.input, styles.dateButton]} onPress={() => openEstimatePicker('estimatedPickupAt')} accessibilityRole="button">
+                <Text style={form.estimatedPickupAt ? styles.dateValue : styles.datePlaceholder}>
+                  {form.estimatedPickupAt ? formatDateTime(form.estimatedPickupAt) : t('Select date and time')}
+                </Text>
+              </Pressable>
+              {form.estimatedPickupAt ? <Pressable style={styles.clearButton} onPress={() => clearEstimate('estimatedPickupAt')} accessibilityRole="button"><Text style={styles.clearText}>{t('Clear')}</Text></Pressable> : null}
+            </View>
             {errors.estimatedPickupAt ? <Text style={styles.errorText}>{errors.estimatedPickupAt}</Text> : null}
 
             <Text style={styles.label}>{t('Estimated delivery date/time (optional)')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.estimatedDeliveryAt}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedDeliveryAt: value }))}
-              placeholder="2026-07-14T18:00:00Z"
-              autoCapitalize="none"
-            />
+            <View style={styles.dateRow}>
+              <Pressable style={[styles.input, styles.dateButton]} onPress={() => openEstimatePicker('estimatedDeliveryAt')} accessibilityRole="button">
+                <Text style={form.estimatedDeliveryAt ? styles.dateValue : styles.datePlaceholder}>
+                  {form.estimatedDeliveryAt ? formatDateTime(form.estimatedDeliveryAt) : t('Select date and time')}
+                </Text>
+              </Pressable>
+              {form.estimatedDeliveryAt ? <Pressable style={styles.clearButton} onPress={() => clearEstimate('estimatedDeliveryAt')} accessibilityRole="button"><Text style={styles.clearText}>{t('Clear')}</Text></Pressable> : null}
+            </View>
             {errors.estimatedDeliveryAt ? <Text style={styles.errorText}>{errors.estimatedDeliveryAt}</Text> : null}
 
-            <Text style={styles.label}>{t('Estimated duration (minutes)')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.estimatedDurationMinutes}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedDurationMinutes: value }))}
-              placeholder="120"
-              keyboardType="number-pad"
-            />
+            <Text style={styles.label}>{t('Estimated duration')}</Text>
+            <View style={styles.durationRow}>
+              <View style={styles.durationPart}>
+                <TextInput style={styles.input} value={form.estimatedDurationHours} onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedDurationHours: value }))} placeholder="2" keyboardType="number-pad" maxLength={3} accessibilityLabel={t('Hours')} />
+                <Text style={styles.durationUnit}>{t('Hours')}</Text>
+              </View>
+              <View style={styles.durationPart}>
+                <TextInput style={styles.input} value={form.estimatedDurationMinutes} onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedDurationMinutes: value }))} placeholder="0" keyboardType="number-pad" maxLength={2} accessibilityLabel={t('Minutes')} />
+                <Text style={styles.durationUnit}>{t('Minutes')}</Text>
+              </View>
+            </View>
             {errors.estimatedDurationMinutes ? (
               <Text style={styles.errorText}>{errors.estimatedDurationMinutes}</Text>
             ) : null}
@@ -534,6 +595,19 @@ export default function SendPriceOfferScreen() {
 
           {isSubmitting ? <Text style={styles.loadingText}>{t('Sending offer...')}</Text> : null}
         </ScrollView>
+        {Platform.OS === 'ios' ? (
+          <Modal visible={activeEstimate !== null} transparent animationType="fade" onRequestClose={() => setActiveEstimate(null)}>
+            <View style={styles.pickerBackdrop}>
+              <View style={styles.pickerCard}>
+                {activeEstimate ? <DateTimePicker mode="datetime" display="spinner" value={pickerValue} minimumDate={activeEstimate === 'estimatedDeliveryAt' ? parseOptionalIsoDate(form.estimatedPickupAt) ?? new Date() : new Date()} onValueChange={(_, value) => setPickerValue(value)} /> : null}
+                <View style={styles.pickerActions}>
+                  <Pressable onPress={() => setActiveEstimate(null)}><Text style={styles.pickerActionText}>{t('Cancel')}</Text></Pressable>
+                  <Pressable onPress={() => { if (activeEstimate) setEstimate(activeEstimate, pickerValue); setActiveEstimate(null); }}><Text style={styles.pickerActionText}>{t('Done')}</Text></Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -566,6 +640,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     color: '#202020',
   },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dateButton: { flex: 1, minHeight: 48, justifyContent: 'center' },
+  dateValue: { color: '#202020' },
+  datePlaceholder: { color: '#707A8C' },
+  clearButton: { paddingHorizontal: 8, minHeight: 48, justifyContent: 'center' },
+  clearText: { color: '#505A6A', fontWeight: '600' },
+  durationRow: { flexDirection: 'row', gap: 12 },
+  durationPart: { flex: 1, gap: 4 },
+  durationUnit: { color: '#505A6A', fontSize: 13 },
+  pickerBackdrop: { flex: 1, backgroundColor: '#0008', justifyContent: 'center', padding: 20 },
+  pickerCard: { backgroundColor: '#FFFFFF', borderRadius: 14, padding: 16 },
+  pickerActions: { flexDirection: 'row', justifyContent: 'space-between', padding: 12 },
+  pickerActionText: { color: '#202020', fontWeight: '700' },
   messageInput: { minHeight: 100 },
   derivedCurrencyCard: {
     borderWidth: 1,
