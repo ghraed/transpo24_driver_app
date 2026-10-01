@@ -1,4 +1,6 @@
 {
+  "Estimated earnings": "Gains estimés",
+  "These earnings are estimated in your offer currency. Your payout provider or bank may apply conversion or fees.": "Ces gains sont estimés dans la devise de votre offre. Votre prestataire de paiement ou votre banque peut appliquer une conversion ou des frais.",
   " ({{count}} workers)": "(travailleurs {{count}})",
   "{{count}} minutes": "Minutes {{count}}",
   "{{count}} new": "{{count}} nouveaux",
@@ -223,6 +225,7 @@
   "Create your Stripe Connect account first, then come back to release held trip funds.": "Créez d’abord votre compte Stripe Connect, puis revenez pour libérer les fonds bloqués du trajet.",
   "Create your Stripe Connect account first, then return here to release the held trip funds.": "Creez d'abord votre compte Stripe Connect, puis revenez ici pour liberer les fonds retenus du trajet.",
   "Currency": "Devise",
+  "Offer currency": "Devise de l'offre",
   "Currency *": "Devise *",
   "currency is required.": "la monnaie est requise.",
   "Current cargo types": "Types de marchandises actuels",
@@ -773,6 +776,7 @@
   "Offer": "Offre",
   "Offer currency follows your country: {{country}}.": "La devise de l'offre suit votre pays : {{country}}.",
   "Offer currency follows your saved country.": "La devise de l'offre suit votre pays enregistré.",
+  "Offer currency follows your home market.": "La devise de l'offre suit votre marché de rattachement.",
   "Offer currency will default to {{currency}} for {{country}}.": "La devise de l'offre sera par défaut {{currency}} pour {{country}}.",
   "Offer does not belong to this request.": "L'offre n'appartient pas à cette demande.",
   "Offer driver is no longer eligible.": "L'offre pilote n'est plus éligible.",

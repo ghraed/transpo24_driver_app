@@ -376,7 +376,7 @@ export default function ReviewRequestDetailsScreen() {
             {translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude, t)}
           </Text>
           <Text style={styles.metaText}>{details.pickupCountryCode || '—'} → {details.destinationCountryCode || '—'}</Text>
-          <Text style={styles.metaText}>{t('Currency')}: {details.currency || t('Unavailable')}</Text>
+          <Text style={styles.metaText}>{t('Offer currency')}: {details.offerCurrency || t('Unavailable')}</Text>
           {routeDistance ? <Text style={styles.metaText}>{t('Distance')}: {routeDistance}</Text> : null}
         </View>
 

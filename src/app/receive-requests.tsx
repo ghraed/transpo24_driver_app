@@ -65,9 +65,9 @@ function serviceIcon(alert: DriverRequestAlertSummary): DriverIconName {
 }
 
 function displayPrice(alert: PricedAlert, locale: string): string {
+  if (typeof alert.suggestedPrice !== 'number' || !Number.isFinite(alert.suggestedPrice)) return '—';
   const currency = alert.currency?.trim().toUpperCase();
   if (!currency || !/^[A-Z]{3}$/.test(currency)) return '—';
-  if (typeof alert.suggestedPrice !== 'number' || !Number.isFinite(alert.suggestedPrice)) return `${currency} —`;
   return `${currency} ${Math.round(alert.suggestedPrice).toLocaleString(locale)}`;
 }
 

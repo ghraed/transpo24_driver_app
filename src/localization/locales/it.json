@@ -1,4 +1,8 @@
 {
+  "Estimated earnings": "Guadagni stimati",
+  "These earnings are estimated in your offer currency. Your payout provider or bank may apply conversion or fees.": "Questi guadagni sono stimati nella valuta dell’offerta. Il gestore dei pagamenti o la banca potrebbe applicare una conversione o commissioni.",
+  "Offer currency": "Valuta dell’offerta",
+  "Offer currency follows your home market.": "La valuta dell’offerta segue il tuo mercato di riferimento.",
   "Login": "Accedi",
   "Continue with your phone number": "Continua con il tuo numero di telefono",
   "We will send a six-digit verification code by SMS.": "Ti invieremo via SMS un codice di verifica a sei cifre.",

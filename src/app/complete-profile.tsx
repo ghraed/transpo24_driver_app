@@ -509,9 +509,6 @@ export default function CompleteProfileScreen() {
             value={form.countryCode}
             onChange={(value) => onChange('countryCode', value)}
           />
-          <Text style={styles.helper}>
-            {t('Offer currency follows the request.')}
-          </Text>
         </View>
         {hasAttemptedSubmit && fieldErrors.countryCode ? (
           <Text style={styles.errorText}>{fieldErrors.countryCode}</Text>

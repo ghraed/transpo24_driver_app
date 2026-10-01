@@ -15,7 +15,7 @@ jest.mock('@/services/translation-service', () => ({ translateDynamicBatch: jest
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 const details = {
   requestId: 'swiss-job', requestVersion: 'v1', requestStatus: 'PENDING_QUOTES',
-  currency: 'CHF', pickupCountryCode: 'CH', destinationCountryCode: 'CH',
+  currency: 'CHF', offerCurrency: 'USD', pickupCountryCode: 'CH', destinationCountryCode: 'CH',
   pickup: { address: 'Geneva', latitude: null, longitude: null },
   dropoff: { address: 'Lausanne', latitude: null, longitude: null },
   schedule: { isImmediate: true }, service: { key: 'GOODS', nameEn: 'Goods' },
@@ -45,7 +45,7 @@ it('opens the authorized foreign request and continues to its offer without a te
   await render();
   expect(getDriverRequestDetails).toHaveBeenCalledWith('swiss-job');
   expect(output()).toContain('Geneva');
-  expect(output()).toContain('CHF');
+  expect(output()).toContain('USD');
   await act(async () => button('Accept & Send Offer').props.onPress());
   expect(acceptDriverRequestAlert).toHaveBeenCalledWith('swiss-job');
   expect(mockRouter.replace).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/send-price-offer', params: expect.objectContaining({ requestId: 'swiss-job', requestVersion: 'v1' }) }));

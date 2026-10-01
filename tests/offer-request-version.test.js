@@ -22,7 +22,7 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 let tree;
-beforeEach(() => { jest.useFakeTimers(); jest.resetAllMocks(); getDriverRequestDetails.mockResolvedValue({ currency: 'CHF' }); jest.spyOn(Alert, 'alert').mockImplementation(() => {}); });
+beforeEach(() => { jest.useFakeTimers(); jest.resetAllMocks(); getDriverRequestDetails.mockResolvedValue({ currency: 'EUR', offerCurrency: 'CHF' }); jest.spyOn(Alert, 'alert').mockImplementation(() => {}); });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; jest.useRealTimers(); });
 function submitButton() {
   return tree.root.findAll(node => typeof node.props.onPress === 'function')
@@ -59,7 +59,7 @@ it.each(['', 'abc', '0', '100001'])('does not send invalid price %s', async pric
   expect(sendDriverPriceOffer).not.toHaveBeenCalled();
   expect(mockRouter.replace).not.toHaveBeenCalled();
 });
-it('sends optional timing and trimmed message with request currency', async () => {
+it('sends optional timing and trimmed message with driver currency', async () => {
   sendDriverPriceOffer.mockResolvedValue({ request: { id: 'request', status: 'QUOTED' }, offer: { id: 'offer' } });
   await act(async () => { tree = create(<SendPriceOffer />); });
   const pickup = new Date(Date.now() + 3600000).toISOString();

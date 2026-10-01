@@ -16,19 +16,19 @@ jest.mock('@/localization/format', () => ({ formatDateTime: value => value }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 beforeEach(() => jest.clearAllMocks());
 function submit(tree) { return tree.root.findAll(node => typeof node.props.onPress === 'function' && typeof node.props.disabled === 'boolean')[0]; }
-it('uses the authorized Swiss request currency for a French driver and ignores navigation currency', async () => {
-  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF' });
+it('uses the server-provided driver currency even when the request and navigation currencies differ', async () => {
+  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF', offerCurrency: 'USD' });
   sendDriverPriceOffer.mockResolvedValue({ request: { id: 'swiss-job', status: 'QUOTED' }, offer: { id: 'offer' } });
   let tree;
   await act(async () => { tree = create(<Screen />); });
   expect(getDriverRequestDetails).toHaveBeenCalledWith('swiss-job');
   await act(async () => tree.root.findAllByType(TextInput)[0].props.onChangeText('100'));
   await act(async () => submit(tree).props.onPress());
-  expect(sendDriverPriceOffer).toHaveBeenCalledWith('swiss-job', { requestVersion: 'reviewed-version', price: 100, currency: 'CHF' });
+  expect(sendDriverPriceOffer).toHaveBeenCalledWith('swiss-job', { requestVersion: 'reviewed-version', price: 100, currency: 'USD' });
   await act(async () => tree.unmount());
 });
-it.each([null, '', 'invalid'])('prevents offers when persisted currency is %s', async currency => {
-  getDriverRequestDetails.mockResolvedValue({ currency });
+it.each([null, '', 'invalid'])('prevents offers when the driver offer currency is %s', async currency => {
+  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF', offerCurrency: currency });
   let tree;
   await act(async () => { tree = create(<Screen />); });
   expect(submit(tree).props.disabled).toBe(true);
@@ -45,7 +45,7 @@ it('prevents submission when a stale request is denied', async () => {
 });
 
 it.each(['ROUTE_BLOCKED', 'REQUEST_NOT_AVAILABLE', 'REQUEST_ACCESS_DENIED', 'DRIVER_COUNTRY_NOT_APPROVED', 'DRIVER_ROUTE_NOT_APPROVED', undefined])('requires fresh authorization after offer rejection %s', async code => {
-  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF' });
+  getDriverRequestDetails.mockResolvedValue({ currency: 'CHF', offerCurrency: 'USD' });
   const error = new ApiResponseError('Request unavailable.');
   error.code = code;
   error.status = code ? 403 : 404;

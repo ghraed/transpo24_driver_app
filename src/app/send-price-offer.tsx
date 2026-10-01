@@ -423,7 +423,7 @@ export default function SendPriceOfferScreen() {
             <View style={styles.derivedCurrencyCard}>
               <Text style={styles.derivedCurrencyValue}>{offerCurrency || t('Unavailable')}</Text>
               <Text style={styles.derivedCurrencyHint}>
-                {t('Offer currency follows the request.')}
+                {t('Offer currency follows your home market.')}
               </Text>
             </View>
 
@@ -462,7 +462,7 @@ export default function SendPriceOfferScreen() {
                 </View>
                 <View style={styles.earningsDivider} />
                 <View style={styles.earningsRow}>
-                  <Text style={styles.netAmountLabel}>{t('You receive')}</Text>
+                  <Text style={styles.netAmountLabel}>{t('Estimated earnings')}</Text>
                   <Text style={styles.netAmountValue}>
                     {formatOfferAmount(offerEarningsPreview.netAmount, offerCurrency)}
                   </Text>
@@ -471,6 +471,9 @@ export default function SendPriceOfferScreen() {
                   {t('{{percentage}}% is deducted from your offer after the customer accepts it.', {
                     percentage: PLATFORM_FEE_PERCENTAGE,
                   })}
+                </Text>
+                <Text style={styles.earningsHint}>
+                  {t('These earnings are estimated in your offer currency. Your payout provider or bank may apply conversion or fees.')}
                 </Text>
               </View>
             ) : null}

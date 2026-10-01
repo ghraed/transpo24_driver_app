@@ -1,4 +1,6 @@
 {
+  "Estimated earnings": "Estimated earnings",
+  "These earnings are estimated in your offer currency. Your payout provider or bank may apply conversion or fees.": "These earnings are estimated in your offer currency. Your payout provider or bank may apply conversion or fees.",
   " ({{count}} workers)": " ({{count}} workers)",
   "{{count}} minutes": "{{count}} minutes",
   "{{count}} new": "{{count}} new",
@@ -223,6 +225,7 @@
   "Create your Stripe Connect account first, then come back to release held trip funds.": "Create your Stripe Connect account first, then come back to release held trip funds.",
   "Create your Stripe Connect account first, then return here to release the held trip funds.": "Create your Stripe Connect account first, then return here to release the held trip funds.",
   "Currency": "Currency",
+  "Offer currency": "Offer currency",
   "Currency *": "Currency *",
   "currency is required.": "currency is required.",
   "Current cargo types": "Current cargo types",
@@ -773,6 +776,7 @@
   "Offer": "Offer",
   "Offer currency follows your country: {{country}}.": "Offer currency follows your country: {{country}}.",
   "Offer currency follows your saved country.": "Offer currency follows your saved country.",
+  "Offer currency follows your home market.": "Offer currency follows your home market.",
   "Offer currency will default to {{currency}} for {{country}}.": "Offer currency will default to {{currency}} for {{country}}.",
   "Offer does not belong to this request.": "Offer does not belong to this request.",
   "Offer driver is no longer eligible.": "Offer driver is no longer eligible.",

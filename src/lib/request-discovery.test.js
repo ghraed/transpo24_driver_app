@@ -53,7 +53,8 @@ it('renders only server candidate jobs and opens the authorized ID without a hom
   await render();
   const output = tree.root.findAllByType(Text).map(node => React.Children.toArray(node.props.children).join('')).join(' ');
   expect(output).toContain('Geneva');
-  expect(output).toContain('EUR —');
+  expect(output).not.toContain('EUR —');
+  expect(output).toContain('—');
   expect(output).toContain('CH');
   expect(output).toContain('FR');
   const card = tree.root.findAll(node => typeof node.props.onPress === 'function' && typeof node.props.style === 'function')[0];

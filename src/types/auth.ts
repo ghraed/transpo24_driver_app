@@ -613,6 +613,7 @@ export interface RequestPhoto {
 }
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
+  offerCurrency: string | null;
   requestVersion: string;
   offerStatus: DriverOfferStatus | null;
   customerNote: string | null;
