@@ -20,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverChatButton } from '@/components/driver-chat-button';
 import { DriverRoutePolyline } from '@/components/driver-route-polyline';
+import { RequestDocuments } from '@/components/request-documents';
 import {
   NativeMapView,
   NativeMarker,
@@ -186,6 +187,7 @@ export default function GoToPickupScreen() {
   const [routeError, setRouteError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
+  const [isVehicleTransport, setIsVehicleTransport] = useState(false);
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
@@ -375,6 +377,7 @@ export default function GoToPickupScreen() {
     let itemPickedUpUnsub: (() => void) | null = null;
 
     const setup = async (): Promise<void> => {
+      setIsVehicleTransport(false);
       if (isInvalidRoute || !pickupLocation || !dropoffLocation || !deliverRoute) {
         setIsLoadingLocation(false);
         return;
@@ -398,6 +401,7 @@ export default function GoToPickupScreen() {
         if (!active) return;
 
         setRequestStatus(details.requestStatus);
+        setIsVehicleTransport(details.service?.key === 'VEHICLE_TRANSPORT');
 
         if (isTerminalRequestStatus(details.requestStatus)) {
           void stopBackgroundTripTracking(validTripId).catch(() => undefined);
@@ -917,6 +921,7 @@ export default function GoToPickupScreen() {
           {t('Dropoff')}: {translatedTextByKey.dropoffAddress || formatDisplayAddress(dropoffLocation.address, 'Dropoff address unavailable', t)}
         </Text>
         <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
+        {isVehicleTransport ? <RequestDocuments requestId={tripId} /> : null}
         <Text style={styles.distanceText}>
           {t('Distance to pickup')}:{' '}
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}

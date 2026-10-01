@@ -24,6 +24,7 @@ jest.mock('@/services/socketService', () => ({
 jest.mock('@/location/background-trip-tracking', () => ({ startBackgroundTripTracking: jest.fn(), stopBackgroundTripTracking: jest.fn() }));
 jest.mock('@/hooks/use-android-keyboard-inset', () => ({ useAndroidKeyboardInset: () => 0 }));
 jest.mock('@/components/driver-chat-button', () => ({ DriverChatButton: 'DriverChatButton' }));
+jest.mock('@/components/request-documents', () => ({ RequestDocuments: 'RequestDocuments' }));
 jest.mock('@/components/driver-route-polyline', () => ({ DriverRoutePolyline: 'DriverRoutePolyline' }));
 jest.mock('@/components/native-maps', () => ({ isNativeMapRuntimeAvailable: false }));
 jest.mock('@/config/maps', () => ({ GOOGLE_MAPS_API_KEY: '' }));
@@ -64,6 +65,16 @@ describe.each([
   beforeEach(() => {
     getDriverAcceptedJobDetails.mockResolvedValue({ requestStatus: status });
     Location.getCurrentPositionAsync.mockResolvedValue({ coords: coordinates });
+  });
+  it('shows the current vehicle transport documents during the active trip', async () => {
+    getDriverAcceptedJobDetails.mockResolvedValue({ requestStatus: status, service: { key: 'VEHICLE_TRANSPORT' } });
+    await render(Screen);
+    expect(tree.root.findByType('RequestDocuments').props.requestId).toBe('swiss-job');
+  });
+  it('keeps vehicle documents hidden for other services', async () => {
+    getDriverAcceptedJobDetails.mockResolvedValue({ requestStatus: status, service: { key: 'PARCEL_DELIVERY' } });
+    await render(Screen);
+    expect(tree.root.findAllByType('RequestDocuments')).toHaveLength(0);
   });
   it('submits proof and trimmed notes for the authorized foreign job and advances only on success', async () => {
     await render(Screen); await press('Choose Images');

@@ -78,6 +78,10 @@ function getAcceptedJobRoute(job: DriverAcceptedJobSummary): {
   pathname: '/accepted-job-details' | '/go-to-pickup' | '/deliver-item';
   params: Record<string, string>;
 } {
+  if (job.service?.key === 'VEHICLE_TRANSPORT') {
+    return { pathname: '/accepted-job-details', params: { requestId: job.requestId } };
+  }
+
   const sharedParams = {
     tripId: job.requestId,
     pickupLatitude: String(job.pickup.latitude ?? ''),
@@ -114,6 +118,8 @@ function getAcceptedJobActionLabel(
   job: DriverAcceptedJobSummary,
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
+  if (job.service?.key === 'VEHICLE_TRANSPORT') return t('View Job');
+
   if (job.requestStatus === 'DRIVER_ARRIVED_PICKUP') {
     return t('Go To Pickup Confirmation');
   }

@@ -11,6 +11,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { DriverChatButton } from '@/components/driver-chat-button';
 import { DriverRoutePolyline } from '@/components/driver-route-polyline';
+import { RequestDocuments } from '@/components/request-documents';
 import {
   NativeMapView,
   NativeMarker,
@@ -155,6 +156,7 @@ export default function DeliverItemScreen() {
   const [routeBlockedMessage, setRouteBlockedMessage] = useState<string>('');
   const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
+  const [isVehicleTransport, setIsVehicleTransport] = useState(false);
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const { height: windowHeight } = useWindowDimensions();
 
@@ -358,6 +360,7 @@ export default function DeliverItemScreen() {
     let offItemDelivered: (() => void) | null = null;
 
     const setup = async (): Promise<void> => {
+      setIsVehicleTransport(false);
       if (isInvalidRoute) {
         setIsLoadingLocation(false);
         setIsStartingDelivery(false);
@@ -372,6 +375,7 @@ export default function DeliverItemScreen() {
 
         currentRequestStatus = details.requestStatus;
         setRequestStatus(details.requestStatus);
+        setIsVehicleTransport(details.service?.key === 'VEHICLE_TRANSPORT');
         if (isTerminalRequestStatus(details.requestStatus)) {
           void stopBackgroundTripTracking(tripId).catch(() => undefined);
           router.replace(buildCompletedRoute(tripId, new Date().toISOString()));
@@ -868,6 +872,7 @@ export default function DeliverItemScreen() {
           {t('Pickup')}: {translatedTextByKey.pickupAddress || formatDisplayAddress(pickupLocation.address, 'Pickup address unavailable', t)}
         </Text>
         <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
+        {isVehicleTransport ? <RequestDocuments requestId={tripId} /> : null}
         <Text style={styles.distanceText}>
           {t('Distance remaining')}:{' '}
           {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}

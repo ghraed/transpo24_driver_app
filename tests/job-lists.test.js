@@ -1,6 +1,7 @@
 import { RequestTypeTabs } from '@/components/request-type-tabs';
 import React from 'react';
 import { act, create } from 'react-test-renderer';
+import { Text } from 'react-native';
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals';
 import AcceptedJobs from '../src/app/accepted-jobs';
 import Jobs from '../src/app/receive-requests';
@@ -54,6 +55,32 @@ it('shows an active accepted job immediately even while chat badges are still lo
   await render(AcceptedJobs);
   expect(contains('CMTSNTL9')).toBe(true);
   expect(contains('Test vehicle')).toBe(true);
+});
+it.each(['DRIVER_ASSIGNED', 'DRIVER_GOING_TO_PICKUP', 'DRIVER_ARRIVED_PICKUP', 'DRIVER_GOING_TO_DROPOFF'])(
+  'opens vehicle job details from Accepted Jobs at %s', async requestStatus => {
+    getDriverAcceptedJobs.mockResolvedValue({ jobs: [{ ...job, requestStatus }] });
+    await render(AcceptedJobs);
+    const card = tree.root.findAll(node =>
+      typeof node.props.onPress === 'function' &&
+      node.findAllByType(Text).some(text => text.props.children === 'View Job')
+    )[0];
+    expect(card).toBeDefined();
+    await act(async () => card.props.onPress());
+    expect(mockRouter.push).toHaveBeenCalledWith({
+      pathname: '/accepted-job-details',
+      params: { requestId: job.requestId },
+    });
+  }
+);
+it('keeps direct pickup navigation for jobs without vehicle documents', async () => {
+  getDriverAcceptedJobs.mockResolvedValue({ jobs: [{ ...job, service: { key: 'GOODS_TRANSPORT', nameEn: 'Goods transport' } }] });
+  await render(AcceptedJobs);
+  const card = tree.root.findAll(node =>
+    typeof node.props.onPress === 'function' &&
+    node.findAllByType(Text).some(text => text.props.children === 'Go to Pickup Location')
+  )[0];
+  await act(async () => card.props.onPress());
+  expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/go-to-pickup' }));
 });
 it('restores an accepted job after leaving and reopening the list', async () => {
   await render(AcceptedJobs); await act(async () => tree.unmount()); tree = null;
