@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverIcon } from '@/components/driver-icon';
-import { getDriverEarnings } from '@/lib/api';
+import { getDriverEarnings, retryTransferForTrip } from '@/lib/api';
 import { useAppLanguage } from '@/localization/provider';
 import type { DriverEarning } from '@/types/auth';
 
@@ -85,6 +85,8 @@ export default function EarningsHistoryScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [releasingTripId, setReleasingTripId] = useState<string | null>(null);
+  const [releaseResult, setReleaseResult] = useState<{ tripId: string; message: string } | null>(null);
 
   const loadEarnings = useCallback(async (refreshing = false) => {
     if (refreshing) setIsRefreshing(true);
@@ -106,6 +108,29 @@ export default function EarningsHistoryScreen() {
       void loadEarnings();
     }, [loadEarnings]),
   );
+
+  const releasePayout = async (tripId: string) => {
+    if (releasingTripId) return;
+    setReleasingTripId(tripId);
+    setReleaseResult(null);
+    try {
+      const result = await retryTransferForTrip(tripId);
+      setReleaseResult({
+        tripId,
+        message: result.transferred && result.stripeTransferId
+          ? t('Transfer reference: {{value}}', { value: result.stripeTransferId })
+          : result.reason || t('Failed to release held trip funds.'),
+      });
+      if (result.transferred) await loadEarnings(true);
+    } catch (error) {
+      setReleaseResult({
+        tripId,
+        message: error instanceof Error ? error.message : t('Failed to release held trip funds.'),
+      });
+    } finally {
+      setReleasingTripId(null);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -171,6 +196,27 @@ export default function EarningsHistoryScreen() {
                       <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
                     </View>
                   </View>
+                  {earning.status === 'AVAILABLE' ? (
+                    <Pressable
+                      style={styles.releaseButton}
+                      disabled={Boolean(releasingTripId)}
+                      onPress={() => void releasePayout(earning.tripId)}
+                    >
+                      {releasingTripId === earning.tripId ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.releaseButtonText}>{t('Release Payout')}</Text>
+                      )}
+                    </Pressable>
+                  ) : null}
+                  {earning.stripeTransferId ? (
+                    <Text style={styles.transferReference}>
+                      {t('Transfer reference: {{value}}', { value: earning.stripeTransferId })}
+                    </Text>
+                  ) : null}
+                  {releaseResult?.tripId === earning.tripId ? (
+                    <Text style={styles.transferReference}>{releaseResult.message}</Text>
+                  ) : null}
                 </View>
               );
             })}
@@ -204,6 +250,9 @@ const styles = StyleSheet.create({
   tripId: { maxWidth: '57%', color: '#7A8495', fontSize: 12, fontWeight: '600' },
   statusBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
   statusText: { fontSize: 11, fontWeight: '800' },
+  releaseButton: { marginTop: 13, alignItems: 'center', borderRadius: 8, backgroundColor: '#202020', paddingVertical: 11 },
+  releaseButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  transferReference: { marginTop: 10, color: '#596273', fontSize: 12 },
   emptyCard: { marginTop: 22, padding: 30, alignItems: 'center', borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E4E7EC' },
   emptyTitle: { marginTop: 12, color: '#202020', fontSize: 16, fontWeight: '800' },
   emptyText: { marginTop: 5, color: '#687386', fontSize: 13, textAlign: 'center', lineHeight: 19 },
