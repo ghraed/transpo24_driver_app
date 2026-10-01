@@ -79,7 +79,7 @@ function getProgressLabel(status: DriverAcceptedJobDetailsResponse['requestStatu
   switch (status) {
     case 'ACCEPTED':
     case 'DRIVER_ASSIGNED':
-      return 'Accept Request';
+      return 'Accepted';
     case 'DRIVER_GOING_TO_PICKUP':
       return 'On the Way to Pickup';
     case 'DRIVER_ARRIVED_PICKUP':
@@ -104,14 +104,14 @@ function getNextActionLabel(status: DriverAcceptedJobDetailsResponse['requestSta
     case 'DRIVER_GOING_TO_PICKUP':
       return 'On the Way to Pickup';
     case 'DRIVER_ARRIVED_PICKUP':
-      return 'Picked Up';
+      return 'Go To Pickup Confirmation';
     case 'ITEM_PICKED_UP':
     case 'PICKUP_IN_PROGRESS':
     case 'IN_TRANSIT':
     case 'DRIVER_GOING_TO_DROPOFF':
       return 'On the Way to Delivery';
     case 'DELIVERED':
-      return 'Delivered';
+      return null;
     default:
       return null;
   }
@@ -144,6 +144,15 @@ function getPrimaryRouteLabel(
     default:
       return t('Go to Pickup Location');
   }
+}
+
+function DetailRow({ label, value, stacked = false }: { label: string; value: string | number; stacked?: boolean }) {
+  return (
+    <View style={[styles.detailRow, stacked && styles.stackedDetailRow]}>
+      <Text style={[styles.detailLabel, stacked && styles.stackedDetailLabel]}>{label}</Text>
+      <Text style={[styles.detailValue, stacked && styles.stackedDetailValue]}>{value}</Text>
+    </View>
+  );
 }
 
 export default function AcceptedJobDetailsScreen() {
@@ -349,152 +358,124 @@ export default function AcceptedJobDetailsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.successHeader}>
-          <Text style={styles.title}>{t('Your offer was accepted')}</Text>
-          <Text style={styles.subtitle}>
-            {isTerminalRequestStatus(details.requestStatus)
-              ? t('This request is completed and read-only.')
-              : t('Review the job details and get ready for pickup.')}
-          </Text>
-          <Text style={styles.offerPrice}>
-            {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
-          </Text>
-          <Text style={styles.metaText}>{t('Accepted at')}: {formatDate(details.acceptedAt)}</Text>
+        <View style={styles.hero}>
+          <Text style={styles.reference}>#TRP-{details.requestId.slice(0, 8).toUpperCase()}</Text>
+          <Text style={styles.title}>{t('Accepted Job Details')}</Text>
+          <View style={styles.heroSummary}>
+            <View style={styles.heroStatus}>
+              <Text style={styles.progressBadge}>{t(currentStageLabel)}</Text>
+              <Text style={styles.heroMeta}>{t('Accepted at')}: {formatDate(details.acceptedAt)}</Text>
+            </View>
+            <Text style={styles.offerPrice}>{formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}</Text>
+          </View>
+          {nextActionLabel ? (
+            <Text style={styles.nextAction}>{t('Next action')}: {t(nextActionLabel)}</Text>
+          ) : null}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Request Progress')}</Text>
-          <Text style={styles.progressBadge}>{t(currentStageLabel)}</Text>
-          <Text style={styles.metaText}>
-            {t('Next action')}: {nextActionLabel ? t(nextActionLabel) : t('No next action available right now.')}
-          </Text>
+          <View style={styles.locationBlock}>
+            <Text style={styles.locationLabel}>{t('Pickup Location')}</Text>
+            <Text style={styles.locationAddress}>
+              {translatedTextByKey.pickupAddress || formatDisplayAddress(details.pickup.address, t)}
+            </Text>
+            <Text style={styles.locationCoordinates}>
+              {t('Coordinates')}: {details.pickup.latitude ?? '-'}, {details.pickup.longitude ?? '-'}
+            </Text>
+            <Pressable
+              style={[styles.mapLink, !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) && styles.disabledButton]}
+              onPress={() => openMap(
+                t('Pickup Location'),
+                translatedTextByKey.pickupAddress || details.pickup.address,
+                details.pickup.latitude,
+                details.pickup.longitude,
+              )}
+              disabled={!hasValidCoordinates(details.pickup.latitude, details.pickup.longitude)}
+            >
+              <Text style={styles.mapLinkText}>{t('Open Pickup in Maps')}</Text>
+            </Pressable>
+          </View>
+          <View style={styles.locationDivider} />
+          <View style={styles.locationBlock}>
+            <Text style={styles.locationLabel}>{t('Dropoff Location')}</Text>
+            <Text style={styles.locationAddress}>
+              {translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, t)}
+            </Text>
+            <Text style={styles.locationCoordinates}>
+              {t('Coordinates')}: {details.dropoff.latitude ?? '-'}, {details.dropoff.longitude ?? '-'}
+            </Text>
+            <Pressable
+              style={[styles.mapLink, !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude) && styles.disabledButton]}
+              onPress={() => openMap(
+                t('Dropoff Location'),
+                translatedTextByKey.dropoffAddress || details.dropoff.address,
+                details.dropoff.latitude,
+                details.dropoff.longitude,
+              )}
+              disabled={!hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)}
+            >
+              <Text style={styles.mapLinkText}>{t('Open Dropoff in Maps')}</Text>
+            </Pressable>
+          </View>
+          <View style={styles.locationDivider} />
+          <DetailRow
+            label={t('Schedule')}
+            value={details.schedule.isImmediate
+              ? t('Immediate pickup')
+              : t('Scheduled: {{value}}', { value: formatDate(details.schedule.scheduledPickupAt) })}
+          />
         </View>
 
-        <DriverPayoutStatusCard
-          title={t('Trip Payout Status')}
-          tripId={details.requestId}
-          requestStatus={details.requestStatus}
-          amountLabel={formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
-          onOpenStripeConnect={() => router.push('/stripe-connect')}
-        />
+        {details.service?.key === 'VEHICLE_TRANSPORT' ? <RequestDocuments requestId={details.requestId} /> : null}
+
+        {details.service?.key === 'VEHICLE_TRANSPORT' && details.vehicleDetails ? (
+          <TransportedVehicleCard vehicle={details.vehicleDetails} />
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
+            <View style={styles.fields}>
+              <DetailRow label={t('Title')} value={translatedTextByKey.itemTitle || details.itemDetails.title || details.item.title || t('N/A')} />
+              <DetailRow label={t('Type')} value={translatedTextByKey.itemType || details.itemDetails.type || t('N/A')} />
+              <DetailRow label={t('Description')} stacked value={translatedTextByKey.itemDescription || details.itemDetails.description || t('N/A')} />
+              <DetailRow label={t('Brand/Model/Year')} value={[
+                translatedTextByKey.brand || details.itemDetails.brand,
+                translatedTextByKey.model || details.itemDetails.model,
+                translatedTextByKey.year || details.itemDetails.year,
+              ].filter((value) => value !== null && value !== undefined && value !== '').join(' / ') || t('N/A')} />
+              <DetailRow label={t('Condition')} value={translatedTextByKey.condition || details.itemDetails.condition || t('N/A')} />
+              <DetailRow label={t('Weight')} value={details.itemDetails.weightKg !== null ? t('{{value}} kg', { value: details.itemDetails.weightKg }) : t('N/A')} />
+              <DetailRow label={t('Dimensions')} value={`${details.itemDetails.dimensions.lengthCm ?? '-'} × ${details.itemDetails.dimensions.widthCm ?? '-'} × ${details.itemDetails.dimensions.heightCm ?? '-'} cm`} />
+              <DetailRow label={t('Loading help')} value={`${t(details.itemDetails.requiresLoadingHelp ? 'Yes' : 'No')}${details.itemDetails.requiresLoadingHelp && details.itemDetails.loadingWorkersCount ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount }) : ''}`} />
+              <DetailRow label={t('Special instructions')} stacked value={translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions || t('N/A')} />
+              <DetailRow label={t('Customer note')} stacked value={translatedTextByKey.customerNote || details.customerNote || t('N/A')} />
+            </View>
+          </View>
+        )}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Customer Summary')}</Text>
-          <Text style={styles.metaText}>{t('Name')}: {details.customer?.firstName || 'N/A'}</Text>
-          <Text style={styles.metaText}>
-            {t('Phone')}: {details.customer?.phone || t('Contact details will appear when pickup starts.')}
-          </Text>
-          <Text style={styles.metaText}>
-            {t('Rating')}:{' '}
-            {typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : 'N/A'}
-          </Text>
+          <View style={styles.fields}>
+            <DetailRow label={t('Name')} value={details.customer?.firstName || t('N/A')} />
+            <DetailRow label={t('Phone')} value={details.customer?.phone || t('Contact details will appear when pickup starts.')} />
+            <DetailRow label={t('Rating')} value={typeof details.customer?.rating === 'number' ? details.customer.rating.toFixed(1) : t('N/A')} />
+          </View>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Offer Summary')}</Text>
-          <Text style={styles.metaText}>
-            {t('Price')}: {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
-          </Text>
-          <Text style={styles.metaText}>{t('Estimated pickup')}: {formatDate(details.acceptedOffer.estimatedPickupAt)}</Text>
-          <Text style={styles.metaText}>
-            {t('Estimated delivery')}: {formatDate(details.acceptedOffer.estimatedDeliveryAt)}
-          </Text>
-          <Text style={styles.metaText}>
-            {t('Estimated duration')}:{' '}
-            {typeof details.acceptedOffer.estimatedDurationMinutes === 'number'
+          <View style={styles.fields}>
+            <DetailRow label={t('Estimated pickup')} value={formatDate(details.acceptedOffer.estimatedPickupAt)} />
+            <DetailRow label={t('Estimated delivery')} value={formatDate(details.acceptedOffer.estimatedDeliveryAt)} />
+            <DetailRow label={t('Estimated duration')} value={typeof details.acceptedOffer.estimatedDurationMinutes === 'number'
               ? t('{{count}} minutes', { count: details.acceptedOffer.estimatedDurationMinutes })
-              : 'N/A'}
-          </Text>
-          <Text style={styles.metaText}>{t('Message')}: {details.acceptedOffer.message || 'N/A'}</Text>
+              : t('N/A')} />
+            <DetailRow label={t('Message')} stacked value={details.acceptedOffer.message || t('N/A')} />
+          </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Pickup Location')}</Text>
-          <Text style={styles.metaText}>{translatedTextByKey.pickupAddress || formatDisplayAddress(details.pickup.address, t)}</Text>
-          <Text style={styles.metaText}>
-            {t('Coordinates')}: {details.pickup.latitude ?? '-'}, {details.pickup.longitude ?? '-'}
-          </Text>
-          <Pressable
-            style={[
-              styles.secondaryButton,
-              !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) && styles.disabledButton,
-            ]}
-            onPress={() =>
-              openMap(t('Pickup Location'), translatedTextByKey.pickupAddress || details.pickup.address, details.pickup.latitude, details.pickup.longitude)
-            }
-            disabled={!hasValidCoordinates(details.pickup.latitude, details.pickup.longitude)}
-          >
-            <Text style={styles.secondaryButtonText}>{t('Open Pickup in Maps')}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Dropoff Location')}</Text>
-          <Text style={styles.metaText}>{translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, t)}</Text>
-          <Text style={styles.metaText}>
-            {t('Coordinates')}: {details.dropoff.latitude ?? '-'}, {details.dropoff.longitude ?? '-'}
-          </Text>
-          <Pressable
-            style={[
-              styles.secondaryButton,
-              !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude) && styles.disabledButton,
-            ]}
-            onPress={() =>
-              openMap(t('Dropoff Location'), translatedTextByKey.dropoffAddress || details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
-            }
-            disabled={!hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)}
-          >
-            <Text style={styles.secondaryButtonText}>{t('Open Dropoff in Maps')}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Schedule')}</Text>
-          <Text style={styles.metaText}>
-            {details.schedule.isImmediate
-              ? t('Immediate pickup')
-              : t('Scheduled: {{value}}', { value: formatDate(details.schedule.scheduledPickupAt) })}
-          </Text>
-        </View>
-
-        {details.service?.key === 'VEHICLE_TRANSPORT' ? <RequestDocuments requestId={details.requestId} /> : null}
-        {details.service?.key === 'VEHICLE_TRANSPORT' && details.vehicleDetails ? <TransportedVehicleCard vehicle={details.vehicleDetails} /> : (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Item Details')}</Text>
-          <Text style={styles.metaText}>{t('Title')}: {translatedTextByKey.itemTitle || details.itemDetails.title || details.item.title || t('N/A')}</Text>
-          <Text style={styles.metaText}>{t('Type')}: {translatedTextByKey.itemType || details.itemDetails.type || t('N/A')}</Text>
-          <Text style={styles.metaText}>{t('Description')}: {translatedTextByKey.itemDescription || details.itemDetails.description || t('N/A')}</Text>
-          <Text style={styles.metaText}>
-            {t('Brand/Model/Year')}: {[
-              translatedTextByKey.brand || details.itemDetails.brand,
-              translatedTextByKey.model || details.itemDetails.model,
-              translatedTextByKey.year || details.itemDetails.year,
-            ].filter((value) => value !== null && value !== undefined && value !== '').join(' / ') || t('N/A')}
-          </Text>
-          <Text style={styles.metaText}>{t('Condition')}: {translatedTextByKey.condition || details.itemDetails.condition || t('N/A')}</Text>
-          <Text style={styles.metaText}>
-            {t('Weight')}: {details.itemDetails.weightKg !== null ? t('{{value}} kg', { value: details.itemDetails.weightKg }) : t('N/A')}
-          </Text>
-          <Text style={styles.metaText}>
-            {t('Dimensions')}: {details.itemDetails.dimensions.lengthCm ?? '-'} x{' '}
-            {details.itemDetails.dimensions.widthCm ?? '-'} x {details.itemDetails.dimensions.heightCm ?? '-'} cm
-          </Text>
-          <Text style={styles.metaText}>
-            {t('Loading help')}: {details.itemDetails.requiresLoadingHelp ? t('Yes') : t('No')}
-            {details.itemDetails.requiresLoadingHelp && details.itemDetails.loadingWorkersCount
-              ? t(' ({{count}} workers)', { count: details.itemDetails.loadingWorkersCount })
-              : ''}
-          </Text>
-          <Text style={styles.metaText}>{t('Special instructions')}: {translatedTextByKey.specialInstructions || details.itemDetails.specialInstructions || t('N/A')}</Text>
-          <Text style={styles.metaText}>{t('Customer note')}: {translatedTextByKey.customerNote || details.customerNote || t('N/A')}</Text>
-        </View>
-        )}
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Photos')}</Text>
-          {details.photos.length === 0 ? (
-            <Text style={styles.metaText}>{t('No photos added.')}</Text>
-          ) : (
+        {details.photos.length > 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('Photos')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
                 <Pressable key={photo.id} onPress={() => setExpandedPhotoUrl(resolveAssetUrl(photo.url))}>
@@ -502,8 +483,17 @@ export default function AcceptedJobDetailsScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-          )}
-        </View>
+          </View>
+        ) : null}
+
+        <DriverPayoutStatusCard
+          appearance="neutral"
+          title={t('Trip Payout Status')}
+          tripId={details.requestId}
+          requestStatus={details.requestStatus}
+          amountLabel={formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
+          onOpenStripeConnect={() => router.push('/stripe-connect')}
+        />
       </ScrollView>
 
       <Modal visible={Boolean(expandedPhotoUrl)} transparent animationType="fade" onRequestClose={() => setExpandedPhotoUrl('')}>
@@ -568,27 +558,30 @@ export default function AcceptedJobDetailsScreen() {
       </Modal>
 
       <View style={styles.footer}>
-        <DriverChatButton
-          transportRequestId={details.requestId}
-          initialChatRoom={details.chatRoom}
-          label={t('Chat with client')}
-          showUnavailableState
-          requestStatus={details.requestStatus}
-        />
-        <Pressable
-          style={[styles.secondaryFooterButton, !canOpenExpenses && styles.disabledButton]}
-          onPress={() =>
-            router.push({
-              pathname: '/trip-expenses',
-              params: {
-                tripId: details.requestId,
-              },
-            })
-          }
-          disabled={!canOpenExpenses}
-        >
-          <Text style={styles.secondaryFooterButtonText}>{t('Additional Expenses')}</Text>
-        </Pressable>
+        <View style={styles.footerSecondaryRow}>
+          <View style={styles.footerSecondaryCell}>
+            <DriverChatButton
+              transportRequestId={details.requestId}
+              initialChatRoom={details.chatRoom}
+              label={t('Chat with client')}
+              appearance="secondary"
+              showUnavailableState
+              requestStatus={details.requestStatus}
+            />
+          </View>
+          <Pressable
+            style={[styles.secondaryFooterButton, !canOpenExpenses && styles.disabledButton]}
+            onPress={() =>
+              router.push({
+                pathname: '/trip-expenses',
+                params: { tripId: details.requestId },
+              })
+            }
+            disabled={!canOpenExpenses}
+          >
+            <Text style={styles.secondaryFooterButtonText}>{t('Additional Expenses')}</Text>
+          </Pressable>
+        </View>
         <Pressable
           style={[
             styles.primaryActionButton,
@@ -659,67 +652,103 @@ const styles = StyleSheet.create({
     paddingBottom: 190,
     gap: 12,
   },
-  successHeader: {
+  hero: {
     borderWidth: 1,
-    borderColor: '#BBF7D0',
-    borderRadius: 14,
-    backgroundColor: '#F0FDF4',
-    padding: 14,
-    gap: 6,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+    gap: 10,
+  },
+  reference: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#14532D',
+    color: '#172033',
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#166534',
+  heroSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    gap: 12,
   },
+  heroStatus: { flex: 1, alignItems: 'flex-start', gap: 8 },
+  heroMeta: { fontSize: 12, color: '#64748B' },
   offerPrice: {
-    marginTop: 6,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#14532D',
+    color: '#172033',
+  },
+  nextAction: {
+    borderTopWidth: 1,
+    borderTopColor: '#EEF1F5',
+    paddingTop: 10,
+    fontSize: 13,
+    color: '#475569',
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#DFE3E8',
-    padding: 12,
-    gap: 6,
+    borderColor: '#E2E8F0',
+    padding: 16,
+    gap: 12,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#202020',
+    color: '#172033',
   },
   progressBadge: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#FFF1B8',
-    color: '#F1B900',
+    backgroundColor: '#F1F5F9',
+    color: '#334155',
     fontSize: 12,
     fontWeight: '700',
+    overflow: 'hidden',
   },
-  metaText: {
-    fontSize: 13,
-    color: '#505A6A',
+  locationBlock: { gap: 6 },
+  locationLabel: { color: '#64748B', fontSize: 12, fontWeight: '700' },
+  locationAddress: { color: '#172033', fontSize: 15, fontWeight: '600' },
+  locationCoordinates: { color: '#94A3B8', fontSize: 12 },
+  locationDivider: { height: 1, backgroundColor: '#EEF1F5' },
+  mapLink: {
+    alignSelf: 'flex-start',
+    minHeight: 36,
+    justifyContent: 'center',
   },
+  mapLinkText: { color: '#9A6900', fontSize: 13, fontWeight: '700' },
+  fields: { borderTopWidth: 1, borderTopColor: '#EEF1F5' },
+  detailRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF1F5',
+  },
+  detailLabel: { width: '38%', fontSize: 13, color: '#64748B' },
+  detailValue: { flex: 1, fontSize: 14, fontWeight: '600', color: '#172033', textAlign: 'right' },
+  stackedDetailRow: { flexDirection: 'column', gap: 5 },
+  stackedDetailLabel: { width: '100%' },
+  stackedDetailValue: { textAlign: 'left' },
   secondaryButton: {
     marginTop: 6,
     minHeight: 38,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: '#FFC515',
+    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: '#F1B900',
+    color: '#334155',
     fontSize: 13,
     fontWeight: '700',
   },
@@ -826,7 +855,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#DFE3E8',
   },
+  footerSecondaryRow: { flexDirection: 'row', gap: 10 },
+  footerSecondaryCell: { flex: 1 },
   secondaryFooterButton: {
+    flex: 1,
     minHeight: 44,
     borderRadius: 10,
     borderWidth: 1,
@@ -836,19 +868,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryFooterButtonText: {
-    color: '#505A6A',
-    fontSize: 14,
+    color: '#334155',
+    fontSize: 13,
     fontWeight: '700',
+    textAlign: 'center',
   },
   primaryActionButton: {
     minHeight: 48,
     borderRadius: 10,
-    backgroundColor: '#16A34A',
+    backgroundColor: '#F4B900',
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryActionButtonText: {
-    color: '#FFFFFF',
+    color: '#172033',
     fontSize: 15,
     fontWeight: '700',
   },

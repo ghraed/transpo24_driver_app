@@ -33,6 +33,12 @@ const button = label => tree.root.findAll(node => typeof node.props.onPress === 
 async function render() { await act(async () => { tree = create(<Screen />); }); }
 beforeEach(() => { jest.useFakeTimers(); jest.resetAllMocks(); mockRequestId = 'swiss-job'; getDriverAcceptedJobDetails.mockResolvedValue(details); });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; jest.useRealTimers(); });
+it('shows vehicle documents in job details before starting pickup', async () => {
+  getDriverAcceptedJobDetails.mockResolvedValue({ ...details, service: { key: 'VEHICLE_TRANSPORT' } });
+  await render();
+  expect(tree.root.findByType('RequestDocuments').props.requestId).toBe('swiss-job');
+  expect(button('Go to Pickup Location')).toBeDefined();
+});
 it.each([
   ['ACCEPTED', 'Go to Pickup Location', '/go-to-pickup'],
   ['DRIVER_ASSIGNED', 'Go to Pickup Location', '/go-to-pickup'],

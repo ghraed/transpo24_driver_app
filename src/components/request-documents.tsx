@@ -218,13 +218,13 @@ export function RequestDocuments({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFF',
-    borderRadius: 22,
+    borderRadius: 16,
     padding: 16,
     gap: 12,
     borderWidth: 1,
     borderColor: '#E5E8EF',
   },
-  title: { color: '#111827', fontSize: 18, fontWeight: '700' },
+  title: { color: '#172033', fontSize: 16, fontWeight: '700' },
   text: { color: '#111827', fontSize: 14 },
   label: { color: '#111827', fontWeight: '600' },
   hint: { color: '#68768A', fontSize: 13, lineHeight: 20 },

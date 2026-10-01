@@ -16,6 +16,7 @@ import { isValidTripId } from '@/utils/deliveryValidation';
 
 type DriverPayoutStatusCardProps = {
   title?: string;
+  appearance?: 'status' | 'neutral';
   tripId?: string | null;
   requestStatus?: RequestStatus | null;
   amountLabel?: string | null;
@@ -56,6 +57,7 @@ function resolveStatusTone(params: {
 
 export function DriverPayoutStatusCard({
   title,
+  appearance = 'status',
   tripId,
   requestStatus,
   amountLabel,
@@ -220,7 +222,7 @@ export function DriverPayoutStatusCard({
           : styles.infoTone;
 
   return (
-    <View style={[styles.card, toneStyle]}>
+    <View style={[styles.card, appearance === 'neutral' ? styles.neutralTone : toneStyle]}>
       <Text style={styles.title}>{title || t('Payout Status')}</Text>
       {requestStatus ? (
         <Text style={styles.metaText}>{getRequestStatusLabel(requestStatus)}</Text>
@@ -266,6 +268,10 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
+  neutralTone: {
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
   infoTone: {
     borderColor: '#F3D26B',
     backgroundColor: '#FFF9E6',
@@ -307,5 +313,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButtonDisabled: { opacity: 0.7 },
-  primaryButtonText: { color: '#171717', fontWeight: '800' },
+  primaryButtonText: { color: '#FFFFFF', fontWeight: '800' },
 });

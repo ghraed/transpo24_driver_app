@@ -13,6 +13,7 @@ type DriverChatButtonProps = {
   initialChatRoom?: ChatRoom | null;
   label?: string;
   fullWidth?: boolean;
+  appearance?: 'default' | 'secondary';
   showUnavailableState?: boolean;
   requestStatus?: RequestStatus | string | null;
 };
@@ -22,6 +23,7 @@ export function DriverChatButton({
   initialChatRoom,
   label,
   fullWidth = true,
+  appearance = 'default',
   showUnavailableState = false,
   requestStatus,
 }: DriverChatButtonProps) {
@@ -43,7 +45,7 @@ export function DriverChatButton({
     <View style={[styles.container, fullWidth && styles.fullWidth]}>
       {chatRoom && !chatDisabled ? (
         <Pressable
-          style={styles.button}
+          style={[styles.button, appearance === 'secondary' && styles.secondaryButton]}
           onPress={() =>
             router.push({
               pathname: '/chat',
@@ -54,10 +56,10 @@ export function DriverChatButton({
             } as unknown as Href)
           }
         >
-          <Text style={styles.buttonText}>{label || (chatRoom.clientNickname ? t('Chat with {{nickname}}', { nickname: chatRoom.clientNickname }) : t('Chat with client'))}</Text>
+          <Text style={[styles.buttonText, appearance === 'secondary' && styles.secondaryButtonText]}>{label || (chatRoom.clientNickname ? t('Chat with {{nickname}}', { nickname: chatRoom.clientNickname }) : t('Chat with client'))}</Text>
           {typeof chatRoom.unreadCount === 'number' && chatRoom.unreadCount > 0 ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}</Text>
+            <View style={[styles.badge, appearance === 'secondary' && styles.secondaryBadge]}>
+              <Text style={[styles.badgeText, appearance === 'secondary' && styles.secondaryBadgeText]}>{chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}</Text>
             </View>
           ) : null}
         </Pressable>
@@ -105,6 +107,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  secondaryButtonText: { color: '#334155', textAlign: 'center' },
+  secondaryBadge: { backgroundColor: '#F1F5F9' },
+  secondaryBadgeText: { color: '#334155' },
   badge: {
     minWidth: 22,
     paddingHorizontal: 6,
