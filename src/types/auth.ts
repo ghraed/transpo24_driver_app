@@ -564,8 +564,11 @@ export interface RequestItemSummary {
 }
 
 export interface TransportedVehicleDetails {
+  vin?: string | null;
   brand: string | null;
   model: string | null;
+  series?: string | null;
+  variant?: string | null;
   manufactureYear: number | null;
   estimatedWeightKg: number | null;
   bodyType: string | null;
