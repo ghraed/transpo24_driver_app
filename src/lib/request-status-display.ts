@@ -2,6 +2,7 @@ import i18n from '@/localization/i18n';
 import type { RequestStatus } from '@/types/auth';
 
 const REQUEST_STATUS_KEYS: Partial<Record<RequestStatus, string>> = {
+  RESERVED: 'Driver reserved — awaiting payment',
   PENDING_QUOTES: 'Waiting for offers',
   QUOTED: 'Quoted',
   ACCEPTED: 'Accepted',

@@ -92,3 +92,23 @@ test('does not replay a consumed tap after remounting', async () => {
   await render();
   expect(mockPush).toHaveBeenCalledTimes(1);
 });
+
+test.each(['FURNITURE_RESERVED', 'FURNITURE_PAYMENT_CONFIRMED'])('%s opens reserved job details', async type => {
+  mockResponse = response({ type, requestId: 'furniture' });
+  await render();
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/accepted-job-details', params: { requestId: 'furniture' } });
+});
+test('cancelled furniture reservation returns the driver to the job list', async () => {
+  mockResponse = response({ type: 'FURNITURE_RESERVATION_CANCELLED', requestId: 'furniture' });
+  await render();
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/accepted-jobs' });
+});
+
+test.each(['VEHICLE_RESERVED', 'VEHICLE_PAYMENT_CONFIRMED'])('%s opens vehicle reservation details', async type => {
+  mockResponse = response({ type, requestId: 'vehicle' }); await render();
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/accepted-job-details', params: { requestId: 'vehicle' } });
+});
+test('cancelled vehicle reservation opens the job list', async () => {
+  mockResponse = response({ type: 'VEHICLE_RESERVATION_CANCELLED', requestId: 'vehicle' }); await render();
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/accepted-jobs' });
+});

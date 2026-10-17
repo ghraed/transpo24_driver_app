@@ -38,6 +38,13 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
         };
       }
       return null;
+    case 'VEHICLE_RESERVATION_CANCELLED':
+    case 'FURNITURE_RESERVATION_CANCELLED':
+      return { pathname: '/accepted-jobs' };
+    case 'VEHICLE_RESERVED':
+    case 'VEHICLE_PAYMENT_CONFIRMED':
+    case 'FURNITURE_RESERVED':
+    case 'FURNITURE_PAYMENT_CONFIRMED':
     case 'DRIVER_SELECTED': {
       const requestId = resolveTripId(data);
       return requestId

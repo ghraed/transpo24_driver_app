@@ -2201,3 +2201,10 @@ export async function sendTestNotification(token: string): Promise<void> {
     throw await parseError(response, 'Failed to send test notification.');
   }
 }
+
+export async function startReservedPickup(requestId: string): Promise<{ requestId: string; status: 'DRIVER_GOING_TO_PICKUP' }> {
+  const endpoint = `${getApiBaseUrl()}/driver/trips/${encodeURIComponent(requestId)}/start-pickup`;
+  const response = await fetchWithTimeout(endpoint, { method: 'POST', headers: await getAuthHeaders() });
+  if (!response.ok) throw await parseError(response, 'The customer must confirm pickup and pay before this trip can start.');
+  return response.json();
+}

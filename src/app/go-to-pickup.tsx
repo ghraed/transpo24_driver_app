@@ -29,7 +29,7 @@ import {
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
-import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { getDriverAcceptedJobDetails, startReservedPickup } from '@/lib/api';
 import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import {
@@ -647,6 +647,14 @@ export default function GoToPickupScreen() {
       return;
     }
 
+    if (requestStatus === 'DRIVER_ASSIGNED') {
+      setIsSubmittingArrival(true);
+      try { const started = await startReservedPickup(validTripId); setRequestStatus(started.status); }
+      catch (error) { setSubmitError(error instanceof Error ? error.message : t('Unable to start pickup.')); }
+      finally { setIsSubmittingArrival(false); }
+      return;
+    }
+
     if (!driverLocation || !isValidGeoLocation(driverLocation)) {
       setSubmitError(t('Current location is not ready.'));
       return;
@@ -813,9 +821,9 @@ export default function GoToPickupScreen() {
     isRefreshingLocation ||
     !driverLocation ||
     Boolean(payloadValidationMessage) ||
-    (!isArrivedAtPickup && !canArriveNow);
+    (!isArrivedAtPickup && requestStatus !== 'DRIVER_ASSIGNED' && !canArriveNow);
 
-  const primaryActionLabel = isArrivedAtPickup
+  const primaryActionLabel = requestStatus === 'DRIVER_ASSIGNED' ? t('Start pickup trip') : isArrivedAtPickup
     ? isSubmittingPickup
       ? t('Submitting Pickup...')
       : t('Submit Pickup')

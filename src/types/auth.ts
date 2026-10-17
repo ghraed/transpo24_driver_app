@@ -505,6 +505,7 @@ export type DriverRequestAlertStatus =
   | 'EXPIRED';
 
 export type RequestStatus =
+  | 'RESERVED'
   | 'DRAFT'
   | 'PENDING_QUOTES'
   | 'QUOTED'
@@ -685,6 +686,7 @@ export interface AcceptedOffer extends DriverOffer {
 }
 
 export interface DriverAcceptedJobSummary {
+  reservation?: { state: string; paymentDeadlineAt: string; confirmationOpensAt: string; paidAt: string | null } | null;
   customerNickname?: string;
   vehicleDetails?: TransportedVehicleDetails;
   requestId: string;

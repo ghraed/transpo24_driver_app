@@ -1490,5 +1490,18 @@
   "Unable to update nickname.": "Spitzname konnte nicht aktualisiert werden.",
   "Created": "Erstellt",
   "Request details changed": "Auftragsdetails geändert",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Der Kunde hat eine oder mehrere Angaben zu diesem Auftrag geändert. Prüfen Sie die aktualisierten Details, bevor Sie ein Angebot senden."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Der Kunde hat eine oder mehrere Angaben zu diesem Auftrag geändert. Prüfen Sie die aktualisierten Details, bevor Sie ein Angebot senden.",
+  "Furniture delivery must be on pickup day or within five days after pickup.": "Die Möbellieferung muss am Abholtag oder innerhalb von fünf Tagen danach erfolgen.",
+  "Driver reserved — awaiting payment": "Fahrer reserviert — Zahlung ausstehend",
+  "Driver reserved. Payment opens 48 hours before pickup.": "Fahrer reserviert. Die Zahlung ist ab 48 Stunden vor der Abholung möglich.",
+  "Payment opens": "Zahlung möglich ab",
+  "Payment deadline": "Zahlungsfrist",
+  "Confirm pickup and pay before the deadline to keep your reservation.": "Bestätigen und bezahlen Sie die Abholung vor Ablauf der Frist, um Ihre Reservierung zu behalten.",
+  "Confirm pickup and pay": "Abholung bestätigen und bezahlen",
+  "Reserve Driver": "Fahrer reservieren",
+  "Unable to reserve driver.": "Fahrer konnte nicht reserviert werden.",
+  "Reservation cancelled. No cancellation fee applies.": "Reservierung storniert. Es fällt keine Stornogebühr an.",
+  "Cancel this unpaid reservation for free? Your driver reservation will be released.": "Diese unbezahlte Reservierung kostenlos stornieren? Ihre Fahrerreservierung wird freigegeben.",
+  "Start pickup trip": "Fahrt zur Abholung starten",
+  "Unable to start pickup.": "Fahrt zur Abholung konnte nicht gestartet werden."
 }

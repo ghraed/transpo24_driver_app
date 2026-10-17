@@ -1059,5 +1059,18 @@
   "Unable to access current location. You can still select a location manually.": "Impossibile accedere alla posizione attuale. Puoi comunque selezionare una posizione manualmente.",
   "Created": "Creata",
   "Request details changed": "Dettagli della richiesta modificati",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Il cliente ha modificato uno o più dettagli di questa richiesta. Controlla i dettagli aggiornati prima di inviare un’offerta."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Il cliente ha modificato uno o più dettagli di questa richiesta. Controlla i dettagli aggiornati prima di inviare un’offerta.",
+  "Furniture delivery must be on pickup day or within five days after pickup.": "La consegna dei mobili deve avvenire il giorno del ritiro o entro i cinque giorni successivi.",
+  "Driver reserved — awaiting payment": "Autista prenotato — pagamento in attesa",
+  "Driver reserved. Payment opens 48 hours before pickup.": "Autista prenotato. Il pagamento sarà disponibile 48 ore prima del ritiro.",
+  "Payment opens": "Pagamento disponibile dal",
+  "Payment deadline": "Scadenza del pagamento",
+  "Confirm pickup and pay before the deadline to keep your reservation.": "Conferma il ritiro e paga entro la scadenza per mantenere la prenotazione.",
+  "Confirm pickup and pay": "Conferma il ritiro e paga",
+  "Reserve Driver": "Prenota autista",
+  "Unable to reserve driver.": "Impossibile prenotare l’autista.",
+  "Reservation cancelled. No cancellation fee applies.": "Prenotazione annullata. Nessuna penale di cancellazione.",
+  "Cancel this unpaid reservation for free? Your driver reservation will be released.": "Annullare gratuitamente questa prenotazione non pagata? La prenotazione dell’autista sarà liberata.",
+  "Start pickup trip": "Avvia il viaggio di ritiro",
+  "Unable to start pickup.": "Impossibile avviare il ritiro."
 }

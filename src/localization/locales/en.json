@@ -1490,5 +1490,18 @@
   "Unable to update nickname.": "Unable to update nickname.",
   "Created": "Created",
   "Request details changed": "Request details changed",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "The client changed one or more details of this job request. Review the updated details before sending an offer."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "The client changed one or more details of this job request. Review the updated details before sending an offer.",
+  "Furniture delivery must be on pickup day or within five days after pickup.": "Furniture delivery must be on pickup day or within five days after pickup.",
+  "Driver reserved — awaiting payment": "Driver reserved — awaiting payment",
+  "Driver reserved. Payment opens 48 hours before pickup.": "Driver reserved. Payment opens 48 hours before pickup.",
+  "Payment opens": "Payment opens",
+  "Payment deadline": "Payment deadline",
+  "Confirm pickup and pay before the deadline to keep your reservation.": "Confirm pickup and pay before the deadline to keep your reservation.",
+  "Confirm pickup and pay": "Confirm pickup and pay",
+  "Reserve Driver": "Reserve Driver",
+  "Unable to reserve driver.": "Unable to reserve driver.",
+  "Reservation cancelled. No cancellation fee applies.": "Reservation cancelled. No cancellation fee applies.",
+  "Cancel this unpaid reservation for free? Your driver reservation will be released.": "Cancel this unpaid reservation for free? Your driver reservation will be released.",
+  "Start pickup trip": "Start pickup trip",
+  "Unable to start pickup.": "Unable to start pickup."
 }

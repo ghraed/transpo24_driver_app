@@ -1490,5 +1490,18 @@
   "Unable to update nickname.": "تعذر تحديث الاسم المستعار.",
   "Created": "تاريخ الإنشاء",
   "Request details changed": "تغيّرت تفاصيل الطلب",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "غيّر العميل معلومة أو أكثر في طلب النقل. راجع التفاصيل المحدّثة قبل إرسال عرض."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "غيّر العميل معلومة أو أكثر في طلب النقل. راجع التفاصيل المحدّثة قبل إرسال عرض.",
+  "Furniture delivery must be on pickup day or within five days after pickup.": "يجب تسليم الأثاث في يوم الاستلام أو خلال خمسة أيام بعده.",
+  "Driver reserved — awaiting payment": "تم حجز السائق — بانتظار الدفع",
+  "Driver reserved. Payment opens 48 hours before pickup.": "تم حجز السائق. يتاح الدفع قبل الاستلام بـ٤٨ ساعة.",
+  "Payment opens": "يتاح الدفع في",
+  "Payment deadline": "الموعد النهائي للدفع",
+  "Confirm pickup and pay before the deadline to keep your reservation.": "أكد الاستلام وادفع قبل الموعد النهائي للاحتفاظ بحجزك.",
+  "Confirm pickup and pay": "تأكيد الاستلام والدفع",
+  "Reserve Driver": "حجز السائق",
+  "Unable to reserve driver.": "تعذر حجز السائق.",
+  "Reservation cancelled. No cancellation fee applies.": "تم إلغاء الحجز. لا توجد رسوم إلغاء.",
+  "Cancel this unpaid reservation for free? Your driver reservation will be released.": "هل تريد إلغاء هذا الحجز غير المدفوع مجانًا؟ سيتم تحرير حجز السائق.",
+  "Start pickup trip": "بدء رحلة الاستلام",
+  "Unable to start pickup.": "تعذر بدء رحلة الاستلام."
 }

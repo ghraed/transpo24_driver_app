@@ -1490,5 +1490,18 @@
   "Unable to update nickname.": "No se pudo actualizar el apodo.",
   "Created": "Creada",
   "Request details changed": "Los detalles de la solicitud han cambiado",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "El cliente ha cambiado uno o más detalles de esta solicitud. Revisa los detalles actualizados antes de enviar una oferta."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "El cliente ha cambiado uno o más detalles de esta solicitud. Revisa los detalles actualizados antes de enviar una oferta.",
+  "Furniture delivery must be on pickup day or within five days after pickup.": "La entrega de muebles debe ser el día de la recogida o en los cinco días posteriores.",
+  "Driver reserved — awaiting payment": "Conductor reservado — pago pendiente",
+  "Driver reserved. Payment opens 48 hours before pickup.": "Conductor reservado. El pago se abre 48 horas antes de la recogida.",
+  "Payment opens": "Pago disponible desde",
+  "Payment deadline": "Fecha límite de pago",
+  "Confirm pickup and pay before the deadline to keep your reservation.": "Confirma la recogida y paga antes del plazo para mantener tu reserva.",
+  "Confirm pickup and pay": "Confirmar recogida y pagar",
+  "Reserve Driver": "Reservar conductor",
+  "Unable to reserve driver.": "No se pudo reservar el conductor.",
+  "Reservation cancelled. No cancellation fee applies.": "Reserva cancelada. Sin gastos de cancelación.",
+  "Cancel this unpaid reservation for free? Your driver reservation will be released.": "¿Cancelar gratis esta reserva sin pagar? Se liberará la reserva del conductor.",
+  "Start pickup trip": "Iniciar viaje de recogida",
+  "Unable to start pickup.": "No se pudo iniciar la recogida."
 }

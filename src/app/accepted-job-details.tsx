@@ -290,7 +290,7 @@ export default function AcceptedJobDetailsScreen() {
 
   const canOpenExpenses = useMemo(() => {
     if (!details) return false;
-    return !isTerminalRequestStatus(details.requestStatus);
+    return details.requestStatus !== 'RESERVED' && !isTerminalRequestStatus(details.requestStatus);
   }, [details]);
 
   const openMap = (
@@ -341,13 +341,14 @@ export default function AcceptedJobDetailsScreen() {
         <View style={styles.successHeader}>
           <Text style={styles.title}>{t('Your offer was accepted')}</Text>
           <Text style={styles.subtitle}>
-            {isTerminalRequestStatus(details.requestStatus)
+            {details.requestStatus === 'RESERVED' ? t('Driver reserved — awaiting payment') : isTerminalRequestStatus(details.requestStatus)
               ? t('This request is completed and read-only.')
               : t('Review the job details and get ready for pickup.')}
           </Text>
           <Text style={styles.offerPrice}>
             {formatMoney(details.acceptedOffer.price, details.acceptedOffer.currency)}
           </Text>
+          {details.requestStatus === 'RESERVED' && details.reservation ? <Text style={styles.metaText}>{t('Payment deadline')}: {formatDate(details.reservation.paymentDeadlineAt)}</Text> : null}
           <Text style={styles.metaText}>{t('Accepted at')}: {formatDate(details.acceptedAt)}</Text>
         </View>
 

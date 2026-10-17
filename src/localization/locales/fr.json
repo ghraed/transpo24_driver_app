@@ -1490,5 +1490,18 @@
   "Unable to update nickname.": "Impossible de modifier le pseudo.",
   "Created": "Créée le",
   "Request details changed": "Détails de la demande modifiés",
-  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Le client a modifié un ou plusieurs détails de cette demande. Consultez les détails mis à jour avant d’envoyer une offre."
+  "The client changed one or more details of this job request. Review the updated details before sending an offer.": "Le client a modifié un ou plusieurs détails de cette demande. Consultez les détails mis à jour avant d’envoyer une offre.",
+  "Furniture delivery must be on pickup day or within five days after pickup.": "La livraison des meubles doit avoir lieu le jour de l’enlèvement ou dans les cinq jours suivants.",
+  "Driver reserved — awaiting payment": "Chauffeur réservé — paiement en attente",
+  "Driver reserved. Payment opens 48 hours before pickup.": "Chauffeur réservé. Le paiement ouvre 48 heures avant l’enlèvement.",
+  "Payment opens": "Paiement disponible à partir du",
+  "Payment deadline": "Date limite de paiement",
+  "Confirm pickup and pay before the deadline to keep your reservation.": "Confirmez et payez avant la date limite pour conserver votre réservation.",
+  "Confirm pickup and pay": "Confirmer l’enlèvement et payer",
+  "Reserve Driver": "Réserver le chauffeur",
+  "Unable to reserve driver.": "Impossible de réserver le chauffeur.",
+  "Reservation cancelled. No cancellation fee applies.": "Réservation annulée. Aucun frais d’annulation.",
+  "Cancel this unpaid reservation for free? Your driver reservation will be released.": "Annuler gratuitement cette réservation non payée ? La réservation du chauffeur sera libérée.",
+  "Start pickup trip": "Démarrer le trajet vers l’enlèvement",
+  "Unable to start pickup.": "Impossible de démarrer le trajet."
 }
