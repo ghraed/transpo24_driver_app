@@ -1503,5 +1503,13 @@
   "Reservation cancelled. No cancellation fee applies.": "تم إلغاء الحجز. لا توجد رسوم إلغاء.",
   "Cancel this unpaid reservation for free? Your driver reservation will be released.": "هل تريد إلغاء هذا الحجز غير المدفوع مجانًا؟ سيتم تحرير حجز السائق.",
   "Start pickup trip": "بدء رحلة الاستلام",
-  "Unable to start pickup.": "تعذر بدء رحلة الاستلام."
+  "Unable to start pickup.": "تعذر بدء رحلة الاستلام.",
+  "Pending requests": "الطلبات المعلقة",
+  "No pending requests": "لا توجد طلبات معلقة",
+  "Pending payment": "بانتظار الدفع",
+  "Waiting for client payment. New offers are closed.": "بانتظار دفع العميل. لا يمكن تقديم عروض جديدة.",
+  "Booked — offers closed": "محجوز — العروض مغلقة",
+  "Booked": "محجوز",
+  "Pending client payment. New offers are closed.": "بانتظار دفع العميل. لا يمكن تقديم عروض جديدة.",
+  "This request is booked. New offers are closed.": "هذا الطلب محجوز. لا يمكن تقديم عروض جديدة."
 }

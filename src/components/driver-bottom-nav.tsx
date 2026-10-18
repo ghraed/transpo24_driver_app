@@ -30,7 +30,7 @@ export function DriverBottomNav() {
   return (
     <View style={[styles.bar, { height: DRIVER_BOTTOM_NAV_HEIGHT + insets.bottom, paddingBottom: insets.bottom }]}> 
       {tabs.map((tab) => {
-        const selected = pathname === tab.route;
+        const selected = pathname === tab.route || (tab.route === '/receive-requests' && pathname === '/pending-requests');
         const framed = selected && tab.route !== '/driver-map';
         const color = selected ? '#F2B900' : '#9CA6B5';
 

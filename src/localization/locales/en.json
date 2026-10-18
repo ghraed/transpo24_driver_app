@@ -1503,5 +1503,13 @@
   "Reservation cancelled. No cancellation fee applies.": "Reservation cancelled. No cancellation fee applies.",
   "Cancel this unpaid reservation for free? Your driver reservation will be released.": "Cancel this unpaid reservation for free? Your driver reservation will be released.",
   "Start pickup trip": "Start pickup trip",
-  "Unable to start pickup.": "Unable to start pickup."
+  "Unable to start pickup.": "Unable to start pickup.",
+  "Pending requests": "Pending requests",
+  "No pending requests": "No pending requests",
+  "Pending payment": "Pending payment",
+  "Waiting for client payment. New offers are closed.": "Waiting for client payment. New offers are closed.",
+  "Booked — offers closed": "Booked — offers closed",
+  "Booked": "Booked",
+  "Pending client payment. New offers are closed.": "Pending client payment. New offers are closed.",
+  "This request is booked. New offers are closed.": "This request is booked. New offers are closed."
 }

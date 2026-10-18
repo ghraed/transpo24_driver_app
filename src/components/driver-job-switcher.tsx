@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 type DriverJobSwitcherProps = {
-  active: 'jobs' | 'accepted';
+  active: 'jobs' | 'accepted' | 'pending';
 };
 
 export function DriverJobSwitcher({ active }: DriverJobSwitcherProps) {
@@ -32,6 +32,11 @@ export function DriverJobSwitcher({ active }: DriverJobSwitcherProps) {
         onPress={isAcceptedActive ? undefined : () => router.replace('/accepted-jobs')}
       >
         <Text style={[styles.label, isAcceptedActive && styles.labelActive]}>{t('Accepted Jobs')}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="tab" accessibilityState={{ selected: active === 'pending' }}
+        style={[styles.tab, active === 'pending' && styles.tabActive]}
+        onPress={() => router.replace('/pending-requests')}>
+        <Text style={[styles.label, active === 'pending' && styles.labelActive]}>{t('Pending')}</Text>
       </Pressable>
     </View>
   );

@@ -89,7 +89,7 @@ function formatRouteDistance(alert: DriverRequestAlertSummary): string {
   return `${distanceKm.toFixed(distanceKm < 1 ? 2 : 1)} km`;
 }
 
-export default function ReceiveRequestAlertsScreen() {
+export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pendingOnly?: boolean }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { language, locale } = useAppLanguage();
@@ -175,8 +175,8 @@ export default function ReceiveRequestAlertsScreen() {
   );
 
   const visibleAlerts = useMemo(
-    () => alerts.filter(alert => alert.schedule.isImmediate === (requestType === 'immediate')),
-    [alerts, requestType],
+    () => alerts.filter(alert => pendingOnly ? alert.requestStatus === 'RESERVED' : alert.requestStatus !== 'RESERVED' && alert.schedule.isImmediate === (requestType === 'immediate')),
+    [alerts, requestType, pendingOnly],
   );
 
   return (
@@ -185,15 +185,15 @@ export default function ReceiveRequestAlertsScreen() {
 
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.title}>{t('Job Requests')}</Text>
+          <Text style={styles.title}>{t(pendingOnly ? 'Pending requests' : 'Job Requests')}</Text>
 
         </View>
-        <DriverJobSwitcher active="jobs" />
-        <RequestTypeTabs value={requestType} onChange={setRequestType} counts={{
-          immediate: alerts.filter(alert => alert.schedule.isImmediate).length,
-          scheduled: alerts.filter(alert => !alert.schedule.isImmediate).length,
-        }} />
-        <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />
+        <DriverJobSwitcher active={pendingOnly ? "pending" : "jobs"} />
+        {!pendingOnly && <RequestTypeTabs value={requestType} onChange={setRequestType} counts={{
+          immediate: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.schedule.isImmediate).length,
+          scheduled: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && !alert.schedule.isImmediate).length,
+        }} />}
+        {pendingOnly ? <Text style={styles.emptyText}>{t('Waiting for client payment. New offers are closed.')}</Text> : <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />}
       </View>
 
       {isLoading && alerts.length === 0 ? (
@@ -224,7 +224,7 @@ export default function ReceiveRequestAlertsScreen() {
             <DriverIcon name="grid" size={34} color="#F1B800" />
           </View>
           <Text style={styles.emptyTitle}>
-            {requestType === 'immediate' ? t('No immediate requests') : t('No scheduled requests')}
+            {pendingOnly ? t('No pending requests') : requestType === 'immediate' ? t('No immediate requests') : t('No scheduled requests')}
           </Text>
           <Text style={styles.emptyText}>{t('New matching transport jobs will appear here automatically.')}</Text>
         </ScrollView>
@@ -294,13 +294,13 @@ export default function ReceiveRequestAlertsScreen() {
                   <View style={styles.onWayRow}>
                     <DriverIcon name="location" size={18} color="#F6B900" strokeWidth={1.8} />
                     <Text style={styles.onWayText}>
-                      {alert.isCurrentlyEligible === false ? t('Previously received') : alert.schedule?.isImmediate ? t('Nearby pickup') : t('Scheduled')}
+                      {alert.requestStatus === 'RESERVED' ? t('Pending payment') : !['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) ? t('Booked — offers closed') : alert.isCurrentlyEligible === false ? t('Previously received') : alert.schedule?.isImmediate ? t('Nearby pickup') : t('Scheduled')}
                     </Text>
                   </View>
                   <Text style={styles.matchText}>
                     {typeof alert.matchPercent === 'number'
                       ? t('{{percentage}}% match', { percentage: Math.round(alert.matchPercent) })
-                      : t('Available')}
+                      : t(alert.requestStatus === 'RESERVED' ? 'Pending' : !['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) ? 'Booked' : 'Available')}
                   </Text>
                 </View>
               </Pressable>

@@ -181,7 +181,7 @@ export default function DriverMapScreen() {
 
   // Previously received jobs remain in Jobs; the map displays current matches.
   const jobMarkers = alerts.filter(
-    (alert) => alert.isCurrentlyEligible !== false && alert.schedule.isImmediate === (requestType === 'immediate') && hasCoordinate(alert.pickup),
+    (alert) => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && alert.schedule.isImmediate === (requestType === 'immediate') && hasCoordinate(alert.pickup),
   );
 
   return (
@@ -288,8 +288,8 @@ export default function DriverMapScreen() {
 
         <View style={styles.coverageOverlay}>
           <RequestTypeTabs value={requestType} counts={{
-            immediate: alerts.filter(alert => alert.isCurrentlyEligible !== false && alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
-            scheduled: alerts.filter(alert => alert.isCurrentlyEligible !== false && !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
+            immediate: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
+            scheduled: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
           }} onChange={(type) => {
             setRequestType(type);
             const pins = type === 'scheduled' ? (availability?.cityCoverage ?? []) : [];

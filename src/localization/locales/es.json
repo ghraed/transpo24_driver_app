@@ -1503,5 +1503,13 @@
   "Reservation cancelled. No cancellation fee applies.": "Reserva cancelada. Sin gastos de cancelación.",
   "Cancel this unpaid reservation for free? Your driver reservation will be released.": "¿Cancelar gratis esta reserva sin pagar? Se liberará la reserva del conductor.",
   "Start pickup trip": "Iniciar viaje de recogida",
-  "Unable to start pickup.": "No se pudo iniciar la recogida."
+  "Unable to start pickup.": "No se pudo iniciar la recogida.",
+  "Pending requests": "Solicitudes pendientes",
+  "No pending requests": "No hay solicitudes pendientes",
+  "Pending payment": "Pago pendiente",
+  "Waiting for client payment. New offers are closed.": "Esperando el pago del cliente. No se aceptan nuevas ofertas.",
+  "Booked — offers closed": "Reservado — ofertas cerradas",
+  "Booked": "Reservado",
+  "Pending client payment. New offers are closed.": "Pago del cliente pendiente. No se aceptan nuevas ofertas.",
+  "This request is booked. New offers are closed.": "Esta solicitud está reservada. No se aceptan nuevas ofertas."
 }

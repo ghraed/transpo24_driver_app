@@ -144,6 +144,7 @@ function AppNavigator() {
       <Stack.Screen name="set-availability" options={{ title: t('Set Availability') }} />
       <Stack.Screen name="waiting-approval" options={{ title: t('Waiting Approval') }} />
       <Stack.Screen name="driver-home" options={{ title: t('Settings'), headerShown: false }} />
+      <Stack.Screen name="pending-requests" options={{ title: t('Pending requests'), headerShown: false }} />
       <Stack.Screen name="receive-requests" options={{ title: t('Available Requests'), headerShown: false }} />
       <Stack.Screen name="driver-map" options={{ title: t('Map'), headerShown: false }} />
       <Stack.Screen name="driver-chats" options={{ title: t('Chat'), headerShown: false }} />

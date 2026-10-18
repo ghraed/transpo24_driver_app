@@ -159,7 +159,7 @@ export default function AcceptedJobsScreen() {
         const response = await getDriverAcceptedJobs();
         if (version !== loadVersion.current) return;
         const activeJobs = (response.jobs ?? []).filter((job) =>
-          isActiveAcceptedJobStatus(job.requestStatus),
+          isActiveAcceptedJobStatus(job.requestStatus) && job.requestStatus !== 'RESERVED',
         );
         setJobs(activeJobs);
         // Chat badges must not delay or hide the driver's active work.

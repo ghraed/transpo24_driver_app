@@ -36,7 +36,7 @@ function availabilityMessage(requestStatus: string): string | null {
     return null;
   }
 
-  return 'This request is no longer available.';
+  return requestStatus === 'RESERVED' ? 'Pending client payment. New offers are closed.' : 'This request is booked. New offers are closed.';
 }
 
 function formatRoute(
