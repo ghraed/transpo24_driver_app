@@ -1511,5 +1511,13 @@
   "Booked — offers closed": "Booked — offers closed",
   "Booked": "Booked",
   "Pending client payment. New offers are closed.": "Pending client payment. New offers are closed.",
-  "This request is booked. New offers are closed.": "This request is booked. New offers are closed."
+  "This request is booked. New offers are closed.": "This request is booked. New offers are closed.",
+  "Account type": "Account type",
+  "Personal": "Personal",
+  "Company": "Company",
+  "Tax Registration Number (TRN)": "Tax Registration Number (TRN)",
+  "TRN is required for companies.": "TRN is required for companies.",
+  "Chat with {{name}}": "Chat with {{name}}",
+  "You can browse the app. Complete registration and get admin approval to send offers or contact clients.": "You can browse the app. Complete registration and get admin approval to send offers or contact clients.",
+  "Continue registration": "Continue registration"
 }

@@ -1,3 +1,4 @@
+import { notifyDriverApprovalRequired } from '@/lib/driver-approval-events';
 import { readAccessToken } from '@/lib/auth-storage';
 import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
 import { localizeResponseMessage } from '@/localization/response-message';
@@ -27,6 +28,7 @@ const REQUEST_TIMEOUT_MS = 12000;
 const UPLOAD_REQUEST_TIMEOUT_MS = 60000;
 
 type ApiErrorResponse = {
+  code?: string;
   message?: string | string[];
   error?: unknown;
   details?: unknown;
@@ -86,6 +88,7 @@ function extractErrorMessage(value: unknown): string | null {
 }
 
 function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): string {
+  if (errorData.code === 'DRIVER_APPROVAL_REQUIRED') notifyDriverApprovalRequired();
   return extractErrorMessage(errorData) ?? fallback;
 }
 

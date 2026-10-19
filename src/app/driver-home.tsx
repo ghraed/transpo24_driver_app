@@ -1,3 +1,5 @@
+import { useDriverAccess } from '@/hooks/use-driver-access';
+import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { TestNotificationButton } from '@/components/test-notification-button';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -25,6 +27,7 @@ function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse)
 
 export default function DriverHomeScreen() {
   const router = useRouter();
+  const { canInteract, continueRegistration } = useDriverAccess();
   const { t } = useTranslation();
   const { language, isChangingLanguage, setLanguage } = useAppLanguage();
   const [isOnline, setIsOnline] = useState(false);
@@ -65,6 +68,7 @@ export default function DriverHomeScreen() {
   }, [t]);
 
   const onToggleAvailability = async (nextValue: boolean): Promise<void> => {
+    if (!canInteract) { await continueRegistration(); return; }
     if (isLoadingAvailability || isUpdatingAvailability) return;
     if (requiresAvailabilitySetup) {
       setAvailabilityError(t('Set availability first before changing online status.'));
@@ -88,6 +92,7 @@ export default function DriverHomeScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <DriverRegistrationNotice />
       <View style={styles.header}>
         <Pressable accessibilityLabel={t('Go back')} hitSlop={12} onPress={() => router.back()}>
           <DriverIcon name="arrow-back" size={29} strokeWidth={2.2} />

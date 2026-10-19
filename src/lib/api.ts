@@ -1,3 +1,4 @@
+import { notifyDriverApprovalRequired } from '@/lib/driver-approval-events';
 import { assertPushBackend } from '@/notifications/assertPushBackend';
 import { readAccessToken } from './auth-storage';
 import { createBackendReachabilityError, getBackendApiBaseUrl } from '@/config/backend';
@@ -73,7 +74,7 @@ export class ApiResponseError extends Error {
 export function isAuthenticationFailure(error: unknown): boolean {
   return (
     error instanceof ApiResponseError &&
-    (error.status === 401 || error.status === 403)
+    (error.status === 401 || (error.status === 403 && error.code !== 'DRIVER_APPROVAL_REQUIRED'))
   );
 }
 
@@ -94,6 +95,7 @@ function getApiBaseUrl(): string {
 }
 
 function normalizeErrorMessage(errorData: ApiErrorResponse, fallback: string): string {
+  if (errorData.code === 'DRIVER_APPROVAL_REQUIRED') notifyDriverApprovalRequired();
   if (Array.isArray(errorData.message)) {
     return normalizeBackendErrorMessage(errorData.message[0] ?? fallback, fallback);
   }
@@ -803,28 +805,6 @@ export async function updateDriverProfile(
       method: 'PATCH',
       headers: await getAuthHeaders(),
       body: JSON.stringify(payload),
-    });
-  } catch (error) {
-    throw toNetworkError(endpoint, error);
-  }
-
-  if (!response.ok) {
-    throw await parseError(response, 'Failed to update driver profile.');
-  }
-
-  return parseJsonResponse<DriverMeResponse>(response, 'Failed to parse profile update response.');
-}
-
-export async function updateDriverNickname(
-  nickname: string,
-): Promise<DriverMeResponse> {
-  const endpoint = `${getApiBaseUrl()}/driver/me/nickname`;
-  let response: Response;
-  try {
-    response = await fetchWithTimeout(endpoint, {
-      method: 'PATCH',
-      headers: await getAuthHeaders(),
-      body: JSON.stringify({ nickname }),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);

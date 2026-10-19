@@ -18,11 +18,11 @@ test.each([
   expect(nextStepToRoute(step as DriverNextStep)).toBe(route);
 });
 
-test('saved onboarding routes are retained only when compatible with the next step', () => {
-  expect(resolveDriverEntryRoute('UPLOAD_DOCUMENTS', '/load-capacity?vehicleId=7')).toBe('/load-capacity?vehicleId=7');
-  expect(resolveDriverEntryRoute('SET_AVAILABILITY', '/vehicle-documents')).toBe('/set-availability');
+test('phone sign-in opens browsing regardless of saved registration progress', () => {
+  expect(resolveDriverEntryRoute('UPLOAD_DOCUMENTS', '/load-capacity?vehicleId=7')).toBe('/receive-requests');
+  expect(resolveDriverEntryRoute('SET_AVAILABILITY', '/vehicle-documents')).toBe('/receive-requests');
   expect(resolveDriverEntryRoute('HOME', '/waiting-approval')).toBe('/receive-requests');
-  expect(resolveDriverEntryRoute('UPLOAD_DOCUMENTS', '/unknown')).toBe('/vehicle-documents');
+  expect(resolveDriverEntryRoute('UPLOAD_DOCUMENTS', '/unknown')).toBe('/receive-requests');
   expect(isOnboardingRoute('/vehicle-documents?vehicleId=7')).toBe(true);
   expect(isOnboardingRoute('/vehicle-documents-extra')).toBe(false);
 });

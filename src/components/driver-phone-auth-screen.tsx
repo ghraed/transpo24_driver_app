@@ -17,7 +17,7 @@ import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
 import { readTrustedDriverSession } from '@/lib/auth-storage';
-import { nextStepToRoute } from '@/lib/onboarding-route';
+import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
 import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
 import {
   LANGUAGE_CONFIGS,
@@ -135,7 +135,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
     setIsContinuing(true);
     const result = await continueWithTrustedSession();
     if (result.status === 'restored') {
-      router.replace(nextStepToRoute(result.nextStep));
+      router.replace(resolveDriverEntryRoute(result.nextStep, null));
     } else if (result.status === 'invalid') {
       setTrustedPhoneNumber('');
       setErrorMessage(t('Unable to continue. Please request a verification code.'));

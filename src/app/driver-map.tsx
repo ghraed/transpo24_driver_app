@@ -1,3 +1,5 @@
+import { useDriverAccess } from '@/hooks/use-driver-access';
+import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
 import { RequestCoverageNotice } from '@/components/request-coverage-notice';
 import { syncRequestMatchingLocation } from '@/location/request-matching-location';
@@ -47,6 +49,7 @@ function asRegion(coordinate: Coordinate) {
 
 export default function DriverMapScreen() {
   const router = useRouter();
+  const { canInteract, continueRegistration } = useDriverAccess();
   const { t } = useTranslation();
   const MapView = NativeMapView;
   const MapMarker = NativeMarker;
@@ -71,7 +74,7 @@ export default function DriverMapScreen() {
   const loadMap = useCallback(async () => {
     const version = ++loadVersion.current;
     setIsLoading(true);
-    await syncRequestMatchingLocation().catch(() => undefined);
+    if (canInteract) await syncRequestMatchingLocation().catch(() => undefined);
     const [availabilityResult, alertsResult] = await Promise.allSettled([
       getDriverAvailability(),
       getDriverRequestAlerts(),
@@ -83,7 +86,7 @@ export default function DriverMapScreen() {
       setLocationReference(alertsResult.value.locationReference ?? 'NONE');
     }
     setIsLoading(false);
-  }, []);
+  }, [canInteract]);
 
   const startLocationTracking = useCallback(async (watch = true): Promise<(() => void) | undefined> => {
     const version = locationVersion.current;
@@ -160,6 +163,7 @@ export default function DriverMapScreen() {
   );
 
   const toggleOnline = async () => {
+    if (!canInteract) { await continueRegistration(); return; }
     if (!availability || isUpdating) return;
     setIsUpdating(true);
     try {
@@ -186,6 +190,7 @@ export default function DriverMapScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <DriverRegistrationNotice />
       <StatusBar style="dark" />
 
       <View style={styles.mapArea}>

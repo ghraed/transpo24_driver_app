@@ -1,3 +1,5 @@
+import { useDriverAccess } from '@/hooks/use-driver-access';
+import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
@@ -25,12 +27,18 @@ function messageTime(room: ChatRoom, locale: string): string {
 
 export default function DriverChatsScreen() {
   const router = useRouter();
+  const { canInteract } = useDriverAccess();
   const { t } = useTranslation();
   const { locale } = useAppLanguage();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadRooms = useCallback(async () => {
+    if (!canInteract) {
+      setRooms([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await getDriverChatRooms();
@@ -38,7 +46,7 @@ export default function DriverChatsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [canInteract]);
 
   useFocusEffect(useCallback(() => {
     void loadRooms();
@@ -46,6 +54,7 @@ export default function DriverChatsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <DriverRegistrationNotice />
       <StatusBar style="dark" />
       <View style={styles.header}>
         <Text style={styles.title}>{t('Chat')}</Text>

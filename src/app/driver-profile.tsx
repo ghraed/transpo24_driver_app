@@ -1,3 +1,4 @@
+import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -144,6 +145,7 @@ export default function DriverProfileScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <DriverRegistrationNotice />
       <StatusBar style="dark" />
 
       <View style={styles.header}>
@@ -180,12 +182,10 @@ export default function DriverProfileScreen() {
           </Pressable>
         </View>
 
-        <Pressable style={styles.identityCard} accessibilityRole="button" accessibilityLabel={t('Edit nickname')} onPress={() => router.push('/edit-nickname')}>
-          <Text style={styles.sectionTitle}>{t('Nickname')}</Text>
-          <Text style={styles.name}>{driver?.nickname || t('Driver')}</Text>
-          <Text style={styles.memberText}>{t('Clients will see your nickname on offers and in chats.')}</Text>
-          <Text style={styles.editButtonText}>{t('Edit nickname')}</Text>
-        </Pressable>
+        <View style={styles.identityCard}>
+          <Text style={styles.sectionTitle}>{t('Account type')}</Text>
+          <Text style={styles.name}>{t(driver?.driverType === 'COMPANY' ? 'Company' : 'Personal')}</Text>
+        </View>
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>

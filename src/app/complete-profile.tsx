@@ -82,7 +82,8 @@ function formatDateOnly(date: Date): string {
 
 function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
   return {
-    nickname: '',
+    driverType: 'PERSONAL',
+    trn: '',
     firstName: '',
     lastName: '',
     phone: '',
@@ -151,7 +152,8 @@ export default function CompleteProfileScreen() {
     if (hasUserEditedRef.current) return;
 
     setForm({
-      nickname: profile.nickname?.trim() || '',
+      driverType: profile.driverType ?? 'PERSONAL',
+      trn: profile.trn ?? '',
       firstName: profile.firstName?.trim() || testDefaults.firstName,
       lastName: profile.lastName?.trim() || testDefaults.lastName,
       phone: profile.phone?.trim() || testDefaults.phone,
@@ -214,8 +216,8 @@ export default function CompleteProfileScreen() {
   const fieldErrors = useMemo(() => {
     const errors: Partial<Record<keyof CompleteDriverProfileForm, string>> = {};
 
-    if (form.nickname.trim().length < 2 || form.nickname.trim().length > 40) {
-      errors.nickname = t('Nickname must be between 2 and 40 characters.');
+    if (form.driverType === 'COMPANY' && !form.trn.trim()) {
+      errors.trn = t('TRN is required for companies.');
     }
 
     if (!form.firstName.trim()) {
@@ -310,7 +312,8 @@ export default function CompleteProfileScreen() {
     setSubmitError('');
 
     const payload: UpdateDriverProfilePayload = {
-      nickname: form.nickname.trim(),
+      driverType: form.driverType,
+      trn: form.driverType === 'COMPANY' ? form.trn.trim() : '',
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       phone: form.phone.trim(),
@@ -405,7 +408,7 @@ export default function CompleteProfileScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.replace('/register')}>
+          <Pressable style={styles.backButton} onPress={() => router.replace('/receive-requests')}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
           <Text style={styles.progress}>{t('Step 1 of 3: Profile')}</Text>
@@ -419,11 +422,25 @@ export default function CompleteProfileScreen() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <Text style={styles.label}>{t('Nickname')}</Text>
-          <TextInput style={styles.input} accessibilityLabel={t('Nickname')} placeholder={t('Nickname')} value={form.nickname} onChangeText={(value) => onChange('nickname', value)} maxLength={40} autoCorrect={false} />
-          <Text style={styles.helper}>{t('Clients will see your nickname on offers and in chats.')}</Text>
+          <Text style={styles.label}>{t('Account type')}</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {(['PERSONAL', 'COMPANY'] as const).map((type) => (
+              <Pressable key={type} accessibilityRole="radio" accessibilityState={{ checked: form.driverType === type }}
+                onPress={() => onChange('driverType', type)}
+                style={({ pressed }) => [styles.input, { flex: 1, minHeight: 48, justifyContent: 'center', opacity: pressed ? 0.7 : 1 }, form.driverType === type && styles.accountTypeSelected]}>
+                <Text style={styles.label}>{t(type === 'COMPANY' ? 'Company' : 'Personal')}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
-        {hasAttemptedSubmit && fieldErrors.nickname ? <Text style={styles.errorText}>{fieldErrors.nickname}</Text> : null}
+        {form.driverType === 'COMPANY' ? (
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>{t('Tax Registration Number (TRN)')}</Text>
+            <TextInput style={styles.input} accessibilityLabel={t('Tax Registration Number (TRN)')}
+              value={form.trn} onChangeText={(value) => onChange('trn', value)} maxLength={100} autoCorrect={false} />
+            {hasAttemptedSubmit && fieldErrors.trn ? <Text style={styles.errorText}>{fieldErrors.trn}</Text> : null}
+          </View>
+        ) : null}
 
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>{t('First Name')}</Text>
@@ -729,6 +746,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  accountTypeSelected: { borderColor: '#F1B900', borderWidth: 2 },
   input: {
     borderWidth: 1,
     borderColor: '#DFE3E8',

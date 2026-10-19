@@ -1511,5 +1511,13 @@
   "Booked — offers closed": "Gebucht — Angebote geschlossen",
   "Booked": "Gebucht",
   "Pending client payment. New offers are closed.": "Kundenzahlung ausstehend. Neue Angebote sind geschlossen.",
-  "This request is booked. New offers are closed.": "Diese Anfrage ist gebucht. Neue Angebote sind geschlossen."
+  "This request is booked. New offers are closed.": "Diese Anfrage ist gebucht. Neue Angebote sind geschlossen.",
+  "Account type": "Kontotyp",
+  "Personal": "Privat",
+  "Company": "Unternehmen",
+  "Tax Registration Number (TRN)": "Steuerregistrierungsnummer (TRN)",
+  "TRN is required for companies.": "Für Unternehmen ist eine TRN erforderlich.",
+  "Chat with {{name}}": "Chat mit {{name}}",
+  "You can browse the app. Complete registration and get admin approval to send offers or contact clients.": "Sie können die App ansehen. Schließen Sie die Registrierung ab und warten Sie auf die Freigabe durch die Verwaltung, um Angebote zu senden oder Kunden zu kontaktieren.",
+  "Continue registration": "Registrierung fortsetzen"
 }

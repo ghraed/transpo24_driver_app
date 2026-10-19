@@ -1,3 +1,4 @@
+jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ driver: { status: 'APPROVED', isProfileCompleted: true } }) }));
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { beforeEach, afterEach, expect, it, jest } from '@jest/globals';

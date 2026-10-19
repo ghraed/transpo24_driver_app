@@ -1,3 +1,5 @@
+import { useDriverAccess } from '@/hooks/use-driver-access';
+import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
 import { RequestCoverageNotice } from '@/components/request-coverage-notice';
 import { syncRequestMatchingLocation } from '@/location/request-matching-location';
@@ -91,6 +93,7 @@ function formatRouteDistance(alert: DriverRequestAlertSummary): string {
 
 export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pendingOnly?: boolean }) {
   const router = useRouter();
+  const { canInteract } = useDriverAccess();
   const { t } = useTranslation();
   const { language, locale } = useAppLanguage();
   const loadVersion = useRef(0);
@@ -112,7 +115,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
     setError('');
 
     try {
-      await syncRequestMatchingLocation().catch(() => undefined);
+      if (canInteract) await syncRequestMatchingLocation().catch(() => undefined);
       const response = await getDriverRequestAlerts();
       if (version === loadVersion.current) setLocationReference(response.locationReference ?? 'NONE');
       if (version !== loadVersion.current) return;
@@ -144,7 +147,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
         setIsRefreshing(false);
       }
     }
-  }, [language, t]);
+  }, [canInteract, language, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -155,7 +158,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
 
       void (async () => {
         const token = await readAccessToken();
-        if (!active || !token) return;
+        if (!active || !token || !canInteract) return;
         connectSocket(token);
         unsubscribeNew = onRequestNew(() => void loadAlerts(true));
         unsubscribeDeleted = onRequestDeleted((payload) => {
@@ -171,7 +174,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
         unsubscribeDeleted?.();
         unsubscribeNew?.();
       };
-    }, [loadAlerts]),
+    }, [canInteract, loadAlerts]),
   );
 
   const visibleAlerts = useMemo(
@@ -181,6 +184,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <DriverRegistrationNotice />
       <StatusBar style="dark" />
 
       <View style={styles.header}>

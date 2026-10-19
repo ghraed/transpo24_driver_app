@@ -1511,5 +1511,13 @@
   "Booked — offers closed": "محجوز — العروض مغلقة",
   "Booked": "محجوز",
   "Pending client payment. New offers are closed.": "بانتظار دفع العميل. لا يمكن تقديم عروض جديدة.",
-  "This request is booked. New offers are closed.": "هذا الطلب محجوز. لا يمكن تقديم عروض جديدة."
+  "This request is booked. New offers are closed.": "هذا الطلب محجوز. لا يمكن تقديم عروض جديدة.",
+  "Account type": "نوع الحساب",
+  "Personal": "شخصي",
+  "Company": "شركة",
+  "Tax Registration Number (TRN)": "رقم التسجيل الضريبي (TRN)",
+  "TRN is required for companies.": "رقم التسجيل الضريبي مطلوب للشركات.",
+  "Chat with {{name}}": "محادثة مع {{name}}",
+  "You can browse the app. Complete registration and get admin approval to send offers or contact clients.": "يمكنك تصفح التطبيق. أكمل التسجيل واحصل على موافقة الإدارة لإرسال العروض أو التواصل مع العملاء.",
+  "Continue registration": "متابعة التسجيل"
 }

@@ -48,42 +48,10 @@ export function isOnboardingRoute(route: string | null | undefined): route is Dr
   );
 }
 
+// Phone verification grants browse access. Registration resumes only when requested.
 export function resolveDriverEntryRoute(
-  nextStep: DriverNextStep,
-  savedRoute: string | null | undefined,
-): DriverAppRoute | string {
-  if (!savedRoute || !isOnboardingRoute(savedRoute)) {
-    return nextStepToRoute(nextStep);
-  }
-
-  switch (nextStep) {
-    case 'COMPLETE_PROFILE':
-      return '/complete-profile';
-    case 'ADD_VEHICLE_DOCUMENTS':
-    case 'UPLOAD_DOCUMENTS':
-      if (
-        savedRoute === '/vehicle-documents' ||
-        savedRoute.startsWith('/vehicle-documents?') ||
-        savedRoute === '/vehicle-information' ||
-        savedRoute.startsWith('/vehicle-information?') ||
-        savedRoute === '/load-capacity' ||
-        savedRoute.startsWith('/load-capacity?') ||
-        savedRoute === '/set-availability' ||
-        savedRoute.startsWith('/set-availability?')
-      ) {
-        return savedRoute;
-      }
-      return '/vehicle-documents';
-    case 'SET_AVAILABILITY':
-      if (savedRoute === '/set-availability' || savedRoute.startsWith('/set-availability?')) {
-        return savedRoute;
-      }
-      return '/set-availability';
-    case 'WAITING_APPROVAL':
-      return '/waiting-approval';
-    case 'HOME':
-      return '/receive-requests';
-    default:
-      return '/';
-  }
+  _nextStep: DriverNextStep,
+  _savedRoute: string | null | undefined,
+): DriverAppRoute {
+  return '/receive-requests';
 }
