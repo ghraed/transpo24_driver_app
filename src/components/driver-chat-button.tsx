@@ -1,10 +1,17 @@
 import { useRouter, type Href } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-
+import {
+  DriverButton,
+  DriverCard,
+  DriverIcon,
+  DriverStatus,
+  DriverText,
+} from '@/components/ui/driver-ui';
 import { useDriverChatRoom } from '@/hooks/useDriverChatRoom';
 import { isTerminalRequestStatus } from '@/lib/request-status';
+import { driverRadius, driverSpace, useDriverColors } from '@/theme/driver-theme';
 import type { RequestStatus } from '@/types/auth';
 import type { ChatRoom } from '@/types/chat';
 
@@ -16,7 +23,6 @@ type DriverChatButtonProps = {
   showUnavailableState?: boolean;
   requestStatus?: RequestStatus | string | null;
 };
-
 export function DriverChatButton({
   transportRequestId,
   initialChatRoom,
@@ -27,138 +33,102 @@ export function DriverChatButton({
 }: DriverChatButtonProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const colors = useDriverColors();
   const chatDisabled = isTerminalRequestStatus(requestStatus);
-  const {
-    chatRoom,
-    isLoadingChatRoom,
-    chatRoomError,
-    refreshChatRoom,
-  } = useDriverChatRoom(transportRequestId, initialChatRoom, !chatDisabled);
-
-  if (!chatRoom && !chatRoomError && !isLoadingChatRoom && !showUnavailableState) {
+  const { chatRoom, isLoadingChatRoom, chatRoomError, isChatPending, refreshChatRoom } =
+    useDriverChatRoom(transportRequestId, initialChatRoom, !chatDisabled);
+  const available = Boolean(chatRoom && !chatDisabled);
+  if (!available && !chatRoomError && !isLoadingChatRoom && !isChatPending && !showUnavailableState)
     return null;
-  }
 
   return (
-    <View style={[styles.container, fullWidth && styles.fullWidth]}>
-      {chatRoom && !chatDisabled ? (
-        <Pressable
-          style={styles.button}
+    <DriverCard style={!fullWidth ? styles.intrinsic : undefined}>
+      <View style={styles.row}>
+        <View
+          style={[
+            styles.icon,
+            { backgroundColor: available ? colors.primarySoft : colors.surfaceSubtle },
+          ]}
+        >
+          <DriverIcon
+            name={
+              isChatPending
+                ? { ios: 'clock', android: 'schedule', web: 'schedule' }
+                : { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }
+            }
+            color={colors.text}
+            size={22}
+          />
+        </View>
+        <View style={styles.copy}>
+          <DriverText variant="section">{t('pickupUi.clientChat')}</DriverText>
+          <DriverText variant="caption" secondary>
+            {isChatPending
+              ? t('pickupUi.chatPaymentWindow')
+              : available
+                ? t('pickupUi.chatReady')
+                : isLoadingChatRoom
+                  ? t('Checking chat availability...')
+                  : chatDisabled
+                    ? t('Chat closed after delivery')
+                    : chatRoomError
+                      ? t('pickupUi.chatConnectionIssue')
+                      : t('Chat unavailable')}
+          </DriverText>
+        </View>
+        {isChatPending ? (
+          <DriverStatus label={t('pickupUi.pending')} />
+        ) : available && (chatRoom?.unreadCount ?? 0) > 0 ? (
+          <DriverStatus
+            label={t('pickupUi.unread', { count: Math.min(chatRoom?.unreadCount ?? 0, 99) })}
+            tone="success"
+          />
+        ) : null}
+      </View>
+      {available && chatRoom ? (
+        <DriverButton
+          variant="contact"
+          label={
+            label ||
+            (chatRoom.clientNickname
+              ? t('Chat with {{name}}', { name: chatRoom.clientNickname })
+              : t('Chat with client'))
+          }
+          icon={{ ios: 'bubble.left', android: 'chat_bubble_outline', web: 'chat_bubble_outline' }}
           onPress={() =>
             router.push({
               pathname: '/chat',
-              params: {
-                chatRoomId: chatRoom.id,
-                transportRequestId: chatRoom.transportRequestId,
-              },
+              params: { chatRoomId: chatRoom.id, transportRequestId: chatRoom.transportRequestId },
             } as unknown as Href)
           }
-        >
-          <Text style={styles.buttonText}>{label || (chatRoom.clientNickname ? t('Chat with {{name}}', { name: chatRoom.clientNickname }) : t('Chat with client'))}</Text>
-          {typeof chatRoom.unreadCount === 'number' && chatRoom.unreadCount > 0 ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{chatRoom.unreadCount > 99 ? '99+' : chatRoom.unreadCount}</Text>
-            </View>
-          ) : null}
-        </Pressable>
-      ) : isLoadingChatRoom ? (
-        <View style={styles.loadingState}>
-          <Text style={styles.loadingText}>{t('Checking chat availability...')}</Text>
-        </View>
-      ) : chatRoomError ? (
-        <View style={styles.errorState}>
-          <Text style={styles.errorText}>{chatRoomError}</Text>
-          <Pressable style={styles.retryButton} onPress={() => void refreshChatRoom()}>
-            <Text style={styles.retryButtonText}>{t('Retry chat')}</Text>
-          </Pressable>
-        </View>
-      ) : showUnavailableState ? (
-        <View style={styles.unavailableButton}>
-          <Text style={styles.unavailableButtonText}>
-            {chatDisabled ? t('Chat closed after delivery') : t('Chat unavailable')}
-          </Text>
-        </View>
+        />
+      ) : !chatDisabled && (isChatPending || chatRoomError || isLoadingChatRoom) ? (
+        <DriverButton
+          variant="quiet"
+          loading={isLoadingChatRoom}
+          label={
+            isChatPending
+              ? t('pickupUi.checkAvailability')
+              : isLoadingChatRoom
+                ? t('Checking chat availability...')
+                : t('Retry chat')
+          }
+          icon={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }}
+          onPress={() => void refreshChatRoom()}
+        />
       ) : null}
-    </View>
+    </DriverCard>
   );
 }
-
 const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  fullWidth: {
-    width: '100%',
-  },
-  button: {
-    minHeight: 44,
-    borderRadius: 12,
-    backgroundColor: '#0F766E',
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  badge: {
-    minWidth: 22,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+  intrinsic: { alignSelf: 'flex-start' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: driverSpace.md, flexWrap: 'wrap' },
+  icon: {
+    width: 44,
+    height: 44,
+    borderRadius: driverRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: {
-    color: '#0F766E',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  loadingState: {
-    minHeight: 32,
-    justifyContent: 'center',
-  },
-  loadingText: {
-    color: '#707A8C',
-    fontSize: 13,
-  },
-  errorState: {
-    gap: 8,
-  },
-  errorText: {
-    color: '#B91C1C',
-    fontSize: 13,
-  },
-  retryButton: {
-    alignSelf: 'flex-start',
-    minHeight: 36,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
-  },
-  retryButtonText: {
-    color: '#505A6A',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  unavailableButton: {
-    minHeight: 44,
-    borderRadius: 12,
-    backgroundColor: '#DFE3E8',
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unavailableButtonText: {
-    color: '#707A8C',
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  copy: { flex: 1, minWidth: 120, gap: driverSpace.xs },
 });

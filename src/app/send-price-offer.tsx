@@ -1,7 +1,11 @@
+import { OfferEarningsCard } from '@/components/offer-earnings-card';
+import { OfferDateTimeField } from '@/components/offer-date-time-field';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -43,15 +47,6 @@ type FormErrors = {
 };
 
 const PLATFORM_FEE_PERCENTAGE = 15;
-
-function formatOfferAmount(amount: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-}
 
 function parseOptionalIsoDate(rawValue: string): Date | null {
   const trimmed = rawValue.trim();
@@ -110,6 +105,10 @@ export default function SendPriceOfferScreen() {
   const keyboardInset = useAndroidKeyboardInset();
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const rtl = i18n.dir?.() === 'rtl';
+  const rowDirection = rtl && styles.rtlRow;
+  const textDirection = rtl && styles.rtlText;
+  const [priceFocused, setPriceFocused] = useState(false);
   const { driver, signOut } = useAuth();
   const params = useLocalSearchParams();
 
@@ -341,255 +340,180 @@ export default function SendPriceOfferScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
-          ]}
+          contentContainerStyle={[styles.content, keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
+          <View style={[styles.navigation, rowDirection]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('Back')} disabled={isSubmitting}
+              onPress={() => router.canGoBack() ? router.back() : router.replace('/receive-requests')}
+              style={({ pressed }) => [styles.backButton, pressed && styles.pressed, rowDirection]}>
+              <PageIcon name={rtl ? { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' } : { ios: 'arrow.left', android: 'arrow_back', web: 'arrow_back' }} />
+              <Text style={styles.backButtonText}>{t('Back')}</Text>
+            </Pressable>
+            {requestId ? <Text accessibilityLabel={`${t('Request')}: ${requestId}`} style={styles.reference}>{t('Request')} #{requestIdShort}</Text> : null}
+          </View>
           <View style={styles.header}>
-            <Text style={styles.title}>{t('Send Price Offer')}</Text>
-            <Text style={styles.subtitle}>
-              {t('Enter your price and timing so the customer can choose your offer.')}
-            </Text>
-            <Text style={styles.helperText}>
-              {t('The customer will compare offers and choose the best driver.')}
-            </Text>
+            <Text accessibilityRole="header" style={[styles.title, textDirection]}>{t('Send Price Offer')}</Text>
+            <Text style={[styles.subtitle, textDirection]}>{t('Enter your price and timing so the customer can choose your offer.')}</Text>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>{t('Request Summary')}</Text>
-            {serviceName ? (
-              <Text style={styles.valueText}>
-                {t('Service')}: {translatedTextByKey.serviceName || serviceName}
-              </Text>
-            ) : null}
-            {pickupAddress ? (
-              <Text style={styles.valueText}>
-                {t('Pickup')}: {translatedTextByKey.pickupAddress || formatDisplayAddress(pickupAddress, t)}
-              </Text>
-            ) : null}
-            {dropoffAddress ? (
-              <Text style={styles.valueText}>
-                {t('Dropoff')}: {translatedTextByKey.dropoffAddress || formatDisplayAddress(dropoffAddress, t)}
-              </Text>
-            ) : null}
-            {routeDistance ? <Text style={styles.valueText}>{t('Distance')}: {routeDistance}</Text> : null}
-            <Text style={styles.valueText}>{t('Schedule')}: {scheduledPickupAt ? formatDateTime(scheduledPickupAt) : t('Immediate pickup')}</Text>
-            <Text style={styles.valueText}>{t('Request')}: {requestId ? requestIdShort : t('Missing request ID')}</Text>
-            {errors.requestId ? <Text style={styles.errorText}>{errors.requestId}</Text> : null}
-            {!requestId ? (
-              <Pressable
-                style={styles.backButton}
-                onPress={() => router.replace('/receive-requests')}
-              >
-                <Text style={styles.backButtonText}>{t('Go Back to Available Requests')}</Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>{t('Price Offer')}</Text>
-            <Text style={styles.label}>{t('Price *')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.price}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, price: value }))}
-              placeholder="450"
-              keyboardType="decimal-pad"
-            />
-            {errors.price ? <Text style={styles.errorText}>{errors.price}</Text> : null}
-
-            <Text style={styles.label}>{t('Currency *')}</Text>
-            <View style={styles.derivedCurrencyCard}>
-              <Text style={styles.derivedCurrencyValue}>{offerCurrency}</Text>
-              <Text style={styles.derivedCurrencyHint}>
-                {driverCountryLabel
-                  ? t('Offer currency follows your country: {{country}}.', {
-                      country: driverCountryLabel,
-                    })
-                  : t('Offer currency follows your saved country.')}
-              </Text>
+            <SectionHeading title={t('Request Summary')} icon={{ ios: 'shippingbox', android: 'local_shipping', web: 'local_shipping' }} rtl={rtl} />
+            {serviceName ? <Text style={[styles.service, textDirection]}>{translatedTextByKey.serviceName || serviceName}</Text> : null}
+            <View style={styles.route}>
+              {[
+                { label: 'Pickup', address: pickupAddress, translated: translatedTextByKey.pickupAddress },
+                { label: 'Dropoff', address: dropoffAddress, translated: translatedTextByKey.dropoffAddress },
+              ].map((stop, index) => <View key={stop.label} style={[styles.routeRow, rowDirection]}>
+                <View style={styles.routeTrack}>
+                  <View style={[styles.routeDot, index === 1 && styles.destinationDot]} />
+                  {index === 0 ? <View style={styles.routeLine} /> : null}
+                </View>
+                <View style={[styles.routeCopy, index === 0 && styles.firstStop]}>
+                  <Text style={[styles.detailLabel, textDirection]}>{t(stop.label)}</Text>
+                  <Text style={[styles.detailValue, textDirection]}>{stop.translated || formatDisplayAddress(stop.address, t)}</Text>
+                </View>
+              </View>)}
             </View>
-
-            {offerEarningsPreview ? (
-              <View style={styles.earningsPreview}>
-                <View style={styles.earningsPreviewHeader}>
-                  <Text style={styles.earningsPreviewTitle}>{t('Your earnings')}</Text>
-                  <Text style={styles.earningsPreviewPercentage}>
-                    {t('{{percentage}}% platform fee', { percentage: PLATFORM_FEE_PERCENTAGE })}
-                  </Text>
-                </View>
-                <View style={styles.earningsRow}>
-                  <Text style={styles.earningsLabel}>{t('Your offer')}</Text>
-                  <Text style={styles.earningsValue}>
-                    {formatOfferAmount(offerEarningsPreview.price, offerCurrency)}
-                  </Text>
-                </View>
-                <View style={styles.earningsRow}>
-                  <Text style={styles.earningsLabel}>
-                    {t('Platform fee ({{percentage}}%)', { percentage: PLATFORM_FEE_PERCENTAGE })}
-                  </Text>
-                  <Text style={styles.feeValue}>
-                    -{formatOfferAmount(offerEarningsPreview.platformFee, offerCurrency)}
-                  </Text>
-                </View>
-                <View style={styles.earningsDivider} />
-                <View style={styles.earningsRow}>
-                  <Text style={styles.netAmountLabel}>{t('You receive')}</Text>
-                  <Text style={styles.netAmountValue}>
-                    {formatOfferAmount(offerEarningsPreview.netAmount, offerCurrency)}
-                  </Text>
-                </View>
-                <Text style={styles.earningsHint}>
-                  {t('{{percentage}}% is deducted from your offer after the customer accepts it.', {
-                    percentage: PLATFORM_FEE_PERCENTAGE,
-                  })}
-                </Text>
+            <View style={styles.requestMeta}>
+              <View style={[styles.metaRow, rowDirection]}>
+                <PageIcon name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' }} size={16} />
+                <Text style={[styles.metaText, textDirection]}>{scheduledPickupAt ? formatDateTime(scheduledPickupAt) : t('Immediate pickup')}</Text>
               </View>
-            ) : null}
-
-            <Text style={styles.label}>{t('Estimated pickup date/time (optional)')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.estimatedPickupAt}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedPickupAt: value }))}
-              placeholder="2026-07-14T15:00:00Z"
-              autoCapitalize="none"
-            />
-            {errors.estimatedPickupAt ? <Text style={styles.errorText}>{errors.estimatedPickupAt}</Text> : null}
-
-            <Text style={styles.label}>{t('Estimated delivery date/time (optional)')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.estimatedDeliveryAt}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedDeliveryAt: value }))}
-              placeholder="2026-07-14T18:00:00Z"
-              autoCapitalize="none"
-            />
-            {errors.estimatedDeliveryAt ? <Text style={styles.errorText}>{errors.estimatedDeliveryAt}</Text> : null}
-
-            <Text style={styles.label}>{t('Estimated duration (minutes)')}</Text>
-            <TextInput
-              style={styles.input}
-              value={form.estimatedDurationMinutes}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, estimatedDurationMinutes: value }))}
-              placeholder="120"
-              keyboardType="number-pad"
-            />
-            {errors.estimatedDurationMinutes ? (
-              <Text style={styles.errorText}>{errors.estimatedDurationMinutes}</Text>
-            ) : null}
-
-            <Text style={styles.label}>{t('Message (optional)')}</Text>
-            <TextInput
-              style={[styles.input, styles.messageInput]}
-              value={form.message}
-              onChangeText={(value) => setForm((prev) => ({ ...prev, message: value }))}
-              placeholder={t('Message (optional)')}
-              multiline
-              textAlignVertical="top"
-            />
-            {errors.message ? <Text style={styles.errorText}>{errors.message}</Text> : null}
+              {routeDistance ? <View style={[styles.metaRow, rowDirection]}>
+                <PageIcon name={{ ios: 'arrow.triangle.swap', android: 'swap_horiz', web: 'swap_horiz' }} size={16} />
+                <Text style={[styles.metaText, textDirection]}>{t('Distance')}: {routeDistance}</Text>
+              </View> : null}
+            </View>
+            {errors.requestId ? <Text accessibilityRole="alert" style={[styles.errorText, textDirection]}>{errors.requestId}</Text> : null}
+            {!requestId ? <Pressable accessibilityRole="button" style={styles.returnButton} onPress={() => router.replace('/receive-requests')}>
+              <Text style={styles.backButtonText}>{t('Go Back to Available Requests')}</Text>
+            </Pressable> : null}
           </View>
 
-          {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
+          <View style={styles.card}>
+            <SectionHeading title={t('Price Offer')} icon={{ ios: 'tag', android: 'sell', web: 'sell' }} rtl={rtl} />
+            <Text style={[styles.label, textDirection]}>{t('Price *')}</Text>
+            <View style={[styles.priceField, priceFocused && styles.focused, errors.price && styles.invalid, rowDirection]}>
+              <TextInput
+                accessibilityLabel={t('Price *')}
+                style={[styles.priceInput, rtl && styles.priceInputRtl]}
+                value={form.price}
+                onChangeText={(price) => { setForm((prev) => ({ ...prev, price })); setErrors((prev) => ({ ...prev, price: undefined })); }}
+                onFocus={() => setPriceFocused(true)} onBlur={() => setPriceFocused(false)}
+                placeholder="0.00" placeholderTextColor="#8A95A5" keyboardType="decimal-pad" editable={!isSubmitting}
+              />
+              <View style={styles.currencyBadge}><Text style={styles.currencyText}>{offerCurrency}</Text></View>
+            </View>
+            {errors.price ? <Text accessibilityRole="alert" style={[styles.errorText, textDirection]}>{errors.price}</Text> : null}
+            <Text style={[styles.helperText, textDirection]}>
+              {driverCountryLabel ? t('Offer currency follows your country: {{country}}.', { country: driverCountryLabel }) : t('Offer currency follows your saved country.')}
+            </Text>
+          </View>
 
-          <Pressable
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={() => void onSubmit()}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.submitButtonText}>{t('Submit Offer')}</Text>
+          <OfferEarningsCard preview={offerEarningsPreview} currency={offerCurrency} platformFeePercentage={PLATFORM_FEE_PERCENTAGE} />
+
+          <View style={styles.card}>
+            <SectionHeading title={t('Offer timing')} icon={{ ios: 'clock', android: 'schedule', web: 'schedule' }} rtl={rtl} />
+            <Text style={[styles.helperText, textDirection]}>{t('Add your estimated pickup and delivery times. These details are optional.')}</Text>
+            <OfferDateTimeField label={t('Estimated pickup date/time (optional)')} value={form.estimatedPickupAt}
+              onChange={(estimatedPickupAt) => { setForm((prev) => ({ ...prev, estimatedPickupAt })); setErrors((prev) => ({ ...prev, estimatedPickupAt: undefined })); }}
+              error={errors.estimatedPickupAt} disabled={isSubmitting} minimumDate={new Date()} />
+            <OfferDateTimeField label={t('Estimated delivery date/time (optional)')} value={form.estimatedDeliveryAt}
+              onChange={(estimatedDeliveryAt) => { setForm((prev) => ({ ...prev, estimatedDeliveryAt })); setErrors((prev) => ({ ...prev, estimatedDeliveryAt: undefined })); }}
+              error={errors.estimatedDeliveryAt} disabled={isSubmitting} minimumDate={parseOptionalIsoDate(form.estimatedPickupAt) ?? new Date()} />
+            <Text style={[styles.label, textDirection]}>{t('Estimated duration (minutes)')}</Text>
+            <TextInput accessibilityLabel={t('Estimated duration (minutes)')} style={[styles.input, errors.estimatedDurationMinutes && styles.invalid, textDirection]}
+              value={form.estimatedDurationMinutes} onChangeText={(estimatedDurationMinutes) => setForm((prev) => ({ ...prev, estimatedDurationMinutes }))}
+              placeholder="120" placeholderTextColor="#8A95A5" keyboardType="number-pad" editable={!isSubmitting} />
+            {errors.estimatedDurationMinutes ? <Text accessibilityRole="alert" style={[styles.errorText, textDirection]}>{errors.estimatedDurationMinutes}</Text> : null}
+          </View>
+
+          <View style={styles.card}>
+            <SectionHeading title={t('Message (optional)')} icon={{ ios: 'text.bubble', android: 'chat_bubble_outline', web: 'chat_bubble_outline' }} rtl={rtl} />
+            <TextInput accessibilityLabel={t('Message (optional)')} style={[styles.input, styles.messageInput, textDirection]}
+              value={form.message} onChangeText={(message) => setForm((prev) => ({ ...prev, message }))}
+              placeholder={t('Message (optional)')} placeholderTextColor="#8A95A5" multiline textAlignVertical="top" maxLength={1000} editable={!isSubmitting} />
+            <Text style={[styles.characterCount, rtl && styles.countRtl]}>{form.message.length} / 1000</Text>
+            {errors.message ? <Text accessibilityRole="alert" style={[styles.errorText, textDirection]}>{errors.message}</Text> : null}
+          </View>
+
+          {submitError ? <Text accessibilityRole="alert" style={[styles.errorText, textDirection]}>{submitError}</Text> : null}
+          <Pressable accessibilityRole="button" accessibilityLabel={t('Submit Offer')}
+            style={({ pressed }) => [styles.submitButton, isSubmitting && styles.disabled, pressed && styles.pressed, rowDirection]}
+            onPress={() => void onSubmit()} disabled={isSubmitting}>
+            {isSubmitting ? <ActivityIndicator color="#17212F" /> : <PageIcon name={{ ios: 'paperplane', android: 'send', web: 'send' }} color="#17212F" />}
+            <Text style={styles.submitButtonText}>{t(isSubmitting ? 'Sending offer...' : 'Submit Offer')}</Text>
           </Pressable>
-
-          {isSubmitting ? <Text style={styles.loadingText}>{t('Sending offer...')}</Text> : null}
+          <Text style={[styles.footerHint, textDirection]}>{t('The customer will compare offers and choose the best driver.')}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+function PageIcon({ name, size = 18, color = '#5B6778' }: { name: SymbolViewProps['name']; size?: number; color?: string }) {
+  return <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><SymbolView name={name} size={size} tintColor={color} /></View>;
+}
+
+function SectionHeading({ title, icon, rtl }: { title: string; icon: SymbolViewProps['name']; rtl: boolean }) {
+  return <View style={[styles.sectionHeader, rtl && styles.rtlRow]}>
+    <View style={styles.sectionIcon}><PageIcon name={icon} color="#17212F" size={19} /></View>
+    <Text accessibilityRole="header" style={[styles.sectionTitle, rtl && styles.rtlText]}>{title}</Text>
+  </View>;
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F8F9' },
-  content: { padding: 20, paddingBottom: 32, gap: 14 },
-  header: { gap: 6 },
-  title: { fontSize: 28, fontWeight: '700', color: '#202020' },
-  subtitle: { color: '#707A8C' },
-  helperText: { color: '#707A8C', fontSize: 13 },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#DFE3E8',
-    padding: 16,
-    gap: 10,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#202020' },
-  valueText: { color: '#505A6A', fontSize: 14 },
-  label: { color: '#202020', fontWeight: '600' },
-  input: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    color: '#202020',
-  },
-  messageInput: { minHeight: 100 },
-  derivedCurrencyCard: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-  },
-  derivedCurrencyValue: { color: '#202020', fontWeight: '800', fontSize: 18 },
-  derivedCurrencyHint: { color: '#707A8C', fontSize: 13, marginTop: 4 },
-  earningsPreview: {
-    borderWidth: 1,
-    borderColor: '#F2D37A',
-    borderRadius: 12,
-    padding: 14,
-    backgroundColor: '#FFF9E8',
-    gap: 9,
-  },
-  earningsPreviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  earningsPreviewTitle: { color: '#202020', fontSize: 16, fontWeight: '800' },
-  earningsPreviewPercentage: { color: '#7A5A00', fontSize: 12, fontWeight: '700' },
-  earningsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  earningsLabel: { color: '#505A6A', fontSize: 14 },
-  earningsValue: { color: '#202020', fontSize: 14, fontWeight: '700' },
-  feeValue: { color: '#B45309', fontSize: 14, fontWeight: '800' },
-  earningsDivider: { height: 1, backgroundColor: '#F2D37A' },
-  netAmountLabel: { color: '#202020', fontSize: 15, fontWeight: '800' },
-  netAmountValue: { color: '#087968', fontSize: 19, fontWeight: '900' },
-  earningsHint: { color: '#707A8C', fontSize: 12, lineHeight: 18, marginTop: 2 },
-  backButton: {
-    minHeight: 40,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: '#FFF9E6',
-    justifyContent: 'center',
-  },
-  backButtonText: { color: '#F1B900', fontWeight: '700' },
-  submitButton: {
-    minHeight: 48,
-    borderRadius: 12,
-    backgroundColor: '#FFC515',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  submitButtonDisabled: { opacity: 0.7 },
-  submitButtonText: { color: '#171717', fontWeight: '800', fontSize: 15 },
-  loadingText: { color: '#707A8C', textAlign: 'center' },
-  errorText: { color: '#B91C1C', fontSize: 13 },
+  container: { flex: 1, backgroundColor: '#F7F9FB' },
+  content: { paddingHorizontal: 20, paddingBottom: 32, gap: 16 },
+  navigation: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  backButton: { minHeight: 48, flexDirection: 'row', gap: 8, alignItems: 'center', paddingEnd: 8 },
+  backButtonText: { color: '#17212F', fontSize: 14, fontWeight: '600', flexShrink: 1 },
+  reference: { flexShrink: 1, color: '#5B6778', fontSize: 12, lineHeight: 18, textAlign: 'right' },
+  header: { gap: 8, paddingBottom: 6 },
+  title: { fontSize: 28, lineHeight: 36, fontWeight: '700', letterSpacing: -0.5, color: '#17212F' },
+  subtitle: { color: '#5B6778', fontSize: 14, lineHeight: 21 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 1, borderColor: '#E4E9EF', padding: 20, gap: 14 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  sectionIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#FFF2CC', alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { flex: 1, color: '#17212F', fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  service: { color: '#17212F', fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  route: { paddingTop: 4 },
+  routeRow: { flexDirection: 'row', gap: 12 },
+  routeTrack: { width: 10, alignSelf: 'stretch', alignItems: 'center' },
+  routeDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2, borderColor: '#B78C22', backgroundColor: '#FFF2CC', marginTop: 4 },
+  destinationDot: { borderColor: '#5B6778', backgroundColor: '#E4E9EF' },
+  routeLine: { width: 1, backgroundColor: '#E4E9EF', position: 'absolute', top: 14, bottom: -4 },
+  routeCopy: { flex: 1, minWidth: 0 },
+  firstStop: { paddingBottom: 18 },
+  detailLabel: { fontSize: 12, lineHeight: 17, color: '#5B6778' },
+  detailValue: { marginTop: 3, fontSize: 14, lineHeight: 20, fontWeight: '600', color: '#17212F' },
+  requestMeta: { borderTopWidth: 1, borderTopColor: '#E4E9EF', paddingTop: 14, gap: 10 },
+  metaRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  metaText: { flex: 1, color: '#5B6778', fontSize: 13, lineHeight: 19 },
+  label: { color: '#17212F', fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  input: { minHeight: 52, borderWidth: 1, borderColor: '#DAE1E9', borderRadius: 12, padding: 14, backgroundColor: '#FAFBFC', color: '#17212F', fontSize: 16 },
+  priceField: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 76, borderWidth: 1, borderColor: '#DAE1E9', borderRadius: 14, paddingHorizontal: 16, backgroundColor: '#FAFBFC' },
+  priceInput: { flex: 1, minWidth: 0, paddingVertical: 16, fontSize: 30, lineHeight: 38, fontWeight: '600', color: '#17212F', writingDirection: 'ltr' },
+  priceInputRtl: { textAlign: 'right' },
+  currencyBadge: { borderRadius: 8, backgroundColor: '#EDF0F4', paddingHorizontal: 10, paddingVertical: 6 },
+  currencyText: { color: '#5B6778', fontSize: 12, lineHeight: 16, fontWeight: '700', writingDirection: 'ltr' },
+  helperText: { color: '#5B6778', fontSize: 13, lineHeight: 19 },
+  focused: { borderColor: '#B78C22', backgroundColor: '#FFFFFF' },
+  invalid: { borderColor: '#B91C1C' },
+  messageInput: { minHeight: 112 },
+  characterCount: { color: '#5B6778', fontSize: 12, textAlign: 'right', writingDirection: 'ltr' },
+  countRtl: { textAlign: 'left' },
+  returnButton: { minHeight: 48, justifyContent: 'center', alignItems: 'center', borderRadius: 12, backgroundColor: '#FFF2CC', padding: 12 },
+  submitButton: { flexDirection: 'row', gap: 10, minHeight: 56, paddingHorizontal: 20, paddingVertical: 14, borderRadius: 16, backgroundColor: '#FFC548', alignItems: 'center', justifyContent: 'center' },
+  submitButtonText: { flexShrink: 1, textAlign: 'center', color: '#17212F', fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  footerHint: { textAlign: 'center', color: '#5B6778', fontSize: 12, lineHeight: 18 },
+  disabled: { opacity: 0.6 },
+  pressed: { opacity: 0.7 },
+  errorText: { color: '#B91C1C', fontSize: 13, lineHeight: 19 },
+  rtlRow: { flexDirection: 'row-reverse' },
+  rtlText: { textAlign: 'right', writingDirection: 'rtl' },
 });

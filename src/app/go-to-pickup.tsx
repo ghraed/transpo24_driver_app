@@ -1,23 +1,36 @@
-import { startBackgroundTripTracking, stopBackgroundTripTracking } from '@/location/background-trip-tracking';
+import {
+  startBackgroundTripTracking,
+  stopBackgroundTripTracking,
+} from '@/location/background-trip-tracking';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
-  Text,
   TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  DriverButton,
+  DriverCard,
+  DriverIcon,
+  DriverNotice,
+  DriverPageHeader,
+  DriverStatus,
+  DriverText,
+} from '@/components/ui/driver-ui';
+import { TripProgress, TripRouteCard } from '@/components/ui/trip-ui';
+import { createTripScreenStyles } from '@/components/ui/trip-screen-styles';
+import { driverLayout, useDriverColors } from '@/theme/driver-theme';
 import { DriverChatButton } from '@/components/driver-chat-button';
 import { DriverRoutePolyline } from '@/components/driver-route-polyline';
 import {
@@ -28,7 +41,6 @@ import {
 } from '@/components/native-maps';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { useAuth } from '@/context/auth-context';
-import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { getDriverAcceptedJobDetails, startReservedPickup } from '@/lib/api';
 import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
@@ -67,15 +79,6 @@ const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
 const MAX_PROOF_PHOTOS = 8;
 const PICKUP_ARRIVAL_RADIUS_METERS = 1500;
-const TEST_FAKE_LOCATIONS: GeoLocation[] = [
-  { latitude: 34.4367, longitude: 35.8497 },
-  { latitude: 34.364, longitude: 35.9208 },
-  { latitude: 33.9808, longitude: 35.6178 },
-  { latitude: 33.8938, longitude: 35.5018 },
-  { latitude: 33.5571, longitude: 35.3715 },
-  { latitude: 33.397834, longitude: 35.684763 },
-  { latitude: 33.398171, longitude: 35.687181 },
-];
 
 type PickupParams = {
   tripId?: string;
@@ -140,7 +143,9 @@ function formatDisplayAddress(
 }
 
 export default function GoToPickupScreen() {
-  const keyboardInset = useAndroidKeyboardInset();
+  const colors = useDriverColors();
+  const styles = useMemo(() => createTripScreenStyles(colors), [colors]);
+  const [showPickupForm, setShowPickupForm] = useState<boolean | null>(null);
   const router = useRouter();
   const { accessToken } = useAuth();
   const { t, i18n } = useTranslation();
@@ -177,7 +182,8 @@ export default function GoToPickupScreen() {
   const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false);
   const [isSubmittingArrival, setIsSubmittingArrival] = useState<boolean>(false);
   const [isSubmittingPickup, setIsSubmittingPickup] = useState<boolean>(false);
-  const [isAwaitingArrivalConfirmation, setIsAwaitingArrivalConfirmation] = useState<boolean>(false);
+  const [isAwaitingArrivalConfirmation, setIsAwaitingArrivalConfirmation] =
+    useState<boolean>(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
   const [notes, setNotes] = useState<string>('');
   const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
@@ -191,13 +197,13 @@ export default function GoToPickupScreen() {
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
-  const fakeLocationIndexRef = useRef<number>(0);
 
   const isTripValid = isValidTripId(tripId);
   const hasValidPickup = Boolean(pickupLocation && isValidPickupGeoLocation(pickupLocation));
   const hasValidDropoff = Boolean(dropoffLocation && isValidPickupGeoLocation(dropoffLocation));
   const isInvalidRoute = !isTripValid || !hasValidPickup || !hasValidDropoff;
   const isArrivedAtPickup = requestStatus === 'DRIVER_ARRIVED_PICKUP';
+  const isPickupFormExpanded = showPickupForm ?? isArrivedAtPickup;
   const isPrimaryActionBusy =
     isLoadingLocation || isSubmittingArrival || isSubmittingPickup || isAwaitingArrivalConfirmation;
 
@@ -275,95 +281,104 @@ export default function GoToPickupScreen() {
     void translateDynamicBatch({
       items,
       targetLanguage: targetLanguage as AppLanguage,
-    }).then((translations) => {
-      if (active) {
-        setTranslatedTextByKey(translations);
-      }
-    }).catch(() => {
-      if (active) {
-        setTranslatedTextByKey({});
-      }
-    });
+    })
+      .then((translations) => {
+        if (active) {
+          setTranslatedTextByKey(translations);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setTranslatedTextByKey({});
+        }
+      });
 
     return () => {
       active = false;
     };
   }, [dropoffLocation?.address, i18n.language, pickupLocation?.address]);
 
-  const refreshDriverLocation = useCallback(async (showLoader = false): Promise<GeoLocation | null> => {
-    if (showLoader) {
-      setIsRefreshingLocation(true);
-    }
-
-    setLocationMessage('');
-    setRouteError('');
-
-    try {
-      const permission = await Location.getForegroundPermissionsAsync();
-      if (permission.status !== 'granted') {
-        setLocationMessage(t('Location permission denied. Please enable location permission for driver tracking.'));
-        return null;
+  const refreshDriverLocation = useCallback(
+    async (showLoader = false): Promise<GeoLocation | null> => {
+      if (showLoader) {
+        setIsRefreshingLocation(true);
       }
 
-      const servicesEnabled = await Location.hasServicesEnabledAsync();
-      if (!servicesEnabled) {
-        setLocationMessage(t('GPS is unavailable. Please enable location services.'));
-        return null;
-      }
-
-      const current = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-
-      const currentLocation: GeoLocation = {
-        latitude: current.coords.latitude,
-        longitude: current.coords.longitude,
-      };
-
-      if (!isValidGeoLocation(currentLocation)) {
-        setLocationMessage(t('Unable to get a valid driver location. Please try again.'));
-        return null;
-      }
-
-      setDriverLocation(currentLocation);
+      setLocationMessage('');
+      setRouteError('');
 
       try {
-        emitDriverLocationUpdate({
-          tripId,
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          heading: typeof current.coords.heading === 'number' ? current.coords.heading : undefined,
-          speed: typeof current.coords.speed === 'number' ? current.coords.speed : undefined,
-          accuracy: typeof current.coords.accuracy === 'number' ? current.coords.accuracy : undefined,
-        });
-        lastEmitLocationRef.current = currentLocation;
-        lastEmitAtRef.current = Date.now();
-      } catch (error) {
-        setSocketError(error instanceof Error ? error.message : t('Socket connection failed.'));
-      }
+        const permission = await Location.getForegroundPermissionsAsync();
+        if (permission.status !== 'granted') {
+          setLocationMessage(
+            t('Location permission denied. Please enable location permission for driver tracking.'),
+          );
+          return null;
+        }
 
-      return currentLocation;
-    } catch (error) {
-      setLocationMessage(
-        error instanceof Error
-          ? error.message
-          : t('Unable to get current location. Please verify GPS availability.'),
-      );
-      return null;
-    } finally {
-      if (showLoader) {
-        setIsRefreshingLocation(false);
+        const servicesEnabled = await Location.hasServicesEnabledAsync();
+        if (!servicesEnabled) {
+          setLocationMessage(t('GPS is unavailable. Please enable location services.'));
+          return null;
+        }
+
+        const current = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        });
+
+        const currentLocation: GeoLocation = {
+          latitude: current.coords.latitude,
+          longitude: current.coords.longitude,
+        };
+
+        if (!isValidGeoLocation(currentLocation)) {
+          setLocationMessage(t('Unable to get a valid driver location. Please try again.'));
+          return null;
+        }
+
+        setDriverLocation(currentLocation);
+
+        try {
+          emitDriverLocationUpdate({
+            tripId,
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+            heading:
+              typeof current.coords.heading === 'number' ? current.coords.heading : undefined,
+            speed: typeof current.coords.speed === 'number' ? current.coords.speed : undefined,
+            accuracy:
+              typeof current.coords.accuracy === 'number' ? current.coords.accuracy : undefined,
+          });
+          lastEmitLocationRef.current = currentLocation;
+          lastEmitAtRef.current = Date.now();
+        } catch (error) {
+          setSocketError(error instanceof Error ? error.message : t('Socket connection failed.'));
+        }
+
+        return currentLocation;
+      } catch (error) {
+        setLocationMessage(
+          error instanceof Error
+            ? error.message
+            : t('Unable to get current location. Please verify GPS availability.'),
+        );
+        return null;
+      } finally {
+        if (showLoader) {
+          setIsRefreshingLocation(false);
+        }
       }
-    }
-  }, [
-    setDriverLocation,
-    setIsRefreshingLocation,
-    setLocationMessage,
-    setRouteError,
-    setSocketError,
-    t,
-    tripId,
-  ]);
+    },
+    [
+      setDriverLocation,
+      setIsRefreshingLocation,
+      setLocationMessage,
+      setRouteError,
+      setSocketError,
+      t,
+      tripId,
+    ],
+  );
 
   useEffect(() => {
     let active = true;
@@ -456,8 +471,12 @@ export default function GoToPickupScreen() {
         tripStatusUnsub = onTripStatusUpdated((payload) => {
           if (payload.tripId !== validTripId) return;
           setRequestStatus(payload.status);
-          if (isTerminalRequestStatus(payload.status)) void stopBackgroundTripTracking(validTripId).catch(() => undefined);
-          if (payload.status === 'DRIVER_ARRIVED_PICKUP' || isDeliveryPhaseRequestStatus(payload.status)) {
+          if (isTerminalRequestStatus(payload.status))
+            void stopBackgroundTripTracking(validTripId).catch(() => undefined);
+          if (
+            payload.status === 'DRIVER_ARRIVED_PICKUP' ||
+            isDeliveryPhaseRequestStatus(payload.status)
+          ) {
             setIsAwaitingArrivalConfirmation(false);
           }
           if (isDeliveryPhaseRequestStatus(payload.status)) {
@@ -477,7 +496,9 @@ export default function GoToPickupScreen() {
       if (!active) return;
 
       if (permission.status !== 'granted') {
-        setLocationMessage(t('Location permission denied. Please enable location permission for driver tracking.'));
+        setLocationMessage(
+          t('Location permission denied. Please enable location permission for driver tracking.'),
+        );
         setIsLoadingLocation(false);
         return;
       }
@@ -518,7 +539,10 @@ export default function GoToPickupScreen() {
               ? calculateDistanceMeters(lastLocation, liveLocation)
               : Number.POSITIVE_INFINITY;
 
-            if (distanceMoved < EMIT_DISTANCE_THRESHOLD_METERS && timeElapsed < EMIT_TIME_THRESHOLD_MS) {
+            if (
+              distanceMoved < EMIT_DISTANCE_THRESHOLD_METERS &&
+              timeElapsed < EMIT_TIME_THRESHOLD_MS
+            ) {
               return;
             }
 
@@ -527,14 +551,21 @@ export default function GoToPickupScreen() {
                 tripId: validTripId,
                 latitude: liveLocation.latitude,
                 longitude: liveLocation.longitude,
-                heading: typeof position.coords.heading === 'number' ? position.coords.heading : undefined,
-                speed: typeof position.coords.speed === 'number' ? position.coords.speed : undefined,
-                accuracy: typeof position.coords.accuracy === 'number' ? position.coords.accuracy : undefined,
+                heading:
+                  typeof position.coords.heading === 'number' ? position.coords.heading : undefined,
+                speed:
+                  typeof position.coords.speed === 'number' ? position.coords.speed : undefined,
+                accuracy:
+                  typeof position.coords.accuracy === 'number'
+                    ? position.coords.accuracy
+                    : undefined,
               });
               lastEmitLocationRef.current = liveLocation;
               lastEmitAtRef.current = now;
             } catch (error) {
-              setSocketError(error instanceof Error ? error.message : t('Socket connection failed.'));
+              setSocketError(
+                error instanceof Error ? error.message : t('Socket connection failed.'),
+              );
             }
           },
         );
@@ -545,11 +576,23 @@ export default function GoToPickupScreen() {
         }
 
         locationSubscriptionRef.current = subscription;
-        void startBackgroundTripTracking(validTripId, () => active).then((started) => {
-          if (active && !started) setLocationMessage(t('Keep this screen open for live tracking, or enable background location in device settings.'));
-        }).catch(() => {
-          if (active) setLocationMessage(t('Keep this screen open for live tracking, or enable background location in device settings.'));
-        });
+        void startBackgroundTripTracking(validTripId, () => active)
+          .then((started) => {
+            if (active && !started)
+              setLocationMessage(
+                t(
+                  'Keep this screen open for live tracking, or enable background location in device settings.',
+                ),
+              );
+          })
+          .catch(() => {
+            if (active)
+              setLocationMessage(
+                t(
+                  'Keep this screen open for live tracking, or enable background location in device settings.',
+                ),
+              );
+          });
       } catch (error) {
         setLocationMessage(
           error instanceof Error
@@ -588,7 +631,17 @@ export default function GoToPickupScreen() {
         leaveTripRoom(validTripId);
       }
     };
-  }, [accessToken, deliverRoute, dropoffLocation, isInvalidRoute, pickupLocation, refreshDriverLocation, router, t, tripId]);
+  }, [
+    accessToken,
+    deliverRoute,
+    dropoffLocation,
+    isInvalidRoute,
+    pickupLocation,
+    refreshDriverLocation,
+    router,
+    t,
+    tripId,
+  ]);
 
   const appendProofPhotos = (assets: LocalDocumentAsset[]): void => {
     setProofPhotos((current) => [...current, ...assets].slice(0, MAX_PROOF_PHOTOS));
@@ -649,9 +702,14 @@ export default function GoToPickupScreen() {
 
     if (requestStatus === 'DRIVER_ASSIGNED') {
       setIsSubmittingArrival(true);
-      try { const started = await startReservedPickup(validTripId); setRequestStatus(started.status); }
-      catch (error) { setSubmitError(error instanceof Error ? error.message : t('Unable to start pickup.')); }
-      finally { setIsSubmittingArrival(false); }
+      try {
+        const started = await startReservedPickup(validTripId);
+        setRequestStatus(started.status);
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : t('Unable to start pickup.'));
+      } finally {
+        setIsSubmittingArrival(false);
+      }
       return;
     }
 
@@ -681,7 +739,9 @@ export default function GoToPickupScreen() {
       setLocationMessage(t('Arrival confirmation sent. Waiting for trip status update.'));
     } catch (error) {
       setIsAwaitingArrivalConfirmation(false);
-      setSubmitError(error instanceof Error ? error.message : t('Failed to send arrival confirmation.'));
+      setSubmitError(
+        error instanceof Error ? error.message : t('Failed to send arrival confirmation.'),
+      );
     } finally {
       setIsSubmittingArrival(false);
     }
@@ -735,9 +795,7 @@ export default function GoToPickupScreen() {
       }
 
       const canSendLocation =
-        latestLocation && pickupLocation
-          ? canConfirmPickup(latestLocation, pickupLocation)
-          : false;
+        latestLocation && pickupLocation ? canConfirmPickup(latestLocation, pickupLocation) : false;
 
       const payload: PickupItemRequest = {
         notes: notes.trim() || undefined,
@@ -748,9 +806,12 @@ export default function GoToPickupScreen() {
 
       if (latestLocation && !canSendLocation) {
         setLocationMessage(
-          t('GPS shows you are farther than {{distance}}m from pickup. Sending confirmation without coordinates.', {
-            distance: PICKUP_CONFIRM_RADIUS_METERS,
-          }),
+          t(
+            'GPS shows you are farther than {{distance}}m from pickup. Sending confirmation without coordinates.',
+            {
+              distance: PICKUP_CONFIRM_RADIUS_METERS,
+            },
+          ),
         );
       }
 
@@ -774,44 +835,21 @@ export default function GoToPickupScreen() {
     }
   };
 
-  const onSendFakeLocationPress = (): void => {
-    setSocketError('');
-    setLocationMessage('');
-    setRouteError('');
-
-    const validTripId = validateTripId(tripId);
-    if (!validTripId) {
-      setSubmitError(t('Invalid trip id.'));
-      return;
-    }
-
-    if (!pickupLocation) return;
-
-    const nextLocation =
-      TEST_FAKE_LOCATIONS[fakeLocationIndexRef.current] ??
-      { latitude: pickupLocation.latitude, longitude: pickupLocation.longitude };
-
-    setDriverLocation(nextLocation);
-    setIsLoadingLocation(false);
-
-    try {
-      emitDriverLocationUpdate({
-        tripId: validTripId,
-        latitude: nextLocation.latitude,
-        longitude: nextLocation.longitude,
-      });
-      lastEmitLocationRef.current = nextLocation;
-      lastEmitAtRef.current = Date.now();
-      fakeLocationIndexRef.current = (fakeLocationIndexRef.current + 1) % TEST_FAKE_LOCATIONS.length;
-    } catch (error) {
-      setSocketError(error instanceof Error ? error.message : t('Socket connection failed.'));
-    }
-  };
-
   if (isInvalidRoute || !pickupLocation || !dropoffLocation) {
     return (
       <SafeAreaView style={styles.centeredContainer}>
-        <Text style={styles.errorText}>{t('Invalid trip data. Please reopen this trip from Accepted Jobs.')}</Text>
+        <Stack.Screen options={{ headerShown: false }} />
+        <DriverCard style={{ width: '100%', maxWidth: driverLayout.maxWidth }}>
+          <DriverNotice
+            tone="warning"
+            title={t('pickupUi.tripUnavailable')}
+            description={t('Invalid trip data. Please reopen this trip from Accepted Jobs.')}
+          />
+          <DriverButton
+            label={t('Accepted Jobs')}
+            onPress={() => router.replace('/accepted-jobs')}
+          />
+        </DriverCard>
       </SafeAreaView>
     );
   }
@@ -823,506 +861,399 @@ export default function GoToPickupScreen() {
     Boolean(payloadValidationMessage) ||
     (!isArrivedAtPickup && requestStatus !== 'DRIVER_ASSIGNED' && !canArriveNow);
 
-  const primaryActionLabel = requestStatus === 'DRIVER_ASSIGNED' ? t('Start pickup trip') : isArrivedAtPickup
-    ? isSubmittingPickup
-      ? t('Submitting Pickup...')
-      : t('Submit Pickup')
-    : isAwaitingArrivalConfirmation
-      ? t('Marking Arrival...')
-      : isSubmittingArrival
-        ? t('Sending Arrival...')
-        : t('Mark Arrived at Pickup');
+  const primaryActionLabel =
+    requestStatus === 'DRIVER_ASSIGNED'
+      ? t('pickupUi.startTrip')
+      : isArrivedAtPickup
+        ? t('pickupUi.confirmPickup')
+        : t('pickupUi.confirmArrival');
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ title: isArrivedAtPickup ? t('Pickup Item') : t('Go to Pickup Location') }} />
-      <View style={[styles.mapContainer, { height: isMapFullscreen ? windowHeight : windowHeight * 0.5 }]}>
-        {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
-          <NativeMapView
-            provider={PROVIDER_GOOGLE}
-            style={styles.map}
-            initialRegion={{
-              latitude: driverLocation?.latitude ?? pickupLocation.latitude,
-              longitude: driverLocation?.longitude ?? pickupLocation.longitude,
-              latitudeDelta: 0.03,
-              longitudeDelta: 0.03,
-            }}
-          >
-            {driverLocation ? (
-              <NativeMarker coordinate={driverLocation} title={t('Driver')} anchor={{ x: 0.5, y: 0.5 }}>
-                <Text style={styles.driverMarkerIcon}>🚗</Text>
-              </NativeMarker>
-            ) : null}
-            <NativeMarker coordinate={pickupLocation} title={t('Pickup')} anchor={{ x: 0.5, y: 0.5 }}>
-              <View style={styles.pickupMarker}>
-                <SymbolView
-                  name={{ ios: 'mappin.circle.fill', android: 'location_on', web: 'location_on' }}
-                  tintColor="#FFFFFF"
-                  size={18}
-                />
-              </View>
-            </NativeMarker>
-            <NativeMarker coordinate={dropoffLocation} title={t('Dropoff')} anchor={{ x: 0.5, y: 0.5 }}>
-              <View style={styles.dropoffMarker}>
-                <SymbolView
-                  name={{ ios: 'flag.fill', android: 'flag', web: 'flag' }}
-                  tintColor="#FFFFFF"
-                  size={16}
-                />
-              </View>
-            </NativeMarker>
-            {driverLocation ? (
-              <DriverRoutePolyline
-                origin={driverLocation}
-                destination={pickupLocation}
-                apikey={mapsApiKey}
-                strokeWidth={4}
-                strokeColor="#F1B900"
-                onError={(message: string) => {
-                  setRouteError(`Route error: ${message}`);
-                }}
+    <SafeAreaView style={[styles.container, { direction: i18n.dir() }]} edges={['top', 'bottom']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <KeyboardAvoidingView
+        style={styles.keyboardArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {!isMapFullscreen ? (
+          <DriverPageHeader
+            title={t('pickupUi.pickup')}
+            subtitle={t('pickupUi.tripReference', { id: tripId.slice(-8).toUpperCase() })}
+            backLabel={t('Back')}
+            rtl={i18n.dir() === 'rtl'}
+            onBack={() => (router.canGoBack() ? router.back() : router.replace('/accepted-jobs'))}
+            trailing={
+              <DriverStatus
+                label={
+                  isArrivedAtPickup
+                    ? t('pickupUi.atPickup')
+                    : requestStatus === 'DRIVER_ASSIGNED'
+                      ? t('pickupUi.ready')
+                      : t('pickupUi.enRoute')
+                }
+                tone={isArrivedAtPickup ? 'success' : 'neutral'}
               />
-            ) : null}
-          </NativeMapView>
-        ) : (
-          <View style={styles.centeredMapState}>
-            <Text style={styles.warningText}>
-              {t('Google Maps key missing. Set EXPO_PUBLIC_GOOGLE_MAPS_API_KEY to enable map preview.')}
-            </Text>
-          </View>
-        )}
-        <Pressable
-          style={styles.mapToggleButton}
-          onPress={() => setIsMapFullscreen((value) => !value)}
-        >
-          <SymbolView
-            name={{
-              ios: isMapFullscreen ? 'arrow.down.right.and.arrow.up.left' : 'arrow.up.left.and.arrow.down.right',
-              android: isMapFullscreen ? 'fullscreen_exit' : 'fullscreen',
-              web: isMapFullscreen ? 'fullscreen_exit' : 'fullscreen',
-            }}
-            size={20}
-            weight="bold"
-            tintColor="#FFFFFF"
+            }
           />
-        </Pressable>
-      </View>
-
-      <ScrollView
-        style={[styles.bottomScroll, isMapFullscreen && styles.hidden]}
-        contentContainerStyle={[
-          styles.bottomCard,
-          keyboardInset > 0 ? { paddingBottom: 32 + keyboardInset } : undefined,
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>{isArrivedAtPickup ? t('Pickup Item') : t('Go to Pickup Location')}</Text>
-        <Text style={styles.addressText}>
-          {translatedTextByKey.pickupAddress || formatDisplayAddress(pickupLocation.address, 'Pickup address unavailable', t)}
-        </Text>
-        <Text style={styles.subText}>{t('Trip ID')}: {tripId}</Text>
-        <Text style={styles.subText}>
-          {t('Dropoff')}: {translatedTextByKey.dropoffAddress || formatDisplayAddress(dropoffLocation.address, 'Dropoff address unavailable', t)}
-        </Text>
-        <DriverChatButton transportRequestId={tripId} requestStatus={requestStatus} />
-        <Text style={styles.distanceText}>
-          {t('Distance to pickup')}:{' '}
-          {distanceMeters !== null ? `${(distanceMeters / 1000).toFixed(2)} km` : '--'}
-        </Text>
-
-        <Pressable
-          style={[styles.secondaryActionButton, isRefreshingLocation && styles.disabledSecondaryActionButton]}
-          onPress={() => void refreshDriverLocation(true)}
-          disabled={isRefreshingLocation}
-        >
-          <Text style={styles.secondaryActionButtonText}>
-            {isRefreshingLocation ? t('Refreshing location...') : t('Refresh Driver Location')}
-          </Text>
-        </Pressable>
-
-        {!isArrivedAtPickup ? (
-          <Text style={styles.infoText}>
-            {t('Move within {{distance}}m of the pickup point to mark arrival, then submit the pickup from this same screen.', {
-              distance: PICKUP_ARRIVAL_RADIUS_METERS,
-            })}
-          </Text>
-        ) : (
-          <Text style={styles.infoText}>
-            {t('You are marked arrived. Add optional notes, attach proof photos, then submit pickup.')}
-          </Text>
-        )}
-
-        {tooFarFromPickup && isArrivedAtPickup ? (
-          <Text style={styles.warningText}>
-            {t('GPS distance is above {{distance}}m. Pickup can still be submitted without coordinates.', {
-              distance: PICKUP_CONFIRM_RADIUS_METERS,
-            })}
-          </Text>
         ) : null}
-        {locationMessage ? <Text style={styles.infoText}>{locationMessage}</Text> : null}
-        {routeError ? <Text style={styles.warningText}>{routeError}</Text> : null}
-        {socketError ? <Text style={styles.warningText}>{socketError}</Text> : null}
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Pickup Notes (Optional)')}</Text>
-          <TextInput
-            style={styles.textArea}
-            multiline
-            numberOfLines={4}
-            placeholder={t('Package received from customer.')}
-            value={notes}
-            onChangeText={setNotes}
-            maxLength={500}
-          />
-          <Text style={styles.hintText}>{notes.trim().length}/500</Text>
-
-          <Text style={styles.sectionTitle}>{t('Proof Photos')}</Text>
-          <Text style={styles.metaText}>
-            {t('Select multiple images from the gallery or capture more photos with the camera. Max {{count}}.', {
-              count: MAX_PROOF_PHOTOS,
-            })}
-          </Text>
-          {proofPhotos.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.proofRow}>
-              {proofPhotos.map((photo, index) => (
-                <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
-                  <Image source={{ uri: photo.uri }} style={styles.proofPreview} resizeMode="cover" />
-                  <Text style={styles.proofName} numberOfLines={1}>
-                    {photo.fileName?.trim() || `${t('Proof')} ${index + 1}`}
-                  </Text>
-                  <Pressable
-                    style={styles.removeProofButton}
-                    onPress={() =>
-                      setProofPhotos((current) => current.filter((_, currentIndex) => currentIndex !== index))
-                    }
-                  >
-                    <Text style={styles.removeProofButtonText}>{t('Remove')}</Text>
-                  </Pressable>
-                </View>
-              ))}
-            </ScrollView>
+        <ScrollView
+          style={styles.bottomScroll}
+          contentContainerStyle={[styles.bottomCard, isMapFullscreen && styles.fullscreenContent]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {!isMapFullscreen ? (
+            <View style={styles.intro}>
+              <TripProgress />
+              <DriverText variant="display">
+                {isArrivedAtPickup
+                  ? t('pickupUi.confirmPickupTitle')
+                  : requestStatus === 'DRIVER_ASSIGNED'
+                    ? t('pickupUi.readyTitle')
+                    : t('pickupUi.headingToPickup')}
+              </DriverText>
+              {isArrivedAtPickup ? (
+                <DriverText secondary>{t('pickupUi.confirmPickupBody')}</DriverText>
+              ) : null}
+            </View>
           ) : null}
-
-          <View style={styles.uploadActions}>
-            <Pressable
-              style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
-              onPress={() => void onSelectProofPhotos()}
-              disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
-            >
-              <Text style={styles.uploadButtonText}>{t('Choose Images')}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.uploadButton, proofPhotos.length >= MAX_PROOF_PHOTOS && styles.disabledUploadButton]}
-              onPress={() => void onTakeProofPhoto()}
-              disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
-            >
-              <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
-            </Pressable>
-            {proofPhotos.length > 0 ? (
-              <Pressable style={styles.clearButton} onPress={() => setProofPhotos([])}>
-                <Text style={styles.clearButtonText}>{t('Clear All')}</Text>
+          <View
+            style={[
+              styles.mapCard,
+              {
+                height: isMapFullscreen
+                  ? windowHeight - 80
+                  : Math.max(220, Math.min(300, windowHeight * 0.3)),
+              },
+            ]}
+          >
+            {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
+              <NativeMapView
+                provider={PROVIDER_GOOGLE}
+                style={styles.map}
+                initialRegion={{
+                  latitude: driverLocation?.latitude ?? pickupLocation.latitude,
+                  longitude: driverLocation?.longitude ?? pickupLocation.longitude,
+                  latitudeDelta: 0.03,
+                  longitudeDelta: 0.03,
+                }}
+              >
+                {driverLocation ? (
+                  <NativeMarker
+                    coordinate={driverLocation}
+                    title={t('Driver')}
+                    anchor={{ x: 0.5, y: 0.5 }}
+                  >
+                    <View style={styles.driverMarker}>
+                      <DriverIcon
+                        name={{ ios: 'car.fill', android: 'local_shipping', web: 'local_shipping' }}
+                        color={colors.onStrong}
+                        size={22}
+                      />
+                    </View>
+                  </NativeMarker>
+                ) : null}
+                <NativeMarker
+                  coordinate={pickupLocation}
+                  title={t('Pickup')}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                >
+                  <View style={styles.pickupMarker}>
+                    <DriverIcon
+                      name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }}
+                      color={colors.onPrimary}
+                    />
+                  </View>
+                </NativeMarker>
+                <NativeMarker
+                  coordinate={dropoffLocation}
+                  title={t('Dropoff')}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                >
+                  <View style={styles.dropoffMarker}>
+                    <DriverIcon
+                      name={{ ios: 'flag.fill', android: 'flag', web: 'flag' }}
+                      color={colors.onStrong}
+                    />
+                  </View>
+                </NativeMarker>
+                {driverLocation ? (
+                  <DriverRoutePolyline
+                    origin={driverLocation}
+                    destination={pickupLocation}
+                    apikey={mapsApiKey}
+                    strokeWidth={5}
+                    strokeColor={colors.accent}
+                    onError={(message: string) => setRouteError(message)}
+                  />
+                ) : null}
+              </NativeMapView>
+            ) : (
+              <View style={styles.centeredMapState}>
+                <View style={styles.mapPlaceholderIcon}>
+                  <DriverIcon name={{ ios: 'map', android: 'map', web: 'map' }} size={32} />
+                </View>
+                <DriverText variant="section">{t('pickupUi.mapUnavailable')}</DriverText>
+                <DriverText variant="caption" secondary>
+                  {t('pickupUi.mapFallback')}
+                </DriverText>
+              </View>
+            )}
+            <View style={styles.mapTopControls}>
+              <View style={styles.distanceBadge}>
+                <DriverIcon
+                  name={{ ios: 'location', android: 'near_me', web: 'near_me' }}
+                  size={16}
+                  color={colors.text}
+                />
+                <DriverText variant="label">
+                  {distanceMeters !== null
+                    ? t('pickupUi.distanceAway', { distance: (distanceMeters / 1000).toFixed(1) })
+                    : isLoadingLocation || isRefreshingLocation
+                      ? t('pickupUi.findingLocation')
+                      : t('pickupUi.locationUnavailable')}
+                </DriverText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isMapFullscreen ? t('pickupUi.closeMap') : t('pickupUi.expandMap')
+                }
+                style={({ pressed }) => [styles.mapToggleButton, pressed && styles.pressed]}
+                onPress={() => setIsMapFullscreen((value) => !value)}
+              >
+                <DriverIcon
+                  name={{
+                    ios: isMapFullscreen
+                      ? 'arrow.down.right.and.arrow.up.left'
+                      : 'arrow.up.left.and.arrow.down.right',
+                    android: isMapFullscreen ? 'fullscreen_exit' : 'fullscreen',
+                    web: isMapFullscreen ? 'fullscreen_exit' : 'fullscreen',
+                  }}
+                  color={colors.text}
+                />
               </Pressable>
-            ) : null}
+            </View>
+            <View style={styles.mapBottomControls}>
+              <DriverButton
+                variant="secondary"
+                label={
+                  isRefreshingLocation ? t('pickupUi.locating') : t('pickupUi.refreshLocation')
+                }
+                loading={isRefreshingLocation}
+                icon={{ ios: 'location', android: 'my_location', web: 'my_location' }}
+                onPress={() => void refreshDriverLocation(true)}
+              />
+            </View>
           </View>
-        </View>
-
-        {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
-
-        <Pressable
-          style={styles.secondaryActionButton}
-          onPress={() =>
-            router.push({
-              pathname: '/trip-expenses',
-              params: { tripId },
-            })
-          }
-        >
-          <Text style={styles.secondaryActionButtonText}>{t('Additional Expenses')}</Text>
-        </Pressable>
-
-        <Pressable style={styles.testButton} onPress={onSendFakeLocationPress}>
-          <Text style={styles.testButtonText}>{t('Send Fake Location')}</Text>
-        </Pressable>
-      </ScrollView>
-
-      <Pressable
-        style={[
-          styles.floatingSubmitButton,
-          actionDisabled && styles.disabledFloatingSubmitButton,
-          isMapFullscreen && styles.hidden,
-          keyboardInset > 0 ? { bottom: 20 + keyboardInset } : undefined,
-        ]}
-        disabled={actionDisabled}
-        onPress={() => void (isArrivedAtPickup ? onConfirmPickup() : onMarkArrived())}
-        accessibilityLabel={primaryActionLabel}
-      >
-        {isPrimaryActionBusy ? <ActivityIndicator size="small" color="#FFFFFF" /> : null}
-        <Text style={styles.floatingSubmitButtonText}>{primaryActionLabel}</Text>
-        {!isPrimaryActionBusy ? (
-          <SymbolView
-            name={{ ios: 'arrow.forward', android: 'arrow_forward', web: 'arrow_forward' }}
-            size={24}
-            weight="bold"
-            tintColor="#FFFFFF"
-          />
+          {!isMapFullscreen ? (
+            <>
+              <TripRouteCard
+                pickup={
+                  translatedTextByKey.pickupAddress ||
+                  formatDisplayAddress(pickupLocation.address, 'Pickup address unavailable', t)
+                }
+                dropoff={
+                  translatedTextByKey.dropoffAddress ||
+                  formatDisplayAddress(dropoffLocation.address, 'Dropoff address unavailable', t)
+                }
+              />
+              {locationMessage ? (
+                <DriverNotice title={t('pickupUi.locationUpdate')} description={locationMessage} />
+              ) : null}
+              {routeError ? (
+                <DriverNotice
+                  tone="warning"
+                  title={t('pickupUi.routeUnavailable')}
+                  description={t('pickupUi.routeUnavailableBody')}
+                />
+              ) : null}
+              {socketError ? (
+                <DriverNotice
+                  tone="warning"
+                  title={t('pickupUi.connectionInterrupted')}
+                  description={t('pickupUi.connectionInterruptedBody')}
+                />
+              ) : null}
+              {tooFarFromPickup && isArrivedAtPickup ? (
+                <DriverNotice
+                  tone="warning"
+                  title={t('pickupUi.locationAccuracy')}
+                  description={t(
+                    'GPS distance is above {{distance}}m. Pickup can still be submitted without coordinates.',
+                    { distance: PICKUP_CONFIRM_RADIUS_METERS },
+                  )}
+                />
+              ) : null}
+              <DriverChatButton
+                transportRequestId={tripId}
+                requestStatus={requestStatus}
+                showUnavailableState
+              />
+              <DriverCard>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('pickupUi.pickupDetails')}
+                  accessibilityState={{ expanded: isPickupFormExpanded }}
+                  onPress={() => setShowPickupForm(!isPickupFormExpanded)}
+                  style={({ pressed }) => [styles.formHeader, pressed && styles.pressed]}
+                >
+                  <View style={styles.formHeading}>
+                    <DriverIcon
+                      name={{ ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }}
+                      color={colors.text}
+                      size={22}
+                    />
+                    <View style={styles.headerCopy}>
+                      <DriverText variant="section">{t('pickupUi.pickupDetails')}</DriverText>
+                      <DriverText variant="caption" secondary>
+                        {t('pickupUi.notesAndPhotos')}
+                      </DriverText>
+                    </View>
+                  </View>
+                  <DriverIcon
+                    name={{
+                      ios: isPickupFormExpanded ? 'chevron.up' : 'chevron.down',
+                      android: isPickupFormExpanded ? 'expand_less' : 'expand_more',
+                      web: isPickupFormExpanded ? 'expand_less' : 'expand_more',
+                    }}
+                  />
+                </Pressable>
+                {isPickupFormExpanded ? (
+                  <View style={styles.formBody}>
+                    <DriverText variant="label">{t('Pickup Notes (Optional)')}</DriverText>
+                    <TextInput
+                      style={styles.textArea}
+                      multiline
+                      numberOfLines={4}
+                      placeholder={t('Package received from customer.')}
+                      placeholderTextColor={colors.textSecondary}
+                      accessibilityLabel={t('Pickup Notes (Optional)')}
+                      value={notes}
+                      onChangeText={setNotes}
+                      maxLength={500}
+                    />
+                    <DriverText variant="caption" secondary style={styles.hintText}>
+                      {notes.length}/500
+                    </DriverText>
+                    <View style={styles.photoHeading}>
+                      <DriverText variant="label">{t('Proof Photos')}</DriverText>
+                      <DriverText variant="caption" secondary>
+                        {proofPhotos.length}/{MAX_PROOF_PHOTOS}
+                      </DriverText>
+                    </View>
+                    {proofPhotos.length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.proofRow}
+                      >
+                        {proofPhotos.map((photo, index) => (
+                          <View key={`${photo.uri}-${index}`} style={styles.proofItem}>
+                            <Image
+                              source={{ uri: photo.uri }}
+                              style={styles.proofPreview}
+                              resizeMode="cover"
+                              accessibilityLabel={t('pickupUi.proofPhoto', { number: index + 1 })}
+                            />
+                            <DriverButton
+                              variant="quiet"
+                              label={t('Remove')}
+                              onPress={() =>
+                                setProofPhotos((current) =>
+                                  current.filter((_, currentIndex) => currentIndex !== index),
+                                )
+                              }
+                            />
+                          </View>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <View style={styles.photoEmpty}>
+                        <DriverIcon
+                          name={{
+                            ios: 'photo.on.rectangle',
+                            android: 'photo_library',
+                            web: 'photo_library',
+                          }}
+                          size={28}
+                        />
+                        <DriverText variant="caption" secondary>
+                          {t('pickupUi.photoHint', { count: MAX_PROOF_PHOTOS })}
+                        </DriverText>
+                      </View>
+                    )}
+                    <View style={styles.uploadActions}>
+                      <DriverButton
+                        variant="secondary"
+                        style={styles.flexButton}
+                        label={t('pickupUi.gallery')}
+                        disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+                        icon={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }}
+                        onPress={() => void onSelectProofPhotos()}
+                      />
+                      <DriverButton
+                        variant="secondary"
+                        style={styles.flexButton}
+                        label={t('pickupUi.camera')}
+                        disabled={proofPhotos.length >= MAX_PROOF_PHOTOS}
+                        icon={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }}
+                        onPress={() => void onTakeProofPhoto()}
+                      />
+                    </View>
+                    {proofPhotos.length > 0 ? (
+                      <DriverButton
+                        variant="quiet"
+                        label={t('Clear All')}
+                        onPress={() => setProofPhotos([])}
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+              </DriverCard>
+              <DriverButton
+                variant="secondary"
+                label={t('Additional Expenses')}
+                icon={{ ios: 'receipt', android: 'receipt_long', web: 'receipt_long' }}
+                onPress={() => router.push({ pathname: '/trip-expenses', params: { tripId } })}
+              />
+              {submitError ? (
+                <DriverNotice
+                  tone="danger"
+                  title={t('pickupUi.actionFailed')}
+                  description={submitError}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </ScrollView>
+        {!isMapFullscreen ? (
+          <View style={styles.footer}>
+            <View style={styles.footerContent}>
+              <DriverText variant="caption" secondary style={styles.footerHint}>
+                {isPrimaryActionBusy
+                  ? t('pickupUi.updatingTrip')
+                  : !driverLocation
+                    ? t('pickupUi.locationRequired')
+                    : isArrivedAtPickup
+                      ? t('pickupUi.readyToConfirm')
+                      : requestStatus === 'DRIVER_ASSIGNED'
+                        ? t('pickupUi.startHint')
+                        : t('pickupUi.arrivalHint', {
+                            distance: PICKUP_ARRIVAL_RADIUS_METERS / 1000,
+                          })}
+              </DriverText>
+              <DriverButton
+                label={primaryActionLabel}
+                disabled={actionDisabled}
+                loading={isPrimaryActionBusy}
+                icon={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
+                onPress={() => void (isArrivedAtPickup ? onConfirmPickup() : onMarkArrived())}
+              />
+            </View>
+          </View>
         ) : null}
-      </Pressable>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  centeredContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#F3F4F6',
-  },
-  mapContainer: {
-    position: 'relative',
-  },
-  map: {
-    flex: 1,
-  },
-  centeredMapState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    backgroundColor: '#D1D5DB',
-  },
-  mapToggleButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(17, 24, 39, 0.72)',
-  },
-  bottomScroll: {
-    flex: 1,
-  },
-  bottomCard: {
-    gap: 14,
-    padding: 20,
-    paddingBottom: 120,
-  },
-  hidden: {
-    display: 'none',
-  },
-  card: {
-    gap: 12,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    shadowColor: '#202020',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  addressText: {
-    fontSize: 16,
-    color: '#374151',
-    lineHeight: 24,
-  },
-  subText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  distanceText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#F1B900',
-    lineHeight: 20,
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#B45309',
-    lineHeight: 20,
-  },
-  errorText: {
-    fontSize: 14,
-    color: '#DC2626',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  textArea: {
-    minHeight: 110,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    textAlignVertical: 'top',
-    fontSize: 15,
-    color: '#111827',
-  },
-  hintText: {
-    textAlign: 'right',
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  metaText: {
-    fontSize: 14,
-    color: '#4B5563',
-    lineHeight: 20,
-  },
-  secondaryActionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
-    paddingVertical: 14,
-  },
-  disabledSecondaryActionButton: {
-    opacity: 0.6,
-  },
-  secondaryActionButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  floatingSubmitButton: {
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#16A34A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 20,
-  },
-  floatingSubmitButtonText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  disabledFloatingSubmitButton: {
-    backgroundColor: '#94A3B8',
-  },
-  testButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    paddingVertical: 12,
-  },
-  testButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#707A8C',
-  },
-  proofRow: {
-    gap: 12,
-    paddingTop: 8,
-  },
-  proofItem: {
-    width: 132,
-    gap: 8,
-  },
-  proofPreview: {
-    width: 132,
-    height: 132,
-    borderRadius: 16,
-    backgroundColor: '#E5E7EB',
-  },
-  proofName: {
-    fontSize: 12,
-    color: '#374151',
-  },
-  removeProofButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: '#FEE2E2',
-    paddingVertical: 8,
-  },
-  removeProofButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#B91C1C',
-  },
-  uploadActions: {
-    gap: 10,
-  },
-  uploadButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#FFF1B8',
-    paddingVertical: 12,
-  },
-  disabledUploadButton: {
-    opacity: 0.5,
-  },
-  uploadButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#F1B900',
-  },
-  clearButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 12,
-  },
-  clearButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4B5563',
-  },
-  pickupMarker: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#1DB954',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dropoffMarker: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#FF4B3E',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  driverMarkerIcon: {
-    fontSize: 28,
-  },
-});

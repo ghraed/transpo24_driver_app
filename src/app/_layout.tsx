@@ -1,11 +1,12 @@
+import { driverType, useDriverColors } from '@/theme/driver-theme';
 import { DriverInteractionBoundary } from '@/components/driver-interaction-boundary';
 import { BackgroundLocationPrompt } from '@/components/background-location-prompt';
 import { useRequestMatchingLocation } from '@/hooks/use-request-matching-location';
 import '@/location/background-trip-tracking';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef } from 'react';
-import { Image, StyleSheet, View, useColorScheme } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { OtaUpdateBanner } from '@/components/ota-update-banner';
@@ -27,6 +28,7 @@ void SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: true, duration: 200 });
 
 function AppNavigator() {
+  const colors = useDriverColors();
   const {
     accessToken,
     driver,
@@ -131,7 +133,13 @@ function AppNavigator() {
       <BackgroundLocationPrompt key={accessToken ?? 'signed-out'} />
       <View style={styles.navigator}>
         <DriverInteractionBoundary>
-        <Stack>
+        <Stack screenOptions={{
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerTitleStyle: driverType.section,
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: colors.canvas },
+        }}>
       <Stack.Screen name="index" options={{ title: t('Driver Login') }} />
       <Stack.Screen name="register" options={{ title: t('Driver Registration') }} />
       <Stack.Screen name="legal" options={{ title: t('Terms & Conditions') }} />
@@ -176,10 +184,8 @@ function AppNavigator() {
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <LocalizationProvider>
         <AuthProvider>
           <AppNavigator />

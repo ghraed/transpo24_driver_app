@@ -187,7 +187,7 @@ function parsePossiblyMalformedJson<T>(rawText: string): T {
   }
 }
 
-async function parseError(response: Response, fallback: string): Promise<Error> {
+async function parseError(response: Pick<Response, 'status' | 'text'>, fallback: string): Promise<Error> {
   const createError = async (sourceMessage: string, code?: string): Promise<ApiResponseError> =>
     new ApiResponseError(
       await localizeResponseMessage(sourceMessage, fallback),
@@ -212,27 +212,13 @@ async function parseError(response: Response, fallback: string): Promise<Error> 
   }
 }
 
-async function buildErrorFromRawText(rawText: string, fallback: string): Promise<Error> {
-  if (!rawText) {
-    return new Error(await localizeResponseMessage(fallback, fallback));
-  }
-
-  try {
-    const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
-    const sourceMessage = normalizeErrorMessage(errorData, fallback);
-    return new ApiResponseError(
-      await localizeResponseMessage(sourceMessage, fallback),
-      0,
-      sourceMessage,
-    );
-  } catch {
-    const sourceMessage = normalizeBackendErrorMessage(rawText, fallback);
-    return new ApiResponseError(
-      await localizeResponseMessage(sourceMessage, fallback),
-      0,
-      sourceMessage,
-    );
-  }
+async function buildErrorFromRawText(
+  rawText: string,
+  fallback: string,
+  status: number,
+): Promise<Error> {
+  // Reuse the normal parser so chat failures retain their HTTP status and code.
+  return parseError({ status, text: async () => rawText }, fallback);
 }
 
 function isMissingChatRouteResponse(status: number, rawText: string): boolean {
@@ -1830,7 +1816,7 @@ export async function getDriverChatRoomByTransportRequestId(
       throw new Error('No chat room is available for this job yet.');
     }
 
-    throw await buildErrorFromRawText(rawText, 'Failed to load chat room.');
+    throw await buildErrorFromRawText(rawText, 'Failed to load chat room.', response.status);
   }
 
   return parseJsonResponse<ChatRoom>(
