@@ -31,6 +31,8 @@ const light = {
   accentSoft: palette.yellowSoft,
   contact: '#0F766E',
   onContact: palette.white,
+  currentLocation: '#4285F4',
+  currentLocationHalo: 'rgba(66, 133, 244, 0.16)',
   pickupMarker: '#1DB954',
   dropoffMarker: '#FF4B3E',
   strong: palette.ink,

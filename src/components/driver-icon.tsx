@@ -15,6 +15,9 @@ export type DriverIconName =
   | 'grid'
   | 'help'
   | 'location'
+  | 'locate'
+  | 'pickup'
+  | 'profile-circle'
   | 'logout'
   | 'map'
   | 'money'
@@ -49,6 +52,9 @@ const symbols: Record<DriverIconName, SymbolViewProps['name']> = {
   grid: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' },
   help: { ios: 'questionmark.circle', android: 'help', web: 'help' },
   location: { ios: 'location', android: 'location_on', web: 'location_on' },
+  locate: { ios: 'location.viewfinder', android: 'my_location', web: 'my_location' },
+  pickup: { ios: 'mappin', android: 'location_on', web: 'location_on' },
+  'profile-circle': { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' },
   map: { ios: 'map', android: 'map', web: 'map' },
   money: { ios: 'banknote', android: 'payments', web: 'payments' },

@@ -4,7 +4,6 @@ import { RequestTypeTabs, type RequestType } from '@/components/request-type-tab
 import { RequestCoverageNotice } from '@/components/request-coverage-notice';
 import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 import * as Location from 'expo-location';
-import { SymbolView } from 'expo-symbols';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useRef, useState } from 'react';
@@ -17,6 +16,24 @@ import { DriverIcon } from '@/components/driver-icon';
 import { NativeMapView, NativeMarker, isNativeMapRuntimeAvailable } from '@/components/native-maps';
 import { getDriverAvailability, getDriverRequestAlerts, updateDriverOnlineStatus } from '@/lib/api';
 import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/types/auth';
+import { driverRadius, driverThemes } from '@/theme/driver-theme';
+
+const colors = driverThemes.light;
+const MAP_ICON_SIZE = 24;
+
+function MapMarkerArtwork({ pickup = false }: { pickup?: boolean }) {
+  return (
+    <View collapsable={false} style={pickup ? styles.pickupMarkerFrame : styles.driverMarkerFrame}>
+      <View style={pickup ? styles.pickupMarker : styles.driverMarker}>
+        {pickup ? (
+          <View style={styles.pickupMarkerGlyph}>
+            <DriverIcon name="pickup" size={MAP_ICON_SIZE} color={colors.onPrimary} />
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 type Coordinate = { latitude: number; longitude: number };
 
@@ -217,48 +234,17 @@ export default function DriverMapScreen() {
                   <MapMarker
                     coordinate={alert.pickup}
                     title={t('Pickup')}
-                    anchor={{ x: 0.5, y: 0.5 }}
+                    anchor={{ x: 0.5, y: 0.92 }}
                     onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })}
                   >
-                    <View style={styles.pickupMarker}>
-                      <SymbolView
-                        name={{ ios: 'mappin.circle.fill', android: 'location_on', web: 'location_on' }}
-                        tintColor="#FFFFFF"
-                        size={18}
-                        resizeMode="scaleAspectFit"
-                      />
-                    </View>
-                  </MapMarker>
-                ) : null}
-                {hasCoordinate(alert.dropoff) ? (
-                  <MapMarker
-                    coordinate={alert.dropoff}
-                    title={t('Dropoff')}
-                    anchor={{ x: 0.5, y: 0.5 }}
-                    onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })}
-                  >
-                    <View style={styles.dropoffMarker}>
-                      <SymbolView
-                        name={{ ios: 'flag.fill', android: 'flag', web: 'flag' }}
-                        tintColor="#FFFFFF"
-                        size={16}
-                        resizeMode="scaleAspectFit"
-                      />
-                    </View>
+                    <MapMarkerArtwork pickup />
                   </MapMarker>
                 ) : null}
               </React.Fragment>
             ))}
             {driverLocation ? (
               <MapMarker coordinate={driverLocation} title={t('Your current location')} anchor={{ x: 0.5, y: 0.5 }}>
-                <View style={styles.driverMarker}>
-                  <SymbolView
-                    name={{ ios: 'car.fill', android: 'directions_car', web: 'directions_car' }}
-                    tintColor="#111827"
-                    size={18}
-                    resizeMode="scaleAspectFit"
-                  />
-                </View>
+                <MapMarkerArtwork />
               </MapMarker>
             ) : null}
           </MapView>
@@ -269,25 +255,28 @@ export default function DriverMapScreen() {
             <View style={[styles.fakeRoad, styles.fakeRoadVertical]} />
             <View style={[styles.fakeRoad, styles.fakeRoadHorizontal]} />
             {driverLocation ? (
-              <View style={styles.driverMarker}>
-                <SymbolView
-                  name={{ ios: 'car.fill', android: 'directions_car', web: 'directions_car' }}
-                  tintColor="#111827"
-                  size={18}
-                  resizeMode="scaleAspectFit"
-                />
-              </View>
+              <MapMarkerArtwork />
             ) : null}
           </View>
         )}
 
         <View style={styles.topOverlay} pointerEvents="box-none">
-          <Pressable style={styles.roundButton} onPress={() => router.push('/driver-profile')}>
-            <DriverIcon name="profile" size={27} strokeWidth={1.9} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('Profile')}
+            style={({ pressed }) => [styles.roundButton, pressed && styles.iconButtonPressed]}
+            onPress={() => router.push('/driver-profile')}
+          >
+            <DriverIcon name="profile-circle" size={MAP_ICON_SIZE} color={colors.text} />
           </Pressable>
           <Text style={styles.title}>{t('Available Jobs')}</Text>
-          <Pressable style={styles.roundButton} onPress={() => router.push('/receive-requests')}>
-            <DriverIcon name="filter" size={27} strokeWidth={1.9} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('Jobs')}
+            style={({ pressed }) => [styles.roundButton, pressed && styles.iconButtonPressed]}
+            onPress={() => router.push('/receive-requests')}
+          >
+            <DriverIcon name="sliders" size={MAP_ICON_SIZE} color={colors.text} />
           </Pressable>
         </View>
 
@@ -321,14 +310,16 @@ export default function DriverMapScreen() {
         {locationMessage ? <Text style={styles.locationMessage}>{locationMessage}</Text> : null}
 
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel={t('Center map on my current location')}
-          style={styles.locationButton}
+          accessibilityState={{ busy: isLocating }}
+          style={({ pressed }) => [styles.locationButton, pressed && styles.iconButtonPressed]}
           onPress={() => void startLocationTracking(false)}
         >
           {isLocating ? (
-            <ActivityIndicator size="small" color="#087FFF" />
+            <ActivityIndicator size="small" color={colors.success} />
           ) : (
-            <DriverIcon name="location" size={29} color="#087FFF" strokeWidth={1.8} />
+            <DriverIcon name="locate" size={MAP_ICON_SIZE} color={colors.success} />
           )}
         </Pressable>
       </View>
@@ -347,8 +338,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   roundButton: {
-    width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF',
-    shadowColor: '#1B1B1B', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
+    width: 52, height: 52, borderRadius: driverRadius.md, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   title: { color: '#181818', fontSize: 23, fontWeight: '800' },
   onlinePill: {
@@ -366,13 +358,29 @@ const styles = StyleSheet.create({
     borderRadius: 14, color: '#707A8C', fontSize: 13, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.94)',
   },
   locationButton: {
-    position: 'absolute', right: 29, bottom: 25, width: 58, height: 58, borderRadius: 29,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', shadowColor: '#1B1B1B',
-    shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 5,
+    position: 'absolute', right: 29, bottom: 25, width: 52, height: 52, borderRadius: driverRadius.md,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border, shadowColor: colors.shadow,
+    shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
-  pickupMarker: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1DB954' },
-  dropoffMarker: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF4B3E' },
-  driverMarker: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9C30B' },
+  iconButtonPressed: { backgroundColor: colors.primarySoft, opacity: 0.8 },
+  // Padding keeps the artwork inside the native map marker's bitmap bounds.
+  pickupMarkerFrame: { width: 60, height: 64, alignItems: 'center', paddingTop: 4 },
+  pickupMarker: {
+    width: 48, height: 48, borderRadius: driverRadius.pill, borderWidth: 3, borderColor: colors.surface,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.success,
+    borderBottomRightRadius: 8, transform: [{ rotate: '45deg' }],
+  },
+  pickupMarkerGlyph: { transform: [{ rotate: '-45deg' }] },
+  driverMarkerFrame: {
+    width: 60, height: 60, borderRadius: driverRadius.pill, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.currentLocationHalo,
+  },
+  driverMarker: {
+    width: 22, height: 22, borderRadius: driverRadius.pill, borderWidth: 3, borderColor: colors.surface,
+    backgroundColor: colors.currentLocation,
+    shadowColor: colors.shadow, shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2,
+  },
   mapFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CDE9CE' },
   gridVertical: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.45)' },
   gridHorizontal: { position: 'absolute', right: 0, left: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.45)' },
