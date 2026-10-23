@@ -1604,20 +1604,23 @@
   "Requests are matched against this radius from your current GPS location.": "Anfragen werden innerhalb dieses Radius um deinen aktuellen GPS-Standort zugeordnet.",
   "OMW": "OMW",
   "omw": {
+    "expandRequests": "Anfragen erweitern",
+    "collapseRequests": "Anfragen einklappen",
+    "saveError": "Deine OMW-Fahrt konnte nicht gespeichert werden. Bitte erneut versuchen.",
     "subtitle": "Unterwegs — planen Sie Ihre Fahrt und wählen Sie eine Hauptroute.",
     "from": "Von",
     "to": "Nach",
     "searchPlace": "Stadt oder Adresse suchen",
     "findRoutes": "Routen suchen",
     "chooseRoute": "Route auswählen",
-    "mainRoutes": "Wählen Sie eine Route auf der Karte oder unten aus. Eine neue Auswahl hebt die vorherige auf.",
+    "mainRoutes": "Tippe auf eine Route auf der Karte, um sie auszuwählen. Eine neue Auswahl hebt die vorherige auf.",
     "oneRoute": "Für diese Fahrt ist eine Hauptroute verfügbar.",
     "routeNumber": "Route {{number}}",
     "metrics": "{{distance}} km · ca. {{minutes}} Min.",
     "useRoute": "Diese Route verwenden",
     "currentRoute": "Ihre OMW-Route",
     "editTrip": "Fahrt bearbeiten",
-    "clearTrip": "Fahrt löschen",
+    "clearTrip": "Fahrt abbrechen",
     "selectPlaces": "Wählen Sie Start und Ziel aus den Vorschlägen, um Routen zu suchen.",
     "noPlaces": "Keine Orte gefunden. Versuchen Sie eine nahe gelegene Stadt oder eine genauere Adresse.",
     "placeError": "Dieser Ort wurde nicht gefunden. Bitte erneut versuchen.",
@@ -1647,5 +1650,6 @@
     "requestDistance": "Abholung {{distance}} km von Ihrer Route entfernt",
     "viewRequest": "Anfrage ansehen",
     "radiusError": "Geben Sie einen Radius von 1 bis 50 km ein."
-  }
+  },
+  "Map shows all open requests. Radius applies to notifications only.": "Die Karte zeigt alle offenen Anfragen. Der Radius gilt nur für Benachrichtigungen."
 }

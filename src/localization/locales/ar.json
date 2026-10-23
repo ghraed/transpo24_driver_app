@@ -1604,20 +1604,23 @@
   "Requests are matched against this radius from your current GPS location.": "تتم مطابقة الطلبات ضمن هذا النطاق من موقع GPS الحالي.",
   "OMW": "OMW",
   "omw": {
+    "expandRequests": "توسيع الطلبات",
+    "collapseRequests": "طي الطلبات",
+    "saveError": "تعذّر حفظ رحلة OMW. يرجى إعادة المحاولة.",
     "subtitle": "في طريقي — حدّد رحلتك واختر طريقاً رئيسياً.",
     "from": "من",
     "to": "إلى",
     "searchPlace": "ابحث عن مدينة أو عنوان",
     "findRoutes": "البحث عن الطرق",
     "chooseRoute": "اختر طريقك",
-    "mainRoutes": "اختر طريقاً واحداً على الخريطة أو أدناه. عند اختيار طريق آخر، يُلغى تحديد الطريق السابق.",
+    "mainRoutes": "اضغط على مسار في الخريطة لاختياره. اختيار مسار آخر يلغي تحديد المسار السابق.",
     "oneRoute": "يتوفر طريق رئيسي واحد لهذه الرحلة.",
     "routeNumber": "الطريق {{number}}",
     "metrics": "{{distance}} كم · حوالي {{minutes}} دقيقة",
     "useRoute": "اعتماد هذا الطريق",
     "currentRoute": "طريقك في OMW",
     "editTrip": "تعديل الرحلة",
-    "clearTrip": "مسح الرحلة",
+    "clearTrip": "إلغاء الرحلة",
     "selectPlaces": "اختر نقطة الانطلاق والوجهة من الاقتراحات للبحث عن الطرق.",
     "noPlaces": "لم يتم العثور على أماكن. جرّب مدينة قريبة أو عنواناً أكثر دقة.",
     "placeError": "تعذّر العثور على هذا المكان. حاول مجدداً.",
@@ -1647,5 +1650,6 @@
     "requestDistance": "يبعد الاستلام {{distance}} كم عن طريقك",
     "viewRequest": "عرض الطلب",
     "radiusError": "أدخل مسافة بين 1 و50 كم."
-  }
+  },
+  "Map shows all open requests. Radius applies to notifications only.": "تعرض الخريطة جميع الطلبات المفتوحة. يُطبّق نطاق المسافة على الإشعارات فقط."
 }

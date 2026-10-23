@@ -1,17 +1,18 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { DriverButton, DriverCard, DriverNotice, DriverStatus, DriverText } from '@/components/ui/driver-ui';
-import { TripRouteCard } from '@/components/ui/trip-ui';
+import { DriverButton, DriverNotice, DriverStatus } from '@/components/ui/driver-ui';
+import { NativeMarker } from '@/components/native-maps';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useDriverAccess } from '@/hooks/use-driver-access';
 import { getDriverRouteRequests } from '@/lib/api';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 import { driverSpace, useDriverColors } from '@/theme/driver-theme';
 import type { OmwRoute } from './routes';
 
-export function OmwRouteRequests({ route, radiusKm }: { route: OmwRoute; radiusKm: number }) {
-  const { t, i18n } = useTranslation();
+export function OmwRouteRequests({ route, radiusKm, children, enabled = true }: { route: OmwRoute; radiusKm: number; enabled?: boolean; children?: (markers: React.ReactNode) => React.ReactNode }) {
+  const { t } = useTranslation();
   const colors = useDriverColors();
   const router = useRouter();
   const { canInteract } = useDriverAccess();
@@ -19,12 +20,15 @@ export function OmwRouteRequests({ route, radiusKm }: { route: OmwRoute; radiusK
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
+  const viewDetails = (requestId: string) => {
+    router.push({ pathname: '/review-request-details', params: { requestId } });
+  };
   useFocusEffect(useCallback(() => {
     let active = true;
     let pending = false;
-    setAlerts([]); setLoading(true); setError(false);
+    setAlerts([]); setLoading(canInteract && enabled); setError(false);
     const load = async () => {
-      if (pending || !canInteract) return;
+      if (pending || !canInteract || !enabled) return;
       pending = true;
       try {
         const result = await getDriverRouteRequests(route.coordinates, radiusKm);
@@ -41,21 +45,29 @@ export function OmwRouteRequests({ route, radiusKm }: { route: OmwRoute; radiusK
     return () => { active = false; clearInterval(timer); };
   // The retry counter intentionally restarts this focused search.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canInteract, route.coordinates, radiusKm, reload]));
+  }, [canInteract, enabled, route.coordinates, radiusKm, reload]));
 
-  if (!canInteract) return <DriverStatus label={t('omw.requestsApproval')} tone="warning" />;
-  return <View style={{ gap: driverSpace.lg }}>
-    <DriverText variant="section">{t('omw.requestsTitle', { count: alerts.length })}</DriverText>
-    {loading ? <ActivityIndicator accessibilityLabel={t('omw.requestsLoading')} color={colors.primary} />
+  const Marker = NativeMarker;
+  const markers = canInteract && Marker ? alerts.filter(alert => typeof alert.pickup.latitude === 'number' && typeof alert.pickup.longitude === 'number').map(alert => (
+    <Marker key={alert.requestId} coordinate={{ latitude: alert.pickup.latitude!, longitude: alert.pickup.longitude! }}
+      title={alert.item?.title || t('Transport Request')} anchor={{ x: 0.5, y: 0.5 }}
+      onPress={(event: { stopPropagation?: () => void }) => { event?.stopPropagation?.(); viewDetails(alert.requestId); }}>
+      <View collapsable={false} style={styles.marker}>
+        <Svg width={48} height={48} viewBox="0 0 48 48">
+          <Circle cx={24} cy={24} r={22} fill={colors.primary} stroke={colors.surface} strokeWidth={3} />
+          <Path d="M10 15h18v17H10z M28 21h6l5 6v5H28 M14 32a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M30 32a3 3 0 1 0 6 0a3 3 0 1 0-6 0"
+            fill="none" stroke={colors.surface} strokeWidth={2.2} strokeLinejoin="round" />
+        </Svg>
+      </View>
+    </Marker>
+  )) : null;
+  return <View style={{ gap: driverSpace.lg, alignSelf: 'stretch' }}>
+    {children?.(markers)}
+    {!canInteract ? <DriverStatus label={t('omw.requestsApproval')} tone="warning" />
+      : loading ? <ActivityIndicator accessibilityLabel={t('omw.requestsLoading')} color={colors.primary} />
       : error ? <DriverNotice title={t('omw.requestsError')} tone="danger"
-        action={<DriverButton label={t('omw.refreshRequests')} variant="quiet" onPress={() => setReload(value => value + 1)} />} />
-      : !alerts.length ? <DriverNotice title={t('omw.noRequests')} description={t('omw.noRequestsHelp')} /> : null}
-    {alerts.map(alert => <DriverCard key={alert.requestId}>
-      <DriverText variant="section">{i18n.language === 'ar' ? alert.service?.nameAr : t(alert.service?.nameEn || 'Transport Request')}</DriverText>
-      <DriverText variant="caption" secondary>{t('omw.requestDistance', { distance: new Intl.NumberFormat(i18n.resolvedLanguage ?? 'en', { maximumFractionDigits: 1 }).format(alert.distanceKm ?? 0) })}</DriverText>
-      <TripRouteCard pickup={alert.pickup.address || t('Pickup')} dropoff={alert.dropoff.address || t('Dropoff')} />
-      <DriverText variant="caption">{alert.schedule.isImmediate ? t('Immediate') : new Date(alert.schedule.scheduledPickupAt!).toLocaleString(i18n.resolvedLanguage ?? 'en')}</DriverText>
-      <DriverButton label={t('omw.viewRequest')} variant="secondary" onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })} />
-    </DriverCard>)}
+        action={<DriverButton label={t('omw.refreshRequests')} variant="quiet" onPress={() => setReload(value => value + 1)} />} /> : null}
   </View>;
 }
+
+const styles = StyleSheet.create({ marker: { width: 48, height: 48 } });

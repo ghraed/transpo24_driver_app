@@ -1175,20 +1175,23 @@
   "Requests are matched against this radius from your current GPS location.": "Le richieste vengono selezionate entro questo raggio dalla tua posizione GPS attuale.",
   "OMW": "OMW",
   "omw": {
+    "expandRequests": "Espandi richieste",
+    "collapseRequests": "Riduci richieste",
+    "saveError": "Impossibile salvare il viaggio OMW. Riprova.",
     "subtitle": "In viaggio: pianifica il tragitto e scegli un percorso principale.",
     "from": "Da",
     "to": "A",
     "searchPlace": "Cerca una città o un indirizzo",
     "findRoutes": "Trova percorsi",
     "chooseRoute": "Scegli il percorso",
-    "mainRoutes": "Scegli un solo percorso sulla mappa o qui sotto. Scegliendone un altro, il precedente viene deselezionato.",
+    "mainRoutes": "Tocca un percorso sulla mappa per selezionarlo. Sceglierne un altro deseleziona il precedente.",
     "oneRoute": "Per questo viaggio è disponibile un percorso principale.",
     "routeNumber": "Percorso {{number}}",
     "metrics": "{{distance}} km · circa {{minutes}} min",
     "useRoute": "Usa questo percorso",
     "currentRoute": "Il tuo percorso OMW",
     "editTrip": "Modifica viaggio",
-    "clearTrip": "Cancella viaggio",
+    "clearTrip": "Annulla viaggio",
     "selectPlaces": "Seleziona partenza e destinazione dai suggerimenti per trovare i percorsi.",
     "noPlaces": "Nessun luogo trovato. Prova una città vicina o un indirizzo più preciso.",
     "placeError": "Impossibile trovare questo luogo. Riprova.",
@@ -1218,5 +1221,6 @@
     "requestDistance": "Ritiro a {{distance}} km dal percorso",
     "viewRequest": "Vedi richiesta",
     "radiusError": "Inserisci un raggio da 1 a 50 km."
-  }
+  },
+  "Map shows all open requests. Radius applies to notifications only.": "La mappa mostra tutte le richieste aperte. Il raggio si applica solo alle notifiche."
 }

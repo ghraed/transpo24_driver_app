@@ -1604,20 +1604,23 @@
   "Requests are matched against this radius from your current GPS location.": "Requests are matched against this radius from your current GPS location.",
   "OMW": "OMW",
   "omw": {
+    "expandRequests": "Expand requests",
+    "collapseRequests": "Collapse requests",
+    "saveError": "Unable to save your OMW trip. Please retry.",
     "subtitle": "On my way — plan your trip and choose a main route.",
     "from": "From",
     "to": "To",
     "searchPlace": "Search for a city or address",
     "findRoutes": "Find routes",
     "chooseRoute": "Choose your route",
-    "mainRoutes": "Choose one route on the map or below. Choosing another route deselects the previous one.",
+    "mainRoutes": "Tap a route on the map to select it. Choosing another route deselects the previous one.",
     "oneRoute": "One main route is available for this trip.",
     "routeNumber": "Route {{number}}",
     "metrics": "{{distance}} km · about {{minutes}} min",
     "useRoute": "Use this route",
     "currentRoute": "Your OMW route",
     "editTrip": "Edit trip",
-    "clearTrip": "Clear trip",
+    "clearTrip": "Cancel trip",
     "selectPlaces": "Select a starting point and destination from the suggestions to find routes.",
     "noPlaces": "No places found. Try a nearby city or a more specific address.",
     "placeError": "Unable to find this place. Please try again.",
@@ -1647,5 +1650,6 @@
     "requestDistance": "Pickup is {{distance}} km from your route",
     "viewRequest": "View request",
     "radiusError": "Enter a radius from 1 to 50 km."
-  }
+  },
+  "Map shows all open requests. Radius applies to notifications only.": "Map shows all open requests. Radius applies to notifications only."
 }

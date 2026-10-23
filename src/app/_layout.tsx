@@ -128,7 +128,7 @@ function AppNavigator() {
   }
 
   return (
-    <OmwProvider key={driver?.id ?? 'signed-out'}>
+    <OmwProvider key={driver?.id ?? 'signed-out'} driverId={driver?.id}>
     <View style={styles.appContainer}>
       <EnvironmentBanner />
       <OtaUpdateBanner />

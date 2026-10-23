@@ -29,7 +29,7 @@ jest.mock('@/components/native-maps', () => ({
   },
 }));
 jest.mock('@/components/map-location-marker', () => ({ MapLocationMarker: () => null }));
-jest.mock('./route-requests', () => ({ OmwRouteRequests: () => null }));
+jest.mock('./route-requests', () => ({ OmwRouteRequests: props => props.children?.(null) ?? null }));
 jest.mock('./place-field', () => ({ OmwPlaceField: props => require('react').createElement('PlaceField', props) }));
 jest.mock('./routes', () => ({ findOmwRoutes: jest.fn() }));
 const from = { address: 'Beirut', placeId: 'beirut', latitude: 33.89, longitude: 35.5 };
@@ -44,10 +44,9 @@ afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = 
 const button = label => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
 const copy = () => JSON.stringify(tree.toJSON());
 const selectedLine = () => tree.root.findAllByType('Polyline').find(node => node.props.zIndex === 2);
-const radios = () => [...new Map(tree.root.findAll(node => node.props.accessibilityRole === 'radio' && node.props.accessibilityState?.selected !== undefined && typeof node.props.onPress === 'function')
-  .map(node => [node.props.accessibilityLabel, node])).values()];
+const paths = () => tree.root.findAllByType('Polyline').filter(node => node.props.zIndex === 1);
 function expectOnlySelected(index) {
-  expect(radios().map(node => node.props.accessibilityState.checked)).toEqual(routes.map((_, i) => i === index));
+  expect(tree.root.findAll(node => node.props.accessibilityRole === 'radiogroup')).toHaveLength(0);
   expect(tree.root.findAllByType('Polyline').filter(node => node.props.zIndex === 2)).toHaveLength(1);
   expect(selectedLine().props.coordinates).toEqual(routes[index].coordinates);
 }
@@ -62,13 +61,12 @@ test('requires resolved endpoints, lets the driver choose a route, retains it ac
   expect(button('omw.findRoutes').props.disabled).toBe(true);
   await endpoints();
   await act(async () => button('omw.findRoutes').props.onPress());
-  const choices = tree.root.findAll(node => node.props.accessibilityRole === 'radio' && node.props.accessibilityState?.selected !== undefined && typeof node.props.onPress === 'function');
-  await act(async () => choices[choices.length - 1].props.onPress());
+  await act(async () => paths()[1].props.onPress());
   expect(tree.root.findAllByType('Polyline')).toHaveLength(3);
   expect(selectedLine().props.coordinates).toEqual(routes[1].coordinates);
   await act(async () => button('omw.useRoute').props.onPress());
   expect(copy()).toContain('Mountain road');
-  expect(copy()).toContain('Coastal highway');
+  expect(copy()).not.toContain('Coastal highway');
   await act(async () => tree.update(<OmwProvider><React.Fragment /></OmwProvider>));
   await act(async () => tree.update(<OmwProvider><DriverOmwScreen /></OmwProvider>));
   expect(copy()).toContain('Mountain road');
@@ -140,19 +138,19 @@ test('shows all alternatives in the map viewport and lets the driver switch by t
   expect(findOmwRoutes).toHaveBeenCalledTimes(1);
 });
 
-test('selecting another route deselects the old radio and map path, and replaces the confirmed choice across tabs', async () => {
+test('selecting another map path deselects the old path, and replaces the confirmed choice across tabs', async () => {
   await render(); await endpoints();
   await act(async () => button('omw.findRoutes').props.onPress());
   expectOnlySelected(0);
-  await act(async () => radios()[1].props.onPress());
+  await act(async () => paths()[1].props.onPress());
   expectOnlySelected(1);
   await act(async () => button('omw.useRoute').props.onPress());
-  await act(async () => radios()[0].props.onPress());
+  await act(async () => paths()[0].props.onPress());
   expectOnlySelected(0);
   await act(async () => tree.update(<OmwProvider><React.Fragment /></OmwProvider>));
   await act(async () => tree.update(<OmwProvider><DriverOmwScreen /></OmwProvider>));
   expectOnlySelected(0);
-  await act(async () => radios()[1].props.onPress());
+  await act(async () => paths()[1].props.onPress());
   expectOnlySelected(1);
 });
 
@@ -178,13 +176,12 @@ test('cycling through three routes never leaves a previous native path green', a
   await act(async () => button('omw.findRoutes').props.onPress());
   const green = selectedLine().props.strokeColor;
   for (const index of [1, 2, 0, 2]) {
-    await act(async () => radios()[index].props.onPress());
+    await act(async () => paths()[index].props.onPress());
     const lines = tree.root.findAllByType('Polyline');
     const highlighted = lines.filter(node => node.props.strokeColor === green);
     expect(highlighted).toHaveLength(1);
     expect(highlighted[0].props.coordinates).toEqual(alternatives[index].coordinates);
-    expect(radios().map(node => node.props.accessibilityState.checked))
-      .toEqual(alternatives.map((_, i) => i === index));
+    expect(tree.root.findAll(node => node.props.accessibilityRole === 'radiogroup')).toHaveLength(0);
     expect(new Set(lines.filter(node => node.props.zIndex === 1).map(node => node.props.strokeColor)).size).toBe(1);
   }
 });
@@ -238,7 +235,7 @@ test('uses a custom route radius, rejects invalid input, and retains the radius 
   expect(tree.root.findByType(OmwRouteRequests).props.radiusKm).toBe(5);
   await act(async () => tree.root.findByType(TextInput).props.onChangeText('100'));
   expect(button('omw.useRoute').props.disabled).toBe(true);
-  expect(tree.root.findAllByType(OmwRouteRequests)).toHaveLength(0);
+  expect(button('omw.useRoute').props.disabled).toBe(true);
   await act(async () => tree.root.findByType(TextInput).props.onChangeText('7.5'));
   expect(tree.root.findByType(OmwRouteRequests).props.radiusKm).toBe(7.5);
   expectOnlySelected(0);

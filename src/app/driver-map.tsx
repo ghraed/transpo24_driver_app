@@ -2,7 +2,6 @@ import { MapLocationMarker, MapLocationIcon } from '@/components/map-location-ma
 import { useDriverAccess } from '@/hooks/use-driver-access';
 import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
-import { RequestCoverageNotice } from '@/components/request-coverage-notice';
 import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -15,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DriverBottomNav } from '@/components/driver-bottom-nav';
 import { DriverIcon } from '@/components/driver-icon';
 import { NativeMapView, NativeMarker, isNativeMapRuntimeAvailable } from '@/components/native-maps';
-import { getDriverAvailability, getDriverRequestAlerts, updateDriverOnlineStatus } from '@/lib/api';
+import { getDriverAvailability, getDriverMapRequests, updateDriverOnlineStatus } from '@/lib/api';
 import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/types/auth';
 import { driverRadius, driverThemes } from '@/theme/driver-theme';
 
@@ -61,7 +60,6 @@ export default function DriverMapScreen() {
   const loadVersion = useRef(0);
   const locationVersion = useRef(0);
   const [requestType, setRequestType] = useState<RequestType>('immediate');
-  const [locationReference, setLocationReference] = useState<'GPS' | 'BASE' | 'NONE'>('NONE');
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [driverLocation, setDriverLocation] = useState<Coordinate | null>(null);
@@ -81,13 +79,12 @@ export default function DriverMapScreen() {
     if (canInteract) await syncRequestMatchingLocation().catch(() => undefined);
     const [availabilityResult, alertsResult] = await Promise.allSettled([
       getDriverAvailability(),
-      getDriverRequestAlerts(),
+      getDriverMapRequests(),
     ]);
     if (version !== loadVersion.current) return;
     if (availabilityResult.status === 'fulfilled') setAvailability(availabilityResult.value);
     if (alertsResult.status === 'fulfilled') {
       setAlerts(alertsResult.value.alerts ?? []);
-      setLocationReference(alertsResult.value.locationReference ?? 'NONE');
     }
     setIsLoading(false);
   }, [canInteract]);
@@ -181,11 +178,12 @@ export default function DriverMapScreen() {
     }
   };
 
-  const initialRegion = driverLocation ? asRegion(driverLocation) : undefined;
+  const initialRegion = driverLocation ? asRegion(driverLocation) : alerts.find(alert => hasCoordinate(alert.pickup))?.pickup;
+  const mapRegion = initialRegion && hasCoordinate(initialRegion) ? asRegion(initialRegion) : undefined;
 
-  // Previously received jobs remain in Jobs; the map displays current matches.
+  // Browse every open request independently of notification eligibility.
   const jobMarkers = alerts.filter(
-    (alert) => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && alert.schedule.isImmediate === (requestType === 'immediate') && hasCoordinate(alert.pickup),
+    (alert) => alert.schedule.isImmediate === (requestType === 'immediate') && hasCoordinate(alert.pickup),
   );
 
   return (
@@ -194,7 +192,7 @@ export default function DriverMapScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.mapArea}>
-        {isNativeMapRuntimeAvailable && !initialRegion ? (
+        {isNativeMapRuntimeAvailable && !mapRegion ? (
           <View style={styles.mapFallback}>
             {isLoading || isLocating ? <ActivityIndicator size="large" color="#087FFF" /> : null}
           </View>
@@ -202,9 +200,9 @@ export default function DriverMapScreen() {
           <MapView
             ref={mapRef}
             style={StyleSheet.absoluteFill}
-            initialRegion={initialRegion}
+            initialRegion={mapRegion}
             onMapReady={() => {
-              if (initialRegion) mapRef.current?.animateToRegion?.(initialRegion, 0);
+              if (mapRegion) mapRef.current?.animateToRegion?.(mapRegion, 0);
             }}
             customMapStyle={SOFT_MAP_STYLE}
             showsCompass={false}
@@ -265,13 +263,13 @@ export default function DriverMapScreen() {
 
         <View style={styles.coverageOverlay}>
           <RequestTypeTabs value={requestType} counts={{
-            immediate: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
-            scheduled: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
+            immediate: alerts.filter(alert => alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
+            scheduled: alerts.filter(alert => !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
           }} onChange={(type) => {
             setRequestType(type);
             if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
           }} />
-          <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />
+          <Text style={{ color: colors.text, backgroundColor: colors.surface, padding: 10, borderRadius: 10, fontSize: 12, textAlign: 'center' }}>{t('Map shows all open requests. Radius applies to notifications only.')}</Text>
         </View>
 
         <Pressable

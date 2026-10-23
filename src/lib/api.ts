@@ -1617,6 +1617,14 @@ export async function resetUsersForTesting(): Promise<ResetUsersForTestingRespon
   };
 }
 
+export async function getDriverMapRequests(): Promise<DriverRequestAlertsResponse> {
+  const response = await fetchWithTimeout(`${getApiBaseUrl()}/driver/requests/map`, {
+    method: 'GET', headers: await getAuthHeaders(),
+  });
+  if (!response.ok) throw await parseError(response, 'Failed to load request alerts.');
+  return parseJsonResponse<DriverRequestAlertsResponse>(response, 'Failed to parse request alerts response.');
+}
+
 export async function getDriverRequestAlerts(): Promise<DriverRequestAlertsResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/requests/alerts`;
   let response: Response;
