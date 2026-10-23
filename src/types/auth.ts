@@ -467,9 +467,6 @@ export interface DriverAvailabilityForm {
   timezone: string;
   isOnline: boolean;
   serviceRadiusKm: string;
-  baseLatitude: string;
-  baseLongitude: string;
-  baseAddress: string;
   acceptsImmediateRequests: boolean;
   acceptsScheduledRequests: boolean;
   weeklySchedule: DriverAvailabilityFormDay[];

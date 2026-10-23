@@ -209,7 +209,7 @@ export default function MyVehiclesScreen() {
             <View style={styles.availabilityCopy}>
               <Text style={styles.availabilityTitle}>{t('Service Radius')}</Text>
               <Text style={styles.availabilitySubtitle}>
-                {t('Requests are matched against this radius from your base location.')}
+                {t('Requests are matched against this radius from your current GPS location.')}
               </Text>
             </View>
             <Pressable
@@ -225,17 +225,7 @@ export default function MyVehiclesScreen() {
           <Text style={styles.metaText}>
             {t('Online')}: {availability?.isOnline ? t('Yes') : t('No')}
           </Text>
-          <Text style={styles.metaText}>
-            {t('Base location')}:{' '}
-            {availability?.baseAddress?.trim()
-              ? availability.baseAddress.trim()
-              : availability?.baseLatitude !== null &&
-                  availability?.baseLatitude !== undefined &&
-                  availability?.baseLongitude !== null &&
-                  availability?.baseLongitude !== undefined
-                ? `${availability.baseLatitude.toFixed(6)}, ${availability.baseLongitude.toFixed(6)}`
-                : t('Not set')}
-          </Text>
+
         </View>
 
         {vehicles.length > 0 ? (

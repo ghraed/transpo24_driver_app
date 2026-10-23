@@ -1165,5 +1165,10 @@
     "distanceHint": "Puoi confermare la consegna entro {{distance}} km dalla destinazione.",
     "confirmHint": "Conferma dopo la consegna al destinatario.",
     "confirmAction": "Conferma consegna"
-  }
+  },
+  "All pickups use your current GPS location. Enable location access to receive requests within your service radius.": "Tutti i ritiri usano la tua posizione GPS attuale. Attiva l’accesso alla posizione per ricevere richieste nel tuo raggio di servizio.",
+  "Enable location access": "Attiva accesso alla posizione",
+  "All pickups use your current GPS location.": "Tutti i ritiri usano la tua posizione GPS attuale.",
+  "Enable GPS and location access to receive requests.": "Attiva il GPS e l’accesso alla posizione per ricevere richieste.",
+  "Requests are matched against this radius from your current GPS location.": "Le richieste vengono selezionate entro questo raggio dalla tua posizione GPS attuale."
 }

@@ -5,7 +5,7 @@ import { syncRequestMatchingLocation } from '@/location/request-matching-locatio
 export function useRequestMatchingLocation(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
-    const refresh = () => { void syncRequestMatchingLocation().catch(() => { /* Existing fixes expire on the server; base coverage remains available. */ }); };
+    const refresh = () => { void syncRequestMatchingLocation().catch(() => { /* Existing fixes expire on the server; matching resumes with a fresh GPS fix. */ }); };
     refresh();
     const timer = setInterval(refresh, 30_000);
     const subscription = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });

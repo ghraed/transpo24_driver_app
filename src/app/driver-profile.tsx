@@ -12,6 +12,7 @@ import { useAuth } from '@/context/auth-context';
 import { getDriverDocumentsStatus, getDriverEarningsSummary, getDriverVehicles } from '@/lib/api';
 import { useAppLanguage } from '@/localization/provider';
 import type { DocumentStatus, DriverDocument, DriverEarningsSummary } from '@/types/auth';
+import { driverSpace } from '@/theme/driver-theme';
 
 type VerificationState = 'verified' | 'pending';
 
@@ -182,8 +183,8 @@ export default function DriverProfileScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.identityCard}>
-          <Text style={styles.sectionTitle}>{t('Account type')}</Text>
+        <View style={[styles.identityCard, styles.accountTypeCard]}>
+          <Text style={[styles.sectionTitle, styles.accountTypeTitle]}>{t('Account type')}</Text>
           <Text style={styles.name}>{t(driver?.driverType === 'COMPANY' ? 'Company' : 'Personal')}</Text>
         </View>
 
@@ -298,6 +299,8 @@ const styles = StyleSheet.create({
     borderColor: '#DFE3E8',
     backgroundColor: '#FFFFFF',
   },
+  accountTypeCard: { minHeight: 0, marginTop: driverSpace.lg, paddingTop: driverSpace.lg, paddingBottom: driverSpace.lg },
+  accountTypeTitle: { marginBottom: driverSpace.xs },
   avatarWrap: { width: 110, height: 110 },
   avatar: {
     width: 98,

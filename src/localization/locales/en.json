@@ -1594,5 +1594,10 @@
     "distanceHint": "Delivery is available within {{distance}} km of dropoff.",
     "confirmHint": "Confirm once the items reach the recipient.",
     "confirmAction": "Confirm delivery"
-  }
+  },
+  "All pickups use your current GPS location. Enable location access to receive requests within your service radius.": "All pickups use your current GPS location. Enable location access to receive requests within your service radius.",
+  "Enable location access": "Enable location access",
+  "All pickups use your current GPS location.": "All pickups use your current GPS location.",
+  "Enable GPS and location access to receive requests.": "Enable GPS and location access to receive requests.",
+  "Requests are matched against this radius from your current GPS location.": "Requests are matched against this radius from your current GPS location."
 }

@@ -194,11 +194,7 @@ export default function DriverMapScreen() {
     }
   };
 
-  const initialRegion = driverLocation
-    ? asRegion(driverLocation)
-    : availability?.baseLatitude != null && availability?.baseLongitude != null
-      ? asRegion({ latitude: availability.baseLatitude, longitude: availability.baseLongitude })
-      : availability?.cityCoverage?.[0] ? asRegion(availability.cityCoverage[0]) : undefined;
+  const initialRegion = driverLocation ? asRegion(driverLocation) : undefined;
 
   // Previously received jobs remain in Jobs; the map displays current matches.
   const jobMarkers = alerts.filter(
@@ -286,10 +282,7 @@ export default function DriverMapScreen() {
             scheduled: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.isCurrentlyEligible !== false && !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
           }} onChange={(type) => {
             setRequestType(type);
-            const pins = type === 'scheduled' ? (availability?.cityCoverage ?? []) : [];
-            if (pins.length > 1) mapRef.current?.fitToCoordinates?.(pins, { edgePadding: { top: 260, right: 40, bottom: 100, left: 40 }, animated: true });
-            else if (pins[0]) mapRef.current?.animateToRegion?.(asRegion(pins[0]), 350);
-            else if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
+            if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
           }} />
           <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />
         </View>

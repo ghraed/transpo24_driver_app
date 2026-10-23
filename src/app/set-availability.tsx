@@ -1,13 +1,9 @@
-import { CityCoverageEditor } from '@/components/city-coverage-editor';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-} from '@/lib/api';
-import {
   ActivityIndicator,
-  AppState,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,35 +15,18 @@ import {
   View,
 } from 'react-native';
 
-import {
-  isNativeMapRuntimeAvailable,
-  MapPressEvent,
-  NativeMapView,
-  NativeMarker,
-  PROVIDER_GOOGLE,
-  Region,
-} from '@/components/native-maps';
 import { getBackendApiBaseUrl } from '@/config/backend';
-import { HAS_GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import { useAuth } from '@/context/auth-context';
 import {
   clearLastOnboardingRoute,
   persistLastOnboardingRoute,
 } from '@/lib/auth-storage';
-import {
-  reverseGeocodeCoordinates,
-  resolvePlaceFromQuery,
-  resolvePlaceSuggestion,
-  searchPlacesAutocomplete,
-  type PlaceAutocompleteSuggestion,
-} from '@/lib/places';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { nextStepToRoute } from '@/lib/onboarding-route';
 import i18n from '@/localization/i18n';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import type {
   DayOfWeek,
-  DriverCityCoverage,
   DriverAvailabilityForm,
   DriverAvailabilityFormDay,
   UpdateDriverAvailabilityPayload,
@@ -74,21 +53,6 @@ const ORDERED_DAYS: DayOfWeek[] = [
   'SUNDAY',
 ];
 
-const DEFAULT_MAP_REGION: Region = {
-  latitude: 33.8938,
-  longitude: 35.5018,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
-};
-
-type SelectedBaseLocation = {
-  latitude: number;
-  longitude: number;
-  address?: string;
-  placeId?: string;
-  source?: 'device' | 'manual' | 'search';
-};
-
 function parseNumber(value: string): number | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -108,32 +72,6 @@ function detectDefaultTimezone(countryCode?: string | null): string {
 
   const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return deviceTimezone || 'UTC';
-}
-
-function formatAddressFromReverseGeocode(
-  reverseGeocodeResult: Location.LocationGeocodedAddress | undefined,
-): string {
-  return [
-    reverseGeocodeResult?.name,
-    reverseGeocodeResult?.street,
-    reverseGeocodeResult?.city,
-    reverseGeocodeResult?.region,
-  ]
-    .filter(Boolean)
-    .join(', ');
-}
-
-function buildRegion(latitude?: number, longitude?: number): Region {
-  if (typeof latitude === 'number' && typeof longitude === 'number') {
-    return {
-      latitude,
-      longitude,
-      latitudeDelta: 0.03,
-      longitudeDelta: 0.03,
-    };
-  }
-
-  return DEFAULT_MAP_REGION;
 }
 
 function createDefaultWeeklySchedule(): DriverAvailabilityFormDay[] {
@@ -164,32 +102,16 @@ export default function SetAvailabilityScreen() {
     timezone: detectDefaultTimezone(driver?.countryCode),
     isOnline: false,
     serviceRadiusKm: '30',
-    baseLatitude: '',
-    baseLongitude: '',
-    baseAddress: '',
     acceptsImmediateRequests: true,
     acceptsScheduledRequests: true,
     weeklySchedule: createDefaultWeeklySchedule(),
   });
 
-  const [cityCoverage, setCityCoverage] = useState<DriverCityCoverage[]>([]);
-  const cities = useMemo(() => driver?.cities ?? [], [driver?.cities]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isGettingLocation, setIsGettingLocation] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
-  const [selectedLocation, setSelectedLocation] = useState<SelectedBaseLocation | null>(null);
-  const [addressQuery, setAddressQuery] = useState<string>('');
-  const [mapRegion, setMapRegion] = useState<Region>(DEFAULT_MAP_REGION);
-  const [locationMessage, setLocationMessage] = useState<string>('');
-  const [isLocationServicesDisabled, setIsLocationServicesDisabled] = useState<boolean>(false);
-  const [searchMessage, setSearchMessage] = useState<string>('');
-  const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
-  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceAutocompleteSuggestion[]>([]);
-  const suppressAutocompleteRef = useRef<boolean>(false);
-  const mapRef = useRef<any>(null);
   const apiBaseUrl = (() => {
     try {
       return getBackendApiBaseUrl();
@@ -207,9 +129,6 @@ export default function SetAvailabilityScreen() {
       timezone: response.timezone || detectDefaultTimezone(driver?.countryCode),
       isOnline: response.isOnline,
       serviceRadiusKm: String(response.serviceRadiusKm ?? 30),
-      baseLatitude: response.baseLatitude !== null ? String(response.baseLatitude) : '',
-      baseLongitude: response.baseLongitude !== null ? String(response.baseLongitude) : '',
-      baseAddress: response.baseAddress ?? '',
       acceptsImmediateRequests: response.acceptsImmediateRequests,
       acceptsScheduledRequests: response.acceptsScheduledRequests,
       weeklySchedule: ORDERED_DAYS.map((day) => {
@@ -223,19 +142,7 @@ export default function SetAvailabilityScreen() {
         };
       }),
     });
-    setCityCoverage((response.cityCoverage ?? []).filter(pin => cities.includes(pin.city)));
-    setAddressQuery(response.baseAddress ?? '');
-    setMapRegion(buildRegion(response.baseLatitude ?? undefined, response.baseLongitude ?? undefined));
-    setSelectedLocation(
-      response.baseLatitude !== null && response.baseLongitude !== null
-        ? {
-            latitude: response.baseLatitude,
-            longitude: response.baseLongitude,
-            address: response.baseAddress ?? undefined,
-          }
-        : null,
-    );
-  }, [driver?.countryCode, cities]);
+  }, [driver?.countryCode]);
 
   const loadAvailability = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -274,28 +181,6 @@ export default function SetAvailabilityScreen() {
       errors.serviceRadiusKm = t('Service radius is required and must be numeric.');
     } else if (radius < 1 || radius > 500) {
       errors.serviceRadiusKm = t('Service radius must be between 1 and 500 km.');
-    }
-
-    const latitude = parseNumber(form.baseLatitude);
-    const longitude = parseNumber(form.baseLongitude);
-
-    if (form.acceptsImmediateRequests && (latitude === undefined || longitude === undefined)) {
-      errors.baseLocation = t('Set a base location for use when GPS is unavailable.');
-    }
-    if (form.acceptsScheduledRequests && (!cities.length || cities.some(city => !cityCoverage.some(pin => pin.city === city)))) {
-      errors.cityCoverage = t('Set a coverage pin for each selected city to receive scheduled requests.');
-    }
-
-    if ((latitude === undefined) !== (longitude === undefined)) {
-      errors.baseLocation = t('Base latitude and longitude must be provided together.');
-    }
-
-    if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
-      errors.baseLatitude = t('Base latitude must be between -90 and 90.');
-    }
-
-    if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
-      errors.baseLongitude = t('Base longitude must be between -180 and 180.');
     }
 
     if (!form.acceptsImmediateRequests && !form.acceptsScheduledRequests) {
@@ -346,7 +231,7 @@ export default function SetAvailabilityScreen() {
     }
 
     return errors;
-  }, [form, t, cities, cityCoverage]);
+  }, [form, t]);
 
   const isFormValid = Object.keys(fieldErrors).length === 0;
 
@@ -369,319 +254,6 @@ export default function SetAvailabilityScreen() {
     }));
   };
 
-  const applySelectedLocation = useCallback((location: SelectedBaseLocation | null): void => {
-    setSelectedLocation(location);
-    setForm((prev) => ({
-      ...prev,
-      baseLatitude: location ? String(location.latitude) : '',
-      baseLongitude: location ? String(location.longitude) : '',
-      baseAddress: location?.address ?? '',
-    }));
-  }, []);
-
-  const resolveSelectionAddress = useCallback(
-    async (latitude: number, longitude: number): Promise<{ address?: string; placeId?: string }> => {
-      try {
-        const resolved = await reverseGeocodeCoordinates(latitude, longitude);
-        if (resolved?.address) {
-          return {
-            address: resolved.address,
-            placeId: resolved.placeId || undefined,
-          };
-        }
-      } catch {
-        // Keep expo-location reverse geocoding as a fallback.
-      }
-
-      try {
-        const reverse = await Location.reverseGeocodeAsync({ latitude, longitude });
-        const formattedAddress = formatAddressFromReverseGeocode(reverse[0]);
-        return formattedAddress ? { address: formattedAddress } : {};
-      } catch {
-        return {};
-      }
-    },
-    [],
-  );
-
-  const applyCurrentLocation = useCallback(
-    async (location: Location.LocationObject) => {
-      const nextRegion: Region = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.03,
-        longitudeDelta: 0.03,
-      };
-
-      setMapRegion(nextRegion);
-      setLocationMessage('');
-      setSubmitError('');
-      setIsLocationServicesDisabled(false);
-      const resolved = await resolveSelectionAddress(
-        location.coords.latitude,
-        location.coords.longitude,
-      );
-
-      const nextLocation: SelectedBaseLocation = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        address: resolved.address || t('Current location'),
-        placeId: resolved.placeId,
-        source: 'device',
-      };
-      mapRef.current?.animateToRegion?.(nextRegion, 350);
-      suppressAutocompleteRef.current = true;
-      setAddressQuery(nextLocation.address ?? '');
-      applySelectedLocation(nextLocation);
-    },
-    [applySelectedLocation, resolveSelectionAddress, t],
-  );
-
-  const loadCurrentLocation = useCallback(async (requestPermission: boolean) => {
-    setIsGettingLocation(true);
-
-    try {
-      const permission = requestPermission
-        ? await Location.requestForegroundPermissionsAsync()
-        : await Location.getForegroundPermissionsAsync();
-
-      if (permission.status !== Location.PermissionStatus.GRANTED) {
-        setIsLocationServicesDisabled(false);
-        setLocationMessage(t('Location permission denied. You can still select a location on the map.'));
-        return;
-      }
-
-      const servicesEnabled = await Location.hasServicesEnabledAsync();
-      if (!servicesEnabled) {
-        setIsLocationServicesDisabled(true);
-        setLocationMessage(
-          t('Location services are off. Turn GPS on to use your current location, or select a location on the map.'),
-        );
-        return;
-      }
-
-      const current = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.BestForNavigation,
-        mayShowUserSettingsDialog: true,
-        timeInterval: 1000,
-        distanceInterval: 1,
-      });
-
-      await applyCurrentLocation(current);
-    } catch {
-      setIsLocationServicesDisabled(false);
-      setLocationMessage(t('Unable to access current location. You can still select a location manually.'));
-    } finally {
-      setIsGettingLocation(false);
-    }
-  }, [applyCurrentLocation, t]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      void loadCurrentLocation(true);
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
-  }, [loadCurrentLocation]);
-
-  useEffect(() => {
-    if (!isLocationServicesDisabled) {
-      return;
-    }
-
-    const intervalId = setInterval(() => {
-      void loadCurrentLocation(false);
-    }, 2500);
-
-    return () => clearInterval(intervalId);
-  }, [isLocationServicesDisabled, loadCurrentLocation]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        void loadCurrentLocation(false);
-      }
-    });
-
-    return () => subscription.remove();
-  }, [loadCurrentLocation]);
-
-  const applyBaseLocationSelection = useCallback(
-    async (
-      latitude: number,
-      longitude: number,
-      address?: string,
-      placeId?: string,
-      source?: SelectedBaseLocation['source'],
-    ): Promise<void> => {
-      let resolvedAddress = address?.trim() || '';
-      let resolvedPlaceId = placeId;
-
-      if (!resolvedAddress) {
-        const resolved = await resolveSelectionAddress(latitude, longitude);
-        resolvedAddress = resolved.address ?? '';
-        resolvedPlaceId = resolved.placeId ?? placeId;
-      }
-
-      const nextLocation: SelectedBaseLocation = {
-        latitude,
-        longitude,
-        address: resolvedAddress || undefined,
-        placeId: resolvedPlaceId,
-        source,
-      };
-
-      suppressAutocompleteRef.current = true;
-      setAddressQuery(nextLocation.address ?? '');
-      const nextRegion = buildRegion(latitude, longitude);
-      setMapRegion(nextRegion);
-      mapRef.current?.animateToRegion?.(nextRegion, 350);
-      applySelectedLocation(nextLocation);
-      setPlaceSuggestions([]);
-      setSearchMessage(
-        nextLocation.address
-          ? t('Pinned: {{address}}', { address: nextLocation.address })
-          : t('Selected base location.'),
-      );
-    },
-    [applySelectedLocation, resolveSelectionAddress, t],
-  );
-
-  useEffect(() => {
-    if (suppressAutocompleteRef.current) {
-      suppressAutocompleteRef.current = false;
-      return;
-    }
-
-    const query = addressQuery.trim();
-
-    if (!query) return;
-
-    if (!HAS_GOOGLE_MAPS_API_KEY) {
-      return;
-    }
-
-    let isCancelled = false;
-    const timeoutId = setTimeout(() => {
-      const loadSuggestions = async (): Promise<void> => {
-        setIsSearchingPlaces(true);
-        try {
-          const suggestions = await searchPlacesAutocomplete(query);
-          if (isCancelled) return;
-          setPlaceSuggestions(suggestions);
-          setSearchMessage(
-            suggestions.length === 0
-              ? t('No matching places found.')
-              : t('Choose a suggested address.'),
-          );
-        } catch (error) {
-          if (isCancelled) return;
-          setPlaceSuggestions([]);
-          setSearchMessage(
-            error instanceof Error ? error.message : t('Places search failed. Please try again.'),
-          );
-        } finally {
-          if (!isCancelled) {
-            setIsSearchingPlaces(false);
-          }
-        }
-      };
-
-      void loadSuggestions();
-    }, 250);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timeoutId);
-    };
-  }, [addressQuery, t]);
-
-  const onSuggestionPress = useCallback(async (suggestion: PlaceAutocompleteSuggestion) => {
-    setIsSearchingPlaces(true);
-    setSearchMessage('');
-
-    try {
-      const place = await resolvePlaceSuggestion(suggestion);
-      await applyBaseLocationSelection(
-        place.latitude,
-        place.longitude,
-        place.address,
-        place.placeId,
-        'search',
-      );
-    } catch (error) {
-      setSearchMessage(
-        error instanceof Error ? error.message : t('Places search failed. Please try again.'),
-      );
-    } finally {
-      setIsSearchingPlaces(false);
-    }
-  }, [applyBaseLocationSelection, t]);
-
-  const onSearchSubmit = useCallback(async () => {
-    const query = addressQuery.trim();
-
-    if (!query) {
-      setSearchMessage(t('Type an address first to search places.'));
-      return;
-    }
-
-    if (!HAS_GOOGLE_MAPS_API_KEY) {
-      setSearchMessage(t('Google Places key is missing. Check your map environment configuration.'));
-      return;
-    }
-
-    setIsSearchingPlaces(true);
-    setSearchMessage('');
-
-    try {
-      if (placeSuggestions.length > 0) {
-        const place = await resolvePlaceSuggestion(placeSuggestions[0]);
-        await applyBaseLocationSelection(
-          place.latitude,
-          place.longitude,
-          place.address,
-          place.placeId,
-          'search',
-        );
-        return;
-      }
-
-      const place = await resolvePlaceFromQuery(query);
-      await applyBaseLocationSelection(
-        place.latitude,
-        place.longitude,
-        place.address,
-        place.placeId,
-        'search',
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : t('Places search failed. Please try again.');
-      setSearchMessage(message);
-    } finally {
-      setIsSearchingPlaces(false);
-    }
-  }, [addressQuery, applyBaseLocationSelection, placeSuggestions, t]);
-
-  const onMapPress = useCallback((event: MapPressEvent) => {
-    const coordinates = event.nativeEvent.coordinate;
-    void applyBaseLocationSelection(
-      coordinates.latitude,
-      coordinates.longitude,
-      undefined,
-      undefined,
-      'manual',
-    );
-    setSubmitError('');
-  }, [applyBaseLocationSelection]);
-
-  const onUseCurrentLocation = async (): Promise<void> => {
-    setSubmitError('');
-    setSubmitSuccess('');
-    await loadCurrentLocation(true);
-  };
-
   const onContinue = async (): Promise<void> => {
     if (!isFormValid || isSaving) {
       return;
@@ -692,17 +264,12 @@ export default function SetAvailabilityScreen() {
     setIsSaving(true);
 
     const radiusValue = Number(form.serviceRadiusKm.trim());
-    const latitude = parseNumber(form.baseLatitude);
-    const longitude = parseNumber(form.baseLongitude);
 
     const payload: UpdateDriverAvailabilityPayload = {
       timezone: form.timezone.trim(),
       isOnline: form.isOnline,
       serviceRadiusKm: radiusValue,
-      cityCoverage,
-      baseLatitude: latitude,
-      baseLongitude: longitude,
-      baseAddress: form.baseAddress.trim() || undefined,
+      cityCoverage: [],
       acceptsImmediateRequests: form.acceptsImmediateRequests,
       acceptsScheduledRequests: form.acceptsScheduledRequests,
       weeklySchedule: form.weeklySchedule.map((day) => ({
@@ -837,144 +404,15 @@ export default function SetAvailabilityScreen() {
           />
           {fieldErrors.serviceRadiusKm ? <Text style={styles.errorText}>{fieldErrors.serviceRadiusKm}</Text> : null}
 
-          <Text style={styles.searchHint}>{t('Immediate pickups use recent GPS, with your base as a fallback. The radius limits pickup distance, not the destination.')}</Text>
-          <CityCoverageEditor cities={cities} country={driver?.countryCode} pins={cityCoverage} radius={form.serviceRadiusKm} onChange={setCityCoverage} />
-          {fieldErrors.cityCoverage ? <Text style={styles.errorText}>{fieldErrors.cityCoverage}</Text> : null}
-          <Text style={styles.fieldLabel}>{t('Base address')}</Text>
-          <View style={styles.searchContainer}>
-            <TextInput
-              value={addressQuery}
-              onChangeText={(value) => {
-                setAddressQuery(value);
-                setSubmitError('');
-                setPlaceSuggestions([]);
-                setSearchMessage('');
-              }}
-              onSubmitEditing={() => void onSearchSubmit()}
-              placeholder={t('Search base address')}
-              placeholderTextColor="#98A2B3"
-              style={styles.searchInput}
-              returnKeyType="search"
-            />
-            <Text style={styles.searchHint}>
-              {HAS_GOOGLE_MAPS_API_KEY
-                ? t('Google Places API key is configured.')
-                : t('Google Places API key is not configured yet.')}
-            </Text>
-            <Text style={styles.searchHint}>
-              {t('Start typing and tap a suggestion to pin the base location.')}
-            </Text>
-            {placeSuggestions.length > 0 ? (
-              <View style={styles.suggestionsList}>
-                {placeSuggestions.map((suggestion) => (
-                  <Pressable
-                    key={suggestion.placeId}
-                    style={styles.suggestionItem}
-                    onPress={() => void onSuggestionPress(suggestion)}
-                  >
-                    <Text style={styles.suggestionText}>{suggestion.description}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            <Pressable
-              style={[styles.locationButton, isGettingLocation && styles.locationButtonDisabled]}
-              onPress={() => void onUseCurrentLocation()}
-              disabled={isGettingLocation}
-            >
-              {isGettingLocation ? (
-                <ActivityIndicator size="small" color="#1A73E8" />
-              ) : (
-                <Text style={styles.locationButtonText}>{t('Use Current Location')}</Text>
-              )}
-            </Pressable>
-            {isSearchingPlaces ? (
-              <ActivityIndicator style={styles.searchSpinner} size="small" color="#1A73E8" />
-            ) : null}
-            {searchMessage ? <Text style={styles.searchHint}>{searchMessage}</Text> : null}
-          </View>
-
-          <View style={styles.mapContainer}>
-            {isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
-              <NativeMapView
-                ref={mapRef}
-                provider={PROVIDER_GOOGLE}
-                style={styles.map}
-                initialRegion={mapRegion}
-                region={mapRegion}
-                onRegionChangeComplete={setMapRegion}
-                onPress={onMapPress}
-              >
-                {selectedLocation ? (
-                  <NativeMarker
-                    coordinate={{
-                      latitude: selectedLocation.latitude,
-                      longitude: selectedLocation.longitude,
-                    }}
-                    title={t('Base location')}
-                    description={selectedLocation.address ?? t('Selected location')}
-                  />
-                ) : null}
-              </NativeMapView>
-            ) : (
-              <View style={styles.mapFallback}>
-                <Text style={styles.mapFallbackTitle}>{t('Map preview is not available on web.')}</Text>
-                <Text style={styles.mapFallbackText}>
-                  {t('Search for an address above to pin the base location, or open the app on iOS or Android for full map selection.')}
-                </Text>
-              </View>
-            )}
-
-            {isGettingLocation ? (
-              <View style={styles.mapOverlay}>
-                <ActivityIndicator size="small" color="#1A73E8" />
-                <Text style={styles.mapOverlayText}>{t('Getting your location...')}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          {locationMessage ? <Text style={styles.infoMessage}>{locationMessage}</Text> : null}
-
-          <View style={styles.bottomCard}>
-            <Text style={styles.bottomTitle}>
-              {selectedLocation?.address?.trim()
-                  ? selectedLocation.address
-                  : selectedLocation
-                  ? t('Selected location')
-                  : t('Tap on the map or search for an address.')}
-            </Text>
-            {selectedLocation ? (
-              <Text style={styles.bottomDetails}>
-                {t('Lat')}: {selectedLocation.latitude.toFixed(6)}  |  {t('Lng')}: {selectedLocation.longitude.toFixed(6)}
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.halfWidth}>
-              <Text style={styles.fieldLabel}>{t('Base latitude')}</Text>
-              <TextInput
-                style={styles.input}
-                value={form.baseLatitude}
-                onChangeText={(value) => onChange('baseLatitude', value)}
-                placeholder="47.3769"
-                keyboardType="decimal-pad"
-              />
-              {fieldErrors.baseLatitude ? <Text style={styles.errorText}>{fieldErrors.baseLatitude}</Text> : null}
-            </View>
-            <View style={styles.halfWidth}>
-              <Text style={styles.fieldLabel}>{t('Base longitude')}</Text>
-              <TextInput
-                style={styles.input}
-                value={form.baseLongitude}
-                onChangeText={(value) => onChange('baseLongitude', value)}
-                placeholder="8.5417"
-                keyboardType="decimal-pad"
-              />
-              {fieldErrors.baseLongitude ? <Text style={styles.errorText}>{fieldErrors.baseLongitude}</Text> : null}
-            </View>
-          </View>
-          {fieldErrors.baseLocation ? <Text style={styles.errorText}>{fieldErrors.baseLocation}</Text> : null}
+          <Text style={styles.searchHint}>{t('All pickups use your current GPS location. Enable location access to receive requests within your service radius.')}</Text>
+          <Pressable style={styles.locationButton} onPress={() => {
+            void Location.requestForegroundPermissionsAsync().then(permission => {
+              if (permission.granted) setSubmitSuccess(t('All pickups use your current GPS location.'));
+              else setSubmitError(t('Enable GPS and location access to receive requests.'));
+            }).catch(() => setSubmitError(t('Enable GPS and location access to receive requests.')));
+          }}>
+            <Text style={styles.locationButtonText}>{t('Enable location access')}</Text>
+          </Pressable>
 
         </View>
 

@@ -19,8 +19,6 @@ function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse)
   return (
     availability.nextStep !== 'SET_AVAILABILITY' &&
     Boolean(availability.id) &&
-    availability.baseLatitude !== null &&
-    availability.baseLongitude !== null &&
     availability.weeklySchedule.some((day) => day.isAvailable)
   );
 }

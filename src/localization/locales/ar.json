@@ -1594,5 +1594,10 @@
     "distanceHint": "يمكن تأكيد التسليم ضمن {{distance}} كم من الوجهة.",
     "confirmHint": "أكّد بعد تسليم الأغراض إلى المستلم.",
     "confirmAction": "تأكيد التسليم"
-  }
+  },
+  "All pickups use your current GPS location. Enable location access to receive requests within your service radius.": "تعتمد جميع عمليات الاستلام على موقع GPS الحالي. فعّل الوصول إلى الموقع لتلقي الطلبات ضمن نطاق خدمتك.",
+  "Enable location access": "تفعيل الوصول إلى الموقع",
+  "All pickups use your current GPS location.": "تعتمد جميع عمليات الاستلام على موقع GPS الحالي.",
+  "Enable GPS and location access to receive requests.": "فعّل GPS والوصول إلى الموقع لتلقي الطلبات.",
+  "Requests are matched against this radius from your current GPS location.": "تتم مطابقة الطلبات ضمن هذا النطاق من موقع GPS الحالي."
 }
