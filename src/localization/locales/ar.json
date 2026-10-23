@@ -1533,6 +1533,8 @@
   "You can browse the app. Complete registration and get admin approval to send offers or contact clients.": "يمكنك تصفح التطبيق. أكمل التسجيل واحصل على موافقة الإدارة لإرسال العروض أو التواصل مع العملاء.",
   "Continue registration": "متابعة التسجيل",
   "pickupUi": {
+    "chatCountdown": "ستتاح محادثة العميل خلال {{time}}",
+    "chatWaiting": "بانتظار إتاحة محادثة العميل.",
     "clientChat": "دردشة العميل",
     "chatPaymentWindow": "متاحة بعد 10 دقائق من الدفع.",
     "chatReady": "تواصل مع العميل بشأن هذه الرحلة.",

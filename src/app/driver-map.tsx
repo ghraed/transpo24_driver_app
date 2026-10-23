@@ -1,3 +1,4 @@
+import { MapLocationMarker, MapLocationIcon } from '@/components/map-location-marker';
 import { useDriverAccess } from '@/hooks/use-driver-access';
 import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
@@ -20,20 +21,6 @@ import { driverRadius, driverThemes } from '@/theme/driver-theme';
 
 const colors = driverThemes.light;
 const MAP_ICON_SIZE = 24;
-
-function MapMarkerArtwork({ pickup = false }: { pickup?: boolean }) {
-  return (
-    <View collapsable={false} style={pickup ? styles.pickupMarkerFrame : styles.driverMarkerFrame}>
-      <View style={pickup ? styles.pickupMarker : styles.driverMarker}>
-        {pickup ? (
-          <View style={styles.pickupMarkerGlyph}>
-            <DriverIcon name="pickup" size={MAP_ICON_SIZE} color={colors.onPrimary} />
-          </View>
-        ) : null}
-      </View>
-    </View>
-  );
-}
 
 type Coordinate = { latitude: number; longitude: number };
 
@@ -227,21 +214,21 @@ export default function DriverMapScreen() {
             {jobMarkers.map((alert) => (
               <React.Fragment key={alert.alertId}>
                 {hasCoordinate(alert.pickup) ? (
-                  <MapMarker
+                  <MapLocationMarker
+                    kind="pickup"
                     coordinate={alert.pickup}
                     title={t('Pickup')}
-                    anchor={{ x: 0.5, y: 0.92 }}
                     onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })}
-                  >
-                    <MapMarkerArtwork pickup />
-                  </MapMarker>
+                  />
                 ) : null}
               </React.Fragment>
             ))}
             {driverLocation ? (
-              <MapMarker coordinate={driverLocation} title={t('Your current location')} anchor={{ x: 0.5, y: 0.5 }}>
-                <MapMarkerArtwork />
-              </MapMarker>
+              <MapLocationMarker
+                kind="driver"
+                coordinate={driverLocation}
+                title={t('Your current location')}
+              />
             ) : null}
           </MapView>
         ) : (
@@ -251,7 +238,7 @@ export default function DriverMapScreen() {
             <View style={[styles.fakeRoad, styles.fakeRoadVertical]} />
             <View style={[styles.fakeRoad, styles.fakeRoadHorizontal]} />
             {driverLocation ? (
-              <MapMarkerArtwork />
+              <MapLocationIcon kind="driver" />
             ) : null}
           </View>
         )}
@@ -357,23 +344,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   iconButtonPressed: { backgroundColor: colors.primarySoft, opacity: 0.8 },
-  // Padding keeps the artwork inside the native map marker's bitmap bounds.
-  pickupMarkerFrame: { width: 60, height: 64, alignItems: 'center', paddingTop: 4 },
-  pickupMarker: {
-    width: 48, height: 48, borderRadius: driverRadius.pill, borderWidth: 3, borderColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.success,
-    borderBottomRightRadius: 8, transform: [{ rotate: '45deg' }],
-  },
-  pickupMarkerGlyph: { transform: [{ rotate: '-45deg' }] },
-  driverMarkerFrame: {
-    width: 60, height: 60, borderRadius: driverRadius.pill, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.currentLocationHalo,
-  },
-  driverMarker: {
-    width: 22, height: 22, borderRadius: driverRadius.pill, borderWidth: 3, borderColor: colors.surface,
-    backgroundColor: colors.currentLocation,
-    shadowColor: colors.shadow, shadowOpacity: 0.18, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 2,
-  },
   mapFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CDE9CE' },
   gridVertical: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.45)' },
   gridHorizontal: { position: 'absolute', right: 0, left: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.45)' },

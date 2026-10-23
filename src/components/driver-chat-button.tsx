@@ -35,7 +35,7 @@ export function DriverChatButton({
   const { t } = useTranslation();
   const colors = useDriverColors();
   const chatDisabled = isTerminalRequestStatus(requestStatus);
-  const { chatRoom, isLoadingChatRoom, chatRoomError, isChatPending, refreshChatRoom } =
+  const { chatRoom, isLoadingChatRoom, chatRoomError, isChatPending, chatSecondsRemaining, refreshChatRoom } =
     useDriverChatRoom(transportRequestId, initialChatRoom, !chatDisabled);
   const available = Boolean(chatRoom && !chatDisabled);
   if (!available && !chatRoomError && !isLoadingChatRoom && !isChatPending && !showUnavailableState)
@@ -64,7 +64,9 @@ export function DriverChatButton({
           <DriverText variant="section">{t('pickupUi.clientChat')}</DriverText>
           <DriverText variant="caption" secondary>
             {isChatPending
-              ? t('pickupUi.chatPaymentWindow')
+              ? typeof chatSecondsRemaining === 'number'
+                ? t('pickupUi.chatCountdown', { time: `${Math.floor(chatSecondsRemaining / 60)}:${String(chatSecondsRemaining % 60).padStart(2, '0')}` })
+                : t('pickupUi.chatWaiting')
               : available
                 ? t('pickupUi.chatReady')
                 : isLoadingChatRoom

@@ -1,3 +1,4 @@
+import { MapLocationMarker } from '@/components/map-location-marker';
 import { RequestDocuments } from '@/components/request-documents';
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -159,6 +160,7 @@ export default function AcceptedJobDetailsScreen() {
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const [activeMapLocation, setActiveMapLocation] = useState<{
+    kind: 'pickup' | 'dropoff';
     title: string;
     address: string;
     latitude: number;
@@ -294,6 +296,7 @@ export default function AcceptedJobDetailsScreen() {
   }, [details]);
 
   const openMap = (
+    kind: 'pickup' | 'dropoff',
     title: string,
     address: string | null,
     latitude: number | null,
@@ -304,6 +307,7 @@ export default function AcceptedJobDetailsScreen() {
     }
 
     setActiveMapLocation({
+      kind,
       title,
       address: address?.trim() || t('Address unavailable'),
       latitude: latitude as number,
@@ -410,7 +414,7 @@ export default function AcceptedJobDetailsScreen() {
               !hasValidCoordinates(details.pickup.latitude, details.pickup.longitude) && styles.disabledButton,
             ]}
             onPress={() =>
-              openMap(t('Pickup Location'), translatedTextByKey.pickupAddress || details.pickup.address, details.pickup.latitude, details.pickup.longitude)
+              openMap('pickup', t('Pickup Location'), translatedTextByKey.pickupAddress || details.pickup.address, details.pickup.latitude, details.pickup.longitude)
             }
             disabled={!hasValidCoordinates(details.pickup.latitude, details.pickup.longitude)}
           >
@@ -430,7 +434,7 @@ export default function AcceptedJobDetailsScreen() {
               !hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude) && styles.disabledButton,
             ]}
             onPress={() =>
-              openMap(t('Dropoff Location'), translatedTextByKey.dropoffAddress || details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
+              openMap('dropoff', t('Dropoff Location'), translatedTextByKey.dropoffAddress || details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude)
             }
             disabled={!hasValidCoordinates(details.dropoff.latitude, details.dropoff.longitude)}
           >
@@ -533,7 +537,8 @@ export default function AcceptedJobDetailsScreen() {
                       longitudeDelta: 0.01,
                     }}
                   >
-                    <NativeMarker
+                    <MapLocationMarker
+                      kind={activeMapLocation.kind}
                       coordinate={{
                         latitude: activeMapLocation.latitude,
                         longitude: activeMapLocation.longitude,

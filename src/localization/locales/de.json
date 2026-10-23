@@ -1533,6 +1533,8 @@
   "You can browse the app. Complete registration and get admin approval to send offers or contact clients.": "Sie können die App ansehen. Schließen Sie die Registrierung ab und warten Sie auf die Freigabe durch die Verwaltung, um Angebote zu senden oder Kunden zu kontaktieren.",
   "Continue registration": "Registrierung fortsetzen",
   "pickupUi": {
+    "chatCountdown": "Kundenchat verfügbar in {{time}}",
+    "chatWaiting": "Warten auf die Freigabe des Kundenchats.",
     "clientChat": "Kundenchat",
     "chatPaymentWindow": "10 Minuten nach der Zahlung verfügbar.",
     "chatReady": "Kontaktieren Sie Ihren Kunden zu dieser Fahrt.",

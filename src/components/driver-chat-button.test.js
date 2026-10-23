@@ -6,7 +6,7 @@ import { useDriverChatRoom } from '@/hooks/useDriverChatRoom';
 import { DriverButton } from './ui/driver-ui';
 
 const mockPush = jest.fn();
-const mockT = (key) => key;
+const mockT = (key, options) => options?.time ? `${key} ${options.time}` : key;
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT }) }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
@@ -41,7 +41,7 @@ afterEach(async () => {
 test('presents the payment window as a neutral availability card with a check action', async () => {
   useDriverChatRoom.mockReturnValue({ isChatPending: true, refreshChatRoom: refresh });
   await render();
-  expect(text()).toContain('pickupUi.chatPaymentWindow');
+  expect(text()).toContain('pickupUi.chatWaiting');
   expect(text()).toContain('pickupUi.pending');
   expect(text()).not.toContain('Retry chat');
   await act(async () => tree.root.findByType(DriverButton).props.onPress());
@@ -82,4 +82,11 @@ test('does not offer chat on a completed trip even with a cached room', async ()
   await render({ requestStatus: 'DELIVERED', showUnavailableState: true });
   expect(text()).toContain('Chat closed after delivery');
   expect(tree.root.findAllByType(DriverButton)).toHaveLength(0);
+});
+
+test('shows remaining minutes and seconds from the server deadline', async () => {
+  useDriverChatRoom.mockReturnValue({ isChatPending: true, chatSecondsRemaining: 125, refreshChatRoom: refresh });
+  await render();
+  expect(text()).toContain('pickupUi.chatCountdown 2:05');
+  expect(text()).not.toContain('pickupUi.chatPaymentWindow');
 });

@@ -1,3 +1,4 @@
+import { MAP_COLORS } from '@/config/map-style';
 import { type TextStyle } from 'react-native';
 
 // Primitive → semantic → component tokens. Screens consume the semantic layer.
@@ -31,10 +32,10 @@ const light = {
   accentSoft: palette.yellowSoft,
   contact: '#0F766E',
   onContact: palette.white,
-  currentLocation: '#4285F4',
-  currentLocationHalo: 'rgba(66, 133, 244, 0.16)',
-  pickupMarker: '#1DB954',
-  dropoffMarker: '#FF4B3E',
+  pickupMarker: MAP_COLORS.pickup,
+  dropoffMarker: MAP_COLORS.dropoff,
+  currentLocation: MAP_COLORS.driver,
+  currentLocationHalo: MAP_COLORS.driverHalo,
   strong: palette.ink,
   onStrong: palette.white,
   disabled: '#E4E8EC',

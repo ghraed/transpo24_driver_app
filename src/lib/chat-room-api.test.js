@@ -32,3 +32,13 @@ test('keeps the status when the error response body is empty', async () => {
     expect(error.status).toBe(503);
   }
 });
+
+ test('preserves chat unlock time and server time for the countdown', async () => {
+  global.fetch = jest.fn(async () => ({
+    ok: false, status: 403,
+    text: async () => JSON.stringify({ message: 'Chat pending.', code: 'CHAT_PAYMENT_WINDOW', availableAt: '2026-10-23T12:10:00Z', serverTime: '2026-10-23T12:08:00Z' }),
+  }));
+  await expect(getDriverChatRoomByTransportRequestId('request-1')).rejects.toMatchObject({
+    availableAt: '2026-10-23T12:10:00Z', serverTime: '2026-10-23T12:08:00Z',
+  });
+});

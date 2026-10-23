@@ -1,3 +1,4 @@
+import { RequestRouteCard } from '@/components/request-route-card';
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -353,17 +354,14 @@ export default function ReviewRequestDetailsScreen() {
           </Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('Pickup')}</Text>
-          <Text style={styles.sectionValue}>
-            {translatedTextByKey.pickupAddress || formatDisplayAddress(details.pickup.address, details.pickup.latitude, details.pickup.longitude, t)}
-          </Text>
-          <Text style={styles.sectionTitleAlt}>{t('Dropoff')}</Text>
-          <Text style={styles.sectionValue}>
-            {translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude, t)}
-          </Text>
-          {routeDistance ? <Text style={styles.metaText}>{t('Distance')}: {routeDistance}</Text> : null}
-        </View>
+        <RequestRouteCard
+          key={requestId}
+          pickup={details.pickup}
+          dropoff={details.dropoff}
+          pickupAddress={translatedTextByKey.pickupAddress || formatDisplayAddress(details.pickup.address, details.pickup.latitude, details.pickup.longitude, t)}
+          dropoffAddress={translatedTextByKey.dropoffAddress || formatDisplayAddress(details.dropoff.address, details.dropoff.latitude, details.dropoff.longitude, t)}
+          distance={routeDistance}
+        />
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Schedule')}</Text>

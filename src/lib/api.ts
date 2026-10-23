@@ -55,6 +55,8 @@ import type {
 } from '@/types/chat';
 
 interface ApiErrorResponse {
+  availableAt?: string | null;
+  serverTime?: string;
   code?: string;
   message?: string | string[];
 }
@@ -65,6 +67,8 @@ export class ApiResponseError extends Error {
     readonly status: number,
     readonly sourceMessage: string = message,
     readonly code?: string,
+    readonly availableAt?: string | null,
+    readonly serverTime?: string,
   ) {
     super(message);
     this.name = 'ApiResponseError';
@@ -188,12 +192,14 @@ function parsePossiblyMalformedJson<T>(rawText: string): T {
 }
 
 async function parseError(response: Pick<Response, 'status' | 'text'>, fallback: string): Promise<Error> {
-  const createError = async (sourceMessage: string, code?: string): Promise<ApiResponseError> =>
+  const createError = async (sourceMessage: string, code?: string, availableAt?: string | null, serverTime?: string): Promise<ApiResponseError> =>
     new ApiResponseError(
       await localizeResponseMessage(sourceMessage, fallback),
       response.status,
       sourceMessage,
       code,
+      availableAt,
+      serverTime,
     );
 
   try {
@@ -203,7 +209,7 @@ async function parseError(response: Pick<Response, 'status' | 'text'>, fallback:
     }
     try {
       const errorData = parsePossiblyMalformedJson<ApiErrorResponse>(rawText);
-      return await createError(normalizeErrorMessage(errorData, fallback), errorData.code);
+      return await createError(normalizeErrorMessage(errorData, fallback), errorData.code, errorData.availableAt, errorData.serverTime);
     } catch {
       return await createError(normalizeBackendErrorMessage(rawText, fallback));
     }

@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { DriverCard, DriverIcon, DriverText } from './driver-ui';
 import { driverRadius, driverSpace, useDriverColors } from '@/theme/driver-theme';
@@ -49,15 +49,17 @@ export function TripRouteCard({
   pickup,
   dropoff,
   activeStop = 'pickup',
+  style,
 }: {
   pickup: string;
   dropoff: string;
   activeStop?: 'pickup' | 'dropoff';
+  style?: StyleProp<ViewStyle>;
 }) {
   const colors = useDriverColors();
   const { t } = useTranslation();
   return (
-    <DriverCard>
+    <DriverCard style={style}>
       <View style={styles.routeRow}>
         <View style={styles.routeTrack}>
           <View

@@ -1,3 +1,4 @@
+import { MapLocationMarker, MAP_COLORS } from '@/components/map-location-marker';
 import {
   startBackgroundTripTracking,
   stopBackgroundTripTracking,
@@ -939,51 +940,29 @@ export default function GoToPickupScreen() {
                 }}
               >
                 {driverLocation ? (
-                  <NativeMarker
+                  <MapLocationMarker
+                    kind="driver"
                     coordinate={driverLocation}
                     title={t('Driver')}
-                    anchor={{ x: 0.5, y: 0.5 }}
-                  >
-                    <View style={styles.driverMarker}>
-                      <DriverIcon
-                        name={{ ios: 'car.fill', android: 'local_shipping', web: 'local_shipping' }}
-                        color={colors.onStrong}
-                        size={22}
-                      />
-                    </View>
-                  </NativeMarker>
+                  />
                 ) : null}
-                <NativeMarker
+                <MapLocationMarker
+                  kind="pickup"
                   coordinate={pickupLocation}
                   title={t('Pickup')}
-                  anchor={{ x: 0.5, y: 0.5 }}
-                >
-                  <View style={styles.pickupMarker}>
-                    <DriverIcon
-                      name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }}
-                      color={colors.onPrimary}
-                    />
-                  </View>
-                </NativeMarker>
-                <NativeMarker
+                />
+                <MapLocationMarker
+                  kind="dropoff"
                   coordinate={dropoffLocation}
                   title={t('Dropoff')}
-                  anchor={{ x: 0.5, y: 0.5 }}
-                >
-                  <View style={styles.dropoffMarker}>
-                    <DriverIcon
-                      name={{ ios: 'flag.fill', android: 'flag', web: 'flag' }}
-                      color={colors.onStrong}
-                    />
-                  </View>
-                </NativeMarker>
+                />
                 {driverLocation ? (
                   <DriverRoutePolyline
                     origin={driverLocation}
                     destination={pickupLocation}
                     apikey={mapsApiKey}
                     strokeWidth={5}
-                    strokeColor={colors.accent}
+                    strokeColor={MAP_COLORS.route}
                     onError={(message: string) => setRouteError(message)}
                   />
                 ) : null}

@@ -1,5 +1,5 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ApiResponseError, getDriverChatRoomByTransportRequestId } from '@/lib/api';
@@ -11,6 +11,7 @@ type UseDriverChatRoomResult = {
   isLoadingChatRoom: boolean;
   chatRoomError: string;
   isChatPending: boolean;
+  chatSecondsRemaining: number | null;
   refreshChatRoom: () => Promise<void>;
 };
 
@@ -35,9 +36,13 @@ export function useDriverChatRoom(
   const [isLoadingChatRoom, setIsLoadingChatRoom] = useState<boolean>(false);
   const [chatRoomError, setChatRoomError] = useState<string>('');
   const [isChatPending, setIsChatPending] = useState(false);
+  const [chatDeadline, setChatDeadline] = useState<number | null>(null);
+  const [chatSecondsRemaining, setChatSecondsRemaining] = useState<number | null>(null);
 
   const refreshChatRoom = useCallback(async (): Promise<void> => {
     setIsChatPending(false);
+    setChatDeadline(null);
+    setChatSecondsRemaining(null);
     if (!enabled) {
       setChatRoom(null);
       setChatRoomError('');
@@ -71,6 +76,13 @@ export function useDriverChatRoom(
         setChatRoom(null);
         setChatRoomError('');
         setIsChatPending(true);
+        const unlockAt = Date.parse(error.availableAt ?? '');
+        const serverNow = Date.parse(error.serverTime ?? '');
+        if (Number.isFinite(unlockAt)) {
+          const remainingMs = Math.max(0, unlockAt - (Number.isFinite(serverNow) ? serverNow : Date.now()));
+          setChatDeadline(Date.now() + remainingMs);
+          setChatSecondsRemaining(Math.ceil(remainingMs / 1000));
+        }
       } else if (isMissingChatRoomError(sourceMessage)) {
         setChatRoom(null);
         setChatRoomError('');
@@ -84,6 +96,19 @@ export function useDriverChatRoom(
     }
   }, [enabled, t, transportRequestId]);
 
+  useEffect(() => {
+    if (!enabled || !isChatPending || chatDeadline === null) return;
+    const timer = setInterval(() => {
+      const seconds = Math.max(0, Math.ceil((chatDeadline - Date.now()) / 1000));
+      setChatSecondsRemaining(seconds);
+      if (seconds === 0) {
+        clearInterval(timer);
+        void refreshChatRoom();
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [chatDeadline, enabled, isChatPending, refreshChatRoom]);
+
   useFocusEffect(
     useCallback(() => {
       void refreshChatRoom();
@@ -95,6 +120,7 @@ export function useDriverChatRoom(
     isLoadingChatRoom,
     chatRoomError,
     isChatPending,
+    chatSecondsRemaining,
     refreshChatRoom,
   };
 }

@@ -23,6 +23,7 @@ type DriverRoutePolylineProps = {
   strokeWidth?: number;
   strokeColor: string;
   onError?: (message: string) => void;
+  onReady?: (coordinates: RouteCoordinate[]) => void;
 };
 
 type RouteCoordinate = {
@@ -88,6 +89,7 @@ export function DriverRoutePolyline({
   strokeWidth = 4,
   strokeColor,
   onError,
+  onReady,
 }: DriverRoutePolylineProps) {
   const [coordinates, setCoordinates] = useState<RouteCoordinate[]>([]);
   const requestIdRef = useRef(0);
@@ -137,7 +139,9 @@ export function DriverRoutePolyline({
           return;
         }
 
-        setCoordinates(decodePolyline(points));
+        const routeCoordinates = decodePolyline(points);
+        setCoordinates(routeCoordinates);
+        onReady?.(routeCoordinates);
       } catch {
         if (controller.signal.aborted) {
           return;
@@ -156,7 +160,7 @@ export function DriverRoutePolyline({
     return () => {
       controller.abort();
     };
-  }, [apikey, destination, isReady, onError, origin]);
+  }, [apikey, destination, isReady, onError, onReady, origin]);
 
   if (!isReady || !NativePolyline || coordinates.length === 0) {
     return null;
