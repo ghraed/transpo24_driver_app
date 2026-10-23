@@ -49,11 +49,15 @@ export function TripRouteCard({
   pickup,
   dropoff,
   activeStop = 'pickup',
+  pickupLabel,
+  dropoffLabel,
   style,
 }: {
   pickup: string;
   dropoff: string;
   activeStop?: 'pickup' | 'dropoff';
+  pickupLabel?: string;
+  dropoffLabel?: string;
   style?: StyleProp<ViewStyle>;
 }) {
   const colors = useDriverColors();
@@ -72,7 +76,7 @@ export function TripRouteCard({
         </View>
         <View style={styles.routeCopy}>
           <DriverText variant="caption" secondary>
-            {t('pickupUi.pickup')}
+            {pickupLabel ?? t('pickupUi.pickup')}
           </DriverText>
           <DriverText variant={activeStop === 'pickup' ? 'section' : 'body'}>{pickup}</DriverText>
         </View>
@@ -83,7 +87,7 @@ export function TripRouteCard({
         </View>
         <View style={styles.routeCopy}>
           <DriverText variant="caption" secondary>
-            {t('Dropoff')}
+            {dropoffLabel ?? t('Dropoff')}
           </DriverText>
           <DriverText variant={activeStop === 'dropoff' ? 'section' : 'body'}>{dropoff}</DriverText>
         </View>

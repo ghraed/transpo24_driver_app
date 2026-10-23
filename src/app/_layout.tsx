@@ -1,3 +1,4 @@
+import { OmwProvider } from '@/omw/context';
 import { driverType, useDriverColors } from '@/theme/driver-theme';
 import { DriverInteractionBoundary } from '@/components/driver-interaction-boundary';
 import { BackgroundLocationPrompt } from '@/components/background-location-prompt';
@@ -127,6 +128,7 @@ function AppNavigator() {
   }
 
   return (
+    <OmwProvider key={driver?.id ?? 'signed-out'}>
     <View style={styles.appContainer}>
       <EnvironmentBanner />
       <OtaUpdateBanner />
@@ -156,6 +158,7 @@ function AppNavigator() {
       <Stack.Screen name="driver-home" options={{ title: t('Settings'), headerShown: false }} />
       <Stack.Screen name="pending-requests" options={{ title: t('Pending requests'), headerShown: false }} />
       <Stack.Screen name="receive-requests" options={{ title: t('Available Requests'), headerShown: false }} />
+      <Stack.Screen name="driver-omw" options={{ title: t('OMW'), headerShown: false }} />
       <Stack.Screen name="driver-map" options={{ title: t('Map'), headerShown: false }} />
       <Stack.Screen name="driver-chats" options={{ title: t('Chat'), headerShown: false }} />
       <Stack.Screen name="driver-profile" options={{ title: t('Profile'), headerShown: false }} />
@@ -180,6 +183,7 @@ function AppNavigator() {
         </DriverInteractionBoundary>
       </View>
     </View>
+    </OmwProvider>
   );
 }
 

@@ -20,6 +20,7 @@ export type DriverIconName =
   | 'profile-circle'
   | 'logout'
   | 'map'
+  | 'route'
   | 'money'
   | 'motorcycle'
   | 'furniture'
@@ -57,6 +58,7 @@ const symbols: Record<DriverIconName, SymbolViewProps['name']> = {
   'profile-circle': { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' },
   map: { ios: 'map', android: 'map', web: 'map' },
+  route: { ios: 'arrow.triangle.turn.up.right.diamond', android: 'alt_route', web: 'alt_route' },
   money: { ios: 'banknote', android: 'payments', web: 'payments' },
   motorcycle: { ios: 'motorcycle', android: 'two_wheeler', web: 'two_wheeler' },
   furniture: { ios: 'bed.double', android: 'bed', web: 'bed' },

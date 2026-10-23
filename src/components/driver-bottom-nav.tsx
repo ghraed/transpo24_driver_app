@@ -9,12 +9,13 @@ import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 type Tab = {
   label: string;
   icon: DriverIconName;
-  route: '/driver-map' | '/receive-requests' | '/driver-chats' | '/driver-profile';
+  route: '/driver-map' | '/receive-requests' | '/driver-omw' | '/driver-chats' | '/driver-profile';
 };
 
 const tabs: Tab[] = [
   { label: 'Map', icon: 'map', route: '/driver-map' },
   { label: 'Jobs', icon: 'grid', route: '/receive-requests' },
+  { label: 'OMW', icon: 'route', route: '/driver-omw' },
   { label: 'Chat', icon: 'chat', route: '/driver-chats' },
   { label: 'Profile', icon: 'profile', route: '/driver-profile' },
 ];
@@ -69,8 +70,10 @@ const styles = StyleSheet.create({
     borderTopColor: '#DDE1E6',
   },
   tab: {
-    width: 72,
-    height: 62,
+    flex: 1,
+    maxWidth: 80,
+    minWidth: 48,
+    minHeight: 62,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
