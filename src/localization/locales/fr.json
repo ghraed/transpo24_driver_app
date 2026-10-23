@@ -1633,6 +1633,19 @@
     "via": "Via (facultatif)",
     "addVia": "Ajouter un lieu sur le trajet",
     "removeVia": "Supprimer le lieu intermédiaire",
-    "viaHelp": "Choisissez un lieu de passage ou supprimez-le pour rechercher un trajet direct."
+    "viaHelp": "Choisissez un lieu de passage ou supprimez-le pour rechercher un trajet direct.",
+    "radius": "Distance de prise en charge depuis l’itinéraire",
+    "radiusHelp": "Afficher les demandes dont la prise en charge se situe à cette distance de votre itinéraire.",
+    "radiusValue": "{{distance}} km",
+    "requestsApproval": "Terminez l’inscription et obtenez l’approbation pour voir les demandes.",
+    "requestsTitle": "Demandes sur votre itinéraire ({{count}})",
+    "requestsLoading": "Chargement des demandes",
+    "requestsError": "Impossible de charger les demandes.",
+    "refreshRequests": "Actualiser les demandes",
+    "noRequests": "Aucune demande sur cet itinéraire",
+    "noRequestsHelp": "Essayez un rayon plus grand. Les demandes doivent correspondre à votre véhicule et à vos disponibilités.",
+    "requestDistance": "Prise en charge à {{distance}} km de votre itinéraire",
+    "viewRequest": "Voir la demande",
+    "radiusError": "Saisissez un rayon de 1 à 50 km."
   }
 }

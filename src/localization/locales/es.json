@@ -1633,6 +1633,19 @@
     "via": "Vía (opcional)",
     "addVia": "Añadir un lugar de paso",
     "removeVia": "Quitar lugar de paso",
-    "viaHelp": "Elige un lugar de paso o quítalo para buscar rutas directas."
+    "viaHelp": "Elige un lugar de paso o quítalo para buscar rutas directas.",
+    "radius": "Distancia de recogida desde la ruta",
+    "radiusHelp": "Mostrar solicitudes cuya recogida esté dentro de esta distancia de tu ruta.",
+    "radiusValue": "{{distance}} km",
+    "requestsApproval": "Completa el registro y obtén la aprobación para ver solicitudes.",
+    "requestsTitle": "Solicitudes en tu ruta ({{count}})",
+    "requestsLoading": "Cargando solicitudes",
+    "requestsError": "No se pudieron cargar las solicitudes.",
+    "refreshRequests": "Actualizar solicitudes",
+    "noRequests": "No hay solicitudes en esta ruta",
+    "noRequestsHelp": "Prueba un radio mayor. Las solicitudes deben coincidir con tu vehículo y disponibilidad.",
+    "requestDistance": "Recogida a {{distance}} km de tu ruta",
+    "viewRequest": "Ver solicitud",
+    "radiusError": "Introduce un radio de 1 a 50 km."
   }
 }

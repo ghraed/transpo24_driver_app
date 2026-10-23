@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import type { ResolvedPlaceLocation } from '@/lib/places';
 import type { OmwRoute } from './routes';
 
-export type OmwTrip = { from: ResolvedPlaceLocation; to: ResolvedPlaceLocation; via: ResolvedPlaceLocation | null; route: OmwRoute; routes: OmwRoute[] };
+export type OmwTrip = { from: ResolvedPlaceLocation; to: ResolvedPlaceLocation; via: ResolvedPlaceLocation | null; radiusKm: number; route: OmwRoute; routes: OmwRoute[] };
 const OmwContext = createContext<{
   trip: OmwTrip | null;
   setTrip: (trip: OmwTrip | null) => void;

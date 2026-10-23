@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Redirect, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { DriverButton, DriverCard, DriverIcon, DriverNotice, DriverStatus, Drive
 import { TripRouteCard } from '@/components/ui/trip-ui';
 import { useAuth } from '@/context/auth-context';
 import type { ResolvedPlaceLocation } from '@/lib/places';
+import { OmwRouteRequests } from '@/omw/route-requests';
 import { useOmwTrip } from '@/omw/context';
 import { OmwPlaceField } from '@/omw/place-field';
 import { findOmwRoutes, type OmwRoute } from '@/omw/routes';
@@ -26,6 +27,9 @@ export default function DriverOmwScreen() {
   const [to, setTo] = useState<ResolvedPlaceLocation | null>(trip?.to ?? null);
   const [via, setVia] = useState<ResolvedPlaceLocation | null>(trip?.via ?? null);
   const [showVia, setShowVia] = useState(Boolean(trip?.via));
+  const [radiusKm, setRadiusKm] = useState(trip?.radiusKm ?? 5);
+  const [radiusText, setRadiusText] = useState(String(trip?.radiusKm ?? 5));
+  const radiusValid = Number(radiusText.replace(',', '.')) >= 1 && Number(radiusText.replace(',', '.')) <= 50 && Number.isFinite(Number(radiusText.replace(',', '.')));
   const [routes, setRoutes] = useState<OmwRoute[]>(trip?.routes ?? []);
   const [selected, setSelected] = useState<OmwRoute | null>(trip?.route ?? null);
   const [confirmed, setConfirmed] = useState(Boolean(trip));
@@ -64,7 +68,7 @@ export default function DriverOmwScreen() {
     if (isResolving || route.id === selected?.id) return;
     setSelected(route);
     // Replace the confirmed choice immediately; never retain an older active route.
-    if (confirmed && from && to) setTrip({ from, to, via, route, routes });
+    if (confirmed && from && to) setTrip({ from, to, via, radiusKm, route, routes });
   }
 
   function changeEndpoint(which: 'from' | 'to' | 'via', place: ResolvedPlaceLocation | null) {
@@ -168,6 +172,30 @@ export default function DriverOmwScreen() {
           </View> : <DriverNotice title={t('omw.mapUnavailable')} />}
           <DriverText variant="section">{t(confirmed ? 'omw.currentRoute' : 'omw.chooseRoute')}</DriverText>
           <DriverText secondary variant="caption">{t(routes.length === 1 ? 'omw.oneRoute' : 'omw.mainRoutes')}</DriverText>
+          <DriverCard>
+            <DriverText variant="section">{t('omw.radius')}</DriverText>
+            <DriverText variant="caption" secondary>{t('omw.radiusHelp')}</DriverText>
+            <TextInput accessibilityLabel={t('omw.radius')} keyboardType="decimal-pad" value={radiusText}
+              onChangeText={text => {
+                setRadiusText(text);
+                const value = Number(text.replace(',', '.'));
+                if (Number.isFinite(value) && value >= 1 && value <= 50) {
+                  setRadiusKm(value);
+                  if (confirmed && trip) setTrip({ ...trip, radiusKm: value });
+                }
+              }} style={[styles.radiusInput, { color: colors.text, borderColor: radiusValid ? colors.border : colors.danger }]} />
+            {!radiusValid ? <DriverText variant="caption" style={{ color: colors.danger }}>{t('omw.radiusError')}</DriverText> : null}
+            <View style={styles.radiusOptions}>
+              {[1, 5, 10, 25, 50].map(value => <Pressable key={value} accessibilityRole="radio"
+                accessibilityLabel={t('omw.radiusValue', { distance: value })}
+                accessibilityState={{ checked: radiusKm === value }}
+                onPress={() => { setRadiusKm(value); setRadiusText(String(value)); if (confirmed && trip) setTrip({ ...trip, radiusKm: value }); }}
+                style={({ pressed }) => [styles.radiusOption, { borderColor: radiusKm === value ? colors.primary : colors.border,
+                  backgroundColor: radiusKm === value ? colors.primarySoft : colors.surface, opacity: pressed ? 0.7 : 1 }]}>
+                <DriverText variant="label">{t('omw.radiusValue', { distance: value })}</DriverText>
+              </Pressable>)}
+            </View>
+          </DriverCard>
           <View accessibilityRole="radiogroup" accessibilityLabel={t('omw.chooseRoute')} style={styles.routeOptions}>
           {routes.map((route, index) => <Pressable key={route.id}
             accessibilityRole="radio" accessibilityLabel={`${routeTitle(route, index)}, ${metrics(route)}`}
@@ -186,6 +214,7 @@ export default function DriverOmwScreen() {
               color={route.id === selected.id ? colors.success : colors.textSecondary} />
           </Pressable>)}
           </View>
+          {radiusValid ? <OmwRouteRequests route={selected} radiusKm={radiusKm} /> : null}
         </> : null}
       </ScrollView>
       <View style={[styles.footer, { backgroundColor: colors.surface, borderColor: colors.border,
@@ -193,9 +222,9 @@ export default function DriverOmwScreen() {
         <View style={styles.footerContent}>
           {confirmed ? <DriverButton label={t('omw.editTrip')} variant="secondary" onPress={() => {
             setConfirmed(false); setError('');
-          }} /> : selected ? <DriverButton label={t('omw.useRoute')} disabled={isResolving} onPress={() => {
-            if (!from || !to || isResolving) return;
-            setTrip({ from, to, via, route: selected, routes }); setConfirmed(true);
+          }} /> : selected ? <DriverButton label={t('omw.useRoute')} disabled={isResolving || !radiusValid} onPress={() => {
+            if (!from || !to || isResolving || !radiusValid) return;
+            setTrip({ from, to, via, radiusKm, route: selected, routes }); setConfirmed(true);
           }} /> : <DriverText variant="caption" secondary>{t('omw.selectPlaces')}</DriverText>}
           {trip ? <DriverButton label={t('omw.clearTrip')} variant="quiet" onPress={() => {
             cancelRequest(); setTrip(null); setFrom(null); setTo(null); setRoutes([]); setFormVersion(value => value + 1);
@@ -216,6 +245,9 @@ const styles = StyleSheet.create({
   map: { height: 240, borderWidth: 1, borderRadius: driverRadius.lg, overflow: 'hidden' },
   route: { flexDirection: 'row', alignItems: 'center', gap: driverSpace.md, borderWidth: 2,
     borderRadius: driverRadius.md, padding: driverSpace.lg, minHeight: 72 },
+  radiusInput: { minHeight: 52, borderWidth: 1, borderRadius: driverRadius.md, padding: driverSpace.lg, fontSize: 16 },
+  radiusOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: driverSpace.sm },
+  radiusOption: { minHeight: 48, paddingHorizontal: driverSpace.lg, justifyContent: 'center', borderWidth: 1, borderRadius: driverRadius.md },
   routeCopy: { flex: 1, gap: driverSpace.xs },
   routeOptions: { gap: driverSpace.lg },
   footer: { borderTopWidth: 1, paddingHorizontal: driverLayout.gutter, paddingVertical: driverSpace.md },

@@ -1633,6 +1633,19 @@
     "via": "Über (optional)",
     "addVia": "Zwischenort hinzufügen",
     "removeVia": "Zwischenort entfernen",
-    "viaHelp": "Wählen Sie einen Zwischenort oder entfernen Sie ihn für eine direkte Routensuche."
+    "viaHelp": "Wählen Sie einen Zwischenort oder entfernen Sie ihn für eine direkte Routensuche.",
+    "radius": "Abholentfernung von der Route",
+    "radiusHelp": "Anfragen mit Abholorten innerhalb dieser Entfernung von Ihrer Route anzeigen.",
+    "radiusValue": "{{distance}} km",
+    "requestsApproval": "Schließen Sie die Registrierung ab und lassen Sie sich freischalten, um Anfragen zu sehen.",
+    "requestsTitle": "Anfragen entlang Ihrer Route ({{count}})",
+    "requestsLoading": "Anfragen werden geladen",
+    "requestsError": "Anfragen konnten nicht geladen werden.",
+    "refreshRequests": "Anfragen aktualisieren",
+    "noRequests": "Keine Anfragen entlang dieser Route",
+    "noRequestsHelp": "Versuchen Sie einen größeren Radius. Anfragen müssen zu Fahrzeug und Verfügbarkeit passen.",
+    "requestDistance": "Abholung {{distance}} km von Ihrer Route entfernt",
+    "viewRequest": "Anfrage ansehen",
+    "radiusError": "Geben Sie einen Radius von 1 bis 50 km ein."
   }
 }

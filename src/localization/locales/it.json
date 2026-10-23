@@ -1204,6 +1204,19 @@
     "via": "Via (facoltativo)",
     "addVia": "Aggiungi un luogo di passaggio",
     "removeVia": "Rimuovi luogo di passaggio",
-    "viaHelp": "Scegli un luogo di passaggio o rimuovilo per cercare percorsi diretti."
+    "viaHelp": "Scegli un luogo di passaggio o rimuovilo per cercare percorsi diretti.",
+    "radius": "Distanza del ritiro dal percorso",
+    "radiusHelp": "Mostra le richieste con punti di ritiro entro questa distanza dal percorso.",
+    "radiusValue": "{{distance}} km",
+    "requestsApproval": "Completa la registrazione e ottieni l’approvazione per vedere le richieste.",
+    "requestsTitle": "Richieste sul tuo percorso ({{count}})",
+    "requestsLoading": "Caricamento richieste",
+    "requestsError": "Impossibile caricare le richieste.",
+    "refreshRequests": "Aggiorna richieste",
+    "noRequests": "Nessuna richiesta lungo questo percorso",
+    "noRequestsHelp": "Prova un raggio maggiore. Le richieste devono corrispondere al veicolo e alla disponibilità.",
+    "requestDistance": "Ritiro a {{distance}} km dal percorso",
+    "viewRequest": "Vedi richiesta",
+    "radiusError": "Inserisci un raggio da 1 a 50 km."
   }
 }

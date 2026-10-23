@@ -1633,6 +1633,19 @@
     "via": "Via (optional)",
     "addVia": "Add a place along the way",
     "removeVia": "Remove Via",
-    "viaHelp": "Choose a place to pass through, or remove Via to search directly."
+    "viaHelp": "Choose a place to pass through, or remove Via to search directly.",
+    "radius": "Pickup distance from route",
+    "radiusHelp": "Show requests with pickup points within this distance of your selected route.",
+    "radiusValue": "{{distance}} km",
+    "requestsApproval": "Complete registration and get approved to view route requests.",
+    "requestsTitle": "Requests on your route ({{count}})",
+    "requestsLoading": "Loading route requests",
+    "requestsError": "Unable to load route requests.",
+    "refreshRequests": "Refresh requests",
+    "noRequests": "No requests along this route",
+    "noRequestsHelp": "Try a larger radius. Requests must match your vehicle and availability.",
+    "requestDistance": "Pickup is {{distance}} km from your route",
+    "viewRequest": "View request",
+    "radiusError": "Enter a radius from 1 to 50 km."
   }
 }

@@ -1639,6 +1639,15 @@ export async function getDriverRequestAlerts(): Promise<DriverRequestAlertsRespo
   );
 }
 
+export async function getDriverRouteRequests(coordinates: { latitude: number; longitude: number }[], radiusKm: number): Promise<DriverRequestAlertsResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/requests/on-route`;
+  const response = await fetchWithTimeout(endpoint, {
+    method: 'POST', headers: await getAuthHeaders(), body: JSON.stringify({ coordinates, radiusKm }),
+  });
+  if (!response.ok) throw await parseError(response, 'Failed to load request alerts.');
+  return parseJsonResponse<DriverRequestAlertsResponse>(response, 'Failed to parse request alerts response.');
+}
+
 export async function getDriverRequestDetails(
   requestId: string,
 ): Promise<DriverRequestDetailsResponse> {

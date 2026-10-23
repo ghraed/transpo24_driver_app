@@ -1,5 +1,7 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
+import { TextInput } from 'react-native';
+import { OmwRouteRequests } from './route-requests';
 import DriverOmwScreen from '@/app/driver-omw';
 import { OmwProvider } from './context';
 import { findOmwRoutes } from './routes';
@@ -27,6 +29,7 @@ jest.mock('@/components/native-maps', () => ({
   },
 }));
 jest.mock('@/components/map-location-marker', () => ({ MapLocationMarker: () => null }));
+jest.mock('./route-requests', () => ({ OmwRouteRequests: () => null }));
 jest.mock('./place-field', () => ({ OmwPlaceField: props => require('react').createElement('PlaceField', props) }));
 jest.mock('./routes', () => ({ findOmwRoutes: jest.fn() }));
 const from = { address: 'Beirut', placeId: 'beirut', latitude: 33.89, longitude: 35.5 };
@@ -41,7 +44,7 @@ afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = 
 const button = label => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
 const copy = () => JSON.stringify(tree.toJSON());
 const selectedLine = () => tree.root.findAllByType('Polyline').find(node => node.props.zIndex === 2);
-const radios = () => [...new Map(tree.root.findAll(node => node.props.accessibilityRole === 'radio' && typeof node.props.onPress === 'function')
+const radios = () => [...new Map(tree.root.findAll(node => node.props.accessibilityRole === 'radio' && node.props.accessibilityState?.selected !== undefined && typeof node.props.onPress === 'function')
   .map(node => [node.props.accessibilityLabel, node])).values()];
 function expectOnlySelected(index) {
   expect(radios().map(node => node.props.accessibilityState.checked)).toEqual(routes.map((_, i) => i === index));
@@ -59,7 +62,7 @@ test('requires resolved endpoints, lets the driver choose a route, retains it ac
   expect(button('omw.findRoutes').props.disabled).toBe(true);
   await endpoints();
   await act(async () => button('omw.findRoutes').props.onPress());
-  const choices = tree.root.findAll(node => node.props.accessibilityRole === 'radio' && typeof node.props.onPress === 'function');
+  const choices = tree.root.findAll(node => node.props.accessibilityRole === 'radio' && node.props.accessibilityState?.selected !== undefined && typeof node.props.onPress === 'function');
   await act(async () => choices[choices.length - 1].props.onPress());
   expect(tree.root.findAllByType('Polyline')).toHaveLength(3);
   expect(selectedLine().props.coordinates).toEqual(routes[1].coordinates);
@@ -227,4 +230,20 @@ test('removing Via cancels an in-flight route search and discards its old result
   await act(async () => finish(routes));
   expect(button('omw.useRoute')).toBeUndefined();
   expect(button('omw.findRoutes').props.disabled).toBe(false);
+});
+
+test('uses a custom route radius, rejects invalid input, and retains the radius with the selected trip', async () => {
+  await render(); await endpoints();
+  await act(async () => button('omw.findRoutes').props.onPress());
+  expect(tree.root.findByType(OmwRouteRequests).props.radiusKm).toBe(5);
+  await act(async () => tree.root.findByType(TextInput).props.onChangeText('100'));
+  expect(button('omw.useRoute').props.disabled).toBe(true);
+  expect(tree.root.findAllByType(OmwRouteRequests)).toHaveLength(0);
+  await act(async () => tree.root.findByType(TextInput).props.onChangeText('7.5'));
+  expect(tree.root.findByType(OmwRouteRequests).props.radiusKm).toBe(7.5);
+  expectOnlySelected(0);
+  await act(async () => button('omw.useRoute').props.onPress());
+  await act(async () => tree.update(<OmwProvider><React.Fragment /></OmwProvider>));
+  await act(async () => tree.update(<OmwProvider><DriverOmwScreen /></OmwProvider>));
+  expect(tree.root.findByType(OmwRouteRequests).props.radiusKm).toBe(7.5);
 });
