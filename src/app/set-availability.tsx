@@ -65,15 +65,6 @@ function toMinutes(time: string): number {
   return hour * 60 + minute;
 }
 
-function detectDefaultTimezone(countryCode?: string | null): string {
-  if (countryCode?.toUpperCase() === 'CH') {
-    return 'Europe/Zurich';
-  }
-
-  const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return deviceTimezone || 'UTC';
-}
-
 function createDefaultWeeklySchedule(): DriverAvailabilityFormDay[] {
   return ORDERED_DAYS.map((day) => {
     const weekday = day !== 'SATURDAY' && day !== 'SUNDAY';
@@ -92,14 +83,12 @@ export default function SetAvailabilityScreen() {
   const router = useRouter();
   const { t } = useTranslation();
   const {
-    driver,
     refreshDriverAvailability,
     saveDriverAvailability,
     signOut,
   } = useAuth();
 
   const [form, setForm] = useState<DriverAvailabilityForm>({
-    timezone: detectDefaultTimezone(driver?.countryCode),
     isOnline: false,
     serviceRadiusKm: '30',
     acceptsImmediateRequests: true,
@@ -126,7 +115,6 @@ export default function SetAvailabilityScreen() {
 
   const applyAvailability = useCallback((response: Awaited<ReturnType<typeof refreshDriverAvailability>>): void => {
     setForm({
-      timezone: response.timezone || detectDefaultTimezone(driver?.countryCode),
       isOnline: response.isOnline,
       serviceRadiusKm: String(response.serviceRadiusKm ?? 30),
       acceptsImmediateRequests: response.acceptsImmediateRequests,
@@ -142,7 +130,7 @@ export default function SetAvailabilityScreen() {
         };
       }),
     });
-  }, [driver?.countryCode]);
+  }, []);
 
   const loadAvailability = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -171,10 +159,6 @@ export default function SetAvailabilityScreen() {
 
   const fieldErrors = useMemo(() => {
     const errors: Record<string, string> = {};
-
-    if (!form.timezone.trim()) {
-      errors.timezone = t('Timezone is required.');
-    }
 
     const radius = parseNumber(form.serviceRadiusKm);
     if (radius === undefined) {
@@ -266,7 +250,6 @@ export default function SetAvailabilityScreen() {
     const radiusValue = Number(form.serviceRadiusKm.trim());
 
     const payload: UpdateDriverAvailabilityPayload = {
-      timezone: form.timezone.trim(),
       isOnline: form.isOnline,
       serviceRadiusKm: radiusValue,
       cityCoverage: [],
@@ -383,16 +366,6 @@ export default function SetAvailabilityScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('Service Area')}</Text>
-
-          <Text style={styles.fieldLabel}>{t('Timezone *')}</Text>
-          <TextInput
-            style={styles.input}
-            value={form.timezone}
-            onChangeText={(value) => onChange('timezone', value)}
-            placeholder="Europe/Zurich"
-            autoCapitalize="none"
-          />
-          {fieldErrors.timezone ? <Text style={styles.errorText}>{fieldErrors.timezone}</Text> : null}
 
           <Text style={styles.fieldLabel}>{t('Service radius (km) *')}</Text>
           <TextInput

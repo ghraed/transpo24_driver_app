@@ -424,7 +424,7 @@ export type DriverCityCoverage = { city: string; latitude: number; longitude: nu
 
 export interface UpdateDriverAvailabilityPayload {
   cityCoverage: DriverCityCoverage[];
-  timezone: string;
+  timezone?: string;
   isOnline: boolean;
   serviceRadiusKm: number;
   baseLatitude?: number;
@@ -464,7 +464,6 @@ export interface DriverAvailabilityResponse {
 }
 
 export interface DriverAvailabilityForm {
-  timezone: string;
   isOnline: boolean;
   serviceRadiusKm: string;
   acceptsImmediateRequests: boolean;
