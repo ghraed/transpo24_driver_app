@@ -72,3 +72,13 @@ export function useDriverColors(): DriverColors {
   // Preserve the original light appearance regardless of the device setting.
   return light;
 }
+
+// Request pins remain distinct from the green pickup and red destination pins.
+export const driverRequestMarkerColors = {
+  vehicle: '#2563EB',
+  motorcycle: '#7C3AED',
+  bicycle: '#0369A1',
+  goods: '#B45309',
+  furniture: '#BE185D',
+  other: '#475569',
+} as const;

@@ -58,3 +58,21 @@ test('shows a recoverable error and retries loading map markers', async () => {
   expect(tree.root.findAllByType('RequestMarker')).toHaveLength(1);
   expect(copy()).not.toContain('omw.requestsError');
 });
+
+
+test('shows requests around every alternative and deduplicates shared pickups', async () => {
+  const alternative = { coordinates: [{ latitude: 1, longitude: 0 }, { latitude: 1, longitude: 1 }] };
+  const onlyAlternative = { ...alert, requestId: 'alternative-job' };
+  getDriverRouteRequests.mockImplementation(async coordinates => ({ alerts: coordinates === route.coordinates
+    ? [alert] : [alert, onlyAlternative] }));
+  const alternatives = [route, alternative];
+  await act(async () => { tree = create(<OmwRouteRequests route={route} alternatives={alternatives} radiusKm={5}>
+    {markers => <View>{markers}</View>}
+  </OmwRouteRequests>); });
+  expect(getDriverRouteRequests).toHaveBeenCalledWith(alternative.coordinates, 5);
+  expect(tree.root.findAllByType('RequestMarker')).toHaveLength(2);
+  await act(async () => tree.update(<OmwRouteRequests route={alternative} alternatives={alternatives} radiusKm={5}>
+    {markers => <View>{markers}</View>}
+  </OmwRouteRequests>));
+  expect(tree.root.findAllByType('RequestMarker')).toHaveLength(2);
+});

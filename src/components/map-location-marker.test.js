@@ -26,7 +26,8 @@ test('pickup and dropoff use consistent pins with distinct colors and center sym
   tree.root.findByType('Marker').props.onPress();
   expect(onPress).toHaveBeenCalledTimes(1);
   await act(async () => tree.update(<MapLocationMarker kind="dropoff" coordinate={coordinate} title="Dropoff" />));
-  expect(tree.root.findByType('Path').props.fill).toBe('#FF4B3E');
-  expect(tree.root.findAllByType('Rect')).toHaveLength(1);
+  expect(tree.root.findAllByType('Path')[0].props.fill).toBe('#FF4B3E');
+  expect(tree.root.findAllByType('Rect')).toHaveLength(0);
+  expect(tree.root.findAllByType('Path')).toHaveLength(2);
   expect(tree.root.findAllByType('Circle')).toHaveLength(0);
 });

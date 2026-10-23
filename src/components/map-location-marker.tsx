@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import type { MapMarkerProps } from 'react-native-maps';
 import { NativeMarker } from './native-maps';
 
@@ -20,7 +20,7 @@ export function MapLocationIcon({ kind }: { kind: MapLocationKind }) {
           <Path d="M20 42C17 37 5 26 5 17a15 15 0 0 1 30 0c0 9-12 20-15 25Z" fill={MAP_COLORS[kind]} stroke="#FFFFFF" strokeWidth={2} />
           {kind === 'pickup'
             ? <Circle cx={20} cy={17} r={5} fill="#FFFFFF" />
-            : <Rect x={15} y={12} width={10} height={10} rx={1} fill="#FFFFFF" />}
+            : <Path d="M15 25V10 M15 11C19 8 22 14 27 11V19C22 22 19 16 15 19" fill="none" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />}
         </>}
       </Svg>
     </View>

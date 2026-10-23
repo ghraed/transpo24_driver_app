@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Redirect, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useTranslation } from 'react-i18next';
@@ -169,7 +169,7 @@ export default function DriverOmwScreen() {
           action={<DriverButton label={t('omw.refreshRequests')} variant="quiet" onPress={retrySave} />} /> : null}
         {error ? <DriverNotice title={error} tone="danger" /> : null}
         {selected && from && to ? <>
-          <OmwRouteRequests route={selected} radiusKm={radiusKm} enabled={radiusValid}>
+          <OmwRouteRequests route={selected} alternatives={routes} radiusKm={radiusKm} enabled={radiusValid}>
           {(requestMarkers) => isNativeMapRuntimeAvailable && MapView && Polyline ? <View style={[styles.map, { borderColor: colors.border }]}>
             <MapView key={selected.id} ref={map} style={StyleSheet.absoluteFill} onMapReady={fitRoutes}
               initialRegion={{ ...from, latitudeDelta: 0.1, longitudeDelta: 0.1 }} toolbarEnabled={false}>
@@ -225,9 +225,14 @@ export default function DriverOmwScreen() {
             setTrip({ from, to, via, radiusKm, route: selected, routes }); setConfirmed(true);
           }} /> : <DriverText variant="caption" secondary>{t('omw.selectPlaces')}</DriverText>}
           {trip ? <DriverButton label={t('omw.clearTrip')} variant="quiet" onPress={() => {
-            cancelRequest(); setTrip(null); setFrom(null); setTo(null); setRoutes([]); setFormVersion(value => value + 1);
-            setVia(null); setShowVia(false); setResolvingVia(false);
-            setSelected(null); setConfirmed(false); setError(''); setBusy(false);
+            Alert.alert(t('omw.cancelTripTitle'), t('omw.cancelTripMessage'), [
+              { text: t('omw.keepTrip'), style: 'cancel' },
+              { text: t('omw.clearTrip'), style: 'destructive', onPress: () => {
+                cancelRequest(); setTrip(null); setFrom(null); setTo(null); setRoutes([]); setFormVersion(value => value + 1);
+                setVia(null); setShowVia(false); setResolvingVia(false);
+                setSelected(null); setConfirmed(false); setError(''); setBusy(false);
+              } },
+            ]);
           }} /> : null}
         </View>
       </ScrollView>

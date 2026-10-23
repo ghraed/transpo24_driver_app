@@ -1,3 +1,4 @@
+import { MapRequestMarker } from '@/components/map-request-marker';
 import { MapLocationMarker, MapLocationIcon } from '@/components/map-location-marker';
 import { useDriverAccess } from '@/hooks/use-driver-access';
 import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
@@ -212,8 +213,9 @@ export default function DriverMapScreen() {
             {jobMarkers.map((alert) => (
               <React.Fragment key={alert.alertId}>
                 {hasCoordinate(alert.pickup) ? (
-                  <MapLocationMarker
-                    kind="pickup"
+                  <MapRequestMarker
+                    serviceKey={alert.service?.key}
+                    itemType={alert.item?.type}
                     coordinate={alert.pickup}
                     title={t('Pickup')}
                     onPress={() => router.push({ pathname: '/review-request-details', params: { requestId: alert.requestId } })}

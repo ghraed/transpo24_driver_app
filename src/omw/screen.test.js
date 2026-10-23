@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { TextInput } from 'react-native';
+import { Alert, TextInput } from 'react-native';
 import { OmwRouteRequests } from './route-requests';
 import DriverOmwScreen from '@/app/driver-omw';
 import { OmwProvider } from './context';
@@ -39,7 +39,7 @@ const routes = ['Coastal highway', 'Mountain road'].map((summary, index) => ({
   coordinates: [from, { latitude: 34 + index / 10, longitude: 35.6 }, to],
 }));
 let tree;
-beforeEach(() => { jest.clearAllMocks(); findOmwRoutes.mockResolvedValue(routes); });
+beforeEach(() => { jest.spyOn(Alert, 'alert').mockImplementation(() => {}); jest.clearAllMocks(); findOmwRoutes.mockResolvedValue(routes); });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; });
 const button = label => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
 const copy = () => JSON.stringify(tree.toJSON());
@@ -74,6 +74,13 @@ test('requires resolved endpoints, lets the driver choose a route, retains it ac
   expect(selectedLine().props.coordinates).toEqual(routes[1].coordinates);
   expect(button('omw.editTrip')).toBeDefined();
   await act(async () => button('omw.clearTrip').props.onPress());
+  expect(button('omw.editTrip')).toBeDefined();
+  const [title, message, actions] = Alert.alert.mock.calls.at(-1);
+  expect(title).toBe('omw.cancelTripTitle');
+  expect(message).toBe('omw.cancelTripMessage');
+  expect(actions.find(action => action.style === 'cancel').onPress).toBeUndefined();
+  expect(tree.root.findByType(OmwRouteRequests).props.alternatives).toEqual(routes);
+  await act(async () => actions.find(action => action.style === 'destructive').onPress());
   expect(button('omw.findRoutes').props.disabled).toBe(true);
   expect(tree.root.findAllByType('PlaceField').every(node => node.props.value === null)).toBe(true);
 });

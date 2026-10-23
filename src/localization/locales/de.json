@@ -1604,6 +1604,9 @@
   "Requests are matched against this radius from your current GPS location.": "Anfragen werden innerhalb dieses Radius um deinen aktuellen GPS-Standort zugeordnet.",
   "OMW": "OMW",
   "omw": {
+    "cancelTripTitle": "Diese Fahrt abbrechen?",
+    "cancelTripMessage": "Deine gespeicherte OMW-Fahrt wird entfernt.",
+    "keepTrip": "Fahrt behalten",
     "expandRequests": "Anfragen erweitern",
     "collapseRequests": "Anfragen einklappen",
     "saveError": "Deine OMW-Fahrt konnte nicht gespeichert werden. Bitte erneut versuchen.",
@@ -1638,7 +1641,7 @@
     "removeVia": "Zwischenort entfernen",
     "viaHelp": "Wählen Sie einen Zwischenort oder entfernen Sie ihn für eine direkte Routensuche.",
     "radius": "Abholentfernung von der Route",
-    "radiusHelp": "Anfragen mit Abholorten innerhalb dieser Entfernung von Ihrer Route anzeigen.",
+    "radiusHelp": "Zeige Anfragen mit Abholorten innerhalb dieser Entfernung zu einer der angezeigten Routen.",
     "radiusValue": "{{distance}} km",
     "requestsApproval": "Schließen Sie die Registrierung ab und lassen Sie sich freischalten, um Anfragen zu sehen.",
     "requestsTitle": "Anfragen entlang Ihrer Route ({{count}})",

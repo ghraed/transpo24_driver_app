@@ -1604,6 +1604,9 @@
   "Requests are matched against this radius from your current GPS location.": "تتم مطابقة الطلبات ضمن هذا النطاق من موقع GPS الحالي.",
   "OMW": "OMW",
   "omw": {
+    "cancelTripTitle": "إلغاء هذه الرحلة؟",
+    "cancelTripMessage": "ستتم إزالة رحلة OMW المحفوظة.",
+    "keepTrip": "الاحتفاظ بالرحلة",
     "expandRequests": "توسيع الطلبات",
     "collapseRequests": "طي الطلبات",
     "saveError": "تعذّر حفظ رحلة OMW. يرجى إعادة المحاولة.",
@@ -1638,7 +1641,7 @@
     "removeVia": "إزالة المكان الوسطي",
     "viaHelp": "اختر مكاناً للمرور به، أو أزله للبحث عن طرق مباشرة.",
     "radius": "مسافة الاستلام عن الطريق",
-    "radiusHelp": "عرض الطلبات التي تقع نقاط استلامها ضمن هذه المسافة من الطريق المحدّد.",
+    "radiusHelp": "اعرض الطلبات التي تقع نقاط استلامها ضمن هذه المسافة من أي مسار معروض.",
     "radiusValue": "{{distance}} كم",
     "requestsApproval": "أكمل التسجيل واحصل على الموافقة لعرض طلبات الطريق.",
     "requestsTitle": "الطلبات على طريقك ({{count}})",

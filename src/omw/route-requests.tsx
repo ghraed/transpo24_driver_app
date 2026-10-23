@@ -1,17 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { DriverButton, DriverNotice, DriverStatus } from '@/components/ui/driver-ui';
-import { NativeMarker } from '@/components/native-maps';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { MapRequestMarker } from '@/components/map-request-marker';
 import { useDriverAccess } from '@/hooks/use-driver-access';
 import { getDriverRouteRequests } from '@/lib/api';
 import type { DriverRequestAlertSummary } from '@/types/auth';
 import { driverSpace, useDriverColors } from '@/theme/driver-theme';
 import type { OmwRoute } from './routes';
 
-export function OmwRouteRequests({ route, radiusKm, children, enabled = true }: { route: OmwRoute; radiusKm: number; enabled?: boolean; children?: (markers: React.ReactNode) => React.ReactNode }) {
+export function OmwRouteRequests({ route, alternatives, radiusKm, children, enabled = true }: { route: OmwRoute; alternatives?: OmwRoute[]; radiusKm: number; enabled?: boolean; children?: (markers: React.ReactNode) => React.ReactNode }) {
   const { t } = useTranslation();
   const colors = useDriverColors();
   const router = useRouter();
@@ -31,8 +30,14 @@ export function OmwRouteRequests({ route, radiusKm, children, enabled = true }: 
       if (pending || !canInteract || !enabled) return;
       pending = true;
       try {
-        const result = await getDriverRouteRequests(route.coordinates, radiusKm);
-        if (active) { setAlerts(result.alerts); setError(false); }
+        const candidates = alternatives?.length ? alternatives : [route];
+        const results = await Promise.all(candidates.map(candidate => getDriverRouteRequests(candidate.coordinates, radiusKm)));
+        const unique = new Map<string, DriverRequestAlertSummary>();
+        for (const result of results) for (const alert of result.alerts) {
+          const previous = unique.get(alert.requestId);
+          if (!previous || (alert.distanceKm ?? Infinity) < (previous.distanceKm ?? Infinity)) unique.set(alert.requestId, alert);
+        }
+        if (active) { setAlerts([...unique.values()]); setError(false); }
       } catch {
         if (active) { setAlerts([]); setError(true); }
       } finally {
@@ -45,21 +50,13 @@ export function OmwRouteRequests({ route, radiusKm, children, enabled = true }: 
     return () => { active = false; clearInterval(timer); };
   // The retry counter intentionally restarts this focused search.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canInteract, enabled, route.coordinates, radiusKm, reload]));
+  }, [canInteract, enabled, route.coordinates, alternatives, radiusKm, reload]));
 
-  const Marker = NativeMarker;
-  const markers = canInteract && Marker ? alerts.filter(alert => typeof alert.pickup.latitude === 'number' && typeof alert.pickup.longitude === 'number').map(alert => (
-    <Marker key={alert.requestId} coordinate={{ latitude: alert.pickup.latitude!, longitude: alert.pickup.longitude! }}
-      title={alert.item?.title || t('Transport Request')} anchor={{ x: 0.5, y: 0.5 }}
-      onPress={(event: { stopPropagation?: () => void }) => { event?.stopPropagation?.(); viewDetails(alert.requestId); }}>
-      <View collapsable={false} style={styles.marker}>
-        <Svg width={48} height={48} viewBox="0 0 48 48">
-          <Circle cx={24} cy={24} r={22} fill={colors.primary} stroke={colors.surface} strokeWidth={3} />
-          <Path d="M10 15h18v17H10z M28 21h6l5 6v5H28 M14 32a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M30 32a3 3 0 1 0 6 0a3 3 0 1 0-6 0"
-            fill="none" stroke={colors.surface} strokeWidth={2.2} strokeLinejoin="round" />
-        </Svg>
-      </View>
-    </Marker>
+  const markers = canInteract ? alerts.filter(alert => typeof alert.pickup.latitude === 'number' && typeof alert.pickup.longitude === 'number').map(alert => (
+    <MapRequestMarker key={alert.requestId} coordinate={{ latitude: alert.pickup.latitude!, longitude: alert.pickup.longitude! }}
+      serviceKey={alert.service?.key} itemType={alert.item?.type}
+      title={alert.item?.title || t('Transport Request')}
+      onPress={(event) => { event.stopPropagation(); viewDetails(alert.requestId); }} />
   )) : null;
   return <View style={{ gap: driverSpace.lg, alignSelf: 'stretch' }}>
     {children?.(markers)}
@@ -69,5 +66,3 @@ export function OmwRouteRequests({ route, radiusKm, children, enabled = true }: 
         action={<DriverButton label={t('omw.refreshRequests')} variant="quiet" onPress={() => setReload(value => value + 1)} />} /> : null}
   </View>;
 }
-
-const styles = StyleSheet.create({ marker: { width: 48, height: 48 } });

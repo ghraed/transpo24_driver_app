@@ -1175,6 +1175,9 @@
   "Requests are matched against this radius from your current GPS location.": "Le richieste vengono selezionate entro questo raggio dalla tua posizione GPS attuale.",
   "OMW": "OMW",
   "omw": {
+    "cancelTripTitle": "Annullare questo viaggio?",
+    "cancelTripMessage": "Il viaggio OMW salvato verrà rimosso.",
+    "keepTrip": "Mantieni viaggio",
     "expandRequests": "Espandi richieste",
     "collapseRequests": "Riduci richieste",
     "saveError": "Impossibile salvare il viaggio OMW. Riprova.",
@@ -1209,7 +1212,7 @@
     "removeVia": "Rimuovi luogo di passaggio",
     "viaHelp": "Scegli un luogo di passaggio o rimuovilo per cercare percorsi diretti.",
     "radius": "Distanza del ritiro dal percorso",
-    "radiusHelp": "Mostra le richieste con punti di ritiro entro questa distanza dal percorso.",
+    "radiusHelp": "Mostra le richieste con ritiro entro questa distanza da uno qualsiasi dei percorsi visualizzati.",
     "radiusValue": "{{distance}} km",
     "requestsApproval": "Completa la registrazione e ottieni l’approvazione per vedere le richieste.",
     "requestsTitle": "Richieste sul tuo percorso ({{count}})",
