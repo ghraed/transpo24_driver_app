@@ -11,7 +11,11 @@ const VEHICLE_INFORMATION_DRAFT_KEY = 'transpo24.driver.vehicleInformationDraft'
 const LOAD_CAPACITY_DRAFT_KEY = 'transpo24.driver.loadCapacityDraft';
 
 export async function persistAccessToken(token: string): Promise<void> {
-  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
+  // Active-trip location tasks must authenticate while an iPhone is locked.
+  // Keep the token on this device and require its first unlock after a reboot.
+  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token, {
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+  });
 }
 
 export async function readAccessToken(): Promise<string | null> {

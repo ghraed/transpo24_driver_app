@@ -26,7 +26,7 @@ afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = 
 async function submit() {
   await act(async () => { tree = create(<SendPriceOffer />); });
   await act(async () => { tree.root.findAllByType(TextInput)[0].props.onChangeText('100'); });
-  await act(async () => { tree.root.findAll(node => typeof node.props.onPress === 'function')[0].props.onPress(); });
+  await act(async () => { tree.root.findAll(node => node.props.accessibilityLabel === 'Submit Offer' && typeof node.props.onPress === 'function')[0].props.onPress(); });
 }
 it('submits the version carried from the viewed details', async () => {
   sendDriverPriceOffer.mockResolvedValue({ request: { id: 'request', status: 'QUOTED' }, offer: { id: 'offer' } });

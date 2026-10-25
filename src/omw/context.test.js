@@ -13,7 +13,11 @@ const to = { latitude: 34, longitude: 36, address: 'Destination' };
 const trip = { from: { ...to, latitude: 33 }, to, via: null, radiusKm: 5,
   route: { id: 'route', coordinates: [{ ...to, latitude: 33 }, to] }, routes: [] };
 let state, tree, onLocation;
-function Consumer() { state = useOmwTrip(); return null; }
+function Consumer() {
+  const value = useOmwTrip();
+  React.useEffect(() => { state = value; }, [value]);
+  return null;
+}
 async function mount(id = 'driver-one') {
   await act(async () => { tree = create(<OmwProvider driverId={id}><Consumer /></OmwProvider>); });
 }

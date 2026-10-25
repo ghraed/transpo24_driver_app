@@ -3,7 +3,7 @@ import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { beforeEach, afterEach, expect, it, jest } from '@jest/globals';
 import * as Location from 'expo-location';
-import { getDriverAvailability, getDriverRequestAlerts } from '@/lib/api';
+import { getDriverAvailability, getDriverMapRequests } from '@/lib/api';
 import { RequestTypeTabs } from '@/components/request-type-tabs';
 import DriverMap from '../src/app/driver-map';
 
@@ -18,7 +18,7 @@ jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
 jest.mock('@/components/driver-icon', () => ({ DriverIcon: () => null }));
 jest.mock('@/components/driver-bottom-nav', () => ({ DriverBottomNav: () => null }));
 jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: async () => {} }));
-jest.mock('@/lib/api', () => ({ getDriverAvailability: jest.fn(), getDriverRequestAlerts: jest.fn(), updateDriverOnlineStatus: jest.fn() }));
+jest.mock('@/lib/api', () => ({ getDriverAvailability: jest.fn(), getDriverMapRequests: jest.fn(), updateDriverOnlineStatus: jest.fn() }));
 jest.mock('expo-location', () => ({ PermissionStatus: { GRANTED: 'granted' }, Accuracy: { High: 4 }, requestForegroundPermissionsAsync: jest.fn(), getLastKnownPositionAsync: jest.fn(), getCurrentPositionAsync: jest.fn(), watchPositionAsync: jest.fn() }));
 jest.mock('@/components/native-maps', () => {
   const React = require('react');
@@ -33,7 +33,7 @@ let tree;
 beforeEach(() => {
   jest.useFakeTimers(); jest.clearAllMocks();
   getDriverAvailability.mockResolvedValue({ isOnline: true, baseLatitude: 47.38, baseLongitude: 8.54, cityCoverage: [{ city: 'Zurich', latitude: 47.38, longitude: 8.54 }] });
-  getDriverRequestAlerts.mockResolvedValue({ alerts: [alert('immediate', true), alert('scheduled', false), alert('old', true, false)], locationReference: 'GPS' });
+  getDriverMapRequests.mockResolvedValue({ alerts: [alert('immediate', true), alert('scheduled', false), alert('outside-notification-radius', true, false)] });
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
   Location.getLastKnownPositionAsync.mockResolvedValue(fix);
   Location.getCurrentPositionAsync.mockResolvedValue(fix);
@@ -42,15 +42,15 @@ beforeEach(() => {
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; jest.useRealTimers(); });
 async function render() { await act(async () => { tree = create(<DriverMap />); }); }
 const pickupMarkers = () => tree.root.findAllByType('Marker').filter(marker => marker.props.title === 'Pickup');
-it('opens at local zoom and shows current immediate matches only', async () => {
+it('opens at local zoom and shows all open immediate jobs regardless of notification eligibility', async () => {
   await render();
   const map = tree.root.findByType('MapView');
   expect(map.props.initialRegion).toEqual({ latitude: 47.38, longitude: 8.54, latitudeDelta: 0.02, longitudeDelta: 0.02 });
-  expect(pickupMarkers()).toHaveLength(1);
+  expect(pickupMarkers()).toHaveLength(2);
   await act(async () => pickupMarkers()[0].props.onPress());
   expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ params: { requestId: 'immediate' } }));
 });
-it('switches to eligible scheduled pickups and centers their city coverage', async () => {
+it('switches to scheduled pickups', async () => {
   await render();
   await act(async () => tree.root.findByType(RequestTypeTabs).props.onChange('scheduled'));
   expect(pickupMarkers()).toHaveLength(1);
@@ -61,10 +61,11 @@ it('switches to eligible scheduled pickups and centers their city coverage', asy
 it('never mounts a world map while location and base are unavailable', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
   getDriverAvailability.mockResolvedValue({ isOnline: true, baseLatitude: null, baseLongitude: null, cityCoverage: [] });
+  getDriverMapRequests.mockResolvedValue({ alerts: [] });
   await render();
   expect(tree.root.findAllByType('MapView')).toHaveLength(0);
 });
-it('uses the saved base at local zoom when GPS permission is denied', async () => {
+it('uses an open pickup at local zoom when GPS permission is denied', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
   await render();
   expect(tree.root.findByType('MapView').props.initialRegion.latitudeDelta).toBe(0.02);

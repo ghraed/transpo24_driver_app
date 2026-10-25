@@ -21,7 +21,6 @@ function hasCoordinates(stop: Stop): stop is { latitude: number; longitude: numb
 
 function RouteMap({ pickup, dropoff, pickupAddress, dropoffAddress }: Props) {
   const { t } = useTranslation();
-  const colors = useDriverColors();
   const map = useRef<{ fitToCoordinates: (coordinates: Stop[], options: object) => void } | null>(null);
   const routeCoordinates = useRef<Stop[]>([]);
   const onRouteReady = useCallback((coordinates: { latitude: number; longitude: number }[]) => {

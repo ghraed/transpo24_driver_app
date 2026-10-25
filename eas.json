@@ -45,6 +45,11 @@
     },
     "production": {
       "environment": "production",
+      "ios": {
+        "image": "sdk-56",
+        "distribution": "store",
+        "channel": "production-ios"
+      },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://api.transpo24.com",
@@ -71,6 +76,9 @@
       }
     },
     "production": {
+      "ios": {
+        "appleTeamId": "GQ79L2HQU5"
+      },
       "android": {
         "track": "production"
       }

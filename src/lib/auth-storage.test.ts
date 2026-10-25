@@ -2,15 +2,17 @@ import { beforeEach, expect, jest, test } from '@jest/globals';
 import * as SecureStore from 'expo-secure-store';
 import { clearDriverOnboardingDrafts, persistAccessToken, readAccessToken, persistTrustedDriverSession, readTrustedDriverSession, persistRememberedCredentials, readRememberedCredentials } from './auth-storage';
 
-jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
+jest.mock('expo-secure-store', () => ({ AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1, getItemAsync: jest.fn(), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
 const get = jest.mocked(SecureStore.getItemAsync);
 const set = jest.mocked(SecureStore.setItemAsync);
 const del = jest.mocked(SecureStore.deleteItemAsync);
 beforeEach(() => { jest.clearAllMocks(); get.mockResolvedValue(null); set.mockResolvedValue(undefined); del.mockResolvedValue(undefined); });
 
-test('access token uses secure storage', async () => {
+test('access token remains available to locked-screen trip tasks after the first device unlock', async () => {
   await persistAccessToken('secret');
-  expect(set).toHaveBeenCalledWith('transpo24.driver.accessToken', 'secret');
+  expect(set).toHaveBeenCalledWith('transpo24.driver.accessToken', 'secret', {
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+  });
   get.mockResolvedValueOnce('secret');
   expect(await readAccessToken()).toBe('secret');
 });

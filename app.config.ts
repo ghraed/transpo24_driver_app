@@ -16,6 +16,17 @@ const ANDROID_GOOGLE_SERVICES_FILE =
   './google-services.json';
 
 export default ({ config }: ConfigContext) => {
+  if (process.env.EAS_BUILD_PLATFORM === 'ios' && BUILD_PROFILE === 'production') {
+    if (IS_DEV) {
+      throw new Error('iOS production builds must not use APP_VARIANT=development.');
+    }
+    if (!/^AIza[\w-]{30,}$/.test(MAPS_IOS_KEY)) {
+      throw new Error('iOS production builds require EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY in the EAS production environment.');
+    }
+    if (config.ios?.bundleIdentifier !== 'com.transpo24.driver') {
+      throw new Error('iOS production builds must use bundle identifier com.transpo24.driver.');
+    }
+  }
   const androidPackage = IS_DEV ? 'com.transpo24.driver.dev' : config.android?.package;
   const androidGoogleServicesFile = IS_DEV
     ? process.env.EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE?.trim() || ''

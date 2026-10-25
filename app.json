@@ -9,7 +9,11 @@
     "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.transpo24.driver"
+      "bundleIdentifier": "com.transpo24.driver",
+      "appleTeamId": "GQ79L2HQU5",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {

@@ -20,7 +20,7 @@ jest.mock('expo-location', () => ({
   requestBackgroundPermissionsAsync: jest.fn(), hasStartedLocationUpdatesAsync: jest.fn(),
   startLocationUpdatesAsync: jest.fn(), stopLocationUpdatesAsync: jest.fn(),
 }));
-jest.mock('expo-secure-store', () => ({ getItemAsync: jest.fn(), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
+jest.mock('expo-secure-store', () => ({ AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY: 1, getItemAsync: jest.fn(), setItemAsync: jest.fn(), deleteItemAsync: jest.fn() }));
 jest.mock('@/lib/api', () => ({ getDriverAcceptedJobDetails: jest.fn(), ApiResponseError: class extends Error {} }));
 jest.mock('@/lib/auth-storage', () => ({ readAccessToken: jest.fn() }));
 jest.mock('@/config/backend', () => ({ getBackendSocketUrl: () => 'http://socket.test' }));
@@ -68,6 +68,9 @@ test('starts only during the existing moving trip statuses', async () => {
 });
 test('sends the latest background point using the existing customer update event', async () => {
   await startBackgroundTripTracking('trip');
+  expect(SecureStore.setItemAsync).toHaveBeenCalledWith('transpo24.driver.backgroundTrip', 'trip', {
+    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+  });
   await handleBackgroundLocations([{ ...point(), timestamp: Date.now() - 180000 }, point()]);
   expect(socket.emit).toHaveBeenCalledWith('driverLocationUpdate', { tripId: 'trip', latitude: 47.5, longitude: 7.6, accuracy: 10 }, expect.any(Function));
   expect(socket.disconnect).toHaveBeenCalled();

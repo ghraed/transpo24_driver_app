@@ -88,7 +88,10 @@ export async function startBackgroundTripTracking(
     // Recheck after the user returns from OS settings: the trip may have ended.
     const current = await getDriverAcceptedJobDetails(tripId);
     if (!MOVING_STATUSES.has(current.requestStatus) || !isActive()) return false;
-    await SecureStore.setItemAsync(TRIP_KEY, tripId);
+    // The background callback reads this context even when the phone is locked.
+    await SecureStore.setItemAsync(TRIP_KEY, tripId, {
+      keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+    });
     try {
       await Location.startLocationUpdatesAsync(BACKGROUND_TRIP_TASK, {
         accuracy: Location.Accuracy.High,

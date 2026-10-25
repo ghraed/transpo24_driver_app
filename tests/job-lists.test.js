@@ -109,7 +109,7 @@ it('separates immediate and scheduled requests without hiding previously receive
   await render(Jobs);
   expect(contains('Nearby pickup address')).toBe(true);
   expect(contains('Test pickup')).toBe(false);
-  expect(contains('GPS unavailable: pickups use your saved base. Tap to edit.')).toBe(true);
+  expect(contains('Enable GPS and location access to receive requests.')).toBe(true);
   await selectType('scheduled');
   expect(contains('Test pickup')).toBe(true);
   expect(contains('Previously received')).toBe(true);
