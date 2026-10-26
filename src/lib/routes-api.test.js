@@ -32,3 +32,11 @@ test('propagates cancellation to the backend request', async () => {
   });
   await expect(computeDriverRoutes({ latitude: 47, longitude: 8 }, { latitude: 48, longitude: 9 }, controller.signal)).rejects.toThrow('aborted');
 });
+
+test.each([502, 503])('preserves backend routing failure status %s instead of treating it as a route response', async status => {
+  global.fetch = jest.fn(async () => ({ ok: false, status,
+    text: async () => JSON.stringify({ message: 'Route service is not configured.' }),
+  }));
+  await expect(computeDriverRoutes({ latitude: 48.266, longitude: 7.722 }, { latitude: 47.494, longitude: 7.619 }, new AbortController().signal))
+    .rejects.toMatchObject({ status, sourceMessage: 'Route service is not configured.' });
+});

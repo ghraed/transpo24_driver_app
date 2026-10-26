@@ -7,7 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DriverBottomNav, DRIVER_BOTTOM_NAV_HEIGHT } from '@/components/driver-bottom-nav';
 import { NativeMapView, NativeMarker, NativePolyline, isNativeMapRuntimeAvailable } from '@/components/native-maps';
 import { MapLocationMarker } from '@/components/map-location-marker';
-import { DriverButton, DriverCard, DriverNotice, DriverStatus, DriverText } from '@/components/ui/driver-ui';
+import { DriverButton, DriverCard, DriverIcon, DriverNotice, DriverStatus, DriverText } from '@/components/ui/driver-ui';
 import { TripRouteCard } from '@/components/ui/trip-ui';
 import { useAuth } from '@/context/auth-context';
 import type { ResolvedPlaceLocation } from '@/lib/places';
@@ -19,6 +19,7 @@ import { driverLayout, driverRadius, driverSpace, useDriverColors } from '@/them
 
 export default function DriverOmwScreen() {
   const { t, i18n } = useTranslation();
+  const isRTL = i18n.dir() === 'rtl';
   const colors = useDriverColors();
   const insets = useSafeAreaInsets();
   const { accessToken } = useAuth();
@@ -110,8 +111,12 @@ export default function DriverOmwScreen() {
       if (request.signal.aborted) return;
       setRoutes(result); setSelected(result[0] ?? null);
       if (!result.length) setError(t('omw.noRoutes'));
-    } catch {
-      if (controller.current === request) setError(t('omw.routeError'));
+    } catch (requestError) {
+      if (controller.current === request) {
+        const status = requestError && typeof requestError === 'object' && 'status' in requestError
+          ? requestError.status : undefined;
+        setError(t(status === 502 || status === 503 ? 'omw.routeServiceUnavailable' : 'omw.routeError'));
+      }
     } finally {
       clearTimeout(timeout);
       if (controller.current === request) {
@@ -150,17 +155,38 @@ export default function DriverOmwScreen() {
             <DriverText>{trip.via.address}</DriverText>
           </DriverCard> : null}
         </> : <DriverCard key={formVersion}>
-          <OmwPlaceField label={t('omw.from')} value={from} onChange={place => changeEndpoint('from', place)} disabled={busy} onResolvingChange={setResolvingFrom} />
-          {showVia ? <>
-            <OmwPlaceField label={t('omw.via')} value={via} onChange={place => changeEndpoint('via', place)} disabled={busy} onResolvingChange={setResolvingVia} />
+          <OmwPlaceField label={t('omw.from')} value={from} mapCenter={to ?? via} onChange={place => changeEndpoint('from', place)} disabled={busy} onResolvingChange={setResolvingFrom} />
+          {showVia ? <View style={[styles.viaPanel, { borderColor: colors.border, backgroundColor: colors.surfaceSubtle }]}>
+            <View style={[styles.viaHeader, isRTL && styles.rtlRow]}>
+              <DriverText variant="caption" secondary style={styles.viaCopy}>{t('omw.optionalStop')}</DriverText>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('omw.removeVia')}
+                accessibilityState={{ disabled: busy }} disabled={busy}
+                onPress={() => { changeEndpoint('via', null); setShowVia(false); setResolvingVia(false); }}
+                style={({ pressed }) => [styles.removeVia, { backgroundColor: colors.surface,
+                  opacity: busy ? 0.4 : pressed ? 0.65 : 1 }]}>
+                <DriverIcon name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+            <OmwPlaceField label={t('omw.via')} value={via} mapCenter={from ?? to} onChange={place => changeEndpoint('via', place)} disabled={busy} onResolvingChange={setResolvingVia} />
             <DriverText secondary variant="caption">{t('omw.viaHelp')}</DriverText>
-            <DriverButton label={t('omw.removeVia')} variant="quiet" disabled={busy} onPress={() => {
-              changeEndpoint('via', null); setShowVia(false); setResolvingVia(false);
-            }} />
-          </> : <DriverButton label={t('omw.addVia')} variant="quiet" disabled={busy} onPress={() => {
-            changeEndpoint('via', null); setShowVia(true);
-          }} />}
-          <OmwPlaceField label={t('omw.to')} value={to} onChange={place => changeEndpoint('to', place)} disabled={busy} onResolvingChange={setResolvingTo} />
+          </View> : <Pressable accessibilityRole="button" accessibilityLabel={t('omw.addVia')}
+            accessibilityState={{ disabled: busy, expanded: false }} disabled={busy}
+            onPress={() => { changeEndpoint('via', null); setShowVia(true); }}
+            style={({ pressed }) => [styles.addVia, { borderColor: colors.border,
+              backgroundColor: pressed ? colors.primarySoft : colors.surfaceSubtle,
+              flexDirection: isRTL ? 'row-reverse' : 'row', opacity: busy ? 0.4 : 1 }]}>
+            <View style={[styles.addViaIcon, { backgroundColor: colors.primarySoft }]}>
+              <DriverIcon name={{ ios: 'plus', android: 'add', web: 'add' }} color={colors.success} size={22} />
+            </View>
+            <View style={styles.viaCopy}>
+              <DriverText variant="label" style={{ textAlign: isRTL ? 'right' : 'left' }}>{t('omw.addVia')}</DriverText>
+              <DriverText variant="caption" secondary style={{ textAlign: isRTL ? 'right' : 'left' }}>{t('omw.optionalStop')}</DriverText>
+            </View>
+            <DriverIcon name={{ ios: isRTL ? 'chevron.left' : 'chevron.right',
+              android: isRTL ? 'chevron_left' : 'chevron_right',
+              web: isRTL ? 'chevron_left' : 'chevron_right' }} size={16} />
+          </Pressable>}
+          <OmwPlaceField label={t('omw.to')} value={to} mapCenter={from ?? via} onChange={place => changeEndpoint('to', place)} disabled={busy} onResolvingChange={setResolvingTo} />
           <DriverButton label={t('omw.findRoutes')} onPress={() => void findRoutes()} disabled={!from || !to || isResolving || (showVia && !via)} loading={busy}
             variant={routes.length ? 'secondary' : 'primary'} />
         </DriverCard>}
@@ -245,6 +271,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { width: '100%', maxWidth: driverLayout.maxWidth, alignSelf: 'center', padding: driverLayout.gutter, gap: driverSpace.lg },
   heading: { gap: driverSpace.sm },
+  addVia: { minHeight: 80, alignItems: 'center', gap: driverSpace.md,
+    padding: driverSpace.lg, borderWidth: 1, borderStyle: 'dashed', borderRadius: driverRadius.md },
+  addViaIcon: { width: 40, height: 40, borderRadius: driverRadius.md, alignItems: 'center', justifyContent: 'center' },
+  viaCopy: { flex: 1, minWidth: 0, gap: driverSpace.xs },
+  viaPanel: { padding: driverSpace.lg, gap: driverSpace.sm, borderWidth: 1, borderRadius: driverRadius.md },
+  viaHeader: { flexDirection: 'row', alignItems: 'center', gap: driverSpace.sm },
+  removeVia: { width: 48, height: 48, borderRadius: driverRadius.sm, alignItems: 'center', justifyContent: 'center' },
+  rtlRow: { flexDirection: 'row-reverse' },
   map: { height: 240, borderWidth: 1, borderRadius: driverRadius.lg, overflow: 'hidden' },
   radiusInput: { minHeight: 52, borderWidth: 1, borderRadius: driverRadius.md, padding: driverSpace.lg, fontSize: 16 },
   radiusOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: driverSpace.sm },

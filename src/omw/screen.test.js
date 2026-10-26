@@ -7,7 +7,7 @@ import { OmwProvider } from './context';
 import { findOmwRoutes } from './routes';
 
 const mockT = (key, values) => key === 'omw.routeVia' ? `Route ${values.number} via ${values.road}` : key;
-jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { resolvedLanguage: 'en' } }) }));
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { resolvedLanguage: 'en', dir: () => 'ltr' } }) }));
 jest.mock('expo-router', () => ({
   Redirect: () => null,
   useFocusEffect: callback => require('react').useEffect(callback, [callback]),
@@ -250,4 +250,12 @@ test('uses a custom route radius, rejects invalid input, and retains the radius 
   await act(async () => tree.update(<OmwProvider><React.Fragment /></OmwProvider>));
   await act(async () => tree.update(<OmwProvider><DriverOmwScreen /></OmwProvider>));
   expect(tree.root.findByType(OmwRouteRequests).props.radiusKm).toBe(7.5);
+});
+
+test.each([502, 503])('reports a route service failure (%s) without blaming the device connection', async status => {
+  findOmwRoutes.mockRejectedValueOnce(Object.assign(new Error('Routes unavailable.'), { status }));
+  await render(); await endpoints();
+  await act(async () => button('omw.findRoutes').props.onPress());
+  expect(copy()).toContain('omw.routeServiceUnavailable');
+  expect(copy()).not.toContain('omw.routeError');
 });

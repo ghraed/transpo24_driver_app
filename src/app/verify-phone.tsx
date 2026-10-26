@@ -96,7 +96,11 @@ export default function VerifyPhoneScreen() {
           await clearLastOnboardingRoute();
         }
 
-        router.dismissAll();
+        // Authentication can remount the navigator with only one screen.
+        // POP_TO_TOP is only valid when there is history to dismiss.
+        if (router.canDismiss()) {
+          router.dismissAll();
+        }
         router.replace(targetRoute as Href);
       } catch (requestError) {
         setError(

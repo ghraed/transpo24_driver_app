@@ -1,4 +1,5 @@
 import { useDriverAccess } from '@/hooks/use-driver-access';
+import { DriverProfileCompletionCard } from '@/components/driver-profile-completion-card';
 import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
 import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
 import { RequestCoverageNotice } from '@/components/request-coverage-notice';
@@ -23,6 +24,8 @@ import { DriverIcon, type DriverIconName } from '@/components/driver-icon';
 import { DriverJobSwitcher } from '@/components/driver-job-switcher';
 import { readAccessToken } from '@/lib/auth-storage';
 import { getDriverRequestAlerts } from '@/lib/api';
+import { getSourceErrorMessage } from '@/localization/response-message';
+import { driverSpace } from '@/theme/driver-theme';
 import { formatDateTime } from '@/localization/format';
 import { useAppLanguage } from '@/localization/provider';
 import { translateDynamicBatch } from '@/services/translation-service';
@@ -101,6 +104,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [profileRequired, setProfileRequired] = useState(false);
   const [requestType, setRequestType] = useState<RequestType>('immediate');
   const [locationReference, setLocationReference] = useState<'GPS' | 'BASE' | 'NONE'>('NONE');
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
@@ -121,6 +125,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
       if (version !== loadVersion.current) return;
       const nextAlerts = response.alerts ?? [];
       setAlerts(nextAlerts);
+      setProfileRequired(false);
 
       if (language === 'ar') {
         setTranslatedTitles(Object.fromEntries(nextAlerts.map((alert) => [
@@ -140,6 +145,8 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
       }
     } catch (requestError) {
       if (version !== loadVersion.current) return;
+      const sourceMessage = getSourceErrorMessage(requestError);
+      setProfileRequired(sourceMessage.toLowerCase().includes('driver profile must be completed'));
       setError(requestError instanceof Error ? requestError.message : t('Unable to load requests.'));
     } finally {
       if (version === loadVersion.current) {
@@ -182,9 +189,11 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
     [alerts, requestType, pendingOnly],
   );
 
+  const showProfileCompletion = profileRequired && alerts.length === 0;
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <DriverRegistrationNotice />
+      {!showProfileCompletion && <DriverRegistrationNotice />}
       <StatusBar style="dark" />
 
       <View style={styles.header}>
@@ -200,7 +209,11 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
         {pendingOnly ? <Text style={styles.emptyText}>{t('Waiting for client payment. New offers are closed.')}</Text> : <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />}
       </View>
 
-      {isLoading && alerts.length === 0 ? (
+      {showProfileCompletion ? (
+        <ScrollView contentContainerStyle={styles.profileCompletionContent}>
+          <DriverProfileCompletionCard onFinishProfile={() => router.push('/complete-profile')} />
+        </ScrollView>
+      ) : isLoading && alerts.length === 0 ? (
         <View style={styles.centeredState}>
           <ActivityIndicator size="large" color="#F4B900" />
           <Text style={styles.stateText}>{t('Loading job requests…')}</Text>
@@ -470,6 +483,13 @@ const styles = StyleSheet.create({
   matchText: {
     color: '#F3B800',
     fontSize: 15,
+  },
+  profileCompletionContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: driverSpace.xl,
+    paddingTop: driverSpace.xl,
+    paddingBottom: DRIVER_BOTTOM_NAV_HEIGHT + driverSpace.xxl,
   },
   centeredState: {
     flex: 1,

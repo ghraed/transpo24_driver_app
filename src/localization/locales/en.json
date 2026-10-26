@@ -1624,7 +1624,7 @@
     "currentRoute": "Your OMW route",
     "editTrip": "Edit trip",
     "clearTrip": "Cancel trip",
-    "selectPlaces": "Select a starting point and destination from the suggestions to find routes.",
+    "selectPlaces": "Choose a starting point and destination using search or the map to find routes.",
     "noPlaces": "No places found. Try a nearby city or a more specific address.",
     "placeError": "Unable to find this place. Please try again.",
     "samePlace": "Choose a different starting point and destination.",
@@ -1652,7 +1652,18 @@
     "noRequestsHelp": "Try a larger radius. Requests must match your vehicle and availability.",
     "requestDistance": "Pickup is {{distance}} km from your route",
     "viewRequest": "View request",
-    "radiusError": "Enter a radius from 1 to 50 km."
+    "radiusError": "Enter a radius from 1 to 50 km.",
+    "chooseOnMap": "Choose on map",
+    "mapPickHelp": "Search for an address, then tap the map or drag the pin to choose the exact location.",
+    "selectedLocation": "Selected location",
+    "mapAddressFallback": "Address unavailable. Your selected map point will still be used.",
+    "useThisLocation": "Use this location",
+    "routeServiceUnavailable": "Route planning is currently unavailable. Please try again later.",
+    "optionalStop": "Optional stop"
   },
-  "Map shows all open requests. Radius applies to notifications only.": "Map shows all open requests. Radius applies to notifications only."
+  "Map shows all open requests. Radius applies to notifications only.": "Map shows all open requests. Radius applies to notifications only.",
+  "Profile incomplete": "Profile incomplete",
+  "Complete your driver profile": "Complete your driver profile",
+  "Add your personal information to continue your driver registration.": "Add your personal information to continue your driver registration.",
+  "Finish Profile": "Finish Profile"
 }

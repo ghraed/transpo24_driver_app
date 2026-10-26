@@ -1195,7 +1195,7 @@
     "currentRoute": "Il tuo percorso OMW",
     "editTrip": "Modifica viaggio",
     "clearTrip": "Annulla viaggio",
-    "selectPlaces": "Seleziona partenza e destinazione dai suggerimenti per trovare i percorsi.",
+    "selectPlaces": "Scegli partenza e destinazione con la ricerca o la mappa per trovare i percorsi.",
     "noPlaces": "Nessun luogo trovato. Prova una città vicina o un indirizzo più preciso.",
     "placeError": "Impossibile trovare questo luogo. Riprova.",
     "samePlace": "Scegli luoghi diversi per partenza e destinazione.",
@@ -1223,7 +1223,18 @@
     "noRequestsHelp": "Prova un raggio maggiore. Le richieste devono corrispondere al veicolo e alla disponibilità.",
     "requestDistance": "Ritiro a {{distance}} km dal percorso",
     "viewRequest": "Vedi richiesta",
-    "radiusError": "Inserisci un raggio da 1 a 50 km."
+    "radiusError": "Inserisci un raggio da 1 a 50 km.",
+    "chooseOnMap": "Scegli sulla mappa",
+    "mapPickHelp": "Cerca un indirizzo, poi tocca la mappa o trascina il segnaposto per scegliere la posizione esatta.",
+    "selectedLocation": "Posizione selezionata",
+    "mapAddressFallback": "Indirizzo non disponibile. Verrà usato il punto scelto sulla mappa.",
+    "useThisLocation": "Usa questa posizione",
+    "routeServiceUnavailable": "Il calcolo dei percorsi non è al momento disponibile. Riprova più tardi.",
+    "optionalStop": "Tappa facoltativa"
   },
-  "Map shows all open requests. Radius applies to notifications only.": "La mappa mostra tutte le richieste aperte. Il raggio si applica solo alle notifiche."
+  "Map shows all open requests. Radius applies to notifications only.": "La mappa mostra tutte le richieste aperte. Il raggio si applica solo alle notifiche.",
+  "Profile incomplete": "Profilo incompleto",
+  "Complete your driver profile": "Completa il tuo profilo conducente",
+  "Add your personal information to continue your driver registration.": "Aggiungi le tue informazioni personali per continuare la registrazione come conducente.",
+  "Finish Profile": "Completa il profilo"
 }

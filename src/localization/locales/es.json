@@ -1624,7 +1624,7 @@
     "currentRoute": "Tu ruta OMW",
     "editTrip": "Editar viaje",
     "clearTrip": "Cancelar viaje",
-    "selectPlaces": "Selecciona un origen y un destino de las sugerencias para buscar rutas.",
+    "selectPlaces": "Elige el origen y el destino con la búsqueda o el mapa para encontrar rutas.",
     "noPlaces": "No se encontraron lugares. Prueba una ciudad cercana o una dirección más precisa.",
     "placeError": "No se pudo encontrar este lugar. Inténtalo de nuevo.",
     "samePlace": "Elige un origen y un destino diferentes.",
@@ -1652,7 +1652,18 @@
     "noRequestsHelp": "Prueba un radio mayor. Las solicitudes deben coincidir con tu vehículo y disponibilidad.",
     "requestDistance": "Recogida a {{distance}} km de tu ruta",
     "viewRequest": "Ver solicitud",
-    "radiusError": "Introduce un radio de 1 a 50 km."
+    "radiusError": "Introduce un radio de 1 a 50 km.",
+    "chooseOnMap": "Elegir en el mapa",
+    "mapPickHelp": "Busca una dirección y toca el mapa o arrastra el marcador para elegir la ubicación exacta.",
+    "selectedLocation": "Ubicación seleccionada",
+    "mapAddressFallback": "Dirección no disponible. Se usará el punto que has elegido en el mapa.",
+    "useThisLocation": "Usar esta ubicación",
+    "routeServiceUnavailable": "La planificación de rutas no está disponible en este momento. Inténtalo de nuevo más tarde.",
+    "optionalStop": "Parada opcional"
   },
-  "Map shows all open requests. Radius applies to notifications only.": "El mapa muestra todas las solicitudes abiertas. El radio solo se aplica a las notificaciones."
+  "Map shows all open requests. Radius applies to notifications only.": "El mapa muestra todas las solicitudes abiertas. El radio solo se aplica a las notificaciones.",
+  "Profile incomplete": "Perfil incompleto",
+  "Complete your driver profile": "Completa tu perfil de conductor",
+  "Add your personal information to continue your driver registration.": "Añade tu información personal para continuar con tu registro como conductor.",
+  "Finish Profile": "Completar perfil"
 }

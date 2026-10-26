@@ -1624,7 +1624,7 @@
     "currentRoute": "Votre itinéraire OMW",
     "editTrip": "Modifier le trajet",
     "clearTrip": "Annuler le trajet",
-    "selectPlaces": "Sélectionnez un départ et une destination parmi les suggestions pour trouver des itinéraires.",
+    "selectPlaces": "Choisissez un départ et une destination avec la recherche ou la carte pour trouver des itinéraires.",
     "noPlaces": "Aucun lieu trouvé. Essayez une ville voisine ou une adresse plus précise.",
     "placeError": "Impossible de trouver ce lieu. Réessayez.",
     "samePlace": "Choisissez un départ et une destination différents.",
@@ -1652,7 +1652,18 @@
     "noRequestsHelp": "Essayez un rayon plus grand. Les demandes doivent correspondre à votre véhicule et à vos disponibilités.",
     "requestDistance": "Prise en charge à {{distance}} km de votre itinéraire",
     "viewRequest": "Voir la demande",
-    "radiusError": "Saisissez un rayon de 1 à 50 km."
+    "radiusError": "Saisissez un rayon de 1 à 50 km.",
+    "chooseOnMap": "Choisir sur la carte",
+    "mapPickHelp": "Recherchez une adresse, puis touchez la carte ou déplacez le repère pour choisir le lieu exact.",
+    "selectedLocation": "Lieu sélectionné",
+    "mapAddressFallback": "Adresse indisponible. Le point choisi sur la carte sera utilisé.",
+    "useThisLocation": "Utiliser ce lieu",
+    "routeServiceUnavailable": "Le calcul des itinéraires est actuellement indisponible. Veuillez réessayer plus tard.",
+    "optionalStop": "Étape facultative"
   },
-  "Map shows all open requests. Radius applies to notifications only.": "La carte affiche toutes les demandes ouvertes. Le rayon s’applique uniquement aux notifications."
+  "Map shows all open requests. Radius applies to notifications only.": "La carte affiche toutes les demandes ouvertes. Le rayon s’applique uniquement aux notifications.",
+  "Profile incomplete": "Profil incomplet",
+  "Complete your driver profile": "Complétez votre profil de chauffeur",
+  "Add your personal information to continue your driver registration.": "Ajoutez vos informations personnelles pour poursuivre votre inscription en tant que chauffeur.",
+  "Finish Profile": "Compléter le profil"
 }

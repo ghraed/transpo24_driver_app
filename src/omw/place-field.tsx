@@ -2,13 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useTranslation } from 'react-i18next';
-import { DriverIcon, DriverText } from '@/components/ui/driver-ui';
+import { OmwMapPicker } from './map-picker';
+import { DriverButton, DriverIcon, DriverText } from '@/components/ui/driver-ui';
 import { resolveOmwCurrentAddress } from './current-location';
 import { searchPlacesAutocomplete, resolvePlaceSuggestion, type PlaceAutocompleteSuggestion, type ResolvedPlaceLocation } from '@/lib/places';
 import { driverComponents, driverRadius, driverSpace, driverType, useDriverColors } from '@/theme/driver-theme';
 
-export function OmwPlaceField({ label, value, onChange, disabled, onResolvingChange }: {
+export function OmwPlaceField({ label, value, onChange, disabled, onResolvingChange, showMapPicker = true, initialQuery = '', mapCenter }: {
   label: string;
+  showMapPicker?: boolean;
+  initialQuery?: string;
+  mapCenter?: { latitude: number; longitude: number } | null;
   value: ResolvedPlaceLocation | null;
   onChange: (place: ResolvedPlaceLocation | null) => void;
   disabled?: boolean;
@@ -16,12 +20,13 @@ export function OmwPlaceField({ label, value, onChange, disabled, onResolvingCha
 }) {
   const { t, i18n } = useTranslation();
   const colors = useDriverColors();
-  const [query, setQuery] = useState(value?.address ?? '');
+  const [query, setQuery] = useState(value?.address ?? initialQuery);
   const [suggestions, setSuggestions] = useState<PlaceAutocompleteSuggestion[]>([]);
   const [focused, setFocused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [resolving, setResolving] = useState<'place' | 'location' | null>(null);
   const [error, setError] = useState('');
+  const [mapOpen, setMapOpen] = useState(false);
   const version = useRef(0);
   const resolutionVersion = useRef(0);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,7 +42,7 @@ export function OmwPlaceField({ label, value, onChange, disabled, onResolvingCha
   useEffect(() => {
     const request = ++version.current;
     let active = true;
-    if (!focused || value || query.trim().length < 3) return;
+    if (mapOpen || !focused || value || query.trim().length < 3) return;
     const timer = setTimeout(() => {
       setBusy(true);
       void searchPlacesAutocomplete(query).then(results => {
@@ -49,7 +54,7 @@ export function OmwPlaceField({ label, value, onChange, disabled, onResolvingCha
       }).finally(() => { if (active && request === version.current) setBusy(false); });
     }, 350);
     return () => { active = false; clearTimeout(timer); };
-  }, [focused, query, value, t]);
+  }, [focused, mapOpen, query, value, t]);
 
   async function select(suggestion: PlaceAutocompleteSuggestion) {
     ++version.current;
@@ -104,7 +109,7 @@ export function OmwPlaceField({ label, value, onChange, disabled, onResolvingCha
         accessibilityLabel={label}
         placeholder={t('omw.searchPlace')}
         placeholderTextColor={colors.textSecondary}
-        value={query}
+        value={value?.address ?? query}
         editable={!disabled}
         onFocus={() => {
           if (blurTimer.current) clearTimeout(blurTimer.current);
@@ -137,6 +142,18 @@ export function OmwPlaceField({ label, value, onChange, disabled, onResolvingCha
       onPress={() => void select(suggestion)}
       style={({ pressed }) => [styles.suggestion, { backgroundColor: pressed ? colors.primarySoft : colors.surfaceSubtle }]}
     ><DriverText>{suggestion.description}</DriverText></Pressable>) : null}
+    {showMapPicker ? <DriverButton label={t('omw.chooseOnMap')} variant="quiet" disabled={disabled}
+      onPress={() => {
+        ++version.current; ++resolutionVersion.current;
+        if (blurTimer.current) clearTimeout(blurTimer.current);
+        setResolving(null); setBusy(false); setSuggestions([]); setFocused(false);
+        Keyboard.dismiss(); setMapOpen(true);
+      }} /> : null}
+    {mapOpen ? <OmwMapPicker initialPlace={value} initialCenter={mapCenter}
+      renderSearch={props => <OmwPlaceField {...props} label={label} initialQuery={query} showMapPicker={false} />}
+      onClose={() => setMapOpen(false)} onConfirm={place => {
+        setQuery(place.address); setError(''); onChange(place); setMapOpen(false);
+      }} /> : null}
     {error ? <DriverText variant="caption" style={{ color: colors.danger }} accessibilityLiveRegion="polite">{error}</DriverText> : null}
   </View>;
 }

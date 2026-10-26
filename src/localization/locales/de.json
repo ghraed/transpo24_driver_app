@@ -1624,7 +1624,7 @@
     "currentRoute": "Ihre OMW-Route",
     "editTrip": "Fahrt bearbeiten",
     "clearTrip": "Fahrt abbrechen",
-    "selectPlaces": "Wählen Sie Start und Ziel aus den Vorschlägen, um Routen zu suchen.",
+    "selectPlaces": "Wähle Start und Ziel über die Suche oder die Karte, um Routen zu finden.",
     "noPlaces": "Keine Orte gefunden. Versuchen Sie eine nahe gelegene Stadt oder eine genauere Adresse.",
     "placeError": "Dieser Ort wurde nicht gefunden. Bitte erneut versuchen.",
     "samePlace": "Wählen Sie unterschiedliche Orte für Start und Ziel.",
@@ -1652,7 +1652,18 @@
     "noRequestsHelp": "Versuchen Sie einen größeren Radius. Anfragen müssen zu Fahrzeug und Verfügbarkeit passen.",
     "requestDistance": "Abholung {{distance}} km von Ihrer Route entfernt",
     "viewRequest": "Anfrage ansehen",
-    "radiusError": "Geben Sie einen Radius von 1 bis 50 km ein."
+    "radiusError": "Geben Sie einen Radius von 1 bis 50 km ein.",
+    "chooseOnMap": "Auf der Karte auswählen",
+    "mapPickHelp": "Suche eine Adresse und tippe dann auf die Karte oder verschiebe die Markierung, um den genauen Ort auszuwählen.",
+    "selectedLocation": "Ausgewählter Ort",
+    "mapAddressFallback": "Adresse nicht verfügbar. Dein ausgewählter Kartenpunkt wird verwendet.",
+    "useThisLocation": "Diesen Ort verwenden",
+    "routeServiceUnavailable": "Die Routenplanung ist derzeit nicht verfügbar. Bitte versuche es später erneut.",
+    "optionalStop": "Optionaler Zwischenstopp"
   },
-  "Map shows all open requests. Radius applies to notifications only.": "Die Karte zeigt alle offenen Anfragen. Der Radius gilt nur für Benachrichtigungen."
+  "Map shows all open requests. Radius applies to notifications only.": "Die Karte zeigt alle offenen Anfragen. Der Radius gilt nur für Benachrichtigungen.",
+  "Profile incomplete": "Profil unvollständig",
+  "Complete your driver profile": "Vervollständige dein Fahrerprofil",
+  "Add your personal information to continue your driver registration.": "Ergänze deine persönlichen Angaben, um deine Registrierung als Fahrer fortzusetzen.",
+  "Finish Profile": "Profil vervollständigen"
 }

@@ -13,12 +13,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CountryPicker } from '@/components/country-picker';
 import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { sendDriverPhoneVerificationCode } from '@/lib/api';
 import { readTrustedDriverSession } from '@/lib/auth-storage';
 import { resolveDriverEntryRoute } from '@/lib/onboarding-route';
-import { buildInternationalPhoneNumber, normalizeDialingCode } from '@/lib/phone-number';
+import { buildInternationalPhoneNumber, getCallingCode } from '@/lib/phone-number';
 import {
   LANGUAGE_CONFIGS,
   SUPPORTED_LANGUAGES,
@@ -54,7 +55,8 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
   } = useAppLanguage();
   const { continueWithTrustedSession } = useAuth();
   const keyboardInset = useAndroidKeyboardInset();
-  const [dialingCode, setDialingCode] = useState('+961');
+  const [countryCode, setCountryCode] = useState('LB');
+  const dialingCode = getCallingCode(countryCode);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -251,16 +253,10 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
                 ) : null}
                 <Text style={[styles.label, isRTL && styles.rtl]}>{t('Phone number')}</Text>
                 <View style={[styles.phoneField, isRTL && styles.phoneFieldRtl]}>
-                  <TextInput
-                    accessibilityLabel={t('Country calling code')}
-                    style={[styles.dialingCodeInput, isRTL && styles.rtlInput]}
-                    value={dialingCode}
-                    onChangeText={(value) => setDialingCode(normalizeDialingCode(value))}
-                    placeholder="+961"
-                    placeholderTextColor="#8A94A6"
-                    autoComplete="tel"
-                    keyboardType="phone-pad"
-                    textContentType="telephoneNumber"
+                  <CountryPicker
+                    value={countryCode}
+                    onChange={setCountryCode}
+                    displayMode="callingCode"
                   />
                   <View style={styles.phoneDivider} />
                   <TextInput
@@ -347,7 +343,6 @@ const styles = StyleSheet.create({
   label: { marginBottom: 8, fontSize: 13, color: authTheme.text, fontWeight: '700' },
   phoneField: { minHeight: 58, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: authTheme.border, borderRadius: 16, overflow: 'hidden', backgroundColor: authTheme.surfaceMuted },
   phoneFieldRtl: { flexDirection: 'row-reverse' },
-  dialingCodeInput: { width: 88, minHeight: 56, paddingHorizontal: 12, fontSize: 16, fontWeight: '700', color: authTheme.text, textAlign: 'center' },
   phoneDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: authTheme.border },
   phoneInput: { flex: 1, minHeight: 56, paddingHorizontal: 14, fontSize: 17, color: authTheme.text, textAlign: 'left' },
   rtlInput: { textAlign: 'right', writingDirection: 'rtl' },

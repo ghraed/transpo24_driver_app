@@ -1,15 +1,16 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
-import { TextInput } from 'react-native';
+import { Modal, TextInput } from 'react-native';
 import { OmwPlaceField } from './place-field';
-import { searchPlacesAutocomplete, resolvePlaceSuggestion } from '@/lib/places';
+import { searchPlacesAutocomplete, resolvePlaceSuggestion, reverseGeocodeCoordinates } from '@/lib/places';
 import * as Location from 'expo-location';
 import { resolveOmwCurrentAddress } from './current-location';
 
 const mockT = key => key;
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { dir: () => 'ltr' } }) }));
+jest.mock('@/components/native-maps', () => ({ NativeMapView: 'MapView', NativeMarker: 'Marker' }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
-jest.mock('@/lib/places', () => ({ searchPlacesAutocomplete: jest.fn(), resolvePlaceSuggestion: jest.fn() }));
+jest.mock('@/lib/places', () => ({ searchPlacesAutocomplete: jest.fn(), resolvePlaceSuggestion: jest.fn(), reverseGeocodeCoordinates: jest.fn() }));
 jest.mock('expo-location', () => ({ requestForegroundPermissionsAsync: jest.fn(), getCurrentPositionAsync: jest.fn(), Accuracy: { High: 4 } }));
 jest.mock('./current-location', () => ({ resolveOmwCurrentAddress: jest.fn() }));
 let tree;
@@ -104,4 +105,41 @@ test('ignores a delayed GPS result when the driver types another place', async (
   expect(resolveOmwCurrentAddress).not.toHaveBeenCalled();
   expect(tree.root.findByType(TextInput).props.value).toBe('Tripoli');
   expect(onChange).not.toHaveBeenCalledWith(gpsPlace);
+});
+
+
+test('the map picker fills the endpoint only after confirmation', async () => {
+  reverseGeocodeCoordinates.mockResolvedValue({ ...gpsPlace, address: 'Steinweg 8, Arlesheim' });
+  await render('To');
+  const mapButton = tree.root.findAll(node => node.props.accessibilityLabel === 'omw.chooseOnMap' && typeof node.props.onPress === 'function')[0];
+  await act(async () => mapButton.props.onPress());
+  expect(tree.root.findByType(Modal).props.visible).toBe(true);
+  const coordinate = { latitude: 47.49, longitude: 7.61 };
+  await act(async () => tree.root.findByType('MapView').props.onPress({ nativeEvent: { coordinate } }));
+  expect(onChange).not.toHaveBeenCalled();
+  const confirm = tree.root.findAll(node => node.props.accessibilityLabel === 'omw.useThisLocation' && typeof node.props.onPress === 'function')[0];
+  await act(async () => confirm.props.onPress());
+  expect(onChange).toHaveBeenCalledWith({ ...coordinate, address: 'Steinweg 8, Arlesheim', placeId: '' });
+  expect(tree.root.findAllByType(Modal)).toHaveLength(0);
+  expect(tree.root.findByType(TextInput).props.value).toBe('Steinweg 8, Arlesheim');
+});
+
+test('searching inside the map picker places a result on the map before confirming it', async () => {
+  const suggestion = { description: 'Arlesheim result', placeId: 'arlesheim' };
+  const place = { latitude: 47.49, longitude: 7.61, address: 'Steinweg 8, Arlesheim', placeId: 'arlesheim' };
+  searchPlacesAutocomplete.mockResolvedValue([suggestion]);
+  resolvePlaceSuggestion.mockResolvedValue(place);
+  await render('To');
+  const mapButton = tree.root.findAll(node => node.props.accessibilityLabel === 'omw.chooseOnMap' && typeof node.props.onPress === 'function')[0];
+  await act(async () => mapButton.props.onPress());
+  const searchInput = () => tree.root.findAllByType(TextInput)[1];
+  await act(async () => searchInput().props.onFocus());
+  await act(async () => searchInput().props.onChangeText('Steinweg 8 Arlesheim'));
+  await act(async () => jest.advanceTimersByTime(350));
+  await act(async () => choices()[0].props.onPress());
+  expect(tree.root.findByType('Marker').props.coordinate).toEqual(place);
+  expect(onChange).not.toHaveBeenCalled();
+  const confirm = tree.root.findAll(node => node.props.accessibilityLabel === 'omw.useThisLocation' && typeof node.props.onPress === 'function')[0];
+  await act(async () => confirm.props.onPress());
+  expect(onChange).toHaveBeenCalledWith(place);
 });

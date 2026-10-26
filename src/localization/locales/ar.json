@@ -1624,7 +1624,7 @@
     "currentRoute": "طريقك في OMW",
     "editTrip": "تعديل الرحلة",
     "clearTrip": "إلغاء الرحلة",
-    "selectPlaces": "اختر نقطة الانطلاق والوجهة من الاقتراحات للبحث عن الطرق.",
+    "selectPlaces": "اختر نقطة انطلاق ووجهة عبر البحث أو الخريطة للعثور على المسارات.",
     "noPlaces": "لم يتم العثور على أماكن. جرّب مدينة قريبة أو عنواناً أكثر دقة.",
     "placeError": "تعذّر العثور على هذا المكان. حاول مجدداً.",
     "samePlace": "اختر مكانين مختلفين للانطلاق والوجهة.",
@@ -1652,7 +1652,18 @@
     "noRequestsHelp": "جرّب مسافة أكبر. يجب أن تتوافق الطلبات مع مركبتك وأوقات توفرك.",
     "requestDistance": "يبعد الاستلام {{distance}} كم عن طريقك",
     "viewRequest": "عرض الطلب",
-    "radiusError": "أدخل مسافة بين 1 و50 كم."
+    "radiusError": "أدخل مسافة بين 1 و50 كم.",
+    "chooseOnMap": "اختيار من الخريطة",
+    "mapPickHelp": "ابحث عن عنوان، ثم اضغط على الخريطة أو اسحب الدبوس لتحديد الموقع بدقة.",
+    "selectedLocation": "الموقع المحدد",
+    "mapAddressFallback": "العنوان غير متاح. سيتم استخدام النقطة التي حددتها على الخريطة.",
+    "useThisLocation": "استخدام هذا الموقع",
+    "routeServiceUnavailable": "تخطيط المسارات غير متاح حالياً. يرجى المحاولة لاحقاً.",
+    "optionalStop": "توقف اختياري"
   },
-  "Map shows all open requests. Radius applies to notifications only.": "تعرض الخريطة جميع الطلبات المفتوحة. يُطبّق نطاق المسافة على الإشعارات فقط."
+  "Map shows all open requests. Radius applies to notifications only.": "تعرض الخريطة جميع الطلبات المفتوحة. يُطبّق نطاق المسافة على الإشعارات فقط.",
+  "Profile incomplete": "الملف الشخصي غير مكتمل",
+  "Complete your driver profile": "أكمل ملفك الشخصي كسائق",
+  "Add your personal information to continue your driver registration.": "أضف معلوماتك الشخصية لمتابعة التسجيل كسائق.",
+  "Finish Profile": "إكمال الملف الشخصي"
 }

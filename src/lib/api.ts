@@ -2224,6 +2224,7 @@ export async function computeDriverRoutes(
       body: JSON.stringify({ origin: point(origin), destination: point(destination), alternatives,
         languageCode: i18n.resolvedLanguage ?? i18n.language ?? 'en' }),
     });
+    if (!response.ok) throw await parseError(response, 'Directions request failed.');
     return await parseJsonResponse<DriverRoutesResponse>(response, 'Directions request failed.');
   } finally {
     clearTimeout(timeout);
