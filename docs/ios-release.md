@@ -65,6 +65,35 @@ submission or public release was performed.
 
 ## Build and checks
 
+### Shell shortcuts
+
+The zsh aliases `transpo_dbuild` and `transpo_dupload` invoke
+`scripts/driver-release.cjs` with an absolute path, so they work from any directory.
+Open a new terminal or run `source ~/.zshrc` after installing the aliases.
+
+- `transpo_dbuild`: run lint, typecheck, tests and the iOS release check, bump
+  the app patch version once, build the Android AAB locally, then build iOS in EAS.
+  The AAB is saved to `dist/releases/transpo24-driver-<version>.aab`.
+- `transpo_dbuild --no-bump`: retry using the current app version. EAS still
+  increments native build numbers.
+- `transpo_dupload`: upload that version's local AAB to Google Play, then
+  interactively select an iOS production build to upload to App Store Connect.
+- `transpo_dupload --platform ios`: upload only an existing iOS build; no local
+  AAB or rebuild is required. Select build `d12bf61a-807a-469f-bd80-cef73f673b6e`
+  for version 1.0.0 (4), or the appropriate newer production build.
+- `transpo_dupload --platform android`: upload only the current local AAB.
+
+For the first iOS upload, create or select **Transpo24 - Driver** in App Store
+Connect using bundle ID `com.transpo24.driver` and team Autobasilea GmbH.
+EAS will prompt for Apple authentication and the app when needed. Its numeric
+Apple ID can then be saved as `submit.production.ios.ascAppId` in `eas.json`.
+Use the driver app's ID, not the client's. After Apple processes the upload,
+test it through TestFlight and complete App Review separately.
+
+These commands build or upload only when you run them. Local Android builds
+require an Android SDK and Java, plus production secret/file variables locally.
+Commit the bumped `app.json` with the release changes.
+
 ```sh
 npm run typecheck
 npm run lint
