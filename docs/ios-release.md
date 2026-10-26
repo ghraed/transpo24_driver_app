@@ -6,7 +6,43 @@ The production profile creates an App Store distribution IPA with the SDK 56
 build image. Its update channel is `production-ios`, separate from Android's
 `production` channel. Native dependencies use SDK 56 compatible patch versions.
 
-## Verified production artifact — 2026-10-24
+## Latest routing production artifact — 2026-10-25
+
+- **Version/build:** 1.0.0 (4), App Store distribution.
+- **Build:** [d12bf61a-807a-469f-bd80-cef73f673b6e](https://expo.dev/accounts/raed.gh/projects/driver_mobile/builds/d12bf61a-807a-469f-bd80-cef73f673b6e).
+- **File:** `/media/raed/Data/from ubuntu/Transpo_24 workspace/APPS/ios/driver/driver-v1-build4.ipa`.
+- **SHA-256:** `5c9ee645d22a30572542e27c94c7a1509a5772ff30ed6b63d5ae9cedbf7d426d`.
+- **Runtime fingerprint:** `4613f9332abce3c60aed41c553ccfcb8887ba077`.
+- Both active route request paths use authenticated production backend requests.
+  The backend Routes module is deployed and returns three real route alternatives.
+  Its server-only key is absent from every file in the IPA. The native Maps key
+  still matches the new ignored local iOS key and EAS production configuration.
+- Verified production signing/APNs, background location, API endpoint,
+  `production-ios` channel, and matching runtime fingerprint.
+- Checks passed: driver typecheck, lint and all 54 suites / 312 tests; API build,
+  lint and 14 focused service/transport/authentication/validation/rate-limit tests.
+- Use build 4 for iPhone/TestFlight testing. Earlier builds do not contain this
+  backend routing migration. The Hermes/dependency warnings below remain.
+- Production deployment details: [backend routing notes](../../api/docs/routes-production.md).
+
+## Previous map-key artifact — 2026-10-25
+
+- **Version/build:** 1.0.0 (3), App Store distribution.
+- **Build:** [5302733b-f873-4e6f-b8db-ab38b12d79fb](https://expo.dev/accounts/raed.gh/projects/driver_mobile/builds/5302733b-f873-4e6f-b8db-ab38b12d79fb).
+- **File:** `/media/raed/Data/from ubuntu/Transpo_24 workspace/APPS/ios/driver/driver-v1-build3.ipa`.
+- **SHA-256:** `716a0c9113ed98328df40f1d7ab974bb94aa35743f494317e9366eb193313b00`.
+- **Runtime fingerprint:** `4613f9332abce3c60aed41c553ccfcb8887ba077`.
+- The new iOS map-display key was moved from tracked `.env` to ignored
+  `.env.local` and updated as a sensitive EAS production variable. Other local
+  settings were preserved. The production configuration and the embedded IPA
+  Maps key were both verified to match the new local key without logging it.
+- IPA signing/provisioning, production APNs, production API endpoint, background
+  location, and `production-ios` channel checks passed.
+- Build 2 below contains the previous key. Use build 3 for subsequent testing.
+  Verify map tiles on a physical iPhone. Directions/Routes backend migration
+  and the existing release issues below remain outstanding.
+
+## Previous production artifact — 2026-10-24
 
 - **Version/build:** 1.0.0 (2), App Store distribution, arm64, iOS 16.4+.
 - **Build:** [cd799bb6-7a38-4272-b22f-910a0e724fb2](https://expo.dev/accounts/raed.gh/projects/driver_mobile/builds/cd799bb6-7a38-4272-b22f-910a0e724fb2), completed successfully with the iOS 26.4 SDK.
@@ -48,14 +84,12 @@ restrictions still need to match the driver bundle identifier.
 
 ## Known release issues found on 2026-10-24
 
-- **Google Directions:** The existing driver iOS Maps key returned
-  `REQUEST_DENIED`: the key is not authorized for this service/API. The driver
-  route polyline uses this endpoint, so route lines can be missing. Enable
-  Directions API for the appropriate Google Cloud project/key and verify that
-  Maps SDK for iOS is enabled and the key permits `com.transpo24.driver`.
-  Confirm both map tiles and route lines on an iPhone. The user requested that
-  the build continue with this issue documented. Changing Google Cloud settings
-  for the same embedded key normally does not require rebuilding the app.
+- **Routing migration:** Resolved in the production backend and the build 4
+  client source on 2026-10-25. Driver polylines and on-my-way alternatives now
+  use authenticated `/driver/routes/compute` requests. The backend uses Google
+  Routes API with an IP-restricted, server-only credential and verified IPv4
+  egress. Production returned valid routes. Physical iPhone route testing is
+  still required; unrelated Places/Geocoding requests are outside this migration.
 - **Hermes memory regression:** Expo Doctor reports that SDK 56's React Native
   0.85.3 / Hermes V1 is affected by a known memory regression with Worklets and
   Reanimated. SDK 56 patch updates do not resolve this. Expo's supported fix is
@@ -69,7 +103,7 @@ restrictions still need to match the driver bundle identifier.
 
 ## Before App Store deployment
 
-1. Resolve the Directions API configuration and Hermes warning above.
+1. Verify the new production route flow on an iPhone and resolve the Hermes warning above.
 2. Test the signed build through TestFlight on a physical iPhone: launch,
    login/OTP, account deletion, document/photo uploads, maps and routing,
    offers and accepted jobs, chat attachments, and push notifications.

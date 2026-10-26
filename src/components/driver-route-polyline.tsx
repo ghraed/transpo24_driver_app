@@ -2,7 +2,7 @@ import { decodePolyline } from '@/lib/map-polyline';
 import { useEffect, useRef, useState } from 'react';
 
 import { NativePolyline } from '@/components/native-maps';
-import i18n from '@/localization/i18n';
+import { computeDriverRoutes } from '@/lib/api';
 import { localizeResponseMessage } from '@/localization/response-message';
 import type { AddressedLocation, GeoLocation } from '@/types/trip.types';
 
@@ -33,22 +33,9 @@ type RouteCoordinate = {
 };
 
 
-function buildDirectionsUrl(origin: GeoLocation, destination: AddressedLocation, apikey: string): string {
-  const params = new URLSearchParams({
-    origin: `${origin.latitude},${origin.longitude}`,
-    destination: `${destination.latitude},${destination.longitude}`,
-    key: apikey,
-    mode: 'driving',
-    language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
-  });
-
-  return `https://maps.googleapis.com/maps/api/directions/json?${params.toString()}`;
-}
-
 export function DriverRoutePolyline({
   origin,
   destination,
-  apikey,
   strokeWidth = 4,
   strokeColor,
   onError,
@@ -56,7 +43,7 @@ export function DriverRoutePolyline({
 }: DriverRoutePolylineProps) {
   const [coordinates, setCoordinates] = useState<RouteCoordinate[]>([]);
   const requestIdRef = useRef(0);
-  const isReady = Boolean(origin && destination && apikey.trim());
+  const isReady = Boolean(origin && destination);
 
   useEffect(() => {
     if (!isReady || !origin || !destination) {
@@ -74,10 +61,7 @@ export function DriverRoutePolyline({
 
     const fetchRoute = async (): Promise<void> => {
       try {
-        const response = await fetch(buildDirectionsUrl(origin, destination, apikey), {
-          signal: controller.signal,
-        });
-        const data = (await response.json()) as GoogleDirectionsResponse;
+        const data: GoogleDirectionsResponse = await computeDriverRoutes(origin, destination, controller.signal);
 
         if (controller.signal.aborted || requestIdRef.current !== requestId) {
           return;
@@ -123,7 +107,7 @@ export function DriverRoutePolyline({
     return () => {
       controller.abort();
     };
-  }, [apikey, destination, isReady, onError, onReady, origin]);
+  }, [destination, isReady, onError, onReady, origin]);
 
   if (!isReady || !NativePolyline || coordinates.length === 0) {
     return null;

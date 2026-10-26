@@ -1,5 +1,4 @@
-import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
-import i18n from '@/localization/i18n';
+import { computeDriverRoutes } from '@/lib/api';
 import { decodePolyline } from '@/lib/map-polyline';
 import type { ResolvedPlaceLocation } from '@/lib/places';
 
@@ -58,17 +57,8 @@ export async function findOmwRoutes(from: ResolvedPlaceLocation, to: ResolvedPla
       coordinates: [...first.coordinates, ...second.coordinates],
     }))).sort((a, b) => a.durationSeconds - b.durationSeconds).slice(0, 3);
   }
-  if (!GOOGLE_MAPS_API_KEY) throw new Error('Routes unavailable');
-  const point = (place: ResolvedPlaceLocation) => place.placeId
-    ? `place_id:${place.placeId}` : `${place.latitude},${place.longitude}`;
-  const params = new URLSearchParams({
-    origin: point(from), destination: point(to), alternatives: 'true', mode: 'driving',
-    units: 'metric', key: GOOGLE_MAPS_API_KEY,
-    language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
-  });
-  const response = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${params}`, { signal });
-  const data = await response.json() as { status?: string; routes?: DirectionsRoute[] };
-  if (response.ok && data.status === 'ZERO_RESULTS') return [];
-  if (!response.ok || data.status !== 'OK') throw new Error('Routes unavailable');
+  const data = await computeDriverRoutes(from, to, signal, true);
+  if (data.status === 'ZERO_RESULTS') return [];
+  if (data.status !== 'OK') throw new Error('Routes unavailable');
   return mainRoutes(data.routes ?? []);
 }

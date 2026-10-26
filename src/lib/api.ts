@@ -2197,3 +2197,36 @@ export async function startReservedPickup(requestId: string): Promise<{ requestI
   if (!response.ok) throw await parseError(response, 'The customer must confirm pickup and pay before this trip can start.');
   return response.json();
 }
+
+
+export type DriverRoutePoint = { latitude: number; longitude: number; placeId?: string };
+export type DriverRoutesResponse = {
+  status: string;
+  routes?: { summary?: string; overview_polyline?: { points?: string };
+    legs?: { distance?: { value?: number }; duration?: { value?: number } }[] }[];
+};
+
+export async function computeDriverRoutes(
+  origin: DriverRoutePoint, destination: DriverRoutePoint, signal: AbortSignal,
+  alternatives = false,
+): Promise<DriverRoutesResponse> {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  signal.addEventListener('abort', abort);
+  if (signal.aborted) controller.abort();
+  const timeout = setTimeout(abort, REQUEST_TIMEOUT_MS);
+  const point = ({ latitude, longitude, placeId }: DriverRoutePoint) => ({
+    latitude, longitude, ...(placeId ? { placeId } : {}),
+  });
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/driver/routes/compute`, {
+      method: 'POST', headers: await getAuthHeaders(), signal: controller.signal,
+      body: JSON.stringify({ origin: point(origin), destination: point(destination), alternatives,
+        languageCode: i18n.resolvedLanguage ?? i18n.language ?? 'en' }),
+    });
+    return await parseJsonResponse<DriverRoutesResponse>(response, 'Directions request failed.');
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener('abort', abort);
+  }
+}
