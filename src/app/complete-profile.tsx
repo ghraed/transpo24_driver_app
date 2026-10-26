@@ -1,4 +1,5 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
+import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +37,8 @@ import { nextStepToRoute } from '@/lib/onboarding-route';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import type { CompleteDriverProfileForm, UpdateDriverProfilePayload } from '@/types/auth';
 
+// Explicitly allow dates before 1970 in the Android native picker.
+const MINIMUM_DOB_DATE = new Date(1900, 0, 1);
 const PHONE_PATTERN = /^[+0-9()\-\s]{7,20}$/;
 const PREFERRED_LANGUAGE_OPTIONS = Object.values(LANGUAGE_CONFIGS).map((language) => ({
   label: language.nativeLabel,
@@ -48,36 +51,13 @@ function toDateOnly(isoDate: string | null): string {
 }
 
 function isAtLeast18(dateValue: string): boolean {
-  const dob = new Date(dateValue);
+  const dob = normalizeDateValue(dateValue, new Date(NaN));
   if (Number.isNaN(dob.getTime())) return false;
 
   const adult = new Date(dob);
   adult.setFullYear(adult.getFullYear() + 18);
 
   return adult.getTime() <= Date.now();
-}
-
-function normalizeDateValue(value: string, fallbackDate: Date): Date {
-  if (!value) return fallbackDate;
-  const [year, month, day] = value.split('-').map(Number);
-  if (
-    Number.isFinite(year) &&
-    Number.isFinite(month) &&
-    Number.isFinite(day) &&
-    year > 0 &&
-    month > 0 &&
-    day > 0
-  ) {
-    return new Date(year, month - 1, day);
-  }
-  return new Date(value);
-}
-
-function formatDateOnly(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 function createTestCompleteProfileDefaults(): CompleteDriverProfileForm {
@@ -116,7 +96,6 @@ export default function CompleteProfileScreen() {
   const [submitError, setSubmitError] = useState<string>('');
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [activeDateField, setActiveDateField] = useState<'dateOfBirth' | null>(null);
-  const [activeDateValue, setActiveDateValue] = useState<Date | null>(null);
   const [isLanguageModalVisible, setIsLanguageModalVisible] = useState<boolean>(false);
   const [languageSearch, setLanguageSearch] = useState<string>('');
   const hasUserEditedRef = useRef<boolean>(false);
@@ -252,7 +231,7 @@ export default function CompleteProfileScreen() {
     if (!form.dateOfBirth.trim()) {
       errors.dateOfBirth = t('Date of birth is required.');
     } else {
-      const parsed = new Date(form.dateOfBirth.trim());
+      const parsed = normalizeDateValue(form.dateOfBirth.trim(), new Date(NaN));
       if (Number.isNaN(parsed.getTime())) {
         errors.dateOfBirth = t('Date of birth must be a valid date (YYYY-MM-DD).');
       } else if (!isAtLeast18(form.dateOfBirth.trim())) {
@@ -293,14 +272,12 @@ export default function CompleteProfileScreen() {
   const openDatePicker = useCallback(
     (field: 'dateOfBirth') => {
       setActiveDateField(field);
-      setActiveDateValue(normalizeDateValue(form[field], maximumDobDate));
     },
-    [form, maximumDobDate],
+    [],
   );
 
   const closeDatePicker = useCallback(() => {
     setActiveDateField(null);
-    setActiveDateValue(null);
   }, []);
 
   const onContinue = async (): Promise<void> => {
@@ -657,22 +634,14 @@ export default function CompleteProfileScreen() {
         </View>
       </Modal>
       {activeDateField ? (
-        <DateTimePicker
+        <DateTimePickerDialog
           mode="date"
-          display="default"
-          value={activeDateValue ?? maximumDobDate}
+          value={normalizeDateValue(form[activeDateField], maximumDobDate)}
+          minimumDate={MINIMUM_DOB_DATE}
           maximumDate={maximumDobDate}
-          onChange={(event, selectedDate) => {
-            if (event.type === 'dismissed') {
-              closeDatePicker();
-              return;
-            }
-
-            const field = activeDateField;
-            if (selectedDate) {
-              setActiveDateValue(selectedDate);
-              onChange(field, formatDateOnly(selectedDate));
-            }
+          onCancel={closeDatePicker}
+          onConfirm={(selectedDate) => {
+            onChange(activeDateField, formatDateOnly(selectedDate));
             closeDatePicker();
           }}
         />

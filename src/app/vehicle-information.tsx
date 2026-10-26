@@ -1,4 +1,5 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
+import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -75,7 +76,7 @@ const OTHER_OPTION = 'OTHER';
 function createTestVehicleFormDefaults(): CreateDriverVehicleForm {
   const nextYear = new Date();
   nextYear.setFullYear(nextYear.getFullYear() + 1);
-  const defaultExpiryDate = nextYear.toISOString().slice(0, 10);
+  const defaultExpiryDate = formatDateOnly(nextYear);
 
   return {
     vehicleType: 'PICKUP',
@@ -151,11 +152,6 @@ function readAssetLabel(asset?: LocalDocumentAsset, fallback?: string | null): s
     return i18n.t('Uploaded file');
   }
   return i18n.t('No file selected');
-}
-
-function normalizeDateValue(value: string): Date {
-  if (!value) return new Date();
-  return new Date(value);
 }
 
 function formatSelectorLabel(value: string, options: SelectorOption[]): string {
@@ -428,7 +424,7 @@ export default function VehicleInformationScreen() {
     const validateDate = (value: string, key: DateFieldKey, label: string): void => {
       if (!value.trim()) return;
 
-      const parsed = new Date(value);
+      const parsed = normalizeDateValue(value, new Date(NaN));
       if (Number.isNaN(parsed.getTime())) {
         errors[key] = t('{{label}} must be a valid date.', { label });
         return;
@@ -1146,28 +1142,16 @@ export default function VehicleInformationScreen() {
       </ScrollView>
 
       {activeDateField ? (
-        <DateTimePicker
+        <DateTimePickerDialog
           mode="date"
-          display="default"
           value={normalizeDateValue(vehicleForm[activeDateField])}
           minimumDate={new Date()}
-          onChange={(event, selectedDate) => {
-            if (event.type === 'dismissed') {
-              setActiveDateField(null);
-              return;
-            }
-
-            if (selectedDate) {
-              onVehicleChange(activeDateField, selectedDate.toISOString().slice(0, 10));
-            }
+          onCancel={() => setActiveDateField(null)}
+          onConfirm={(selectedDate) => {
+            onVehicleChange(activeDateField, formatDateOnly(selectedDate));
             setActiveDateField(null);
           }}
         />
-      ) : null}
-      {activeDateField ? (
-        <Pressable style={styles.dateDismissButton} onPress={() => setActiveDateField(null)}>
-          <Text style={styles.dateDismissText}>{t('Done')}</Text>
-        </Pressable>
       ) : null}
       <Modal
         visible={Boolean(activeSelectorField)}
@@ -1379,16 +1363,6 @@ const styles = StyleSheet.create({
   errorText: { color: '#B91C1C', fontSize: 13 },
   successText: { color: '#166534', fontSize: 13, fontWeight: '600' },
   infoText: { color: '#F1B900', fontSize: 13, fontWeight: '600' },
-  dateDismissButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#202020',
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  },
-  dateDismissText: { color: '#FFFFFF', fontWeight: '700' },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',

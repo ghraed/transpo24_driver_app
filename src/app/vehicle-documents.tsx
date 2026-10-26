@@ -1,4 +1,5 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
+import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -78,15 +79,10 @@ function toDateOnly(isoDate: string | null | undefined): string {
   return isoDate.slice(0, 10);
 }
 
-function normalizeDateValue(value: string): Date {
-  if (!value) return new Date();
-  return new Date(value);
-}
-
 function addYearsToToday(years: number): string {
   const value = new Date();
   value.setFullYear(value.getFullYear() + years);
-  return value.toISOString().slice(0, 10);
+  return formatDateOnly(value);
 }
 
 function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
@@ -268,7 +264,7 @@ export default function VehicleDocumentsScreen() {
 
     const validateExpiryDate = (value: string, fieldKey: string, label: string): void => {
       if (!value.trim()) return;
-      const parsed = new Date(value);
+      const parsed = normalizeDateValue(value, new Date(NaN));
       if (Number.isNaN(parsed.getTime())) {
         errors[fieldKey] = t('{{label}} must be a valid date.', { label });
         return;
@@ -712,20 +708,13 @@ export default function VehicleDocumentsScreen() {
         </Pressable>
       </ScrollView>
       {activeDateField ? (
-        <DateTimePicker
+        <DateTimePickerDialog
           mode="date"
-          display="default"
           value={normalizeDateValue(onboardingDocumentsForm[activeDateField])}
           minimumDate={new Date()}
-          onChange={(event, selectedDate) => {
-            if (event.type === 'dismissed') {
-              setActiveDateField(null);
-              return;
-            }
-
-            if (selectedDate) {
-              onOnboardingDocumentChange(activeDateField, toDateOnly(selectedDate.toISOString()));
-            }
+          onCancel={() => setActiveDateField(null)}
+          onConfirm={(selectedDate) => {
+            onOnboardingDocumentChange(activeDateField, formatDateOnly(selectedDate));
             setActiveDateField(null);
           }}
         />
