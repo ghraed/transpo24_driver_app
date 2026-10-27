@@ -1,4 +1,8 @@
 {
+  "Preparing photo…": "Foto wird vorbereitet…",
+  "Unable to prepare this photo. Please try another image.": "Dieses Foto konnte nicht vorbereitet werden. Bitte wählen Sie ein anderes Bild.",
+  "This photo is still too large. Please choose another image.": "Dieses Foto ist weiterhin zu groß. Bitte wählen Sie ein anderes Bild.",
+  "Update the app to upload high-resolution photos.": "Aktualisieren Sie die App, um hochauflösende Fotos hochzuladen.",
   "Estimate": "Schätzung",
   "Before Stripe fees": "Vor Stripe-Gebühren",
   "Enter a price to preview your earnings.": "Geben Sie einen Preis ein, um Ihren Verdienst zu schätzen.",

@@ -1,4 +1,8 @@
 {
+  "Preparing photo…": "Preparing photo…",
+  "Unable to prepare this photo. Please try another image.": "Unable to prepare this photo. Please try another image.",
+  "This photo is still too large. Please choose another image.": "This photo is still too large. Please choose another image.",
+  "Update the app to upload high-resolution photos.": "Update the app to upload high-resolution photos.",
   "Estimate": "Estimate",
   "Before Stripe fees": "Before Stripe fees",
   "Enter a price to preview your earnings.": "Enter a price to preview your earnings.",

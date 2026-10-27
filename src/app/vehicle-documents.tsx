@@ -1,6 +1,6 @@
+import { DocumentPhotoError, pickDocumentPhoto } from '@/lib/document-photo';
 import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
 import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -85,17 +85,6 @@ function addYearsToToday(years: number): string {
   return formatDateOnly(value);
 }
 
-function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
-  return {
-    uri: asset.uri,
-    fileName: asset.fileName ?? undefined,
-    mimeType: asset.mimeType ?? undefined,
-    fileSize: asset.fileSize ?? undefined,
-    width: asset.width,
-    height: asset.height,
-  };
-}
-
 export default function VehicleDocumentsScreen() {
   const router = useRouter();
   const { t } = useTranslation();
@@ -118,7 +107,8 @@ export default function VehicleDocumentsScreen() {
   >(null);
   const [hasHydratedDraft, setHasHydratedDraft] = useState<boolean>(false);
 
-  const isBusy = Boolean(activeOnboardingUploadType);
+  const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
+  const isBusy = Boolean(activeOnboardingUploadType) || isPreparingPhoto;
 
   useEffect(() => {
     void persistLastOnboardingRoute('/vehicle-documents');
@@ -394,61 +384,28 @@ export default function VehicleDocumentsScreen() {
     ],
   );
 
-  const pickOnboardingDocument = async (
-    key: UploadableOnboardingField,
+  const selectOnboardingPhoto = async (
+    key: UploadableOnboardingField, source: 'camera' | 'library',
   ): Promise<void> => {
-    if (activeOnboardingUploadType) return;
-
+    if (isBusy || isContinuing) return;
+    setIsPreparingPhoto(true);
     setSubmitError('');
     setSubmitSuccess('');
-
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError(t('Media library permission is required to select images.'));
-      return;
+    try {
+      const asset = await pickDocumentPhoto(source);
+      if (!asset) return;
+      setOnboardingDocument(key, asset);
+      await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], asset);
+    } catch (error) {
+      setSubmitError(t(error instanceof DocumentPhotoError
+        ? error.message : 'Unable to prepare this photo. Please try another image.'));
+    } finally {
+      setIsPreparingPhoto(false);
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false,
-      quality: 0.9,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset) return;
-    const normalizedAsset = toAssetFromImagePicker(asset);
-    setOnboardingDocument(key, normalizedAsset);
-    await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
   };
 
-  const takeOnboardingDocumentImage = async (
-    key: UploadableOnboardingField,
-  ): Promise<void> => {
-    if (activeOnboardingUploadType) return;
-
-    setSubmitError('');
-    setSubmitSuccess('');
-
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError(t('Camera permission is required to take document images.'));
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset) return;
-    const normalizedAsset = toAssetFromImagePicker(asset);
-    setOnboardingDocument(key, normalizedAsset);
-    await uploadOnboardingAsset(DOCUMENT_TYPE_BY_FIELD[key], normalizedAsset);
-  };
+  const pickOnboardingDocument = (key: UploadableOnboardingField) => selectOnboardingPhoto(key, 'library');
+  const takeOnboardingDocumentImage = (key: UploadableOnboardingField) => selectOnboardingPhoto(key, 'camera');
 
   const hasRequiredDocumentsReadyForUpload = Boolean(documentsStatus) &&
     (documentsStatus?.requiredDocuments ?? []).every((type) => {
@@ -692,6 +649,7 @@ export default function VehicleDocumentsScreen() {
           ) : null}
         </View>
 
+        {isPreparingPhoto ? <Text style={styles.helper} accessibilityLiveRegion="polite">{t('Preparing photo…')}</Text> : null}
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
@@ -763,14 +721,14 @@ export default function VehicleDocumentsScreen() {
           <Pressable
             style={styles.uploadButtonSmall}
             onPress={onPick}
-            disabled={Boolean(activeOnboardingUploadType)}
+            disabled={isBusy || isContinuing}
           >
             <Text style={styles.uploadButtonText}>{asset || uploaded ? t('Replace') : t('Select')}</Text>
           </Pressable>
           <Pressable
             style={styles.uploadButtonSmall}
             onPress={onTakeImage}
-            disabled={Boolean(activeOnboardingUploadType)}
+            disabled={isBusy || isContinuing}
           >
             {isUploading ? (
               <ActivityIndicator color="#FFFFFF" size="small" />

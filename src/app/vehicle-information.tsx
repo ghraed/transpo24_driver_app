@@ -1,6 +1,6 @@
+import { DocumentPhotoError, pickDocumentPhoto } from '@/lib/document-photo';
 import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
 import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
-import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +52,8 @@ import type {
 } from '@/types/auth';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+type VehiclePhotoField = 'frontPhoto' | 'rearPhoto' | 'sidePhoto' | 'licensePlatePhoto' |
+  'registrationFrontDocument' | 'registrationBackDocument' | 'insuranceDocument';
 const IMAGE_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const VEHICLE_TYPE_OPTIONS: { label: string; value: VehicleType }[] = [
@@ -121,17 +123,6 @@ function getModelsForVehicleSelection(
   return VEHICLE_MODELS_BY_BRAND_AND_TYPE[brand as VehicleBrand][modelType];
 }
 
-function toAssetFromImagePicker(asset: ImagePicker.ImagePickerAsset): LocalDocumentAsset {
-  return {
-    uri: asset.uri,
-    fileName: asset.fileName ?? undefined,
-    mimeType: asset.mimeType ?? undefined,
-    fileSize: asset.fileSize ?? undefined,
-    width: asset.width,
-    height: asset.height,
-  };
-}
-
 function formatDate(value: string): string {
   if (!value) return i18n.t('Select date');
   return value;
@@ -186,6 +177,7 @@ export default function VehicleInformationScreen() {
   const [existingVehicle, setExistingVehicle] = useState<DriverVehicle | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(vehicleId));
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isPreparingPhoto, setIsPreparingPhoto] = useState(false);
   const [loadError, setLoadError] = useState<string>('');
   const [submitError, setSubmitError] = useState<string>('');
   const [submitSuccess, setSubmitSuccess] = useState<string>('');
@@ -614,61 +606,24 @@ export default function VehicleInformationScreen() {
     closeSelector();
   };
 
-  const pickImage = async (
-    key:
-      | 'frontPhoto'
-      | 'rearPhoto'
-      | 'sidePhoto'
-      | 'licensePlatePhoto'
-      | 'registrationFrontDocument'
-      | 'registrationBackDocument'
-      | 'insuranceDocument',
-  ): Promise<void> => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Media library permission is required to select images.');
-      return;
+  const selectVehiclePhoto = async (key: VehiclePhotoField, source: 'camera' | 'library'): Promise<void> => {
+    if (isPreparingPhoto || isSaving) return;
+    setIsPreparingPhoto(true);
+    setSubmitError('');
+    setSubmitSuccess('');
+    try {
+      const asset = await pickDocumentPhoto(source);
+      if (asset) onVehicleChange(key, asset);
+    } catch (error) {
+      setSubmitError(t(error instanceof DocumentPhotoError
+        ? error.message : 'Unable to prepare this photo. Please try another image.'));
+    } finally {
+      setIsPreparingPhoto(false);
     }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsMultipleSelection: false,
-      quality: 0.9,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset) return;
-    onVehicleChange(key, toAssetFromImagePicker(asset));
   };
 
-  const takeVehicleDocumentImage = async (
-    key:
-      | 'frontPhoto'
-      | 'rearPhoto'
-      | 'sidePhoto'
-      | 'licensePlatePhoto'
-      | 'registrationFrontDocument'
-      | 'registrationBackDocument'
-      | 'insuranceDocument',
-  ): Promise<void> => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (permission.status !== ImagePicker.PermissionStatus.GRANTED) {
-      setSubmitError('Camera permission is required to take images.');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset) return;
-    onVehicleChange(key, toAssetFromImagePicker(asset));
-  };
+  const pickImage = (key: VehiclePhotoField) => selectVehiclePhoto(key, 'library');
+  const takeVehicleDocumentImage = (key: VehiclePhotoField) => selectVehiclePhoto(key, 'camera');
 
   const buildPayload = (): CreateDriverVehiclePayload => ({
     vehicleType: vehicleForm.vehicleType as VehicleType,
@@ -685,7 +640,7 @@ export default function VehicleInformationScreen() {
     Keyboard.dismiss();
     setHasAttemptedSubmit(true);
 
-    if (!isFormValid || isSaving) return;
+    if (!isFormValid || isSaving || isPreparingPhoto) return;
 
     setIsSaving(true);
     setSubmitError('');
@@ -844,12 +799,12 @@ export default function VehicleInformationScreen() {
           <Text style={styles.errorText}>{fieldErrors[field]}</Text>
         ) : null}
         <View style={styles.docButtonsRow}>
-          <Pressable style={styles.uploadButtonSmall} onPress={() => void onPick()}>
+          <Pressable style={styles.uploadButtonSmall} disabled={isSaving || isPreparingPhoto} onPress={() => void onPick()}>
             <Text style={styles.uploadButtonText}>
               {localAsset || remoteUrl ? t('Replace') : t('Select')}
             </Text>
           </Pressable>
-          <Pressable style={styles.uploadButtonSmall} onPress={() => void onTakeImage()}>
+          <Pressable style={styles.uploadButtonSmall} disabled={isSaving || isPreparingPhoto} onPress={() => void onTakeImage()}>
             <Text style={styles.uploadButtonText}>{t('Take image')}</Text>
           </Pressable>
         </View>
@@ -1119,12 +1074,13 @@ export default function VehicleInformationScreen() {
         {existingVehicle?.status === 'PENDING_REVIEW' ? (
           <Text style={styles.infoText}>{t('Your vehicle is pending approval.')}</Text>
         ) : null}
+        {isPreparingPhoto ? <Text style={styles.helper} accessibilityLiveRegion="polite">{t('Preparing photo…')}</Text> : null}
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
         {submitSuccess ? <Text style={styles.successText}>{submitSuccess}</Text> : null}
 
         <Pressable
-          style={[styles.primaryButton, isSaving && styles.buttonDisabled]}
-          disabled={isSaving}
+          style={[styles.primaryButton, (isSaving || isPreparingPhoto) && styles.buttonDisabled]}
+          disabled={isSaving || isPreparingPhoto}
           onPress={() => void onSaveVehicle()}
         >
           {isSaving ? (
