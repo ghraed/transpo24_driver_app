@@ -45,7 +45,7 @@ async function render() {
   await act(async () => { tree = create(<CompleteProfileScreen />); });
   await act(async () => { jest.runOnlyPendingTimers(); });
 }
-test('requires a company TRN and submits the trimmed value without a nickname', async () => {
+test('requires a company TRN and submits the trimmed value using a full name', async () => {
   await render();
   expect(trnInput()).toBeUndefined();
   await act(async () => button('Company').props.onPress());
@@ -55,7 +55,7 @@ test('requires a company TRN and submits the trimmed value without a nickname', 
   await act(async () => trnInput().props.onChangeText('  TRN-123  '));
   await act(async () => button('Continue to Vehicle & Documents').props.onPress());
   expect(mockSave).toHaveBeenCalledWith(expect.objectContaining({ driverType: 'COMPANY', trn: 'TRN-123' }));
-  expect(mockSave.mock.calls[0][0]).not.toHaveProperty('nickname');
+  expect(mockSave.mock.calls[0][0].fullNameOnId).toBe('Alex Smith');
 });
 test('switching to personal hides and excludes a previously entered TRN', async () => {
   await render();

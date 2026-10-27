@@ -39,7 +39,7 @@ export interface ChatRoom {
   id: string;
   transportRequestId: string;
   clientId: string;
-  clientNickname?: string;
+  clientName?: string;
   driverId: string;
   acceptedOfferId: string;
   status: ChatRoomStatus;

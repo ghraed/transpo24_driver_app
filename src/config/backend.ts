@@ -1,4 +1,6 @@
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 
 const PLACEHOLDER_HOSTS = new Set([
   'ip',
@@ -106,7 +108,24 @@ function resolveBackendUrl(envName: string, rawValue: string | undefined): strin
     throw new Error(`${envName} is missing. Please set it in your environment.`);
   }
 
-  return parseHttpUrl(envName, rawValue).toString().replace(/\/$/, '');
+  const parsed = parseHttpUrl(envName, rawValue);
+  // A physical iPhone's localhost is the phone, not the development computer.
+  // When Metro provides a LAN host, use that computer for an explicitly local
+  // development API. Simulators, Android USB and release URLs keep their config.
+  if (__DEV__ && Platform.OS === 'ios' && Device.isDevice &&
+      ['localhost', '127.0.0.1'].includes(parsed.hostname)) {
+    const hostUri = Constants.expoConfig?.hostUri;
+    try {
+      const metroHost = hostUri ? new URL(`http://${hostUri}`).hostname : '';
+      const parts = metroHost.split('.').map(Number);
+      const isLanIp = parts.length === 4 && parts.every(part => Number.isInteger(part) && part >= 0 && part <= 255) &&
+        (parts[0] === 10 || (parts[0] === 192 && parts[1] === 168) || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31));
+      if (isLanIp) parsed.hostname = metroHost;
+    } catch {
+      // Preserve explicit configuration when the Metro host is unavailable.
+    }
+  }
+  return parsed.toString().replace(/\/$/, '');
 }
 
 export function getBackendApiBaseUrl(): string {

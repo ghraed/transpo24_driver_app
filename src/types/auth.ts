@@ -562,7 +562,7 @@ export interface TransportedVehicleDetails {
 
 export interface DriverRequestAlertSummary {
   requestCreatedAt?: string;
-  customerNickname?: string;
+  customerName?: string;
   isCurrentlyEligible?: boolean;
   vehicleDetails?: TransportedVehicleDetails;
   alertId: string;
@@ -688,7 +688,7 @@ export interface AcceptedOffer extends DriverOffer {
 
 export interface DriverAcceptedJobSummary {
   reservation?: { state: string; paymentDeadlineAt: string; confirmationOpensAt: string; paidAt: string | null } | null;
-  customerNickname?: string;
+  customerName?: string;
   vehicleDetails?: TransportedVehicleDetails;
   requestId: string;
   requestStatus: RequestStatus;

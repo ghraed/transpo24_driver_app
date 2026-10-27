@@ -2231,3 +2231,17 @@ export async function computeDriverRoutes(
     signal.removeEventListener('abort', abort);
   }
 }
+
+
+export async function requestDriverPlaces(
+  operation: 'autocomplete' | 'details' | 'reverse',
+  payload: { input: string } | { placeId: string } | { latitude: number; longitude: number },
+): Promise<unknown> {
+  const response = await fetchWithTimeout(`${getApiBaseUrl()}/driver/places/${operation}`, {
+    method: 'POST',
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ ...payload, languageCode: i18n.resolvedLanguage ?? i18n.language ?? 'en' }),
+  });
+  if (!response.ok) throw await parseError(response, 'Places request failed.');
+  return parseJsonResponse<unknown>(response, 'Places request failed.');
+}

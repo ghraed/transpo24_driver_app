@@ -92,8 +92,8 @@ export function DriverChatButton({
           variant="contact"
           label={
             label ||
-            (chatRoom.clientNickname
-              ? t('Chat with {{name}}', { name: chatRoom.clientNickname })
+            (chatRoom.clientName
+              ? t('Chat with {{name}}', { name: chatRoom.clientName })
               : t('Chat with client'))
           }
           icon={{ ios: 'bubble.left', android: 'chat_bubble_outline', web: 'chat_bubble_outline' }}

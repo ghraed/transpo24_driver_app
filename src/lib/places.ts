@@ -1,11 +1,52 @@
+import { requestDriverPlaces } from '@/lib/api';
+import * as Application from 'expo-application';
+import { Platform } from 'react-native';
 import { GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import i18n from '@/localization/i18n';
 import { localizeResponseMessage } from '@/localization/response-message';
 
-const PLACES_AUTOCOMPLETE_ENDPOINT =
-  'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-const PLACE_DETAILS_ENDPOINT = 'https://maps.googleapis.com/maps/api/place/details/json';
-const GEOCODE_ENDPOINT = 'https://maps.googleapis.com/maps/api/geocode/json';
+type PlaceOperation = 'autocomplete' | 'details' | 'reverse';
+type PlaceInput = { input: string } | { placeId: string } | { latitude: number; longitude: number };
+
+async function requestPlaces(operation: PlaceOperation, input: PlaceInput): Promise<unknown> {
+  try {
+    return await requestDriverPlaces(operation, input);
+  } catch (error) {
+    const status = (error as { status?: number } | null)?.status;
+    // Keep the existing Android provider usable during a backend rollout or
+    // outage. Never fall back for authentication, validation or quota errors.
+    // The iOS map-display key is not authorized for Places and must not be used.
+    if (Platform.OS !== 'android' || !GOOGLE_MAPS_API_KEY || ![404, 502, 503].includes(status ?? 0)) throw error;
+  }
+  const params = new URLSearchParams({ key: GOOGLE_MAPS_API_KEY, language: i18n.resolvedLanguage ?? i18n.language ?? 'en' });
+  let endpoint: string;
+  if (operation === 'autocomplete') {
+    endpoint = 'place/autocomplete';
+    params.set('input', (input as { input: string }).input);
+  } else if (operation === 'details') {
+    endpoint = 'place/details';
+    params.set('place_id', (input as { placeId: string }).placeId);
+    params.set('fields', 'formatted_address,geometry');
+  } else {
+    endpoint = 'geocode';
+    const point = input as { latitude: number; longitude: number };
+    params.set('latlng', `${point.latitude},${point.longitude}`);
+  }
+  const headers: Record<string, string> = Application.applicationId === 'com.transpo24.driver'
+    ? { 'X-Android-Package': Application.applicationId, 'X-Android-Cert': '359C7B65774F00084F35199870BBE8A38656ADF4' }
+    : {};
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`https://maps.googleapis.com/maps/api/${endpoint}/json?${params}`, {
+      headers, signal: controller.signal,
+    });
+    if (!response.ok) throw await placeResponseError('Places request failed.');
+    return await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 type PlacesAutocompleteResponse = {
   predictions?: {
@@ -69,25 +110,7 @@ export async function searchPlacesAutocomplete(
     return [];
   }
 
-  if (!GOOGLE_MAPS_API_KEY) {
-    throw await placeResponseError('Google Maps API key is missing.');
-  }
-
-  const params = new URLSearchParams({
-    input: query,
-    key: GOOGLE_MAPS_API_KEY,
-    language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
-  });
-
-  const response = await fetch(`${PLACES_AUTOCOMPLETE_ENDPOINT}?${params.toString()}`);
-  const payload = (await response.json()) as PlacesAutocompleteResponse;
-
-  if (!response.ok) {
-    throw await placeResponseError(
-      payload.error_message ?? 'Places autocomplete request failed.',
-      'Places autocomplete request failed.',
-    );
-  }
+  const payload = await requestPlaces('autocomplete', { input: query }) as PlacesAutocompleteResponse;
 
   if (payload.status && payload.status !== 'OK' && payload.status !== 'ZERO_RESULTS') {
     throw await placeResponseError(
@@ -105,26 +128,7 @@ export async function searchPlacesAutocomplete(
 }
 
 export async function fetchPlaceDetails(placeId: string): Promise<ResolvedPlaceLocation> {
-  if (!GOOGLE_MAPS_API_KEY) {
-    throw await placeResponseError('Google Maps API key is missing.');
-  }
-
-  const params = new URLSearchParams({
-    place_id: placeId,
-    fields: 'formatted_address,geometry',
-    key: GOOGLE_MAPS_API_KEY,
-    language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
-  });
-
-  const response = await fetch(`${PLACE_DETAILS_ENDPOINT}?${params.toString()}`);
-  const payload = (await response.json()) as PlaceDetailsResponse;
-
-  if (!response.ok) {
-    throw await placeResponseError(
-      payload.error_message ?? 'Place details request failed.',
-      'Place details request failed.',
-    );
-  }
+  const payload = await requestPlaces('details', { placeId }) as PlaceDetailsResponse;
 
   if (payload.status && payload.status !== 'OK') {
     throw await placeResponseError(
@@ -173,25 +177,7 @@ export async function reverseGeocodeCoordinates(
   latitude: number,
   longitude: number,
 ): Promise<ResolvedPlaceLocation | null> {
-  if (!GOOGLE_MAPS_API_KEY) {
-    throw await placeResponseError('Google Maps API key is missing.');
-  }
-
-  const params = new URLSearchParams({
-    latlng: `${latitude},${longitude}`,
-    key: GOOGLE_MAPS_API_KEY,
-    language: i18n.resolvedLanguage ?? i18n.language ?? 'en',
-  });
-
-  const response = await fetch(`${GEOCODE_ENDPOINT}?${params.toString()}`);
-  const payload = (await response.json()) as GeocodeResponse;
-
-  if (!response.ok) {
-    throw await placeResponseError(
-      payload.error_message ?? 'Reverse geocoding request failed.',
-      'Reverse geocoding request failed.',
-    );
-  }
+  const payload = await requestPlaces('reverse', { latitude, longitude }) as GeocodeResponse;
 
   if (payload.status && payload.status !== 'OK' && payload.status !== 'ZERO_RESULTS') {
     throw await placeResponseError(

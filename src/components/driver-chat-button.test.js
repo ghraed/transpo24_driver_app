@@ -50,7 +50,7 @@ test('presents the payment window as a neutral availability card with a check ac
 
 test('opens the correct chat when available', async () => {
   useDriverChatRoom.mockReturnValue({
-    chatRoom: { id: 'room-1', transportRequestId: 'request-1', clientNickname: 'Karim' },
+    chatRoom: { id: 'room-1', transportRequestId: 'request-1', clientName: 'Karim' },
   });
   await render();
   await act(async () => tree.root.findByType(DriverButton).props.onPress());
