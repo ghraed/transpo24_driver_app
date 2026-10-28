@@ -18,8 +18,7 @@ import type { DriverAvailabilityResponse } from '@/types/auth';
 function hasCompletedAvailabilitySetup(availability: DriverAvailabilityResponse): boolean {
   return (
     availability.nextStep !== 'SET_AVAILABILITY' &&
-    Boolean(availability.id) &&
-    availability.weeklySchedule.some((day) => day.isAvailable)
+    Boolean(availability.id)
   );
 }
 

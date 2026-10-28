@@ -180,14 +180,10 @@ export default function SetAvailabilityScreen() {
       errors.weeklySchedule = t('Each day must appear once in weekly schedule.');
     }
 
-    let availableDayCount = 0;
-
     form.weeklySchedule.forEach((day) => {
       if (!day.isAvailable) {
         return;
       }
-
-      availableDayCount += 1;
 
       if (!day.startTime.trim()) {
         errors[`startTime-${day.dayOfWeek}`] = t('{{day}}: start time is required.', { day: day.label });
@@ -209,10 +205,6 @@ export default function SetAvailabilityScreen() {
         errors[`endTime-${day.dayOfWeek}`] = t('{{day}}: end time must be after start time.', { day: day.label });
       }
     });
-
-    if (availableDayCount === 0) {
-      errors.availableDays = t('At least one day must be available.');
-    }
 
     return errors;
   }, [form, t]);
@@ -468,7 +460,6 @@ export default function SetAvailabilityScreen() {
             );
           })}
 
-          {fieldErrors.availableDays ? <Text style={styles.errorText}>{fieldErrors.availableDays}</Text> : null}
           {fieldErrors.weeklySchedule ? <Text style={styles.errorText}>{fieldErrors.weeklySchedule}</Text> : null}
         </View>
 
