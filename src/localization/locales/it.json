@@ -1236,5 +1236,22 @@
   "Profile incomplete": "Profilo incompleto",
   "Complete your driver profile": "Completa il tuo profilo conducente",
   "Add your personal information to continue your driver registration.": "Aggiungi le tue informazioni personali per continuare la registrazione come conducente.",
-  "Finish Profile": "Completa il profilo"
+  "Finish Profile": "Completa il profilo",
+  "requestEligibility": {
+    "unavailable": "Offerta non disponibile",
+    "check": "Verifica disponibilità",
+    "fallback": "Controlla le impostazioni di disponibilità e dei veicoli prima di inviare un’offerta.",
+    "AVAILABILITY_REQUIRED": "È necessario configurare prima la disponibilità del conducente.",
+    "DRIVER_UNAVAILABLE": "Il tuo account conducente deve essere approvato e disponibile per ricevere richieste.",
+    "REQUEST_CLOSED": "Questa richiesta non accetta più preventivi.",
+    "IMMEDIATE_DISABLED": "Le richieste immediate sono disattivate nelle impostazioni di disponibilità.",
+    "SCHEDULED_DISABLED": "Le richieste programmate sono disattivate nelle impostazioni di disponibilità.",
+    "PICKUP_TIME_PASSED": "L’orario di ritiro programmato è già trascorso.",
+    "LOCATION_UNAVAILABLE": "Vai online e abilita l’accesso alla posizione per aggiornare la tua posizione GPS.",
+    "OUTSIDE_RADIUS": "Questo ritiro è fuori dal tuo raggio di servizio. Controlla le impostazioni di disponibilità.",
+    "OUTSIDE_WORKING_HOURS": "Questo ritiro è fuori dal tuo orario di lavoro. Controlla le impostazioni di disponibilità.",
+    "NO_COMPATIBLE_VEHICLE": "Nessun veicolo approvato è compatibile con questa richiesta, il suo carico e l’orario di ritiro."
+  },
+  "My Vehicles": "I miei veicoli",
+  "Set Availability": "Imposta disponibilità"
 }

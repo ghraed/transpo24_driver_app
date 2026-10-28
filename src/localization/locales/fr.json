@@ -1665,5 +1665,20 @@
   "Profile incomplete": "Profil incomplet",
   "Complete your driver profile": "Complétez votre profil de chauffeur",
   "Add your personal information to continue your driver registration.": "Ajoutez vos informations personnelles pour poursuivre votre inscription en tant que chauffeur.",
-  "Finish Profile": "Compléter le profil"
+  "Finish Profile": "Compléter le profil",
+  "requestEligibility": {
+    "unavailable": "Offre indisponible",
+    "check": "Vérifier la disponibilité",
+    "fallback": "Vérifiez vos paramètres de disponibilité et de véhicules avant d’envoyer une offre.",
+    "AVAILABILITY_REQUIRED": "Vous devez d’abord configurer la disponibilité du conducteur.",
+    "DRIVER_UNAVAILABLE": "Votre compte conducteur doit être approuvé et disponible pour recevoir des demandes.",
+    "REQUEST_CLOSED": "Cette demande n’accepte plus de devis.",
+    "IMMEDIATE_DISABLED": "Les demandes immédiates sont désactivées dans vos paramètres de disponibilité.",
+    "SCHEDULED_DISABLED": "Les demandes planifiées sont désactivées dans vos paramètres de disponibilité.",
+    "PICKUP_TIME_PASSED": "L’heure de prise en charge prévue est dépassée.",
+    "LOCATION_UNAVAILABLE": "Passez en ligne et autorisez l’accès à la localisation pour actualiser votre position GPS.",
+    "OUTSIDE_RADIUS": "Cette prise en charge est hors de votre rayon de service. Vérifiez vos paramètres de disponibilité.",
+    "OUTSIDE_WORKING_HOURS": "Cette prise en charge est en dehors de vos heures de travail. Vérifiez vos paramètres de disponibilité.",
+    "NO_COMPATIBLE_VEHICLE": "Aucun véhicule approuvé ne correspond à cette demande, à sa charge et aux horaires de prise en charge."
+  }
 }

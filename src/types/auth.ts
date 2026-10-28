@@ -595,6 +595,7 @@ export interface RequestPhoto {
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
   requestVersion: string;
+  offerEligibility?: { canSendOffer: boolean; reason: string | null };
   offerStatus: DriverOfferStatus | null;
   customerNote: string | null;
   customer: {

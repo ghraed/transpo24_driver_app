@@ -1,6 +1,6 @@
 import { RequestRouteCard } from '@/components/request-route-card';
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,8 +18,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { resolveBackendAssetUrl } from '@/config/backend';
 import {
   acceptDriverRequestAlert,
+  ApiResponseError,
   getDriverRequestDetails,
 } from '@/lib/api';
+import { DriverButton, DriverCard, DriverNotice, DriverStatus, DriverText } from '@/components/ui/driver-ui';
+import { syncRequestMatchingLocation } from '@/location/request-matching-location';
+import { driverSpace, driverThemes } from '@/theme/driver-theme';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
 import type { DriverRequestDetailsResponse } from '@/types/auth';
@@ -165,6 +169,7 @@ export default function ReviewRequestDetailsScreen() {
     setError('');
 
     try {
+      await syncRequestMatchingLocation().catch(() => undefined);
       const response = await getDriverRequestDetails(requestId);
       setDetails(response);
     } catch (requestError) {
@@ -175,7 +180,7 @@ export default function ReviewRequestDetailsScreen() {
     }
   }, [requestId, t]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     const loadTimeout = setTimeout(() => {
       void loadDetails();
     }, 0);
@@ -183,7 +188,7 @@ export default function ReviewRequestDetailsScreen() {
     return () => {
       clearTimeout(loadTimeout);
     };
-  }, [loadDetails]);
+  }, [loadDetails]));
 
   useEffect(() => {
     let active = true;
@@ -258,7 +263,7 @@ export default function ReviewRequestDetailsScreen() {
 
   const canAccept = useMemo(() => {
     if (!details) return false;
-    if (details.offerStatus) return false;
+    if (details.offerStatus || details.offerEligibility?.canSendOffer === false) return false;
     if (details.requestStatus !== 'PENDING_QUOTES' && details.requestStatus !== 'QUOTED') return false;
     return true;
   }, [details]);
@@ -269,6 +274,7 @@ export default function ReviewRequestDetailsScreen() {
     setIsBusy(true);
     setError('');
     try {
+      await syncRequestMatchingLocation().catch(() => undefined);
       const response = await acceptDriverRequestAlert(requestId);
       router.replace({
         pathname: '/send-price-offer',
@@ -287,8 +293,15 @@ export default function ReviewRequestDetailsScreen() {
         },
       });
     } catch (requestError) {
-      const message = requestError instanceof Error ? requestError.message : t('Failed to accept this request.');
-      setError(message);
+      if (requestError instanceof ApiResponseError && requestError.code?.startsWith('REQUEST_')) {
+        const reason = requestError.code.slice('REQUEST_'.length);
+        setDetails(current => current ? {
+          ...current, offerEligibility: { canSendOffer: false, reason },
+        } : current);
+      } else {
+        const message = requestError instanceof Error ? requestError.message : t('Failed to accept this request.');
+        setError(message);
+      }
     } finally {
       setIsBusy(false);
     }
@@ -336,8 +349,25 @@ export default function ReviewRequestDetailsScreen() {
           <Text style={styles.subtitle}>{t('Review the transport request before sending an offer.')}</Text>
         </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        {requestUnavailableMessage ? <Text style={styles.warningText}>{requestUnavailableMessage}</Text> : null}
+        {error ? <DriverNotice title={error} tone="danger" /> : null}
+        {requestUnavailableMessage ? <DriverNotice title={t(requestUnavailableMessage)} tone="warning" /> : null}
+        {!details.offerStatus && !requestUnavailableMessage && details.offerEligibility?.canSendOffer === false ? (
+          <DriverCard>
+            <DriverStatus label={t('requestEligibility.unavailable')} tone="warning" />
+            <DriverText>
+              {t(`requestEligibility.${details.offerEligibility.reason}`, {
+                defaultValue: t('requestEligibility.fallback'),
+              })}
+            </DriverText>
+            <View style={{ gap: driverSpace.sm }}>
+              <DriverButton label={t('Set Availability')} variant="secondary" onPress={() => router.push('/set-availability')} />
+              {details.offerEligibility.reason === 'NO_COMPATIBLE_VEHICLE' ? (
+                <DriverButton label={t('My Vehicles')} variant="secondary" onPress={() => router.push('/my-vehicles')} />
+              ) : null}
+              <DriverButton label={t('requestEligibility.check')} variant="quiet" onPress={() => void loadDetails()} />
+            </View>
+          </DriverCard>
+        ) : null}
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('Service')}</Text>
@@ -466,22 +496,20 @@ export default function ReviewRequestDetailsScreen() {
         </View>
       ) : (
         <View style={styles.actionsContainer}>
-          <Pressable
-            style={[styles.secondaryButton, isBusy ? styles.disabledButton : undefined]}
+          <DriverButton
+            label={t('Back')}
+            variant="secondary"
             onPress={() => router.replace('/receive-requests')}
             disabled={isBusy}
-          >
-            <Text style={styles.secondaryButtonText}>{t('Back')}</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.primaryActionButton, (!canAccept || isBusy) ? styles.disabledButton : undefined]}
+            style={{ flex: 1 }}
+          />
+          <DriverButton
+            label={t('Accept & Send Offer')}
             onPress={() => void onAccept()}
-            disabled={!canAccept || isBusy}
-          >
-            <Text style={styles.primaryActionButtonText}>
-              {isBusy ? t('Please wait...') : t('Accept & Send Offer')}
-            </Text>
-          </Pressable>
+            disabled={!canAccept}
+            loading={isBusy}
+            style={{ flex: 1 }}
+          />
         </View>
       )}
     </SafeAreaView>
@@ -508,11 +536,6 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: '#B91C1C',
-    textAlign: 'left',
-  },
-  warningText: {
-    fontSize: 14,
-    color: '#B45309',
     textAlign: 'left',
   },
   primaryButton: {
@@ -599,43 +622,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   actionsContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 14,
-    backgroundColor: '#FFFFFF',
+    padding: driverSpace.lg,
+    backgroundColor: driverThemes.light.surface,
     borderTopWidth: 1,
-    borderTopColor: '#DFE3E8',
+    borderTopColor: driverThemes.light.border,
     flexDirection: 'row',
-    gap: 10,
-  },
-  secondaryButton: {
-    flex: 1,
-    minHeight: 46,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#94A3B8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    color: '#505A6A',
-    fontWeight: '600',
-  },
-  primaryActionButton: {
-    flex: 1.4,
-    minHeight: 46,
-    borderRadius: 10,
-    backgroundColor: '#FFC515',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryActionButtonText: {
-    color: '#171717',
-    fontWeight: '700',
-  },
-  disabledButton: {
-    opacity: 0.6,
+    gap: driverSpace.md,
   },
 });

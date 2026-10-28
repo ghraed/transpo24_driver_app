@@ -1665,5 +1665,20 @@
   "Profile incomplete": "الملف الشخصي غير مكتمل",
   "Complete your driver profile": "أكمل ملفك الشخصي كسائق",
   "Add your personal information to continue your driver registration.": "أضف معلوماتك الشخصية لمتابعة التسجيل كسائق.",
-  "Finish Profile": "إكمال الملف الشخصي"
+  "Finish Profile": "إكمال الملف الشخصي",
+  "requestEligibility": {
+    "unavailable": "إرسال العرض غير متاح",
+    "check": "التحقق من التوفر",
+    "fallback": "راجع إعدادات توفرك ومركباتك قبل إرسال عرض.",
+    "AVAILABILITY_REQUIRED": "يجب إعداد أوقات التوفر أولاً.",
+    "DRIVER_UNAVAILABLE": "يجب أن يكون حساب السائق معتمداً ومتاحاً لتلقي الطلبات.",
+    "REQUEST_CLOSED": "لم يعد هذا الطلب متاحاً لتلقي عروض الأسعار.",
+    "IMMEDIATE_DISABLED": "الطلبات الفورية معطلة في إعدادات توفرك.",
+    "SCHEDULED_DISABLED": "الطلبات المجدولة معطلة في إعدادات توفرك.",
+    "PICKUP_TIME_PASSED": "لقد مضى وقت الاستلام المجدول.",
+    "LOCATION_UNAVAILABLE": "اتصل بالإنترنت وفعّل إذن الموقع لتحديث موقعك عبر GPS.",
+    "OUTSIDE_RADIUS": "موقع الاستلام خارج نطاق خدمتك. راجع إعدادات توفرك.",
+    "OUTSIDE_WORKING_HOURS": "موعد الاستلام خارج ساعات عملك. راجع إعدادات توفرك.",
+    "NO_COMPATIBLE_VEHICLE": "لا توجد مركبة معتمدة تناسب هذا الطلب وحمولته وساعات عمل الاستلام."
+  }
 }

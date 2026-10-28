@@ -1665,5 +1665,20 @@
   "Profile incomplete": "Profile incomplete",
   "Complete your driver profile": "Complete your driver profile",
   "Add your personal information to continue your driver registration.": "Add your personal information to continue your driver registration.",
-  "Finish Profile": "Finish Profile"
+  "Finish Profile": "Finish Profile",
+  "requestEligibility": {
+    "unavailable": "Offer unavailable",
+    "check": "Check availability",
+    "fallback": "Review your availability and vehicle settings before sending an offer.",
+    "AVAILABILITY_REQUIRED": "Driver availability must be configured first.",
+    "DRIVER_UNAVAILABLE": "Your driver account must be approved and available to receive requests.",
+    "REQUEST_CLOSED": "Request is no longer available for quotes.",
+    "IMMEDIATE_DISABLED": "Immediate requests are disabled in your availability settings.",
+    "SCHEDULED_DISABLED": "Scheduled requests are disabled in your availability settings.",
+    "PICKUP_TIME_PASSED": "The scheduled pickup time has passed.",
+    "LOCATION_UNAVAILABLE": "Go online and enable location access to refresh your GPS location.",
+    "OUTSIDE_RADIUS": "This pickup is outside your service radius. Review your availability settings.",
+    "OUTSIDE_WORKING_HOURS": "This pickup is outside your working hours. Review your availability settings.",
+    "NO_COMPATIBLE_VEHICLE": "No approved vehicle matches this request, its load, and pickup working hours."
+  }
 }

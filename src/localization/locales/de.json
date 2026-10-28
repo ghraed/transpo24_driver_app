@@ -1665,5 +1665,20 @@
   "Profile incomplete": "Profil unvollständig",
   "Complete your driver profile": "Vervollständige dein Fahrerprofil",
   "Add your personal information to continue your driver registration.": "Ergänze deine persönlichen Angaben, um deine Registrierung als Fahrer fortzusetzen.",
-  "Finish Profile": "Profil vervollständigen"
+  "Finish Profile": "Profil vervollständigen",
+  "requestEligibility": {
+    "unavailable": "Angebot nicht verfügbar",
+    "check": "Verfügbarkeit prüfen",
+    "fallback": "Prüfen Sie Ihre Verfügbarkeits- und Fahrzeugeinstellungen, bevor Sie ein Angebot senden.",
+    "AVAILABILITY_REQUIRED": "Die Fahrerverfügbarkeit muss zuerst eingerichtet werden.",
+    "DRIVER_UNAVAILABLE": "Ihr Fahrerkonto muss genehmigt und für Anfragen verfügbar sein.",
+    "REQUEST_CLOSED": "Für diese Anfrage können keine Angebote mehr abgegeben werden.",
+    "IMMEDIATE_DISABLED": "Sofortanfragen sind in Ihren Verfügbarkeitseinstellungen deaktiviert.",
+    "SCHEDULED_DISABLED": "Geplante Anfragen sind in Ihren Verfügbarkeitseinstellungen deaktiviert.",
+    "PICKUP_TIME_PASSED": "Die geplante Abholzeit ist bereits vorbei.",
+    "LOCATION_UNAVAILABLE": "Gehen Sie online und erlauben Sie den Standortzugriff, um Ihren GPS-Standort zu aktualisieren.",
+    "OUTSIDE_RADIUS": "Diese Abholung liegt außerhalb Ihres Einsatzradius. Prüfen Sie Ihre Verfügbarkeitseinstellungen.",
+    "OUTSIDE_WORKING_HOURS": "Diese Abholung liegt außerhalb Ihrer Arbeitszeiten. Prüfen Sie Ihre Verfügbarkeitseinstellungen.",
+    "NO_COMPATIBLE_VEHICLE": "Kein genehmigtes Fahrzeug passt zu dieser Anfrage, ihrer Ladung und den Arbeitszeiten bei der Abholung."
+  }
 }
