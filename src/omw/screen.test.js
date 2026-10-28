@@ -1,10 +1,12 @@
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { Alert, TextInput } from 'react-native';
+import * as Location from 'expo-location';
 import { OmwRouteRequests } from './route-requests';
 import DriverOmwScreen from '@/app/driver-omw';
 import { OmwProvider } from './context';
 import { findOmwRoutes } from './routes';
+jest.mock('./arrival-notification', () => ({ sendOmwArrivalReminder: jest.fn(async () => 'arrival-one'), dismissOmwArrivalReminder: jest.fn(async () => {}) }));
 
 const mockT = (key, values) => key === 'omw.routeVia' ? `Route ${values.number} via ${values.road}` : key;
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { resolvedLanguage: 'en', dir: () => 'ltr' } }) }));
@@ -32,6 +34,10 @@ jest.mock('@/components/map-location-marker', () => ({ MapLocationMarker: () => 
 jest.mock('./route-requests', () => ({ OmwRouteRequests: props => props.children?.(null) ?? null }));
 jest.mock('./place-field', () => ({ OmwPlaceField: props => require('react').createElement('PlaceField', props) }));
 jest.mock('./routes', () => ({ findOmwRoutes: jest.fn() }));
+jest.mock('expo-location', () => ({
+  Accuracy: { High: 4 }, getForegroundPermissionsAsync: jest.fn(),
+  getCurrentPositionAsync: jest.fn(), watchPositionAsync: jest.fn(),
+}));
 const from = { address: 'Beirut', placeId: 'beirut', latitude: 33.89, longitude: 35.5 };
 const to = { address: 'Tripoli', placeId: 'tripoli', latitude: 34.43, longitude: 35.84 };
 const routes = ['Coastal highway', 'Mountain road'].map((summary, index) => ({
@@ -39,7 +45,12 @@ const routes = ['Coastal highway', 'Mountain road'].map((summary, index) => ({
   coordinates: [from, { latitude: 34 + index / 10, longitude: 35.6 }, to],
 }));
 let tree;
-beforeEach(() => { jest.spyOn(Alert, 'alert').mockImplementation(() => {}); jest.clearAllMocks(); findOmwRoutes.mockResolvedValue(routes); });
+beforeEach(() => {
+  jest.spyOn(Alert, 'alert').mockImplementation(() => {}); jest.clearAllMocks(); findOmwRoutes.mockResolvedValue(routes);
+  Location.getForegroundPermissionsAsync.mockResolvedValue({ granted: true });
+  Location.watchPositionAsync.mockResolvedValue({ remove: jest.fn() });
+  Location.getCurrentPositionAsync.mockResolvedValue({ timestamp: Date.now() - 1000, coords: { ...from, accuracy: 10 } });
+});
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; });
 const button = label => tree.root.findAll(node => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0];
 const copy = () => JSON.stringify(tree.toJSON());
@@ -95,6 +106,21 @@ test('rejects identical endpoints and clears obsolete routes when an endpoint ch
   expect(button('omw.useRoute')).toBeDefined();
   await act(async () => tree.root.findAllByType('PlaceField')[1].props.onChange(null));
   expect(button('omw.useRoute')).toBeUndefined();
+});
+
+test('use this route retains the endpoints, map, and results when GPS starts at the destination', async () => {
+  Location.getCurrentPositionAsync.mockResolvedValue({ timestamp: Date.now(), coords: { ...to, accuracy: 10 } });
+  await render(); await endpoints();
+  await act(async () => button('omw.findRoutes').props.onPress());
+  await act(async () => button('omw.useRoute').props.onPress());
+  expect(button('omw.editTrip')).toBeDefined();
+  expect(tree.root.findByType('MapView')).toBeDefined();
+  expect(tree.root.findByType(OmwRouteRequests).props.route).toEqual(routes[0]);
+  expect(copy()).toContain(from.address);
+  expect(copy()).toContain(to.address);
+  await act(async () => button('omw.editTrip').props.onPress());
+  expect(tree.root.findAllByType('PlaceField').map(node => node.props.value)).toEqual([from, to]);
+  expectOnlySelected(0);
 });
 
 test('shows an empty result and permits retry after a network failure', async () => {

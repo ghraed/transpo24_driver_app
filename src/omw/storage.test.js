@@ -29,3 +29,9 @@ test('rejects damaged or invalid saved coordinates', async () => {
   mockFiles.set('omw-trip-one.json', JSON.stringify({ ...trip, to: { ...to, latitude: 1000 } }));
   expect(await readOmwTrip('one')).toBeNull();
 });
+test('retains the delivered reminder and rejects an invalid notification identifier', async () => {
+  await writeOmwTrip('one', { ...trip, arrivalReminderId: 'arrival-one' });
+  expect((await readOmwTrip('one')).arrivalReminderId).toBe('arrival-one');
+  mockFiles.set('omw-trip-one.json', JSON.stringify({ ...trip, arrivalReminderId: 123 }));
+  expect(await readOmwTrip('one')).toBeNull();
+});

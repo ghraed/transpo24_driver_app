@@ -3,10 +3,14 @@ import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 import { calculateDistanceMeters } from '@/utils/locationValidation';
 import { readOmwTrip, writeOmwTrip } from './storage';
+import { dismissOmwArrivalReminder, sendOmwArrivalReminder } from './arrival-notification';
 import type { ResolvedPlaceLocation } from '@/lib/places';
 import type { OmwRoute } from './routes';
 
-export type OmwTrip = { from: ResolvedPlaceLocation; to: ResolvedPlaceLocation; via: ResolvedPlaceLocation | null; radiusKm: number; route: OmwRoute; routes: OmwRoute[] };
+export type OmwTrip = { from: ResolvedPlaceLocation; to: ResolvedPlaceLocation; via: ResolvedPlaceLocation | null; radiusKm: number; route: OmwRoute; routes: OmwRoute[];
+  // Persist the delivered reminder so GPS updates and app restarts do not repeat it.
+  arrivalReminderId?: string;
+};
 const OmwContext = createContext<{
   trip: OmwTrip | null;
   setTrip: (trip: OmwTrip | null) => void;
@@ -23,18 +27,39 @@ export function OmwProvider({ children, driverId }: { children: React.ReactNode;
   const readFailed = useRef(false);
   const version = useRef(0);
   const writes = useRef(Promise.resolve());
+  const journeyVersion = useRef(0);
+  const reminderPending = useRef<number | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const persist = useCallback((next: OmwTrip | null) => {
     if (!driverId) return;
     writes.current = writes.current.catch(() => undefined).then(() => writeOmwTrip(driverId, next));
     void writes.current.then(() => setSaveError(false), () => setSaveError(true));
   }, [driverId]);
-  const setTrip = useCallback((next: OmwTrip | null) => {
+  const commitTrip = useCallback((next: OmwTrip | null) => {
     ++version.current;
     readFailed.current = false;
     currentTrip.current = next;
     updateTrip(next);
     persist(next);
   }, [persist]);
+  const setTrip = useCallback((next: OmwTrip | null) => {
+    const previous = currentTrip.current;
+    const sameJourney = previous && next && previous.from.latitude === next.from.latitude
+      && previous.from.longitude === next.from.longitude && previous.to.latitude === next.to.latitude
+      && previous.to.longitude === next.to.longitude;
+    if (!sameJourney) {
+      ++journeyVersion.current;
+      if (previous?.arrivalReminderId) void dismissOmwArrivalReminder(previous.arrivalReminderId);
+    }
+    if (next) {
+      next = { ...next, arrivalReminderId: sameJourney ? previous.arrivalReminderId : undefined };
+    }
+    commitTrip(next);
+  }, [commitTrip]);
   useEffect(() => {
     if (!driverId) return;
     let active = true;
@@ -57,16 +82,28 @@ export function OmwProvider({ children, driverId }: { children: React.ReactNode;
   };
 
   useEffect(() => {
-    if (!trip) return;
+    if (!trip || trip.arrivalReminderId) return;
     let disposed = false;
     let generation = 0;
     let subscription: Location.LocationSubscription | undefined;
     const check = (location: Location.LocationObject) => {
       const age = Date.now() - location.timestamp;
       const accuracy = location.coords.accuracy;
-      if (!disposed && currentTrip.current === trip && AppState.currentState === 'active' && age >= 0 && age <= 30000
-        && accuracy != null && accuracy >= 0 && accuracy <= 50
-        && calculateDistanceMeters(location.coords, trip.to) <= 100) setTrip(null);
+      if (disposed || currentTrip.current !== trip || AppState.currentState !== 'active'
+        || !(age >= 0 && age <= 30000) || accuracy == null || !(accuracy >= 0 && accuracy <= 50)) return;
+      if (!(calculateDistanceMeters(location.coords, trip.to) <= 100)) return;
+      const journey = journeyVersion.current;
+      if (reminderPending.current === journey) return;
+      reminderPending.current = journey;
+      const isCurrent = () => mounted.current && journeyVersion.current === journey && currentTrip.current !== null;
+      void sendOmwArrivalReminder(isCurrent).then(identifier => {
+        if (!identifier) return;
+        const latest = currentTrip.current;
+        if (isCurrent() && latest) commitTrip({ ...latest, arrivalReminderId: identifier });
+        else void dismissOmwArrivalReminder(identifier);
+      }).catch(() => {
+        // Preserve the trip and retry on a later fix if notifications are unavailable.
+      }).finally(() => { if (reminderPending.current === journey) reminderPending.current = null; });
     };
     const start = async () => {
       const current = ++generation;
@@ -86,7 +123,7 @@ export function OmwProvider({ children, driverId }: { children: React.ReactNode;
     void start();
     const listener = AppState.addEventListener('change', () => { void start(); });
     return () => { disposed = true; ++generation; subscription?.remove(); listener.remove(); };
-  }, [trip, setTrip]);
+  }, [trip, commitTrip]);
 
   return <OmwContext.Provider value={{ trip, setTrip, saveError, retrySave }}>{ready ? children : null}</OmwContext.Provider>;
 }

@@ -45,7 +45,7 @@ export default function DriverOmwScreen() {
   const controller = useRef<AbortController | null>(null);
   const map = useRef<{ fitToCoordinates: (coordinates: OmwRoute['coordinates'], options: object) => void } | null>(null);
 
-  // Arrival can finish the trip while another tab is open or this screen is mounted.
+  // Restore saved trips and reset the form when the driver ends the trip.
   const previousTrip = useRef(trip);
   useEffect(() => {
     if (!previousTrip.current && trip) {

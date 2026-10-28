@@ -16,6 +16,7 @@ export async function readOmwTrip(driverId: string): Promise<OmwTrip | null> {
       && r.coordinates.length >= 2 && r.coordinates.every(point);
     if (!place(value.from) || !place(value.to) || (value.via && !place(value.via))
       || !route(value.route) || !Array.isArray(value.routes) || !value.routes.every(route)
+      || (value.arrivalReminderId != null && (typeof value.arrivalReminderId !== 'string' || !value.arrivalReminderId.trim()))
       || !Number.isFinite(value.radiusKm) || value.radiusKm < 1 || value.radiusKm > 50) return null;
     return value;
   } catch { return null; }

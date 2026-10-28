@@ -30,6 +30,8 @@ function resolveTripId(data: PushNotificationData): string | null {
 
 function resolveNotificationRoute(data: PushNotificationData): Href | null {
   switch (data.type) {
+    case 'OMW_ARRIVAL_REMINDER':
+      return { pathname: '/driver-omw' };
     case 'NEW_TRANSPORT_REQUEST':
       if (typeof data.requestId === 'string' && data.requestId.trim()) {
         return {

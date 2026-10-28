@@ -112,3 +112,15 @@ test('cancelled vehicle reservation opens the job list', async () => {
   mockResponse = response({ type: 'VEHICLE_RESERVATION_CANCELLED', requestId: 'vehicle' }); await render();
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/accepted-jobs' });
 });
+
+test('an OMW arrival reminder opens OMW after cold-start redirects settle', async () => {
+  mockResponse = response({ type: 'OMW_ARRIVAL_REMINDER' });
+  mockPathname = '/';
+  await render(false);
+  await render(true);
+  expect(mockPush).not.toHaveBeenCalled();
+  mockPathname = '/driver-home';
+  await render();
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/driver-omw' });
+  expect(Notifications.clearLastNotificationResponse).toHaveBeenCalledTimes(1);
+});

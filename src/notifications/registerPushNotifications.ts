@@ -8,7 +8,7 @@ import { registerPushToken } from '@/lib/api';
 import type { RegisterPushTokenPayload } from '@/notifications/types';
 import { isMissingFirebaseConfiguration, PushConfigurationError } from './push-registration-error';
 
-const ANDROID_CHANNEL_ID = 'transport_jobs';
+export const ANDROID_CHANNEL_ID = 'transport_jobs';
 const DRIVER_APP_CONTEXT = 'DRIVER';
 
 let hasInitializedNotifications = false;
@@ -46,7 +46,7 @@ function requireProjectId(): string {
   );
 }
 
-async function ensureAndroidChannel(): Promise<void> {
+export async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== 'android') {
     return;
   }
