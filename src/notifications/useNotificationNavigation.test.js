@@ -93,7 +93,7 @@ test('does not replay a consumed tap after remounting', async () => {
   expect(mockPush).toHaveBeenCalledTimes(1);
 });
 
-test.each(['FURNITURE_RESERVED', 'FURNITURE_PAYMENT_CONFIRMED'])('%s opens reserved job details', async type => {
+test.each(['DRIVER_SELECTED', 'FURNITURE_RESERVED', 'FURNITURE_PAYMENT_CONFIRMED'])('%s opens accepted job details', async type => {
   mockResponse = response({ type, requestId: 'furniture' });
   await render();
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/accepted-job-details', params: { requestId: 'furniture' } });
