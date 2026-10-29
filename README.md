@@ -47,6 +47,31 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Stripe test payments and driver payouts
+
+The driver app calls the API for Stripe Connect onboarding, account status and
+payout release. It does not initialize a Stripe SDK or use a publishable key.
+The API's `STRIPE_MODE` therefore controls the driver's Connect accounts and
+transfers as well as the customer app's payments. Point both apps at the same
+API deployment; setting a publishable-key variable in the driver app does not
+change payout mode.
+
+For owner testing, use a dedicated driver with a test Connect account created
+through **Stripe Connect** while the API selects `STRIPE_MODE=test`. Complete
+the test onboarding, accept a customer's booking, deliver it and have the paying
+customer confirm delivery. Eligible driver earnings can then transfer to that
+test connected account. Test bank payouts do not move real money.
+
+For a service price of 100, the current rules charge the customer 105 (including
+a 5% customer commission), deduct 15 from the driver's service price and create
+driver earnings of 85. The platform share is 20 before Stripe processing fees.
+These percentages are the same in test and live mode. Extra expense
+reimbursements follow their existing separate rules.
+
+See the API repository's `docs/stripe-production-testing.md` for the complete
+owner test scenario, webhook setup and deployment requirements. Existing live
+Connect accounts cannot be used for test transfers; use a dedicated test driver.
+
 ## Get a fresh project
 
 When you're ready, run:
