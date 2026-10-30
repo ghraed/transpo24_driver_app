@@ -1680,5 +1680,11 @@
     "OUTSIDE_RADIUS": "Cette prise en charge est hors de votre rayon de service. Vérifiez vos paramètres de disponibilité.",
     "OUTSIDE_WORKING_HOURS": "Cette prise en charge est en dehors de vos heures de travail. Vérifiez vos paramètres de disponibilité.",
     "NO_COMPATIBLE_VEHICLE": "Aucun véhicule approuvé ne correspond à cette demande, à sa charge et aux horaires de prise en charge."
-  }
+  },
+  "Remove Stripe account": "Déconnecter le compte Stripe",
+  "Remove Stripe account?": "Déconnecter le compte Stripe ?",
+  "This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.": "Votre compte de versement sera déconnecté de Transpo24. Votre compte Stripe et les versements précédents seront conservés. Les nouveaux versements attendront que vous terminiez à nouveau la configuration. Vous pouvez utiliser la même adresse e-mail ou une autre.",
+  "Failed to remove Stripe account. Please try again.": "Impossible de déconnecter le compte Stripe. Veuillez réessayer.",
+  "Stripe email (optional)": "Adresse e-mail Stripe (facultatif)",
+  "Use the same or a different email. Leave blank to use your Transpo24 email.": "Utilisez la même adresse e-mail ou une autre. Laissez ce champ vide pour utiliser votre adresse e-mail Transpo24."
 }

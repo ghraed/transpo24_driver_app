@@ -2085,13 +2085,14 @@ export async function getStripeConnectStatus(): Promise<StripeConnectStatusRespo
   );
 }
 
-export async function createStripeConnectAccount(): Promise<StripeConnectAccountResponse> {
+export async function createStripeConnectAccount(email?: string): Promise<StripeConnectAccountResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/account`;
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: await getAuthHeaders(),
+      body: JSON.stringify({ email: email?.trim() || undefined }),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);
@@ -2104,6 +2105,26 @@ export async function createStripeConnectAccount(): Promise<StripeConnectAccount
   return parseStripeConnectAccountResponse(
     response,
     'Failed to parse Stripe Connect account response.',
+  );
+}
+
+export async function removeStripeConnectAccount(): Promise<StripeConnectStatusResponse> {
+  const endpoint = `${getApiBaseUrl()}/driver/me/stripe-connect/account`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, {
+      method: 'DELETE',
+      headers: await getAuthHeaders(),
+    });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+  if (!response.ok) {
+    throw await parseError(response, 'Failed to remove Stripe account.');
+  }
+  return parseJsonResponse<StripeConnectStatusResponse>(
+    response,
+    'Failed to parse Stripe Connect status response.',
   );
 }
 

@@ -1680,5 +1680,11 @@
     "OUTSIDE_RADIUS": "This pickup is outside your service radius. Review your availability settings.",
     "OUTSIDE_WORKING_HOURS": "This pickup is outside your working hours. Review your availability settings.",
     "NO_COMPATIBLE_VEHICLE": "No approved vehicle matches this request, its load, and pickup working hours."
-  }
+  },
+  "Remove Stripe account": "Remove Stripe account",
+  "Remove Stripe account?": "Remove Stripe account?",
+  "This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.": "This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.",
+  "Failed to remove Stripe account. Please try again.": "Failed to remove Stripe account. Please try again.",
+  "Stripe email (optional)": "Stripe email (optional)",
+  "Use the same or a different email. Leave blank to use your Transpo24 email.": "Use the same or a different email. Leave blank to use your Transpo24 email."
 }

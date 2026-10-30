@@ -1680,5 +1680,11 @@
     "OUTSIDE_RADIUS": "موقع الاستلام خارج نطاق خدمتك. راجع إعدادات توفرك.",
     "OUTSIDE_WORKING_HOURS": "موعد الاستلام خارج ساعات عملك. راجع إعدادات توفرك.",
     "NO_COMPATIBLE_VEHICLE": "لا توجد مركبة معتمدة تناسب هذا الطلب وحمولته وساعات عمل الاستلام."
-  }
+  },
+  "Remove Stripe account": "إزالة حساب Stripe",
+  "Remove Stripe account?": "هل تريد إزالة حساب Stripe؟",
+  "This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.": "سيتم فصل حساب الدفعات عن Transpo24. سيبقى حساب Stripe والدفعات السابقة كما هي. ستنتظر الدفعات الجديدة حتى تكمل إعداد الحساب مجددًا. يمكنك استخدام البريد الإلكتروني نفسه أو بريد آخر.",
+  "Failed to remove Stripe account. Please try again.": "تعذرت إزالة حساب Stripe. يرجى المحاولة مجددًا.",
+  "Stripe email (optional)": "البريد الإلكتروني لحساب Stripe (اختياري)",
+  "Use the same or a different email. Leave blank to use your Transpo24 email.": "استخدم البريد الإلكتروني نفسه أو بريدًا آخر. اتركه فارغًا لاستخدام بريدك الإلكتروني في Transpo24."
 }

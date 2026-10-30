@@ -1680,5 +1680,11 @@
     "OUTSIDE_RADIUS": "Esta recogida está fuera de tu radio de servicio. Revisa tu configuración de disponibilidad.",
     "OUTSIDE_WORKING_HOURS": "Esta recogida está fuera de tu horario laboral. Revisa tu configuración de disponibilidad.",
     "NO_COMPATIBLE_VEHICLE": "Ningún vehículo aprobado cumple con esta solicitud, su carga y el horario de recogida."
-  }
+  },
+  "Remove Stripe account": "Desvincular cuenta de Stripe",
+  "Remove Stripe account?": "¿Desvincular la cuenta de Stripe?",
+  "This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.": "Se desvinculará tu cuenta de cobros de Transpo24. Tu cuenta de Stripe y los pagos anteriores se conservarán. Los nuevos pagos esperarán hasta que completes la configuración de nuevo. Puedes usar el mismo correo electrónico u otro distinto.",
+  "Failed to remove Stripe account. Please try again.": "No se pudo desvincular la cuenta de Stripe. Inténtalo de nuevo.",
+  "Stripe email (optional)": "Correo electrónico de Stripe (opcional)",
+  "Use the same or a different email. Leave blank to use your Transpo24 email.": "Usa el mismo correo electrónico u otro distinto. Déjalo en blanco para usar tu correo de Transpo24."
 }

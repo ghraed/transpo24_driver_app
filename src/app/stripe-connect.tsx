@@ -1,12 +1,14 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Linking,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,30 +17,42 @@ import {
   createStripeConnectAccount,
   getStripeConnectDashboardLink,
   getStripeConnectStatus,
+  removeStripeConnectAccount,
   syncStripeConnectAccount,
   type StripeConnectStatusResponse,
 } from '@/lib/api';
+import { DriverButton, DriverCard, DriverNotice, DriverText } from '@/components/ui/driver-ui';
+import { driverComponents, driverSpace, useDriverColors } from '@/theme/driver-theme';
 
 export default function StripeConnectScreen() {
   const router = useRouter();
   const { t } = useTranslation();
+  const colors = useDriverColors();
   const [status, setStatus] = useState<StripeConnectStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOpeningDashboard, setIsOpeningDashboard] = useState(false);
   const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [confirmRemoval, setConfirmRemoval] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const statusRevision = useRef(0);
+  const isBusy = isCreating || isSyncing || isOpeningDashboard || isRemoving;
 
   const loadStatus = useCallback(async () => {
+    const revision = statusRevision.current;
     setIsLoading(true);
     setError('');
     try {
       const data = await getStripeConnectStatus();
-      setStatus(data);
+      if (revision === statusRevision.current) setStatus(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('Failed to load Stripe Connect status.'));
+      if (revision === statusRevision.current) {
+        setError(err instanceof Error ? err.message : t('Failed to load Stripe Connect status.'));
+      }
     } finally {
-      setIsLoading(false);
+      if (revision === statusRevision.current) setIsLoading(false);
     }
   }, [t]);
 
@@ -68,7 +82,7 @@ export default function StripeConnectScreen() {
     setIsCreating(true);
     setError('');
     try {
-      const result = await createStripeConnectAccount();
+      const result = await createStripeConnectAccount(status?.stripeAccountId ? undefined : email);
       if (result.onboardingUrl) {
         await Linking.openURL(result.onboardingUrl);
       }
@@ -112,6 +126,24 @@ export default function StripeConnectScreen() {
   const hasAccount = Boolean(status?.stripeAccountId);
   const isReady = Boolean(status?.payoutsEnabled);
 
+  const handleRemoveAccount = async () => {
+    setIsRemoving(true);
+    setError('');
+    statusRevision.current += 1;
+    try {
+      const disconnectedStatus = await removeStripeConnectAccount();
+      statusRevision.current += 1;
+      setStatus(disconnectedStatus);
+      setEmail('');
+      setConfirmRemoval(false);
+    } catch {
+      setError(t('Failed to remove Stripe account. Please try again.'));
+    } finally {
+      setIsLoading(false);
+      setIsRemoving(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -127,7 +159,7 @@ export default function StripeConnectScreen() {
           <Text style={styles.loadingText}>{t('Loading')}</Text>
         </View>
       ) : (
-        <View style={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
               <Text style={styles.statusLabel}>{t('Account Created')}</Text>
@@ -168,9 +200,38 @@ export default function StripeConnectScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           {!hasAccount ? (
+            <DriverCard>
+              <DriverText variant="label">{t('Stripe email (optional)')}</DriverText>
+              <TextInput
+                accessibilityLabel={t('Stripe email (optional)')}
+                value={email}
+                onChangeText={setEmail}
+                editable={!isBusy}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                style={{
+                  minHeight: driverComponents.input.minHeight,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  borderRadius: driverComponents.input.radius,
+                  paddingHorizontal: driverSpace.lg,
+                  marginVertical: driverSpace.sm,
+                  color: colors.text,
+                  backgroundColor: colors.surface,
+                }}
+              />
+              <DriverText secondary variant="caption">
+                {t('Use the same or a different email. Leave blank to use your Transpo24 email.')}
+              </DriverText>
+            </DriverCard>
+          ) : null}
+
+          {!hasAccount ? (
             <Pressable
-              style={[styles.actionButton, isCreating && styles.disabledButton]}
-              disabled={isCreating}
+              style={[styles.actionButton, isBusy && styles.disabledButton]}
+              disabled={isBusy}
               onPress={() => void handleCreateAccount()}
             >
               {isCreating ? (
@@ -181,8 +242,8 @@ export default function StripeConnectScreen() {
             </Pressable>
           ) : !isReady ? (
             <Pressable
-              style={[styles.actionButton, isCreating && styles.disabledButton]}
-              disabled={isCreating}
+              style={[styles.actionButton, isBusy && styles.disabledButton]}
+              disabled={isBusy}
               onPress={() => void handleCreateAccount()}
             >
               {isCreating ? (
@@ -195,8 +256,8 @@ export default function StripeConnectScreen() {
 
           {hasAccount ? (
             <Pressable
-              style={[styles.secondaryButton, isSyncing && styles.disabledButton]}
-              disabled={isSyncing}
+              style={[styles.secondaryButton, isBusy && styles.disabledButton]}
+              disabled={isBusy}
               onPress={() => void handleSync()}
             >
               {isSyncing ? (
@@ -209,8 +270,8 @@ export default function StripeConnectScreen() {
 
           {isReady ? (
             <Pressable
-              style={[styles.dashboardButton, isOpeningDashboard && styles.disabledButton]}
-              disabled={isOpeningDashboard}
+              style={[styles.dashboardButton, isBusy && styles.disabledButton]}
+              disabled={isBusy}
               onPress={() => void handleOpenDashboard()}
             >
               {isOpeningDashboard ? (
@@ -221,10 +282,42 @@ export default function StripeConnectScreen() {
             </Pressable>
           ) : null}
 
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          {hasAccount ? (
+            confirmRemoval ? (
+              <DriverCard style={{ gap: driverSpace.md }}>
+                <DriverNotice
+                  tone="warning"
+                  title={t('Remove Stripe account?')}
+                  description={t('This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.')}
+                />
+                <DriverButton
+                  label={t('Remove Stripe account')}
+                  variant="secondary"
+                  loading={isRemoving}
+                  disabled={isBusy}
+                  onPress={() => void handleRemoveAccount()}
+                />
+                <DriverButton
+                  label={t('Cancel')}
+                  variant="quiet"
+                  disabled={isBusy}
+                  onPress={() => setConfirmRemoval(false)}
+                />
+              </DriverCard>
+            ) : (
+              <DriverButton
+                label={t('Remove Stripe account')}
+                variant="secondary"
+                disabled={isBusy}
+                onPress={() => setConfirmRemoval(true)}
+              />
+            )
+          ) : null}
+
+          <Pressable style={styles.backButton} disabled={isRemoving} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>{t('Back')}</Text>
           </Pressable>
-        </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -259,7 +352,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     padding: 20,
     gap: 16,
   },

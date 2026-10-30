@@ -1253,5 +1253,11 @@
     "NO_COMPATIBLE_VEHICLE": "Nessun veicolo approvato è compatibile con questa richiesta, il suo carico e l’orario di ritiro."
   },
   "My Vehicles": "I miei veicoli",
-  "Set Availability": "Imposta disponibilità"
+  "Set Availability": "Imposta disponibilità",
+  "Remove Stripe account": "Scollega account Stripe",
+  "Remove Stripe account?": "Scollegare l’account Stripe?",
+  "This disconnects your payout account from Transpo24. Your Stripe account and previous payouts remain. New payouts wait until you complete onboarding again. You can use the same or a different email.": "Il tuo account per gli accrediti verrà scollegato da Transpo24. Il tuo account Stripe e gli accrediti precedenti verranno conservati. I nuovi accrediti resteranno in attesa finché non completerai di nuovo la configurazione. Puoi usare la stessa email o una diversa.",
+  "Failed to remove Stripe account. Please try again.": "Impossibile scollegare l’account Stripe. Riprova.",
+  "Stripe email (optional)": "Email Stripe (facoltativa)",
+  "Use the same or a different email. Leave blank to use your Transpo24 email.": "Usa la stessa email o una diversa. Lascia vuoto per usare la tua email di Transpo24."
 }
