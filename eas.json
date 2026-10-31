@@ -77,7 +77,8 @@
     },
     "production": {
       "ios": {
-        "appleTeamId": "GQ79L2HQU5"
+        "appleTeamId": "GQ79L2HQU5",
+        "ascAppId": "6827091779"
       },
       "android": {
         "track": "production"
