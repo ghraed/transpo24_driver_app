@@ -1,3 +1,5 @@
+import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
+import { useNavigationCamera, type NavigationLocation } from '@/hooks/use-navigation-camera';
 import { MapRequestMarker } from '@/components/map-request-marker';
 import { MapLocationMarker, MapLocationIcon } from '@/components/map-location-marker';
 import { useDriverAccess } from '@/hooks/use-driver-access';
@@ -63,16 +65,18 @@ export default function DriverMapScreen() {
   const [requestType, setRequestType] = useState<RequestType>('immediate');
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
-  const [driverLocation, setDriverLocation] = useState<Coordinate | null>(null);
+  const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
 
-  const centerOnDriver = useCallback((coordinate: Coordinate, duration = 350) => {
+  const { isNavigationView, isNavigationEnabled, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
+
+  const centerOnDriver = useCallback((coordinate: NavigationLocation, duration = 350) => {
     setDriverLocation(coordinate);
-    if (requestType === 'immediate') mapRef.current?.animateToRegion?.(asRegion(coordinate), duration);
-  }, [requestType]);
+    if (requestType === 'immediate' && !isNavigationEnabled()) mapRef.current?.animateToRegion?.(asRegion(coordinate), duration);
+  }, [requestType, isNavigationEnabled]);
 
   const loadMap = useCallback(async () => {
     const version = ++loadVersion.current;
@@ -203,7 +207,8 @@ export default function DriverMapScreen() {
             style={StyleSheet.absoluteFill}
             initialRegion={mapRegion}
             onMapReady={() => {
-              if (mapRegion) mapRef.current?.animateToRegion?.(mapRegion, 0);
+              if (isNavigationEnabled()) followDriver(0);
+              else if (mapRegion) mapRef.current?.animateToRegion?.(mapRegion, 0);
             }}
             customMapStyle={SOFT_MAP_STYLE}
             showsCompass={false}
@@ -269,7 +274,8 @@ export default function DriverMapScreen() {
             scheduled: alerts.filter(alert => !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
           }} onChange={(type) => {
             setRequestType(type);
-            if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
+            if (isNavigationEnabled()) followDriver();
+            else if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
           }} />
           <Text style={{ color: colors.text, backgroundColor: colors.surface, padding: 10, borderRadius: 10, fontSize: 12, textAlign: 'center' }}>{t('Map shows all open requests. Radius applies to notifications only.')}</Text>
         </View>
@@ -288,6 +294,15 @@ export default function DriverMapScreen() {
         </Pressable>
 
         {locationMessage ? <Text style={styles.locationMessage}>{locationMessage}</Text> : null}
+
+        {isNativeMapRuntimeAvailable ? (
+          <NavigationCameraToggle
+            active={isNavigationView}
+            disabled={!driverLocation}
+            onPress={toggleNavigationView}
+            style={styles.navigationButton}
+          />
+        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -334,7 +349,7 @@ const styles = StyleSheet.create({
   offlineDot: { backgroundColor: '#9CA6B5' },
   onlineText: { color: '#111111', fontSize: 19, fontWeight: '800' },
   locationMessage: {
-    position: 'absolute', right: 22, bottom: 98, left: 22, paddingHorizontal: 14, paddingVertical: 9,
+    position: 'absolute', right: 22, bottom: 153, left: 22, paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: 14, color: '#707A8C', fontSize: 13, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.94)',
   },
   locationButton: {
@@ -343,6 +358,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, shadowColor: colors.shadow,
     shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
+  navigationButton: { position: 'absolute', right: 29, bottom: 89, width: 52, height: 52 },
   iconButtonPressed: { backgroundColor: colors.primarySoft, opacity: 0.8 },
   mapFallback: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CDE9CE' },
   gridVertical: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.45)' },

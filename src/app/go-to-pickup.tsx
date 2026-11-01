@@ -1,3 +1,5 @@
+import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
+import { useNavigationCamera, type NavigationLocation } from '@/hooks/use-navigation-camera';
 import { MapLocationMarker, MAP_COLORS } from '@/components/map-location-marker';
 import {
   startBackgroundTripTracking,
@@ -178,7 +180,7 @@ export default function GoToPickupScreen() {
     };
   }, [params.dropoffAddress, params.dropoffLatitude, params.dropoffLongitude]);
 
-  const [driverLocation, setDriverLocation] = useState<GeoLocation | null>(null);
+  const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false);
   const [isSubmittingArrival, setIsSubmittingArrival] = useState<boolean>(false);
@@ -194,6 +196,9 @@ export default function GoToPickupScreen() {
   const [submitError, setSubmitError] = useState<string>('');
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
+
+  const mapRef = useRef<any>(null);
+  const { isNavigationView, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
@@ -327,9 +332,10 @@ export default function GoToPickupScreen() {
           accuracy: Location.Accuracy.Highest,
         });
 
-        const currentLocation: GeoLocation = {
+        const currentLocation: NavigationLocation = {
           latitude: current.coords.latitude,
           longitude: current.coords.longitude,
+          heading: current.coords.heading,
         };
 
         if (!isValidGeoLocation(currentLocation)) {
@@ -524,9 +530,10 @@ export default function GoToPickupScreen() {
             timeInterval: 3000,
           },
           (position) => {
-            const liveLocation: GeoLocation = {
+            const liveLocation: NavigationLocation = {
               latitude: position.coords.latitude,
               longitude: position.coords.longitude,
+              heading: position.coords.heading,
             };
 
             if (!isValidGeoLocation(liveLocation)) return;
@@ -930,6 +937,8 @@ export default function GoToPickupScreen() {
           >
             {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
               <NativeMapView
+                ref={mapRef}
+                onMapReady={() => followDriver(0)}
                 provider={PROVIDER_GOOGLE}
                 style={styles.map}
                 initialRegion={{
@@ -1013,8 +1022,9 @@ export default function GoToPickupScreen() {
                 />
               </Pressable>
             </View>
-            <View style={styles.mapBottomControls}>
+            <View style={styles.mapBottomControls} pointerEvents="box-none">
               <DriverButton
+                style={styles.mapRefreshButton}
                 variant="secondary"
                 label={
                   isRefreshingLocation ? t('pickupUi.locating') : t('pickupUi.refreshLocation')
@@ -1023,6 +1033,14 @@ export default function GoToPickupScreen() {
                 icon={{ ios: 'location', android: 'my_location', web: 'my_location' }}
                 onPress={() => void refreshDriverLocation(true)}
               />
+              {mapsApiKey && isNativeMapRuntimeAvailable ? (
+                <NavigationCameraToggle
+                  active={isNavigationView}
+                  disabled={!driverLocation}
+                  onPress={toggleNavigationView}
+                  style={styles.navigationCameraButton}
+                />
+              ) : null}
             </View>
           </View>
           {!isMapFullscreen ? (
