@@ -858,8 +858,16 @@ export async function getDriverEarningsSummary(): Promise<DriverEarningsSummary>
 }
 
 export async function getDriverEarnings(page = 1, limit = 20): Promise<DriverEarningsResponse> {
+  return loadDriverPaymentHistory('earnings', page, limit);
+}
+
+export async function getDriverPaymentHistory(page = 1, limit = 20): Promise<DriverEarningsResponse> {
+  return loadDriverPaymentHistory('payment-history', page, limit);
+}
+
+async function loadDriverPaymentHistory(resource: 'earnings' | 'payment-history', page: number, limit: number): Promise<DriverEarningsResponse> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-  const endpoint = `${getApiBaseUrl()}/driver/me/earnings?${params.toString()}`;
+  const endpoint = `${getApiBaseUrl()}/driver/me/${resource}?${params.toString()}`;
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {

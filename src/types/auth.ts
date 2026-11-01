@@ -756,6 +756,10 @@ export interface DriverEarningsSummary {
 export type DriverEarningStatus = 'PENDING' | 'AVAILABLE' | 'PAID_OUT' | 'CANCELLED';
 
 export interface DriverEarning {
+  paymentStatus?: string | null;
+  tripStatus?: RequestStatus;
+  deliveredAt?: string | null;
+  requiresManualReview?: boolean;
   id: string;
   tripId: string;
   grossAmount: number;

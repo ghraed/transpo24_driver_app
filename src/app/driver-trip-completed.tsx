@@ -2,7 +2,7 @@ import { stopBackgroundTripTracking } from '@/location/background-trip-tracking'
 import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -17,6 +17,8 @@ import { isValidTripId } from '@/utils/deliveryValidation';
 type CompletedParams = {
   tripId?: string;
   deliveredAt?: string;
+  fromHistory?: string;
+  tripStatus?: string;
 };
 
 const STRIPE_ACCOUNT_STATUS_KEYS: Record<string, string> = {
@@ -37,7 +39,8 @@ const PAYOUT_ERROR_KEYS: Record<string, string> = {
     'Driver does not have a Stripe Connect account.',
   'Stripe Connect onboarding is not complete. Payouts are not enabled.':
     'Stripe Connect onboarding is not complete. Payouts are not enabled.',
-  'No payout transfer is linked to this trip yet.': 'No payout transfer is linked to this trip yet.',
+  'No payout transfer is linked to this trip yet.':
+    'No payout transfer is linked to this trip yet.',
   'Trip payout release is not available.': 'Trip payout release is not available.',
 };
 
@@ -153,9 +156,13 @@ export default function DriverTripCompletedScreen() {
   const tripId = typeof params.tripId === 'string' ? params.tripId.trim() : '';
   const deliveredAt = typeof params.deliveredAt === 'string' ? params.deliveredAt : null;
   const hasValidTripId = isValidTripId(tripId);
+  const fromHistory = params.fromHistory === 'true';
+  const isDelivered =
+    !fromHistory || params.tripStatus === 'DELIVERED' || params.tripStatus === 'COMPLETED';
   useEffect(() => {
-    if (hasValidTripId) void stopBackgroundTripTracking(tripId).catch(() => undefined);
-  }, [hasValidTripId, tripId]);
+    if (hasValidTripId && isDelivered)
+      void stopBackgroundTripTracking(tripId).catch(() => undefined);
+  }, [hasValidTripId, isDelivered, tripId]);
 
   const [stripeStatus, setStripeStatus] = useState<StripeConnectStatusResponse | null>(null);
   const [transferResult, setTransferResult] = useState<RetryTransferResponse | null>(null);
@@ -166,13 +173,7 @@ export default function DriverTripCompletedScreen() {
   const [isReleasing, setIsReleasing] = useState(false);
 
   const loadWorkflow = useCallback(
-    async ({
-      attemptRelease,
-      silent,
-    }: {
-      attemptRelease: boolean;
-      silent: boolean;
-    }) => {
+    async ({ attemptRelease, silent }: { attemptRelease: boolean; silent: boolean }) => {
       if (silent) {
         setIsRefreshing(true);
       } else {
@@ -252,12 +253,9 @@ export default function DriverTripCompletedScreen() {
     await loadWorkflow({ attemptRelease: true, silent: true });
   };
 
-  const payoutHeadline = resolveTransferHeadline(
-    stripeStatus,
-    transferResult,
-    transferError,
-    isReleasing,
-  );
+  const payoutHeadline = !isDelivered
+    ? 'Funds can be released after the customer confirms delivery and payment checks are complete.'
+    : resolveTransferHeadline(stripeStatus, transferResult, transferError, isReleasing);
   const payoutDetails = resolveTransferDetails(stripeStatus, transferResult);
   const payoutDetailsText =
     transferResult?.transferred && transferResult.stripeTransferId
@@ -268,83 +266,111 @@ export default function DriverTripCompletedScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>{t('Trip Delivered')}</Text>
-        <Text style={styles.subtitle}>{t('Delivery confirmed successfully.')}</Text>
-        <Text style={styles.meta}>{t('Trip ID: {{value}}', { value: hasValidTripId ? tripId : 'N/A' })}</Text>
-        <Text style={styles.meta}>{t('Delivered At: {{value}}', { value: formatTimestamp(deliveredAt) })}</Text>
-
-        <View style={styles.noticeCard}>
-          <Text style={styles.noticeTitle}>{t('Held Funds Release')}</Text>
-          {isLoading ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color="#F1B900" />
-              <Text style={styles.loadingText}>{t('Checking Stripe payout status...')}</Text>
-            </View>
-          ) : (
-            <>
-              <Text style={styles.noticeText}>{t(payoutHeadline)}</Text>
-              <Text style={styles.noticeMeta}>{payoutDetailsText}</Text>
-              <Text style={styles.statusMeta}>
-                {t('Stripe payouts enabled')}: {stripeStatus?.payoutsEnabled ? t('Yes') : t('No')}
-              </Text>
-              <Text style={styles.statusMeta}>
-                {t('Stripe account status')}:{' '}
-                {getAccountStatusLabel(stripeStatus?.accountStatus ?? null, t)}
-              </Text>
-            </>
-          )}
-        </View>
-
-        {screenError ? <Text style={styles.errorText}>{screenError}</Text> : null}
-        {transferError ? <Text style={styles.errorText}>{transferError}</Text> : null}
-        {!hasValidTripId ? (
-          <Text style={styles.errorText}>
-            {t('This trip id is invalid, so the app cannot request payout release safely.')}
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.card}>
+          <Text style={styles.title}>
+            {t(isDelivered ? 'Trip Delivered' : 'Held Funds Release')}
           </Text>
-        ) : null}
-
-        <View style={styles.actionGroup}>
-          {!stripeStatus?.stripeAccountId || !stripeStatus.payoutsEnabled ? (
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => router.push('/stripe-connect' as Href)}
-            >
-              <Text style={styles.secondaryButtonText}>{t('Open Stripe Connect')}</Text>
-            </Pressable>
+          <Text style={styles.subtitle}>
+            {t(
+              isDelivered
+                ? 'Delivery confirmed successfully.'
+                : 'Funds can be released after the customer confirms delivery and payment checks are complete.',
+            )}
+          </Text>
+          <Text style={styles.meta}>
+            {t('Trip ID: {{value}}', { value: hasValidTripId ? tripId : 'N/A' })}
+          </Text>
+          {isDelivered ? (
+            <Text style={styles.meta}>
+              {t('Delivered At: {{value}}', { value: formatTimestamp(deliveredAt) })}
+            </Text>
           ) : null}
 
-          {stripeStatus?.payoutsEnabled && hasValidTripId && !transferResult?.transferred ? (
+          <View style={styles.noticeCard}>
+            <Text style={styles.noticeTitle}>{t('Held Funds Release')}</Text>
+            {isLoading ? (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" color="#F1B900" />
+                <Text style={styles.loadingText}>{t('Checking Stripe payout status...')}</Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.noticeText}>{t(payoutHeadline)}</Text>
+                <Text style={styles.noticeMeta}>{payoutDetailsText}</Text>
+                <Text style={styles.statusMeta}>
+                  {t('Stripe payouts enabled')}: {stripeStatus?.payoutsEnabled ? t('Yes') : t('No')}
+                </Text>
+                <Text style={styles.statusMeta}>
+                  {t('Stripe account status')}:{' '}
+                  {getAccountStatusLabel(stripeStatus?.accountStatus ?? null, t)}
+                </Text>
+              </>
+            )}
+          </View>
+
+          {screenError ? <Text style={styles.errorText}>{screenError}</Text> : null}
+          {transferError ? <Text style={styles.errorText}>{transferError}</Text> : null}
+          {!hasValidTripId ? (
+            <Text style={styles.errorText}>
+              {t('This trip id is invalid, so the app cannot request payout release safely.')}
+            </Text>
+          ) : null}
+
+          <View style={styles.actionGroup}>
+            {fromHistory ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.secondaryButton}
+                onPress={() => router.back()}
+              >
+                <Text style={styles.secondaryButtonText}>{t('Back to Earnings History')}</Text>
+              </Pressable>
+            ) : null}
+            {!stripeStatus?.stripeAccountId || !stripeStatus.payoutsEnabled ? (
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => router.push('/stripe-connect' as Href)}
+              >
+                <Text style={styles.secondaryButtonText}>{t('Open Stripe Connect')}</Text>
+              </Pressable>
+            ) : null}
+
+            {stripeStatus?.payoutsEnabled &&
+            hasValidTripId &&
+            isDelivered &&
+            !transferResult?.transferred ? (
+              <Pressable
+                style={[styles.secondaryButton, isReleasing && styles.disabledButton]}
+                disabled={isReleasing}
+                onPress={() => void handleReleaseFunds()}
+              >
+                {isReleasing ? (
+                  <ActivityIndicator size="small" color="#F1B900" />
+                ) : (
+                  <Text style={styles.secondaryButtonText}>{t('Release Held Funds')}</Text>
+                )}
+              </Pressable>
+            ) : null}
+
             <Pressable
-              style={[styles.secondaryButton, isReleasing && styles.disabledButton]}
-              disabled={isReleasing}
-              onPress={() => void handleReleaseFunds()}
+              style={[styles.secondaryButton, isRefreshing && styles.disabledButton]}
+              disabled={isRefreshing || isLoading}
+              onPress={() => void handleRefresh()}
             >
-              {isReleasing ? (
+              {isRefreshing ? (
                 <ActivityIndicator size="small" color="#F1B900" />
               ) : (
-                <Text style={styles.secondaryButtonText}>{t('Release Held Funds')}</Text>
+                <Text style={styles.secondaryButtonText}>{t('Refresh Payout Status')}</Text>
               )}
             </Pressable>
-          ) : null}
 
-          <Pressable
-            style={[styles.secondaryButton, isRefreshing && styles.disabledButton]}
-            disabled={isRefreshing || isLoading}
-            onPress={() => void handleRefresh()}
-          >
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color="#F1B900" />
-            ) : (
-              <Text style={styles.secondaryButtonText}>{t('Refresh Payout Status')}</Text>
-            )}
-          </Pressable>
-
-          <Pressable style={styles.button} onPress={() => router.replace('/driver-home')}>
-            <Text style={styles.buttonText}>{t('Back to Driver Home')}</Text>
-          </Pressable>
+            <Pressable style={styles.button} onPress={() => router.replace('/driver-home')}>
+              <Text style={styles.buttonText}>{t('Back to Driver Home')}</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -353,6 +379,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F8F9',
+  },
+  content: {
+    flexGrow: 1,
     padding: 20,
     justifyContent: 'center',
   },
