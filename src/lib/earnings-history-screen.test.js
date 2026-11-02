@@ -63,7 +63,7 @@ test('shows captured and uncaptured payments and opens held funds through a visi
     .join(' ');
   expect(json).toContain('Not captured');
   expect(json).toContain('Captured');
-  expect(json).toContain('Before Stripe fees');
+  expect(json).toContain('After platform fee');
   const clickable = tree.root.findAll(
     (node) =>
       typeof node.props.onPress === 'function' &&

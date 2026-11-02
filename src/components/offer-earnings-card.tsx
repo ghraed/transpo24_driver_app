@@ -26,7 +26,7 @@ export function OfferEarningsCard({ preview, currency, platformFeePercentage }: 
       </View>
 
       <View style={styles.total}>
-        <Text style={[styles.totalLabel, textDirection]}>{t('Before Stripe fees')}</Text>
+        <Text style={[styles.totalLabel, textDirection]}>{t('After platform fee')}</Text>
         <Text style={[styles.amount, rtl && styles.amountRtl]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
           {preview ? formatCurrency(preview.netAmount, currency) : '—'}
         </Text>
@@ -49,9 +49,9 @@ export function OfferEarningsCard({ preview, currency, platformFeePercentage }: 
           <SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={18} tintColor="#825619" />
         </View>
         <View style={styles.noticeCopy}>
-          <Text style={[styles.noticeTitle, textDirection]}>{t('Stripe fees are your responsibility.')}</Text>
+          <Text style={[styles.noticeTitle, textDirection]}>{t('The platform covers Stripe processing fees.')}</Text>
           <Text style={[styles.noticeBody, textDirection]}>
-            {t('Stripe payment-processing fees are additional and are not included in this estimate. The actual fee depends on the transaction.')}
+            {t('Stripe payment-processing fees are paid from the platform commission and do not reduce your earnings.')}
           </Text>
         </View>
       </View>

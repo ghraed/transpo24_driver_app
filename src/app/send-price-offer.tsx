@@ -2,7 +2,7 @@ import { OfferEarningsCard } from '@/components/offer-earnings-card';
 import { OfferDateTimeField } from '@/components/offer-date-time-field';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -22,7 +22,8 @@ import { useAuth } from '@/context/auth-context';
 import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { ApiResponseError, sendDriverPriceOffer } from '@/lib/api';
 import { currencyForCountryCode, getCountryLabel } from '@/lib/country-currency';
-import { formatDateTime } from '@/localization/format';
+import { minimumOfferAmount } from '@/lib/offer-minimum';
+import { formatDateTime, formatCurrency } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { getSourceErrorMessage } from '@/localization/response-message';
 import { translateDynamicBatch } from '@/services/translation-service';
@@ -143,6 +144,30 @@ export default function SendPriceOfferScreen() {
     () => currencyForCountryCode(driver?.countryCode),
     [driver?.countryCode],
   );
+  const minimumAmount = minimumOfferAmount(offerCurrency);
+  const minimumPopupPending = useRef(false);
+  const enforceMinimumPrice = (): boolean => {
+    const raw = form.price.trim();
+    const price = Number(raw);
+    if (!raw || !Number.isFinite(price) || price >= minimumAmount) return false;
+    setForm((previous) => ({ ...previous, price: minimumAmount.toFixed(2) }));
+    setErrors((previous) => ({ ...previous, price: undefined }));
+    const title = t('Minimum offer amount');
+    const message = t('The minimum offer is {{amount}}. Your price has been adjusted to this amount.', {
+      amount: formatCurrency(minimumAmount, offerCurrency),
+    });
+    minimumPopupPending.current = true;
+    if (Platform.OS === 'web') {
+      globalThis.alert(`${title}\n${message}`);
+      minimumPopupPending.current = false;
+    } else {
+      Alert.alert(title, message, [{
+        text: t('OK'),
+        onPress: () => { minimumPopupPending.current = false; },
+      }], { cancelable: false });
+    }
+    return true;
+  };
   const driverCountryLabel = useMemo(
     () => getCountryLabel(driver?.countryCode, i18n.resolvedLanguage),
     [driver?.countryCode, i18n.resolvedLanguage],
@@ -269,6 +294,7 @@ export default function SendPriceOfferScreen() {
   };
 
   const onSubmit = async (): Promise<void> => {
+    if (minimumPopupPending.current || enforceMinimumPrice()) return;
     const validation = validate();
     setErrors(validation);
     setSubmitError('');
@@ -403,12 +429,13 @@ export default function SendPriceOfferScreen() {
                 style={[styles.priceInput, rtl && styles.priceInputRtl]}
                 value={form.price}
                 onChangeText={(price) => { setForm((prev) => ({ ...prev, price })); setErrors((prev) => ({ ...prev, price: undefined })); }}
-                onFocus={() => setPriceFocused(true)} onBlur={() => setPriceFocused(false)}
+                onFocus={() => setPriceFocused(true)} onBlur={() => { setPriceFocused(false); enforceMinimumPrice(); }}
                 placeholder="0.00" placeholderTextColor="#8A95A5" keyboardType="decimal-pad" editable={!isSubmitting}
               />
               <View style={styles.currencyBadge}><Text style={styles.currencyText}>{offerCurrency}</Text></View>
             </View>
             {errors.price ? <Text accessibilityRole="alert" style={[styles.errorText, textDirection]}>{errors.price}</Text> : null}
+            <Text style={[styles.helperText, textDirection]}>{t('Minimum offer: {{amount}}', { amount: formatCurrency(minimumAmount, offerCurrency) })}</Text>
             <Text style={[styles.helperText, textDirection]}>
               {driverCountryLabel ? t('Offer currency follows your country: {{country}}.', { country: driverCountryLabel }) : t('Offer currency follows your saved country.')}
             </Text>

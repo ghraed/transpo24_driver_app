@@ -266,7 +266,7 @@ export default function EarningsHistoryScreen() {
                         {formatMoney(payment.netAmount, payment.currency, locale)}
                       </DriverText>
                       <DriverText variant="caption" secondary>
-                        {t('Before Stripe fees')}
+                        {t('After platform fee')}
                       </DriverText>
                     </View>
                     {clickable ? (
