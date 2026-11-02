@@ -120,18 +120,6 @@ function formatDisplayAddress(
   return address;
 }
 
-function buildRoutePolylineKey(
-  origin: GeoLocation | null | undefined,
-  destination: AddressedLocation | null | undefined,
-): string {
-  return [
-    origin?.latitude ?? 'na',
-    origin?.longitude ?? 'na',
-    destination?.latitude ?? 'na',
-    destination?.longitude ?? 'na',
-  ].join(':');
-}
-
 function localizeDeliveryError(
   message: string,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -194,8 +182,47 @@ export default function DeliverItemScreen() {
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
   const mapRef = useRef<any>(null);
-  const { isNavigationView, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
-  const hasFittedToCoordinatesRef = useRef<boolean>(false);
+  const { isNavigationView, isNavigationEnabled, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
+  const mapReadyRef = useRef(false);
+  const routeCoordinatesRef = useRef<GeoLocation[]>([]);
+  const hasFitDeliveryRouteRef = useRef(false);
+  const hasFitDriverLocationRef = useRef(false);
+
+  useEffect(() => {
+    routeCoordinatesRef.current = [];
+    hasFitDeliveryRouteRef.current = false;
+    hasFitDriverLocationRef.current = false;
+  }, [tripId, dropoffLocation?.latitude, dropoffLocation?.longitude]);
+
+  const fitDeliveryRoute = useCallback(() => {
+    if (!mapReadyRef.current || isNavigationEnabled() || !dropoffLocation) return;
+    const seen = new Set<string>();
+    const coordinates = [
+      ...routeCoordinatesRef.current,
+      ...(driverLocation ? [driverLocation] : []),
+      dropoffLocation,
+    ].filter(point => {
+      const key = `${point.latitude},${point.longitude}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    mapRef.current?.fitToCoordinates(coordinates, {
+      edgePadding: { top: 112, right: 40, bottom: 80, left: 40 },
+      animated: false,
+    });
+    hasFitDeliveryRouteRef.current = routeCoordinatesRef.current.length > 0;
+    hasFitDriverLocationRef.current = Boolean(driverLocation);
+  }, [driverLocation, dropoffLocation, isNavigationEnabled]);
+
+  useEffect(() => {
+    if (driverLocation && !hasFitDriverLocationRef.current) fitDeliveryRoute();
+  }, [driverLocation, fitDeliveryRoute]);
+
+  const onDeliveryRouteReady = useCallback((coordinates: GeoLocation[]) => {
+    routeCoordinatesRef.current = coordinates;
+    if (!hasFitDeliveryRouteRef.current) fitDeliveryRoute();
+  }, [fitDeliveryRoute]);
   const isTripValid = isValidTripId(tripId);
   const hasValidPickup = Boolean(pickupLocation && isValidGeoLocation(pickupLocation));
   const hasValidDropoff = Boolean(dropoffLocation && isValidGeoLocation(dropoffLocation));
@@ -635,39 +662,6 @@ export default function DeliverItemScreen() {
     };
   }, [ensureDriverGoingToDropoff, isInvalidRoute, refreshDriverLocation, router, t, tripId]);
 
-  // Auto-fit map to show both driver and dropoff when driver location first arrives
-  useEffect(() => {
-    if (isNavigationView || !driverLocation || !dropoffLocation || hasFittedToCoordinatesRef.current) return;
-    hasFittedToCoordinatesRef.current = true;
-    const timer = setTimeout(() => {
-      const distance = calculateDistanceMeters(driverLocation, dropoffLocation);
-      if (distance < 10) {
-        // Driver and dropoff are at the same location - just center on it
-        mapRef.current?.animateToRegion(
-          {
-            latitude: dropoffLocation.latitude,
-            longitude: dropoffLocation.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          },
-          300,
-        );
-      } else {
-        mapRef.current?.fitToCoordinates(
-          [
-            { latitude: driverLocation.latitude, longitude: driverLocation.longitude },
-            { latitude: dropoffLocation.latitude, longitude: dropoffLocation.longitude },
-          ],
-          {
-            edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
-            animated: true,
-          },
-        );
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [driverLocation, dropoffLocation, isNavigationView]);
-
   const appendProofPhotos = (assets: LocalDocumentAsset[]): void => {
     setProofPhotos((current) => [...current, ...assets].slice(0, MAX_PROOF_PHOTOS));
   };
@@ -908,7 +902,12 @@ export default function DeliverItemScreen() {
             {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
               <NativeMapView
                 ref={mapRef}
-                onMapReady={() => followDriver(0)}
+                onMapReady={() => {
+                  mapReadyRef.current = true;
+                  if (isNavigationEnabled()) followDriver(0);
+                  else fitDeliveryRoute();
+                }}
+                onLayout={fitDeliveryRoute}
                 provider={PROVIDER_GOOGLE}
                 style={styles.map}
                 initialRegion={{
@@ -932,17 +931,18 @@ export default function DeliverItemScreen() {
                 />
                 <MapLocationMarker
                   kind="dropoff"
+                  zIndex={40}
                   coordinate={dropoffLocation}
                   title={t('Dropoff')}
                 />
                 {driverLocation ? (
                   <DriverRoutePolyline
-                    key={buildRoutePolylineKey(driverLocation, dropoffLocation)}
                     origin={driverLocation}
                     destination={dropoffLocation}
                     apikey={mapsApiKey}
                     strokeWidth={5}
                     strokeColor={MAP_COLORS.route}
+                    onReady={onDeliveryRouteReady}
                   />
                 ) : null}
               </NativeMapView>

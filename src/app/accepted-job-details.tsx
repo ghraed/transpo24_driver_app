@@ -341,7 +341,7 @@ export default function AcceptedJobDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.successHeader}>
           <Text style={styles.title}>{t('Your offer was accepted')}</Text>
           <Text style={styles.subtitle}>
@@ -651,8 +651,10 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 190,
     gap: 12,
+  },
+  scroll: {
+    flex: 1,
   },
   successHeader: {
     borderWidth: 1,
@@ -810,10 +812,7 @@ const styles = StyleSheet.create({
     color: '#707A8C',
   },
   footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flexShrink: 0,
     gap: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,

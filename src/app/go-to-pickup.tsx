@@ -7,6 +7,7 @@ import {
 } from '@/location/background-trip-tracking';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -81,7 +82,6 @@ import {
 const EMIT_DISTANCE_THRESHOLD_METERS = 20;
 const EMIT_TIME_THRESHOLD_MS = 5000;
 const MAX_PROOF_PHOTOS = 8;
-const PICKUP_ARRIVAL_RADIUS_METERS = 1500;
 
 type PickupParams = {
   tripId?: string;
@@ -148,7 +148,7 @@ function formatDisplayAddress(
 export default function GoToPickupScreen() {
   const colors = useDriverColors();
   const styles = useMemo(() => createTripScreenStyles(colors), [colors]);
-  const [showPickupForm, setShowPickupForm] = useState<boolean | null>(null);
+  const [showPickupForm, setShowPickupForm] = useState(true);
   const router = useRouter();
   const { accessToken } = useAuth();
   const { t, i18n } = useTranslation();
@@ -183,35 +183,98 @@ export default function GoToPickupScreen() {
   const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false);
-  const [isSubmittingArrival, setIsSubmittingArrival] = useState<boolean>(false);
+  const [isStartingTrip, setIsStartingTrip] = useState<boolean>(false);
   const [isSubmittingPickup, setIsSubmittingPickup] = useState<boolean>(false);
-  const [isAwaitingArrivalConfirmation, setIsAwaitingArrivalConfirmation] =
-    useState<boolean>(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState<boolean>(false);
   const [notes, setNotes] = useState<string>('');
   const [proofPhotos, setProofPhotos] = useState<LocalDocumentAsset[]>([]);
   const [locationMessage, setLocationMessage] = useState<string>('');
   const [socketError, setSocketError] = useState<string>('');
   const [routeError, setRouteError] = useState<string>('');
+  const [navigationError, setNavigationError] = useState('');
+  const [isOpeningNavigation, setIsOpeningNavigation] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
   const mapRef = useRef<any>(null);
-  const { isNavigationView, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
+  const { isNavigationView, isNavigationEnabled, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
+  const mapReadyRef = useRef(false);
+  const routeCoordinatesRef = useRef<GeoLocation[]>([]);
+  const hasFitPickupRouteRef = useRef(false);
+  const hasFitDriverLocationRef = useRef(false);
+
+  useEffect(() => {
+    routeCoordinatesRef.current = [];
+    hasFitPickupRouteRef.current = false;
+    hasFitDriverLocationRef.current = false;
+  }, [tripId, pickupLocation?.latitude, pickupLocation?.longitude]);
+
+  const fitPickupRoute = useCallback(() => {
+    if (!mapReadyRef.current || isNavigationEnabled() || !pickupLocation) return;
+    // Frame the actual pickup even before directions arrive (or if routing fails).
+    // Road-snapped route endpoints may differ from the customer's pickup pin.
+    const seen = new Set<string>();
+    const coordinates = [
+      ...routeCoordinatesRef.current,
+      ...(driverLocation ? [driverLocation] : []),
+      pickupLocation,
+    ].filter(point => {
+      const key = `${point.latitude},${point.longitude}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    mapRef.current?.fitToCoordinates(coordinates, {
+      // Leave room for the 44-point pickup pin below the floating top controls.
+      edgePadding: { top: 112, right: 40, bottom: 80, left: 40 },
+      animated: false,
+    });
+    hasFitPickupRouteRef.current = routeCoordinatesRef.current.length > 0;
+    hasFitDriverLocationRef.current = Boolean(driverLocation);
+  }, [driverLocation, isNavigationEnabled, pickupLocation]);
+
+  useEffect(() => {
+    // GPS can finish after the map becomes ready. Fit its first usable fix once,
+    // without moving the overview camera on every subsequent location update.
+    if (driverLocation && !hasFitDriverLocationRef.current) fitPickupRoute();
+  }, [driverLocation, fitPickupRoute]);
+
+  const onPickupRouteReady = useCallback((coordinates: GeoLocation[]) => {
+    setRouteError('');
+    routeCoordinatesRef.current = coordinates;
+    if (!hasFitPickupRouteRef.current) fitPickupRoute();
+  }, [fitPickupRoute, setRouteError]);
+
+  const onNavigateToPickup = async () => {
+    if (!pickupLocation || isOpeningNavigation) return;
+    setNavigationError('');
+    setIsOpeningNavigation(true);
+    try {
+      const destination = encodeURIComponent(`${pickupLocation.latitude},${pickupLocation.longitude}`);
+      await Linking.openURL(
+        `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving&dir_action=navigate`,
+      );
+    } catch {
+      setNavigationError(t('pickupUi.navigationFailed'));
+    } finally {
+      setIsOpeningNavigation(false);
+    }
+  };
 
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
+  const arrivalConfirmationRef = useRef<(() => void) | null>(null);
 
   const isTripValid = isValidTripId(tripId);
   const hasValidPickup = Boolean(pickupLocation && isValidPickupGeoLocation(pickupLocation));
   const hasValidDropoff = Boolean(dropoffLocation && isValidPickupGeoLocation(dropoffLocation));
   const isInvalidRoute = !isTripValid || !hasValidPickup || !hasValidDropoff;
   const isArrivedAtPickup = requestStatus === 'DRIVER_ARRIVED_PICKUP';
-  const isPickupFormExpanded = showPickupForm ?? isArrivedAtPickup;
+  const isPickupFormExpanded = showPickupForm;
   const isPrimaryActionBusy =
-    isLoadingLocation || isSubmittingArrival || isSubmittingPickup || isAwaitingArrivalConfirmation;
+    isLoadingLocation || isStartingTrip || isSubmittingPickup;
 
   const distanceMeters = useMemo(() => {
     if (!driverLocation || !pickupLocation || !isValidGeoLocation(pickupLocation)) {
@@ -311,7 +374,6 @@ export default function GoToPickupScreen() {
       }
 
       setLocationMessage('');
-      setRouteError('');
 
       try {
         const permission = await Location.getForegroundPermissionsAsync();
@@ -380,7 +442,6 @@ export default function GoToPickupScreen() {
       setDriverLocation,
       setIsRefreshingLocation,
       setLocationMessage,
-      setRouteError,
       setSocketError,
       t,
       tripId,
@@ -469,7 +530,7 @@ export default function GoToPickupScreen() {
           const validated = validateDriverArrivedPickupConfirmedPayload(payload);
           if (!validated || validated.tripId !== validTripId) return;
           setRequestStatus('DRIVER_ARRIVED_PICKUP');
-          setIsAwaitingArrivalConfirmation(false);
+          arrivalConfirmationRef.current?.();
           setSubmitError('');
           setSocketError('');
           setLocationMessage('');
@@ -478,14 +539,11 @@ export default function GoToPickupScreen() {
         tripStatusUnsub = onTripStatusUpdated((payload) => {
           if (payload.tripId !== validTripId) return;
           setRequestStatus(payload.status);
+          if (payload.status === 'DRIVER_ARRIVED_PICKUP') {
+            arrivalConfirmationRef.current?.();
+          }
           if (isTerminalRequestStatus(payload.status))
             void stopBackgroundTripTracking(validTripId).catch(() => undefined);
-          if (
-            payload.status === 'DRIVER_ARRIVED_PICKUP' ||
-            isDeliveryPhaseRequestStatus(payload.status)
-          ) {
-            setIsAwaitingArrivalConfirmation(false);
-          }
           if (isDeliveryPhaseRequestStatus(payload.status)) {
             router.replace(deliverRoute);
           }
@@ -538,7 +596,6 @@ export default function GoToPickupScreen() {
 
             if (!isValidGeoLocation(liveLocation)) return;
 
-            setRouteError('');
             setDriverLocation(liveLocation);
             const now = Date.now();
             const lastLocation = lastEmitLocationRef.current;
@@ -695,8 +752,8 @@ export default function GoToPickupScreen() {
     appendProofPhotos([toAssetFromImagePicker(asset)]);
   };
 
-  const onMarkArrived = async (): Promise<void> => {
-    if (isSubmittingArrival || isSubmittingPickup || isAwaitingArrivalConfirmation) {
+  const onStartTrip = async (): Promise<void> => {
+    if (isStartingTrip || isSubmittingPickup) {
       return;
     }
 
@@ -708,55 +765,19 @@ export default function GoToPickupScreen() {
       return;
     }
 
-    if (requestStatus === 'DRIVER_ASSIGNED') {
-      setIsSubmittingArrival(true);
-      try {
-        const started = await startReservedPickup(validTripId);
-        setRequestStatus(started.status);
-      } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : t('Unable to start pickup.'));
-      } finally {
-        setIsSubmittingArrival(false);
-      }
-      return;
-    }
-
-    if (!driverLocation || !isValidGeoLocation(driverLocation)) {
-      setSubmitError(t('Current location is not ready.'));
-      return;
-    }
-
-    if (!pickupLocation || !isValidGeoLocation(pickupLocation)) {
-      setSubmitError(t('Pickup location is invalid.'));
-      return;
-    }
-
-    if (!canMarkArrived(driverLocation, pickupLocation)) {
-      setSubmitError(t('You are too far from pickup location. Move closer to continue.'));
-      return;
-    }
-
-    setIsSubmittingArrival(true);
+    setIsStartingTrip(true);
     try {
-      setIsAwaitingArrivalConfirmation(true);
-      await emitDriverArrivedPickupWithAck({
-        tripId: validTripId,
-        latitude: driverLocation.latitude,
-        longitude: driverLocation.longitude,
-      });
-      setLocationMessage(t('Arrival confirmation sent. Waiting for trip status update.'));
+      const started = await startReservedPickup(validTripId);
+      setRequestStatus(started.status);
     } catch (error) {
-      setIsAwaitingArrivalConfirmation(false);
-      setSubmitError(
-        error instanceof Error ? error.message : t('Failed to send arrival confirmation.'),
-      );
+      setSubmitError(error instanceof Error ? error.message : t('Unable to start pickup.'));
     } finally {
-      setIsSubmittingArrival(false);
+      setIsStartingTrip(false);
     }
   };
 
   const onConfirmPickup = async (): Promise<void> => {
-    if (isSubmittingPickup || isSubmittingArrival || isAwaitingArrivalConfirmation) {
+    if (isSubmittingPickup || isStartingTrip) {
       return;
     }
 
@@ -766,11 +787,6 @@ export default function GoToPickupScreen() {
     try {
       if (isInvalidRoute || !pickupLocation || !dropoffLocation || !deliverRoute) {
         setSubmitError(t('Invalid trip data. Please reopen this trip from Accepted Jobs.'));
-        return;
-      }
-
-      if (!isArrivedAtPickup) {
-        setSubmitError(t('Arrive at pickup first before submitting pickup confirmation.'));
         return;
       }
 
@@ -829,6 +845,50 @@ export default function GoToPickupScreen() {
         return;
       }
 
+      if (!isArrivedAtPickup) {
+        if (!latestLocation || !isValidGeoLocation(latestLocation)) {
+          setSubmitError(t('Current location is not ready.'));
+          return;
+        }
+
+        if (!canMarkArrived(latestLocation, pickupLocation)) {
+          setSubmitError(t('You are too far from pickup location. Move closer to continue.'));
+          return;
+        }
+
+        let arrivalError: unknown;
+        const arrivalConfirmed = new Promise<void>((resolve) => {
+          arrivalConfirmationRef.current = resolve;
+        });
+        try {
+          await Promise.race([
+            arrivalConfirmed,
+            emitDriverArrivedPickupWithAck({
+              tripId,
+              latitude: latestLocation.latitude,
+              longitude: latestLocation.longitude,
+            }),
+          ]);
+        } catch (error) {
+          arrivalError = error;
+        } finally {
+          arrivalConfirmationRef.current = null;
+        }
+
+        // Confirm persisted status, including when the socket acknowledgement was lost.
+        const details = await getDriverAcceptedJobDetails(tripId);
+        setRequestStatus(details.requestStatus);
+        if (isDeliveryPhaseRequestStatus(details.requestStatus)) {
+          router.replace(deliverRoute);
+          return;
+        }
+        if (details.requestStatus !== 'DRIVER_ARRIVED_PICKUP') {
+          throw arrivalError instanceof Error
+            ? arrivalError
+            : new Error(t('Failed to send arrival confirmation.'));
+        }
+      }
+
       const response = await pickupItem(tripId, payload);
       if (!isDeliveryPhaseRequestStatus(response.status)) {
         setSubmitError(t('Unexpected pickup status returned by backend.'));
@@ -872,9 +932,7 @@ export default function GoToPickupScreen() {
   const primaryActionLabel =
     requestStatus === 'DRIVER_ASSIGNED'
       ? t('pickupUi.startTrip')
-      : isArrivedAtPickup
-        ? t('pickupUi.confirmPickup')
-        : t('pickupUi.confirmArrival');
+      : t('pickupUi.confirmPickup');
 
   return (
     <SafeAreaView style={[styles.container, { direction: i18n.dir() }]} edges={['top', 'bottom']}>
@@ -930,7 +988,7 @@ export default function GoToPickupScreen() {
               styles.mapCard,
               {
                 height: isMapFullscreen
-                  ? windowHeight - 80
+                  ? windowHeight - 160
                   : Math.max(220, Math.min(300, windowHeight * 0.3)),
               },
             ]}
@@ -938,7 +996,12 @@ export default function GoToPickupScreen() {
             {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
               <NativeMapView
                 ref={mapRef}
-                onMapReady={() => followDriver(0)}
+                onMapReady={() => {
+                  mapReadyRef.current = true;
+                  if (isNavigationEnabled()) followDriver(0);
+                  else fitPickupRoute();
+                }}
+                onLayout={fitPickupRoute}
                 provider={PROVIDER_GOOGLE}
                 style={styles.map}
                 initialRegion={{
@@ -972,7 +1035,8 @@ export default function GoToPickupScreen() {
                     apikey={mapsApiKey}
                     strokeWidth={5}
                     strokeColor={MAP_COLORS.route}
-                    onError={(message: string) => setRouteError(message)}
+                    onError={setRouteError}
+                    onReady={onPickupRouteReady}
                   />
                 ) : null}
               </NativeMapView>
@@ -1043,6 +1107,16 @@ export default function GoToPickupScreen() {
               ) : null}
             </View>
           </View>
+          <DriverButton
+            variant="secondary"
+            label={t('pickupUi.navigateToPickup')}
+            icon={{ ios: 'location.north.fill', android: 'navigation', web: 'navigation' }}
+            loading={isOpeningNavigation}
+            onPress={() => void onNavigateToPickup()}
+          />
+          {navigationError ? (
+            <DriverNotice tone="warning" title={t('pickupUi.navigationUnavailable')} description={navigationError} />
+          ) : null}
           {!isMapFullscreen ? (
             <>
               <TripRouteCard
@@ -1232,20 +1306,20 @@ export default function GoToPickupScreen() {
                   ? t('pickupUi.updatingTrip')
                   : !driverLocation
                     ? t('pickupUi.locationRequired')
-                    : isArrivedAtPickup
-                      ? t('pickupUi.readyToConfirm')
-                      : requestStatus === 'DRIVER_ASSIGNED'
-                        ? t('pickupUi.startHint')
-                        : t('pickupUi.arrivalHint', {
-                            distance: PICKUP_ARRIVAL_RADIUS_METERS / 1000,
-                          })}
+                    : requestStatus === 'DRIVER_ASSIGNED'
+                      ? t('pickupUi.startHint')
+                      : !isArrivedAtPickup && !canArriveNow
+                        ? t('You are too far from pickup location. Move closer to continue.')
+                        : t('pickupUi.readyToConfirm')}
               </DriverText>
               <DriverButton
                 label={primaryActionLabel}
                 disabled={actionDisabled}
                 loading={isPrimaryActionBusy}
                 icon={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }}
-                onPress={() => void (isArrivedAtPickup ? onConfirmPickup() : onMarkArrived())}
+                onPress={() =>
+                  void (requestStatus === 'DRIVER_ASSIGNED' ? onStartTrip() : onConfirmPickup())
+                }
               />
             </View>
           </View>

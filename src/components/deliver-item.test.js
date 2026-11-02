@@ -5,6 +5,9 @@ import * as Location from 'expo-location';
 import DeliverItemScreen from '@/app/deliver-item';
 import { getDriverAcceptedJobDetails } from '@/lib/api';
 import { deliverItem, startDelivery } from '@/services/tripService';
+import { DriverRoutePolyline } from './driver-route-polyline';
+import { NavigationCameraToggle } from './navigation-camera-toggle';
+import { MapLocationMarker } from './map-location-marker';
 import { DriverButton, DriverPageHeader } from './ui/driver-ui';
 
 const mockRouter = {
@@ -13,6 +16,8 @@ const mockRouter = {
   replace: jest.fn(),
   push: jest.fn(),
 };
+const mockFit = jest.fn();
+const mockAnimateCamera = jest.fn();
 const mockParams = {
   tripId: 'trip-12345678',
   pickupLatitude: '33.8938',
@@ -35,7 +40,17 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: moc
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: 'SafeAreaView' }));
 jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ accessToken: 'token' }) }));
-jest.mock('@/components/native-maps', () => ({ isNativeMapRuntimeAvailable: false }));
+jest.mock('@/components/native-maps', () => {
+  const React = require('react');
+  return {
+    isNativeMapRuntimeAvailable: false,
+    NativeMarker: 'Marker',
+    NativeMapView: React.forwardRef(function MockMap(props, ref) {
+      React.useImperativeHandle(ref, () => ({ fitToCoordinates: mockFit, animateCamera: mockAnimateCamera, getCamera: async () => ({ pitch: 0, heading: 0, zoom: 14 }) }));
+      return React.createElement('MapView', props, props.children);
+    }),
+  };
+});
 jest.mock('@/components/driver-chat-button', () => ({ DriverChatButton: () => null }));
 jest.mock('@/components/driver-route-polyline', () => ({ DriverRoutePolyline: () => null }));
 jest.mock('@/config/maps', () => ({ GOOGLE_MAPS_API_KEY: '' }));
@@ -101,6 +116,8 @@ async function mount(status = 'DRIVER_GOING_TO_DROPOFF') {
 }
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.requireMock('@/components/native-maps').isNativeMapRuntimeAvailable = false;
+  jest.requireMock('@/config/maps').GOOGLE_MAPS_API_KEY = '';
   mockRouter.canGoBack.mockReturnValue(true);
   Location.getCurrentPositionAsync.mockResolvedValue({
     coords: { latitude: 34.4367, longitude: 35.8497 },
@@ -192,4 +209,80 @@ test('keeps the pickup prerequisite and route parameters intact', async () => {
     pathname: '/go-to-pickup',
     params: mockParams,
   });
+});
+
+
+function enableMap() {
+  jest.requireMock('@/components/native-maps').isNativeMapRuntimeAvailable = true;
+  jest.requireMock('@/config/maps').GOOGLE_MAPS_API_KEY = 'native-map-key';
+}
+
+test('after pickup confirmation, delivery routes from the live driver location to dropoff', async () => {
+  enableMap();
+  const driver = { latitude: 33.8938, longitude: 35.5018 };
+  Location.getCurrentPositionAsync.mockResolvedValue({ coords: driver });
+  await mount('ITEM_PICKED_UP');
+  expect(startDelivery).toHaveBeenCalledWith('trip-12345678');
+  expect(tree.root.findByType(DriverRoutePolyline).props).toMatchObject({
+    origin: driver,
+    destination: { latitude: 34.4367, longitude: 35.8497 },
+    strokeColor: '#2563EB',
+  });
+  const markers = tree.root.findAllByType(MapLocationMarker);
+  expect(markers.find(node => node.props.kind === 'dropoff').props.zIndex).toBe(40);
+});
+
+test('GPS updates keep the delivery route component mounted and update its origin', async () => {
+  enableMap();
+  await mount();
+  const route = tree.root.findByType(DriverRoutePolyline);
+  const next = { latitude: 34.4, longitude: 35.8 };
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: next }));
+  expect(tree.root.findByType(DriverRoutePolyline)).toBe(route);
+  expect(route.props.origin).toMatchObject(next);
+  expect(route.props.destination).toMatchObject({ latitude: 34.4367, longitude: 35.8497 });
+});
+
+test.each([true, false])('frames the whole delivery road route regardless of readiness order (route first: %s)', async routeFirst => {
+  enableMap();
+  const driver = { latitude: 33.8938, longitude: 35.5018 };
+  Location.getCurrentPositionAsync.mockResolvedValue({ coords: driver });
+  await mount();
+  const roadRoute = [driver, { latitude: 34.0, longitude: 35.9 }, { latitude: 34.436, longitude: 35.849 }];
+  const ready = () => tree.root.findByType(DriverRoutePolyline).props.onReady(roadRoute);
+  const mapReady = () => tree.root.findByType('MapView').props.onMapReady();
+  await act(async () => { if (routeFirst) ready(); else mapReady(); });
+  if (routeFirst) expect(mockFit).not.toHaveBeenCalled();
+  else expect(mockFit).toHaveBeenCalledWith(expect.arrayContaining([
+    expect.objectContaining(driver),
+    expect.objectContaining({ latitude: 34.4367, longitude: 35.8497 }),
+  ]), expect.any(Object));
+  await act(async () => { if (routeFirst) mapReady(); else ready(); });
+  expect(mockFit).toHaveBeenLastCalledWith(expect.arrayContaining([
+    ...roadRoute,
+    expect.objectContaining({ latitude: 34.4367, longitude: 35.8497 }),
+  ]), expect.any(Object));
+  mockFit.mockClear();
+  await act(async () => tree.root.findByType(NavigationCameraToggle).props.onPress());
+  await act(async () => ready());
+  expect(mockFit).not.toHaveBeenCalled();
+});
+
+test('fits a late GPS fix with dropoff without repeated recentering during delivery', async () => {
+  enableMap();
+  let finish;
+  const location = new Promise(resolve => { finish = resolve; });
+  Location.getCurrentPositionAsync.mockReturnValue(location);
+  await mount();
+  await act(async () => tree.root.findByType('MapView').props.onMapReady());
+  mockFit.mockClear();
+  const driver = { latitude: 33.8938, longitude: 35.5018 };
+  await act(async () => finish({ coords: driver }));
+  expect(mockFit).toHaveBeenCalledWith(expect.arrayContaining([
+    expect.objectContaining(driver),
+    expect.objectContaining({ latitude: 34.4367, longitude: 35.8497 }),
+  ]), expect.any(Object));
+  mockFit.mockClear();
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: { ...driver, latitude: 33.9 } }));
+  expect(mockFit).not.toHaveBeenCalled();
 });
