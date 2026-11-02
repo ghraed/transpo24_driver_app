@@ -4,12 +4,12 @@ import { StyleSheet, Text, View } from 'react-native';
 import { getBackendApiBaseUrl } from '@/config/backend';
 import appI18n from '@/localization/i18n';
 
-const PRODUCTION_API_URL = 'https://api.transpo24.com';
+import { isLocalBackendUrl } from '@/config/environment';
 
 export function EnvironmentBanner() {
   const apiUrl = getBackendApiBaseUrl();
 
-  if (apiUrl === PRODUCTION_API_URL) {
+  if (!isLocalBackendUrl(apiUrl)) {
     return null;
   }
 

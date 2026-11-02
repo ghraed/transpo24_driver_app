@@ -1,3 +1,4 @@
+import { TRIP_CONFIRMATION_RADIUS_METERS } from '@/config/trip-confirmation';
 import type {
   DriverArrivedPickupConfirmedPayload,
   DriverLocationUpdatedPayload,
@@ -5,7 +6,7 @@ import type {
   OfferAcceptedPayload,
 } from '@/types/trip.types';
 
-const PICKUP_ARRIVAL_RADIUS_METERS = 1500;
+const PICKUP_ARRIVAL_RADIUS_METERS = TRIP_CONFIRMATION_RADIUS_METERS;
 
 export function isPositiveIntegerString(value: string): boolean {
   return /^\d+$/.test(value.trim());

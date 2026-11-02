@@ -1,4 +1,6 @@
 {
+  "Current location is required to confirm pickup.": "Current location is required to confirm pickup.",
+  "You must be within {{distance}}m of pickup to confirm pickup.": "You must be within {{distance}}m of pickup to confirm pickup.",
   "OK": "OK",
   "Minimum offer amount": "Minimum offer amount",
   "The minimum offer is {{amount}}. Your price has been adjusted to this amount.": "The minimum offer is {{amount}}. Your price has been adjusted to this amount.",

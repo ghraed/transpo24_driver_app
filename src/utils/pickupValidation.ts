@@ -1,3 +1,4 @@
+import { TRIP_CONFIRMATION_RADIUS_METERS } from '@/config/trip-confirmation';
 import type {
   GeoLocation,
   PickupItemRequest,
@@ -5,7 +6,7 @@ import type {
   TripStatus,
 } from '@/types/trip.types';
 
-const PICKUP_CONFIRM_RADIUS_METERS = 1500;
+const PICKUP_CONFIRM_RADIUS_METERS = TRIP_CONFIRMATION_RADIUS_METERS;
 const TRIP_ID_MIN_LENGTH = 8;
 const TRIP_ID_MAX_LENGTH = 64;
 

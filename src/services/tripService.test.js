@@ -47,3 +47,45 @@ test('additional expenses reject invalid amount, reason and invoice before uploa
   await expect(createAdditionalExpense('trip-123', { ...expense, amount: 10, invoicePhoto: { uri: ' ' } })).rejects.toThrow(/photo is required/);
   expect(fetchMock).not.toHaveBeenCalled();
 });
+
+
+test.each([
+  ['pickup', pickupItem, pickupResponse],
+  ['delivery', deliverItem, deliveryResponse],
+])('%s proof-photo uploads retain GPS coordinates, including zero', async (_name, confirm, response) => {
+  const originalXhr = global.XMLHttpRequest;
+  const append = jest.spyOn(FormData.prototype, 'append');
+  const sentForms = [];
+  const open = jest.fn();
+  const setRequestHeader = jest.fn();
+  global.XMLHttpRequest = jest.fn(() => ({
+    open,
+    setRequestHeader,
+    send(form) {
+      sentForms.push(form);
+      this.status = 200;
+      this.responseText = JSON.stringify(response);
+      this.onload();
+    },
+  }));
+  try {
+    await expect(confirm('trip-123', {
+      latitude: 0,
+      longitude: 35.5018,
+      notes: 'Collected safely',
+      proofPhotos: [{ uri: 'file:///proof.jpg', fileName: 'proof.jpg', mimeType: 'image/jpeg' }],
+    })).resolves.toEqual(response);
+    expect(open).toHaveBeenCalledWith('PATCH', expect.stringMatching(/(pickup|deliver)-item$/));
+    expect(setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer driver-token');
+    expect(sentForms).toHaveLength(1);
+    expect(sentForms[0]).toBeInstanceOf(FormData);
+    expect(append).toHaveBeenCalledWith('latitude', '0');
+    expect(append).toHaveBeenCalledWith('longitude', '35.5018');
+    expect(append).toHaveBeenCalledWith('notes', 'Collected safely');
+    expect(append).toHaveBeenCalledWith('photos', expect.objectContaining({ uri: 'file:///proof.jpg' }));
+    expect(fetchMock).not.toHaveBeenCalled();
+  } finally {
+    global.XMLHttpRequest = originalXhr;
+    append.mockRestore();
+  }
+});

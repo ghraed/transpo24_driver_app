@@ -1,11 +1,13 @@
-import { describe, expect, it, test } from '@jest/globals';
+import { describe, expect, it, jest, test } from '@jest/globals';
 import * as pickup from './pickupValidation';
 import * as delivery from './deliveryValidation';
 import * as location from './locationValidation';
 
+jest.mock('@/config/trip-confirmation', () => ({ TRIP_CONFIRMATION_RADIUS_METERS: 100 }));
+
 const origin = { latitude: 0, longitude: 0 };
-const near = { latitude: 0, longitude: 0.0134 }; // roughly 1.49 km at equator
-const far = { latitude: 0, longitude: 0.0136 }; // roughly 1.51 km at equator
+const near = { latitude: 0, longitude: 0.00089 }; // roughly 99 m at equator
+const far = { latitude: 0, longitude: 0.00091 }; // roughly 101 m at equator
 const invalid = { latitude: 91, longitude: 0 };
 
 describe.each([
@@ -17,7 +19,7 @@ describe.each([
     expect(canConfirm(origin, near)).toBe(true);
     expect(distance(origin, origin)).toBe(0);
   });
-  it('rejects a position outside the 1.5 km radius and invalid coordinates', () => {
+  it('rejects a position outside the 100 m radius and invalid coordinates', () => {
     expect(canConfirm(origin, far)).toBe(false);
     expect(canConfirm(invalid, invalid)).toBe(false);
   });

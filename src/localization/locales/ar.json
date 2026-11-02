@@ -1,4 +1,6 @@
 {
+  "Current location is required to confirm pickup.": "موقعك الحالي مطلوب لتأكيد الاستلام.",
+  "You must be within {{distance}}m of pickup to confirm pickup.": "يجب أن تكون ضمن مسافة {{distance}}م من موقع الاستلام لتأكيده.",
   "OK": "حسنًا",
   "Minimum offer amount": "الحد الأدنى للعرض",
   "The minimum offer is {{amount}}. Your price has been adjusted to this amount.": "الحد الأدنى للعرض هو {{amount}}. تم تعديل سعرك إلى هذا المبلغ.",

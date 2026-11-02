@@ -818,26 +818,21 @@ export default function GoToPickupScreen() {
         // Use latest known location.
       }
 
-      const canSendLocation =
-        latestLocation && pickupLocation ? canConfirmPickup(latestLocation, pickupLocation) : false;
+      if (!latestLocation || !isValidGeoLocation(latestLocation)) {
+        setSubmitError(t('Current location is required to confirm pickup.'));
+        return;
+      }
+      if (!canConfirmPickup(latestLocation, pickupLocation)) {
+        setSubmitError(t('You are too far from pickup location. Move closer to continue.'));
+        return;
+      }
 
       const payload: PickupItemRequest = {
         notes: notes.trim() || undefined,
         proofPhotos: proofPhotos.length ? proofPhotos : undefined,
-        latitude: canSendLocation ? latestLocation?.latitude : undefined,
-        longitude: canSendLocation ? latestLocation?.longitude : undefined,
+        latitude: latestLocation.latitude,
+        longitude: latestLocation.longitude,
       };
-
-      if (latestLocation && !canSendLocation) {
-        setLocationMessage(
-          t(
-            'GPS shows you are farther than {{distance}}m from pickup. Sending confirmation without coordinates.',
-            {
-              distance: PICKUP_CONFIRM_RADIUS_METERS,
-            },
-          ),
-        );
-      }
 
       const validationError = validatePickupItemRequest(payload);
       if (validationError) {
@@ -927,6 +922,7 @@ export default function GoToPickupScreen() {
     isRefreshingLocation ||
     !driverLocation ||
     Boolean(payloadValidationMessage) ||
+    (isArrivedAtPickup && tooFarFromPickup) ||
     (!isArrivedAtPickup && requestStatus !== 'DRIVER_ASSIGNED' && !canArriveNow);
 
   const primaryActionLabel =
@@ -1151,7 +1147,7 @@ export default function GoToPickupScreen() {
                   tone="warning"
                   title={t('pickupUi.locationAccuracy')}
                   description={t(
-                    'GPS distance is above {{distance}}m. Pickup can still be submitted without coordinates.',
+                    'You must be within {{distance}}m of pickup to confirm pickup.',
                     { distance: PICKUP_CONFIRM_RADIUS_METERS },
                   )}
                 />

@@ -1,4 +1,6 @@
 {
+  "Current location is required to confirm pickup.": "Ihr aktueller Standort ist erforderlich, um die Abholung zu bestätigen.",
+  "You must be within {{distance}}m of pickup to confirm pickup.": "Sie müssen sich innerhalb von {{distance}}m vom Abholort befinden, um die Abholung zu bestätigen.",
   "OK": "OK",
   "Minimum offer amount": "Mindestangebot",
   "The minimum offer is {{amount}}. Your price has been adjusted to this amount.": "Das Mindestangebot beträgt {{amount}}. Ihr Preis wurde auf diesen Betrag angepasst.",

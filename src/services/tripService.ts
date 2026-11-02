@@ -327,6 +327,8 @@ export async function pickupItem(
   try {
     if (proofPhotos.length > 0) {
       const formData = new FormData();
+      if (payload.latitude !== undefined) formData.append('latitude', String(payload.latitude));
+      if (payload.longitude !== undefined) formData.append('longitude', String(payload.longitude));
       if (payload.notes?.trim()) formData.append('notes', payload.notes.trim());
       if (payload.proofImageUrl?.trim()) formData.append('proofImageUrl', payload.proofImageUrl.trim());
       appendFormDataAssets(formData, 'photos', proofPhotos, 'pickup-proof', 'image/jpeg');
@@ -412,6 +414,8 @@ export async function deliverItem(
   try {
     if (proofPhotos.length > 0) {
       const formData = new FormData();
+      if (payload.latitude !== undefined) formData.append('latitude', String(payload.latitude));
+      if (payload.longitude !== undefined) formData.append('longitude', String(payload.longitude));
       if (payload.notes?.trim()) formData.append('notes', payload.notes.trim());
       if (payload.proofImageUrl?.trim()) formData.append('proofImageUrl', payload.proofImageUrl.trim());
       appendFormDataAssets(formData, 'photos', proofPhotos, 'delivery-proof', 'image/jpeg');
