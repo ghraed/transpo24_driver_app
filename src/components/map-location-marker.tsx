@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { MapMarkerProps } from 'react-native-maps';
 import { NativeMarker } from './native-maps';
@@ -27,7 +27,7 @@ export function MapLocationIcon({ kind }: { kind: MapLocationKind }) {
   );
 }
 
-// Bundled icons remain available on platforms with reliable native image loading.
+// Bundled images use the same native rendering path for all three marker kinds.
 const MARKER_IMAGES = {
   pickup: require('../../assets/map-markers/pickup.png'),
   dropoff: require('../../assets/map-markers/dropoff.png'),
@@ -37,18 +37,15 @@ const MARKER_IMAGES = {
 type Props = Omit<MapMarkerProps, 'children' | 'pinColor' | 'anchor' | 'image'> & { kind: MapLocationKind };
 export function MapLocationMarker({ kind, ...props }: Props) {
   if (!NativeMarker) return null;
-  // Android stop pins must not depend on asynchronous image/child-view capture.
-  // A new native marker identity also discards old custom-view state after refresh.
-  const nativePin = Platform.OS === 'android' && kind !== 'driver';
   return (
     <NativeMarker
-      key={`${kind}-${nativePin ? 'native-pin' : 'bundled-icon'}`}
+      key={`${kind}-bundled-icon`}
       {...props}
-      image={nativePin ? undefined : MARKER_IMAGES[kind]}
+      image={MARKER_IMAGES[kind]}
       pinColor={MAP_COLORS[kind]}
       zIndex={props.zIndex ?? (kind === 'pickup' ? 30 : kind === 'driver' ? 20 : 10)}
       tracksViewChanges={false}
-      anchor={{ x: 0.5, y: kind === 'driver' ? 0.5 : nativePin ? 1 : 42 / 44 }}
+      anchor={{ x: 0.5, y: kind === 'driver' ? 0.5 : 42 / 44 }}
     />
   );
 }

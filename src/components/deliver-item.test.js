@@ -1,3 +1,4 @@
+import { getRecentTripLocation } from '@/location/trip-location-cache';
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { BackHandler, Text, TextInput } from 'react-native';
@@ -54,6 +55,7 @@ jest.mock('@/components/native-maps', () => {
 jest.mock('@/components/driver-chat-button', () => ({ DriverChatButton: () => null }));
 jest.mock('@/components/driver-route-polyline', () => ({ DriverRoutePolyline: () => null }));
 jest.mock('@/config/maps', () => ({ GOOGLE_MAPS_API_KEY: '' }));
+jest.mock('@/location/trip-location-cache', () => ({ getRecentTripLocation: jest.fn(() => null), rememberTripLocation: jest.fn() }));
 jest.mock('@/location/background-trip-tracking', () => ({
   startBackgroundTripTracking: jest.fn(async () => true),
   stopBackgroundTripTracking: jest.fn(async () => undefined),
@@ -116,6 +118,7 @@ async function mount(status = 'DRIVER_GOING_TO_DROPOFF') {
 }
 beforeEach(() => {
   jest.clearAllMocks();
+  getRecentTripLocation.mockReturnValue(null);
   jest.requireMock('@/components/native-maps').isNativeMapRuntimeAvailable = false;
   jest.requireMock('@/config/maps').GOOGLE_MAPS_API_KEY = '';
   mockRouter.canGoBack.mockReturnValue(true);
@@ -229,6 +232,7 @@ test('after pickup confirmation, delivery routes from the live driver location t
     strokeColor: '#2563EB',
   });
   const markers = tree.root.findAllByType(MapLocationMarker);
+  expect(markers.map(node => node.props.kind)).toEqual(['driver', 'dropoff']);
   expect(markers.find(node => node.props.kind === 'dropoff').props.zIndex).toBe(40);
 });
 
@@ -285,4 +289,60 @@ test('fits a late GPS fix with dropoff without repeated recentering during deliv
   mockFit.mockClear();
   await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: { ...driver, latitude: 33.9 } }));
   expect(mockFit).not.toHaveBeenCalled();
+});
+
+
+test('shows pickup handoff GPS and destination while a fresh fix is pending, and starts watching immediately', async () => {
+  enableMap();
+  const driver = { latitude: 33.8938, longitude: 35.5018 };
+  getRecentTripLocation.mockReturnValue(driver);
+  Location.getCurrentPositionAsync.mockReturnValue(new Promise(() => {}));
+  await mount('ITEM_PICKED_UP');
+  expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1);
+  expect(startDelivery).toHaveBeenCalledTimes(1);
+  const markers = tree.root.findAllByType(MapLocationMarker);
+  expect(markers.find(node => node.props.kind === 'driver').props.coordinate).toEqual(driver);
+  expect(markers.find(node => node.props.kind === 'dropoff').props.coordinate).toMatchObject({ latitude: 34.4367, longitude: 35.8497 });
+  await act(async () => tree.root.findByType('MapView').props.onMapReady());
+  expect(mockFit).toHaveBeenCalledWith(expect.arrayContaining([
+    expect.objectContaining(driver), expect.objectContaining({ latitude: 34.4367, longitude: 35.8497 }),
+  ]), expect.any(Object));
+  const live = { latitude: 34.0, longitude: 35.6 };
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: live }));
+  expect(tree.root.findAllByType(MapLocationMarker).find(node => node.props.kind === 'driver').props.coordinate).toMatchObject(live);
+});
+
+test('a live GPS update beats an older pending initial fix', async () => {
+  enableMap();
+  let finish;
+  Location.getCurrentPositionAsync.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  await mount();
+  const live = { latitude: 34.0, longitude: 35.6 };
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: live }));
+  await act(async () => finish({ coords: { latitude: 33.8938, longitude: 35.5018 } }));
+  expect(tree.root.findAllByType(MapLocationMarker).find(node => node.props.kind === 'driver').props.coordinate).toMatchObject(live);
+});
+
+
+test('still displays a fresh driver fix if the GPS watcher fails to start', async () => {
+  enableMap();
+  Location.watchPositionAsync.mockRejectedValueOnce(new Error('Watcher unavailable'));
+  await mount();
+  expect(tree.root.findAllByType(MapLocationMarker).find(node => node.props.kind === 'driver').props.coordinate).toMatchObject({ latitude: 34.4367, longitude: 35.8497 });
+  expect(tree.root.findAllByType(MapLocationMarker).find(node => node.props.kind === 'dropoff')).toBeDefined();
+});
+
+
+test('does not turn missing dropoff coordinates into a marker at zero', async () => {
+  enableMap();
+  const previous = mockParams.dropoffLatitude;
+  mockParams.dropoffLatitude = ' ';
+  try {
+    await mount();
+    expect(text()).toContain('Invalid trip data. Please reopen this trip from Accepted Jobs.');
+    expect(tree.root.findAllByType(MapLocationMarker)).toHaveLength(0);
+    expect(startDelivery).not.toHaveBeenCalled();
+  } finally {
+    mockParams.dropoffLatitude = previous;
+  }
 });

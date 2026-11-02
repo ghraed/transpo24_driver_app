@@ -1,3 +1,4 @@
+import { getRecentTripLocation, rememberTripLocation } from '@/location/trip-location-cache';
 import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
 import { useNavigationCamera, type NavigationLocation } from '@/hooks/use-navigation-camera';
 import { MapLocationMarker, MAP_COLORS } from '@/components/map-location-marker';
@@ -82,6 +83,7 @@ type DeliverItemParams = {
 
 function parseNumber(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string') return null;
+  if (!value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -163,7 +165,7 @@ export default function DeliverItemScreen() {
     };
   }, [params.dropoffAddress, params.dropoffLatitude, params.dropoffLongitude]);
 
-  const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
+  const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(() => getRecentTripLocation(tripId));
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(true);
   const [isRefreshingLocation, setIsRefreshingLocation] = useState<boolean>(false);
   const [isStartingDelivery, setIsStartingDelivery] = useState<boolean>(true);
@@ -181,6 +183,12 @@ export default function DeliverItemScreen() {
   const locationSubscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const lastEmitLocationRef = useRef<GeoLocation | null>(null);
   const lastEmitAtRef = useRef<number>(0);
+  const locationVersionRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
   const mapRef = useRef<any>(null);
   const { isNavigationView, isNavigationEnabled, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
   const mapReadyRef = useRef(false);
@@ -312,8 +320,8 @@ export default function DeliverItemScreen() {
   }, [router]);
 
   const ensureDriverGoingToDropoff = useCallback(
-    async (currentStatus?: string | null): Promise<void> => {
-      const effectiveStatus = currentStatus ?? requestStatus;
+    async (currentStatus: string | null): Promise<void> => {
+      const effectiveStatus = currentStatus;
 
       if (effectiveStatus === 'DRIVER_GOING_TO_DROPOFF' || effectiveStatus === 'IN_TRANSIT') {
         return;
@@ -342,7 +350,7 @@ export default function DeliverItemScreen() {
         throw error;
       }
     },
-    [requestStatus, setRequestStatus, setRouteBlockedMessage, t, tripId],
+    [setRequestStatus, setRouteBlockedMessage, t, tripId],
   );
 
   const refreshDriverLocation = useCallback(
@@ -368,10 +376,12 @@ export default function DeliverItemScreen() {
           return null;
         }
 
+        const observedVersion = locationVersionRef.current;
         const current = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Highest,
         });
 
+        if (!mountedRef.current || observedVersion !== locationVersionRef.current) return null;
         const currentLocation: NavigationLocation = {
           latitude: current.coords.latitude,
           longitude: current.coords.longitude,
@@ -383,6 +393,7 @@ export default function DeliverItemScreen() {
           return null;
         }
 
+        rememberTripLocation(tripId, currentLocation);
         setDriverLocation(currentLocation);
         emitDriverLocationUpdate({
           tripId,
@@ -425,8 +436,10 @@ export default function DeliverItemScreen() {
 
   useEffect(() => {
     let active = true;
+    let offTripStatus: (() => void) | null = null;
+    let offItemDelivered: (() => void) | null = null;
 
-    const setup = async (): Promise<(() => void) | void> => {
+    const setup = async (): Promise<void> => {
       if (isInvalidRoute) {
         setIsLoadingLocation(false);
         setIsStartingDelivery(false);
@@ -519,8 +532,7 @@ export default function DeliverItemScreen() {
         if (active) setIsStartingDelivery(false);
       }
 
-      let offTripStatus: (() => void) | null = null;
-      let offItemDelivered: (() => void) | null = null;
+      if (!active) return;
       try {
         offTripStatus = onTripStatusUpdated((rawPayload) => {
           const payload = validateTripStatusUpdatedPayload(rawPayload);
@@ -560,9 +572,9 @@ export default function DeliverItemScreen() {
       }
 
       try {
-        await refreshDriverLocation();
-        if (!active) return;
-
+        // Start live updates before waiting for a high-accuracy one-shot fix.
+        // That fix can take a long time indoors and must not prevent tracking.
+        void refreshDriverLocation();
         const subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.Highest,
@@ -576,7 +588,11 @@ export default function DeliverItemScreen() {
               heading: position.coords.heading,
             };
             if (!isValidGeoLocation(liveLocation)) return;
+            if (!active) return;
+            locationVersionRef.current += 1;
+            rememberTripLocation(tripId, liveLocation);
             setDriverLocation(liveLocation);
+            setIsLoadingLocation(false);
 
             const now = Date.now();
             const lastLocation = lastEmitLocationRef.current;
@@ -641,20 +657,19 @@ export default function DeliverItemScreen() {
         }
       }
 
-      return () => {
-        offTripStatus?.();
-        offItemDelivered?.();
-      };
     };
 
-    let teardown: (() => void) | void;
-    void setup().then((cleanup) => {
-      teardown = cleanup;
+    void setup().catch((error: unknown) => {
+      if (!active) return;
+      setLocationMessage(error instanceof Error ? error.message : t('Unable to get current location. Please verify GPS availability.'));
+      setIsLoadingLocation(false);
+      setIsStartingDelivery(false);
     });
 
     return () => {
       active = false;
-      if (teardown) teardown();
+      offTripStatus?.();
+      offItemDelivered?.();
       if (locationSubscriptionRef.current) {
         locationSubscriptionRef.current.remove();
         locationSubscriptionRef.current = null;
@@ -765,7 +780,7 @@ export default function DeliverItemScreen() {
         return;
       }
 
-      await ensureDriverGoingToDropoff();
+      await ensureDriverGoingToDropoff(requestStatus);
       let response: Awaited<ReturnType<typeof deliverItem>>;
       try {
         response = await deliverItem(tripId, payload);
@@ -777,7 +792,7 @@ export default function DeliverItemScreen() {
             'trip status must be driver_going_to_dropoff before confirming delivery',
           )
         ) {
-          await ensureDriverGoingToDropoff();
+          await ensureDriverGoingToDropoff(requestStatus);
           response = await deliverItem(tripId, payload);
         } else {
           throw error;
@@ -901,7 +916,9 @@ export default function DeliverItemScreen() {
           >
             {mapsApiKey && isNativeMapRuntimeAvailable && NativeMapView && NativeMarker ? (
               <NativeMapView
+                key={`delivery-map-${tripId}`}
                 ref={mapRef}
+                onMapLoaded={fitDeliveryRoute}
                 onMapReady={() => {
                   mapReadyRef.current = true;
                   if (isNavigationEnabled()) followDriver(0);
@@ -924,11 +941,6 @@ export default function DeliverItemScreen() {
                     title={t('Driver')}
                   />
                 ) : null}
-                <MapLocationMarker
-                  kind="pickup"
-                  coordinate={pickupLocation}
-                  title={t('Pickup')}
-                />
                 <MapLocationMarker
                   kind="dropoff"
                   zIndex={40}

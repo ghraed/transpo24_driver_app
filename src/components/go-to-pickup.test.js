@@ -1,3 +1,4 @@
+import { getRecentTripLocation } from '@/location/trip-location-cache';
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { Text, TextInput } from 'react-native';
@@ -227,6 +228,7 @@ test('opens pickup details immediately and records arrival within the pickup act
       proofPhotos: [expect.objectContaining({ uri: 'file:///proof.jpg' })],
     }),
   );
+  expect(getRecentTripLocation('trip-12345678')).toMatchObject({ latitude: 33.8938, longitude: 35.5018 });
   expect(emitDriverArrivedPickupWithAck.mock.invocationCallOrder[0]).toBeLessThan(
     pickupItem.mock.invocationCallOrder[0],
   );

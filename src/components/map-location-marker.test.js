@@ -34,16 +34,13 @@ test('pickup and dropoff use consistent pins with distinct colors and center sym
 });
 
 
-test.each(['ios', 'android'])('stop markers remain native with no captured child view on %s', async platform => {
+test.each(['ios', 'android'])('all markers use bundled native images with no captured child view on %s', async platform => {
   jest.replaceProperty(Platform, 'OS', platform);
   for (const kind of ['pickup', 'dropoff', 'driver']) {
     await act(async () => { if (tree) tree.unmount(); tree = create(<MapLocationMarker kind={kind} coordinate={coordinate} />); });
     const marker = tree.root.findByType('Marker');
-    if (platform === 'android' && kind !== 'driver') {
-      expect(marker.props.image).toBeUndefined();
-      expect(marker.props.pinColor).toBe(kind === 'pickup' ? '#1DB954' : '#FF4B3E');
-      expect(marker.props.anchor).toEqual({ x: 0.5, y: 1 });
-    } else expect(marker.props.image).toBeTruthy();
+    expect(marker.props.image).toBeTruthy();
+    expect(marker.props.anchor).toEqual({ x: 0.5, y: kind === 'driver' ? 0.5 : 42 / 44 });
     expect(marker.props.tracksViewChanges).toBe(false);
     expect(marker.props.children).toBeUndefined();
   }

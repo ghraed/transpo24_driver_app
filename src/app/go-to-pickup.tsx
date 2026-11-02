@@ -1,3 +1,4 @@
+import { rememberTripLocation } from '@/location/trip-location-cache';
 import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
 import { useNavigationCamera, type NavigationLocation } from '@/hooks/use-navigation-camera';
 import { MapLocationMarker, MAP_COLORS } from '@/components/map-location-marker';
@@ -94,7 +95,7 @@ type PickupParams = {
 };
 
 function parseNumber(value: string | string[] | undefined): number | null {
-  if (typeof value !== 'string') return null;
+  if (typeof value !== 'string' || !value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -282,6 +283,10 @@ export default function GoToPickupScreen() {
     }
     return calculateDistanceMeters(driverLocation, pickupLocation);
   }, [driverLocation, pickupLocation]);
+
+  useEffect(() => {
+    if (driverLocation) rememberTripLocation(tripId, driverLocation);
+  }, [driverLocation, tripId]);
 
   const tooFarFromPickup = useMemo(() => {
     if (!driverLocation || !pickupLocation) return false;
@@ -884,6 +889,7 @@ export default function GoToPickupScreen() {
         }
       }
 
+      rememberTripLocation(tripId, latestLocation);
       const response = await pickupItem(tripId, payload);
       if (!isDeliveryPhaseRequestStatus(response.status)) {
         setSubmitError(t('Unexpected pickup status returned by backend.'));
