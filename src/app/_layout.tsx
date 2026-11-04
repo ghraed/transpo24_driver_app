@@ -170,6 +170,7 @@ function AppNavigator() {
       <Stack.Screen name="deliver-item" options={{ title: t('Deliver Item') }} />
       <Stack.Screen name="trip-expenses" options={{ title: t('Additional Expenses') }} />
       <Stack.Screen name="driver-trip-completed" options={{ title: t('Trip Completed') }} />
+      <Stack.Screen name="stripe-connect" options={{ title: t('Stripe Connect') }} />
       <Stack.Screen name="socket-debug" options={{ title: t('Socket Debug') }} />
       <Stack.Screen name="review-request-details" options={{ title: t('Request Details') }} />
       <Stack.Screen name="send-price-offer" options={{ title: t('Send Price Offer') }} />

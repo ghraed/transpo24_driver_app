@@ -145,14 +145,7 @@ export default function StripeConnectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('Stripe Connect')}</Text>
-        <Text style={styles.subtitle}>
-          {t('Set up your payout account to receive earnings directly to your bank account.')}
-        </Text>
-      </View>
-
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       {isLoading ? (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color="#FFC515" />
@@ -160,6 +153,9 @@ export default function StripeConnectScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.subtitle}>
+            {t('Set up your payout account to receive earnings directly to your bank account.')}
+          </Text>
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
               <Text style={styles.statusLabel}>{t('Account Created')}</Text>
@@ -327,15 +323,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F8F9',
-  },
-  header: {
-    padding: 20,
-    gap: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#202020',
   },
   subtitle: {
     fontSize: 14,
