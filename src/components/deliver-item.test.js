@@ -123,7 +123,7 @@ beforeEach(() => {
   jest.requireMock('@/config/maps').GOOGLE_MAPS_API_KEY = '';
   mockRouter.canGoBack.mockReturnValue(true);
   Location.getCurrentPositionAsync.mockResolvedValue({
-    coords: { latitude: 34.4367, longitude: 35.8497 },
+    timestamp: Date.now(), coords: { latitude: 34.4367, longitude: 35.8497 },
   });
   startDelivery.mockResolvedValue({ status: 'DRIVER_GOING_TO_DROPOFF' });
   removeBackListener = jest.fn();
@@ -170,7 +170,7 @@ test('hardware back closes the expanded map before leaving the page', async () =
 
 test('keeps delivery disabled outside the permitted radius', async () => {
   Location.getCurrentPositionAsync.mockResolvedValue({
-    coords: { latitude: 33.8938, longitude: 35.5018 },
+    timestamp: Date.now(), coords: { latitude: 33.8938, longitude: 35.5018 },
   });
   await mount();
   expect(button('deliveryUi.confirmAction').props.disabled).toBe(true);
@@ -223,7 +223,7 @@ function enableMap() {
 test('after pickup confirmation, delivery routes from the live driver location to dropoff', async () => {
   enableMap();
   const driver = { latitude: 33.8938, longitude: 35.5018 };
-  Location.getCurrentPositionAsync.mockResolvedValue({ coords: driver });
+  Location.getCurrentPositionAsync.mockResolvedValue({ timestamp: Date.now(), coords: driver });
   await mount('ITEM_PICKED_UP');
   expect(startDelivery).toHaveBeenCalledWith('trip-12345678');
   expect(tree.root.findByType(DriverRoutePolyline).props).toMatchObject({
@@ -241,7 +241,7 @@ test('GPS updates keep the delivery route component mounted and update its origi
   await mount();
   const route = tree.root.findByType(DriverRoutePolyline);
   const next = { latitude: 34.4, longitude: 35.8 };
-  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: next }));
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ timestamp: Date.now(), coords: next }));
   expect(tree.root.findByType(DriverRoutePolyline)).toBe(route);
   expect(route.props.origin).toMatchObject(next);
   expect(route.props.destination).toMatchObject({ latitude: 34.4367, longitude: 35.8497 });
@@ -250,7 +250,7 @@ test('GPS updates keep the delivery route component mounted and update its origi
 test.each([true, false])('frames the whole delivery road route regardless of readiness order (route first: %s)', async routeFirst => {
   enableMap();
   const driver = { latitude: 33.8938, longitude: 35.5018 };
-  Location.getCurrentPositionAsync.mockResolvedValue({ coords: driver });
+  Location.getCurrentPositionAsync.mockResolvedValue({ timestamp: Date.now(), coords: driver });
   await mount();
   const roadRoute = [driver, { latitude: 34.0, longitude: 35.9 }, { latitude: 34.436, longitude: 35.849 }];
   const ready = () => tree.root.findByType(DriverRoutePolyline).props.onReady(roadRoute);
@@ -281,13 +281,13 @@ test('fits a late GPS fix with dropoff without repeated recentering during deliv
   await act(async () => tree.root.findByType('MapView').props.onMapReady());
   mockFit.mockClear();
   const driver = { latitude: 33.8938, longitude: 35.5018 };
-  await act(async () => finish({ coords: driver }));
+  await act(async () => finish({ timestamp: Date.now(), coords: driver }));
   expect(mockFit).toHaveBeenCalledWith(expect.arrayContaining([
     expect.objectContaining(driver),
     expect.objectContaining({ latitude: 34.4367, longitude: 35.8497 }),
   ]), expect.any(Object));
   mockFit.mockClear();
-  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: { ...driver, latitude: 33.9 } }));
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ timestamp: Date.now(), coords: { ...driver, latitude: 33.9 } }));
   expect(mockFit).not.toHaveBeenCalled();
 });
 
@@ -308,7 +308,7 @@ test('shows pickup handoff GPS and destination while a fresh fix is pending, and
     expect.objectContaining(driver), expect.objectContaining({ latitude: 34.4367, longitude: 35.8497 }),
   ]), expect.any(Object));
   const live = { latitude: 34.0, longitude: 35.6 };
-  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: live }));
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ timestamp: Date.now(), coords: live }));
   expect(tree.root.findAllByType(MapLocationMarker).find(node => node.props.kind === 'driver').props.coordinate).toMatchObject(live);
 });
 
@@ -318,8 +318,8 @@ test('a live GPS update beats an older pending initial fix', async () => {
   Location.getCurrentPositionAsync.mockReturnValue(new Promise(resolve => { finish = resolve; }));
   await mount();
   const live = { latitude: 34.0, longitude: 35.6 };
-  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: live }));
-  await act(async () => finish({ coords: { latitude: 33.8938, longitude: 35.5018 } }));
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ timestamp: Date.now(), coords: live }));
+  await act(async () => finish({ timestamp: Date.now(), coords: { latitude: 33.8938, longitude: 35.5018 } }));
   expect(tree.root.findAllByType(MapLocationMarker).find(node => node.props.kind === 'driver').props.coordinate).toMatchObject(live);
 });
 

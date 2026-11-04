@@ -1717,5 +1717,9 @@
   "Back to Earnings History": "Back to Earnings History",
   "Load more": "Load more",
   "Payment failed": "Payment failed",
-  "Refunded": "Refunded"
+  "Refunded": "Refunded",
+  "Terms of Service": "Terms of Service",
+  "I agree to the Terms of Service": "I agree to the Terms of Service",
+  "Unable to load Terms of Service. Please try again.": "Unable to load Terms of Service. Please try again.",
+  "Continue": "Continue"
 }

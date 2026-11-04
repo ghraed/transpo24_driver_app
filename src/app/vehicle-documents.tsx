@@ -1,3 +1,4 @@
+import { privateAssetSource } from '@/lib/private-asset';
 import { DocumentPhotoError, pickDocumentPhoto } from '@/lib/document-photo';
 import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
 import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
@@ -705,7 +706,7 @@ export default function VehicleDocumentsScreen() {
         <Text style={styles.fieldLabel}>{label}{optional ? '' : ''}</Text>
         <Text style={styles.helper}>{instruction}</Text>
         {previewUri && isImagePreview ? (
-          <Image source={{ uri: previewUri }} style={styles.onboardingPreview} />
+          <Image source={privateAssetSource(previewUri)} style={styles.onboardingPreview} />
         ) : null}
         {asset ? <Text style={styles.fileName}>{asset.fileName ?? t('Selected file')}</Text> : null}
         {!asset && uploaded ? (

@@ -1,3 +1,4 @@
+import { HAS_GOOGLE_MAPS_API_KEY } from '@/config/maps';
 import React from 'react';
 import { Platform } from 'react-native';
 
@@ -25,7 +26,7 @@ let MapViewDirectionsComponent: GenericComponent | null = null;
 let PolylineComponent: GenericComponent | null = null;
 let GoogleProvider: unknown;
 
-if (Platform.OS !== 'web') {
+if (Platform.OS !== 'web' && HAS_GOOGLE_MAPS_API_KEY) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const mapsModule = require('react-native-maps') as {
     default: GenericComponent;

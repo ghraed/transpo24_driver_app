@@ -1,3 +1,4 @@
+import { LegalConsentBoundary } from '@/components/legal-consent-boundary';
 import { OmwProvider } from '@/omw/context';
 import { driverType, useDriverColors } from '@/theme/driver-theme';
 import { DriverInteractionBoundary } from '@/components/driver-interaction-boundary';
@@ -192,7 +193,7 @@ export default function RootLayout() {
     <ThemeProvider value={DefaultTheme}>
       <LocalizationProvider>
         <AuthProvider>
-          <AppNavigator />
+          <LegalConsentBoundary><AppNavigator /></LegalConsentBoundary>
         </AuthProvider>
       </LocalizationProvider>
     </ThemeProvider>

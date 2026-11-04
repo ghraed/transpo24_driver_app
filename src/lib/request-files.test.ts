@@ -1,3 +1,4 @@
+jest.mock('@/lib/chat-outbox', () => ({ beginChatOperation: (roomId: string, kind: string, payload: string, file: object) => ({ id: 'test-operation-123456', roomId, kind, payload, file }), finishChatOperation: jest.fn(), chatAccountId: () => 'fixture-owner', assertChatAccount: jest.fn(), pendingChatOperations: () => [] }));
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals';
 import { Platform } from 'react-native';
 import { viewDocument } from '@react-native-documents/viewer';

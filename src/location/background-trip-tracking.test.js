@@ -72,7 +72,7 @@ test('sends the latest background point using the existing customer update event
     keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
   });
   await handleBackgroundLocations([{ ...point(), timestamp: Date.now() - 180000 }, point()]);
-  expect(socket.emit).toHaveBeenCalledWith('driverLocationUpdate', { tripId: 'trip', latitude: 47.5, longitude: 7.6, accuracy: 10 }, expect.any(Function));
+  expect(socket.emit).toHaveBeenCalledWith('driverLocationUpdate', { tripId: 'trip', latitude: 47.5, longitude: 7.6, accuracy: 10, measuredAt: expect.any(String) }, expect.any(Function));
   expect(socket.disconnect).toHaveBeenCalled();
 });
 test('stops on completion before sending any location', async () => {

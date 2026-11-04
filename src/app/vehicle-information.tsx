@@ -1,3 +1,4 @@
+import { privateAssetSource } from '@/lib/private-asset';
 import { DocumentPhotoError, pickDocumentPhoto } from '@/lib/document-photo';
 import { DateTimePickerDialog } from '@/components/date-time-picker-dialog';
 import { formatDateOnly, parseDateOnly as normalizeDateValue } from '@/lib/date-only';
@@ -783,7 +784,7 @@ export default function VehicleInformationScreen() {
         <Text style={styles.helper}>{helper}</Text>
         {previewUri ? (
           <Image
-            source={{ uri: previewUri }}
+            source={privateAssetSource(previewUri)}
             style={styles.onboardingPreview}
             resizeMode="cover"
           />

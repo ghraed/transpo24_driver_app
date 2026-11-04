@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import { pendingChatOperations } from '@/lib/chat-outbox';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -18,6 +19,12 @@ export function ChatAttachmentButton({ roomId, disabled, onSent }: {
   const [completed, setCompleted] = useState(0);
   const [error, setError] = useState('');
   const lock = useRef(false);
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => { if (!active) return; try { setFiles(pendingChatOperations(roomId).filter(op => op.kind === 'FILE' && op.file).map(op => op.file! as DocumentPickerAsset)); } catch { /* No cross-account fallback. */ } });
+    return () => { active = false; };
+  }, [roomId]);
+
   const choose = async () => {
     if (lock.current) return;
     lock.current = true;

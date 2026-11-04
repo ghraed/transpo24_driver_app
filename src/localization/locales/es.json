@@ -1477,7 +1477,7 @@
   "Request access, correction or deletion": "Solicitar acceso, rectificación o supresión",
   "Use your browser site settings to manage permissions.": "Usa los ajustes del sitio en tu navegador para gestionar los permisos.",
   "Open device settings manually, or email privacy@transpo24.ch for privacy requests.": "Abre los ajustes del dispositivo manualmente o escribe a privacy@transpo24.ch para solicitudes de privacidad.",
-  "Agree to Terms of Service": "Aceptar los Términos de servicio",
+  "Agree to Terms of Service": "Aceptar las condiciones del servicio",
   "Please accept the Terms of Service to create an account.": "Acepta los Términos de servicio para crear una cuenta.",
   "Read our": "Lee nuestra",
   "Location during your trip": "Ubicación durante tu viaje",
@@ -1717,5 +1717,9 @@
   "Back to Earnings History": "Volver al historial de ganancias",
   "Load more": "Cargar más",
   "Payment failed": "Pago fallido",
-  "Refunded": "Reembolsado"
+  "Refunded": "Reembolsado",
+  "Terms of Service": "Condiciones del servicio",
+  "I agree to the Terms of Service": "Acepto las condiciones del servicio",
+  "Unable to load Terms of Service. Please try again.": "No se pudieron cargar las condiciones del servicio. Inténtalo de nuevo.",
+  "Continue": "Continuar"
 }

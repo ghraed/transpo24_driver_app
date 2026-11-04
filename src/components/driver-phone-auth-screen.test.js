@@ -54,14 +54,14 @@ test.each(['login', 'register'])('%s uses the selected country prefix in the ver
   expect(tree.root.findByType(Modal).props.visible).toBe(false);
   expect(trigger().props.accessibilityLabel).toContain('+49');
   await act(async () => input('Phone number').props.onChangeText('01701234567'));
-  if (mode === 'register') {
+  {
     const checkbox = tree.root.findAll(node => node.props.accessibilityRole === 'checkbox' && typeof node.props.onPress === 'function')[0];
     await act(async () => checkbox.props.onPress());
   }
   await act(async () => button('Send verification code').props.onPress());
   expect(mockSendCode).toHaveBeenCalledWith({ phoneNumber: '+491701234567' });
   expect(mode === 'login' ? mockPush : mockReplace).toHaveBeenCalledWith({
-    pathname: '/verify-phone', params: { phoneNumber: '+491701234567' },
+    pathname: '/verify-phone', params: { phoneNumber: '+491701234567', acceptedTermsVersion:'2026-08-25' },
   });
   await act(async () => trigger().props.onPress());
   expect(input('Search countries').props.value).toBe('');

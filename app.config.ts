@@ -2,6 +2,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { AndroidConfig, withAndroidManifest } from 'expo/config-plugins';
 import { readFileSync } from 'node:fs';
 
+const IS_STAGING = process.env.APP_VARIANT === 'staging';
 const IS_DEV = process.env.APP_VARIANT === 'development';
 
 const MAPS_ANDROID_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY?.trim() || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() || '';
@@ -17,7 +18,7 @@ const ANDROID_GOOGLE_SERVICES_FILE =
 
 export default ({ config }: ConfigContext) => {
   if (process.env.EAS_BUILD_PLATFORM === 'ios' && BUILD_PROFILE === 'production') {
-    if (IS_DEV) {
+    if (IS_DEV || IS_STAGING) {
       throw new Error('iOS production builds must not use APP_VARIANT=development.');
     }
     if (!/^AIza[\w-]{30,}$/.test(MAPS_IOS_KEY)) {
@@ -27,7 +28,7 @@ export default ({ config }: ConfigContext) => {
       throw new Error('iOS production builds must use bundle identifier com.transpo24.driver.');
     }
   }
-  const androidPackage = IS_DEV ? 'com.transpo24.driver.dev' : config.android?.package;
+  const androidPackage = IS_STAGING ? 'com.transpo24.driver.staging' : IS_DEV ? 'com.transpo24.driver.dev' : config.android?.package;
   const androidGoogleServicesFile = IS_DEV
     ? process.env.EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE?.trim() || ''
     : ANDROID_GOOGLE_SERVICES_FILE;
@@ -40,7 +41,7 @@ export default ({ config }: ConfigContext) => {
     }
   }
   // Validate on the Android build worker, where EAS file variables exist.
-  if (process.env.EAS_BUILD_PLATFORM === 'android' && !IS_DEV) {
+  if (process.env.EAS_BUILD_PLATFORM === 'android' && !IS_DEV && !IS_STAGING) {
     const services = JSON.parse(readFileSync(androidGoogleServicesFile, 'utf8'));
     if (!services.client?.some((client: { client_info?: { android_client_info?: { package_name?: string } } }) =>
       client.client_info?.android_client_info?.package_name === androidPackage,
@@ -68,8 +69,10 @@ export default ({ config }: ConfigContext) => {
       scheme: 'transpo24-driver-dev',
       updates: { ...config.updates, enabled: false },
     } : {}),
+    ...(IS_STAGING ? { name: 'Transpo24 Driver Staging', scheme: 'transpo24-driver-staging', updates: { ...config.updates, enabled: false } } : {}),
     ios: {
       ...config.ios,
+      ...(IS_STAGING ? { bundleIdentifier: 'com.transpo24.driver.staging' } : {}),
       ...(IS_DEV ? { bundleIdentifier: 'com.transpo24.driver.dev' } : {}),
       config: {
         ...config.ios?.config,

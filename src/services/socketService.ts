@@ -1,3 +1,4 @@
+import { beginChatOperation, finishChatOperation } from '@/lib/chat-outbox';
 import { noteForegroundTripLocation } from '@/location/background-trip-tracking';
 import { io, type Socket } from 'socket.io-client';
 
@@ -201,12 +202,14 @@ export function sendChatMessageWithAck(
   timeoutMs = 5000,
 ): Promise<SendChatMessageResponse> {
   const instance = getSocket();
+  const operation = beginChatOperation(roomId, 'TEXT', payload.body.trim());
   return new Promise((resolve, reject) => {
     instance.timeout(timeoutMs).emit(
       'chat.message.send',
       {
         roomId,
         body: payload.body,
+        operationId: operation.id,
       },
       (error: Error | null, response?: SendChatMessageResponse | ChatMessage) => {
         if (error) {
@@ -220,10 +223,12 @@ export function sendChatMessageWithAck(
         }
 
         if (isWrappedSendChatMessageResponse(response)) {
-          resolve(response);
+          finishChatOperation(operation.id);
+        resolve(response);
           return;
         }
 
+        finishChatOperation(operation.id);
         resolve({ message: response });
       },
     );
@@ -253,7 +258,7 @@ export function onChatMessageRead(
 }
 
 export function emitDriverLocationUpdate(payload: DriverLocationUpdatePayload): void {
-  getSocket().emit('driverLocationUpdate', payload);
+  getSocket().emit('driverLocationUpdate', { ...payload, heading: payload.heading != null && payload.heading >= 0 ? payload.heading : undefined, speed: payload.speed != null && payload.speed >= 0 ? payload.speed : undefined, accuracy: payload.accuracy != null && payload.accuracy >= 0 ? payload.accuracy : undefined });
   noteForegroundTripLocation(payload.tripId);
 }
 

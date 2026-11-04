@@ -976,7 +976,7 @@
   "Residency expiry date *": "تاريخ انتهاء الإقامة *",
   "Residency expiry date is required.": "مطلوب تاريخ انتهاء الإقامة.",
   "Restricted": "مقيّد",
-  "Retry": "أعد المحاولة",
+  "Retry": "إعادة المحاولة",
   "Retry chat": "إعادة محاولة الدردشة",
   "Review Declined": "تم رفض المراجعة",
   "Review Details": "عرض التفاصيل",
@@ -1717,5 +1717,9 @@
   "Back to Earnings History": "العودة إلى سجل الأرباح",
   "Load more": "تحميل المزيد",
   "Payment failed": "فشل الدفع",
-  "Refunded": "تم الاسترداد"
+  "Refunded": "تم الاسترداد",
+  "Terms of Service": "شروط الخدمة",
+  "I agree to the Terms of Service": "أوافق على شروط الخدمة",
+  "Unable to load Terms of Service. Please try again.": "تعذر تحميل شروط الخدمة. يرجى المحاولة مرة أخرى.",
+  "Continue": "متابعة"
 }

@@ -1,3 +1,4 @@
+import { pendingChatOperations, reconcileChatOperations } from '@/lib/chat-outbox';
 import { ChatAttachmentGroup } from '@/components/chat-attachment-group';
 import { groupChatAttachments, type ChatMessageRow } from '@/lib/chat-attachment-groups';
 import { ChatWallpaper } from '@/components/chat-wallpaper';
@@ -482,6 +483,20 @@ export default function ChatScreen() {
       }),
     );
   }, []);
+
+  useEffect(() => {
+    if (!chatRoom?.id) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      try {
+        reconcileChatOperations(messages);
+        const pending = pendingChatOperations(chatRoom.id).filter(op => op.kind === 'TEXT').at(-1);
+        if (pending) setInputValue(current => current || pending.payload);
+      } catch { /* Keep the conversation readable if recovery storage is unavailable. */ }
+    });
+    return () => { active = false; };
+  }, [chatRoom?.id, messages]);
 
   const sendMessage = useCallback(async (): Promise<void> => {
     const trimmedBody = inputValue.trim();

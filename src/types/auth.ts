@@ -110,6 +110,7 @@ export interface SendPhoneCodePayload {
 }
 
 export interface VerifyPhoneCodePayload {
+  acceptedTermsVersion?: string;
   phoneNumber: string;
   code: string;
 }

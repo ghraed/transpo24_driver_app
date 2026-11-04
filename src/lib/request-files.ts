@@ -1,3 +1,4 @@
+import { beginChatOperation, finishChatOperation, chatAccountId, assertChatAccount } from './chat-outbox';
 import type * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
@@ -58,8 +59,9 @@ function uploadNativeFile(
   });
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, expectedOwner?: string): Promise<T> {
   const token = await readToken();
+  if (expectedOwner) assertChatAccount(expectedOwner);
   const url = `${baseUrl()}${path}`;
   const response =
     Platform.OS !== 'web' && options.body instanceof FormData
@@ -120,13 +122,15 @@ export async function uploadRequestDocument(id: string, type: DocumentType) {
   );
 }
 export async function sendChatAttachment(roomId: string) {
-  const form = await pickFile();
-  if (!form) return null;
-  return request<ChatMessage>(
-    `/chat/rooms/${encodeURIComponent(roomId)}/attachments`,
-    { method: 'POST', body: form },
-  );
+  const files = await pickChatAttachments();
+  if (!files.length) return null;
+  let result: ChatMessage | null = null;
+  let failure: unknown;
+  const failed = await sendSelectedChatAttachments(roomId, files.slice(0, 1), message => { result = message; }, undefined, error => { failure = error; });
+  if (failed.length) throw failure instanceof Error ? failure : new Error('documents.failed');
+  return result;
 }
+
 export async function pickChatAttachments() {
   // Load on use so older binaries can still open text chat.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -148,24 +152,35 @@ export async function sendSelectedChatAttachments(
   files: DocumentPicker.DocumentPickerAsset[],
   onSent: (message: ChatMessage) => void,
   onProgress?: (completed: number) => void,
+  onError?: (error: unknown) => void,
 ) {
   // Validate the entire selection before sending anything.
   if (files.some(file => file.size !== undefined && file.size > 10 * 1024 * 1024)) {
     throw new Error('documents.tooLarge');
   }
+  const owner = chatAccountId();
   const failed: DocumentPicker.DocumentPickerAsset[] = [];
   for (const [index, file] of files.entries()) {
+    assertChatAccount(owner);
     let message: ChatMessage;
+    const operation = beginChatOperation(roomId, 'FILE', file.uri, file);
+    const retained = operation.file!;
+    const form = attachmentForm(retained as DocumentPicker.DocumentPickerAsset);
+    form.append('operationId', operation.id);
     try {
       message = await request<ChatMessage>(
         `/chat/rooms/${encodeURIComponent(roomId)}/attachments`,
-        { method: 'POST', body: attachmentForm(file) },
+        { method: 'POST', body: form },
+        owner,
       );
-    } catch {
-      failed.push(file);
+      assertChatAccount(owner);
+    } catch (error) {
+      onError?.(error);
+      failed.push(retained as DocumentPicker.DocumentPickerAsset);
       onProgress?.(index + 1);
       continue;
     }
+    finishChatOperation(operation.id);
     onSent(message);
     onProgress?.(index + 1);
   }

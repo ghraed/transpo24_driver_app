@@ -1044,7 +1044,7 @@
   "Request access, correction or deletion": "Richiedi accesso, rettifica o cancellazione",
   "Use your browser site settings to manage permissions.": "Usa le impostazioni del sito nel browser per gestire i permessi.",
   "Open device settings manually, or email privacy@transpo24.ch for privacy requests.": "Apri manualmente le impostazioni del dispositivo oppure scrivi a privacy@transpo24.ch per richieste sulla privacy.",
-  "Agree to Terms of Service": "Accetta i Termini di servizio",
+  "Agree to Terms of Service": "Accettare i termini di servizio",
   "Please accept the Terms of Service to create an account.": "Accetta i Termini di servizio per creare un account.",
   "Read our": "Leggi la nostra",
   "Location during your trip": "Posizione durante il viaggio",
@@ -1301,5 +1301,8 @@
   "This earning was cancelled": "Questo guadagno è stato annullato",
   "Trip earning": "Guadagno del viaggio",
   "Try Again": "Riprova",
-  "Your app transactions": "Le tue transazioni nell’app"
+  "Your app transactions": "Le tue transazioni nell’app",
+  "I agree to the Terms of Service": "Accetto i termini di servizio",
+  "Unable to load Terms of Service. Please try again.": "Impossibile caricare i termini di servizio. Riprova.",
+  "Translated to {{language}}": "Tradotto in {{language}}"
 }

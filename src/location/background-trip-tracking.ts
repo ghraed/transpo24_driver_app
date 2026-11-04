@@ -165,6 +165,7 @@ export async function handleBackgroundLocations(locations: Location.LocationObje
     if (await SecureStore.getItemAsync(TRIP_KEY) !== tripId || await readAccessToken() !== token) return;
     await sendBackgroundLocation(token, {
       tripId, latitude, longitude,
+      measuredAt: new Date(latest.timestamp).toISOString(),
       ...(heading !== null && Number.isFinite(heading) && heading >= 0 ? { heading } : {}),
       ...(speed !== null && Number.isFinite(speed) && speed >= 0 ? { speed } : {}),
       ...(accuracy !== null && Number.isFinite(accuracy) && accuracy >= 0 ? { accuracy } : {}),

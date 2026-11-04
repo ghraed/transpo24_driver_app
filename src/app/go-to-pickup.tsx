@@ -416,6 +416,7 @@ export default function GoToPickupScreen() {
           emitDriverLocationUpdate({
             tripId,
             latitude: currentLocation.latitude,
+            measuredAt: new Date(current.timestamp).toISOString(),
             longitude: currentLocation.longitude,
             heading:
               typeof current.coords.heading === 'number' ? current.coords.heading : undefined,
@@ -620,6 +621,7 @@ export default function GoToPickupScreen() {
               emitDriverLocationUpdate({
                 tripId: validTripId,
                 latitude: liveLocation.latitude,
+                measuredAt: new Date(position.timestamp).toISOString(),
                 longitude: liveLocation.longitude,
                 heading:
                   typeof position.coords.heading === 'number' ? position.coords.heading : undefined,

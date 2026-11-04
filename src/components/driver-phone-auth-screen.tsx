@@ -106,7 +106,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
       setErrorMessage(t('Phone number is required.'));
       return;
     }
-    if (mode === 'register' && !hasAcceptedTerms) {
+    if (!hasAcceptedTerms) {
       setErrorMessage(t('Please accept the Terms of Service to create an account.'));
       return;
     }
@@ -117,7 +117,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
 
     try {
       await sendDriverPhoneVerificationCode({ phoneNumber: normalizedPhoneNumber });
-      const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber } };
+      const destination = { pathname: '/verify-phone' as const, params: { phoneNumber: normalizedPhoneNumber, acceptedTermsVersion: '2026-08-25' } };
       if (mode === 'login') {
         router.push(destination);
       } else {
@@ -275,7 +275,7 @@ export function DriverPhoneAuthScreen({ mode }: DriverPhoneAuthScreenProps) {
                 </View>
                 {showRequiredPhoneError ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{t('Phone number is required.')}</Text> : null}
                 {errorMessage ? <Text accessibilityRole="alert" style={[styles.error, isRTL && styles.rtl]}>{errorMessage}</Text> : null}
-                {mode === 'register' ? (
+                {true ? (
                   <View style={styles.termsRow}>
                     <Pressable
                       accessibilityRole="checkbox"

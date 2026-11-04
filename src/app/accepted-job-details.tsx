@@ -1,3 +1,4 @@
+import { privateAssetSource } from '@/lib/private-asset';
 import { MapLocationMarker } from '@/components/map-location-marker';
 import { RequestDocuments } from '@/components/request-documents';
 import { TransportedVehicleCard } from '@/components/transported-vehicle-card';
@@ -492,7 +493,7 @@ export default function AcceptedJobDetailsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photosRow}>
               {details.photos.map((photo) => (
                 <Pressable key={photo.id} onPress={() => setExpandedPhotoUrl(resolveAssetUrl(photo.url))}>
-                  <Image source={{ uri: resolveAssetUrl(photo.url) }} style={styles.photo} />
+                  <Image source={privateAssetSource(resolveAssetUrl(photo.url))} style={styles.photo} />
                 </Pressable>
               ))}
             </ScrollView>
@@ -502,7 +503,7 @@ export default function AcceptedJobDetailsScreen() {
 
       <Modal visible={Boolean(expandedPhotoUrl)} transparent animationType="fade" onRequestClose={() => setExpandedPhotoUrl('')}>
         <Pressable style={styles.modalBackdrop} onPress={() => setExpandedPhotoUrl('')}>
-          {expandedPhotoUrl ? <Image source={{ uri: expandedPhotoUrl }} style={styles.expandedPhoto} resizeMode="contain" /> : null}
+          {expandedPhotoUrl ? <Image source={privateAssetSource(expandedPhotoUrl)} style={styles.expandedPhoto} resizeMode="contain" /> : null}
         </Pressable>
       </Modal>
 

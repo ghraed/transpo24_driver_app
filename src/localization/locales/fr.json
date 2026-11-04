@@ -1717,5 +1717,9 @@
   "Back to Earnings History": "Retour à l’historique des revenus",
   "Load more": "Charger plus",
   "Payment failed": "Échec du paiement",
-  "Refunded": "Remboursé"
+  "Refunded": "Remboursé",
+  "Terms of Service": "Conditions d’utilisation",
+  "I agree to the Terms of Service": "J’accepte les conditions d’utilisation",
+  "Unable to load Terms of Service. Please try again.": "Impossible de charger les conditions d’utilisation. Veuillez réessayer.",
+  "Continue": "Continuer"
 }

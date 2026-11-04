@@ -44,6 +44,7 @@ export type OfferAcceptedPayload = {
 };
 
 export type DriverLocationUpdatePayload = {
+  measuredAt?: string;
   tripId: string;
   latitude: number;
   longitude: number;

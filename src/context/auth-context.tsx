@@ -1,3 +1,4 @@
+import { getBackendApiBaseUrl } from '@/config/backend';
 import { stopBackgroundTripTracking } from '@/location/background-trip-tracking';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -219,6 +220,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async (): Promise<void> => {
+    const credential = await readAccessToken();
+    if (credential) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      try { await fetch(getBackendApiBaseUrl() + '/auth/session/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + credential }, signal: controller.signal }); }
+      catch { /* Offline logout still clears this device; server revocation needs connectivity. */ }
+      finally { clearTimeout(timer); }
+    }
     await stopBackgroundTripTracking().catch(() => undefined);
     await Promise.all([
       clearAccessToken(),

@@ -1,3 +1,4 @@
+jest.mock('@/lib/chat-outbox', () => ({ pendingChatOperations: () => [] }));
 import React from 'react';
 import { expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';

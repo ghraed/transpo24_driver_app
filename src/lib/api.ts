@@ -1,3 +1,4 @@
+import { beginChatOperation, finishChatOperation } from './chat-outbox';
 import { notifyDriverApprovalRequired } from '@/lib/driver-approval-events';
 import { assertPushBackend } from '@/notifications/assertPushBackend';
 import { readAccessToken } from './auth-storage';
@@ -1942,13 +1943,14 @@ export async function sendDriverChatMessage(
   chatRoomId: string,
   payload: SendChatMessagePayload,
 ): Promise<SendChatMessageResponse> {
+  const operation = beginChatOperation(chatRoomId, 'TEXT', payload.body.trim());
   const endpoint = `${getApiBaseUrl()}/chat/rooms/${encodeURIComponent(chatRoomId)}/messages`;
   let response: Response;
   try {
     response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: await getAuthHeaders(),
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, operationId: operation.id }),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);
@@ -1963,6 +1965,7 @@ export async function sendDriverChatMessage(
     'Failed to parse send chat message response.',
   );
 
+  finishChatOperation(operation.id);
   return { message };
 }
 

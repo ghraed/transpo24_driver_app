@@ -976,7 +976,7 @@
   "Residency expiry date *": "Ablaufdatum der Aufenthaltserlaubnis *",
   "Residency expiry date is required.": "Das Ablaufdatum des Wohnsitzes ist erforderlich.",
   "Restricted": "Eingeschränkt",
-  "Retry": "Versuchen Sie es noch einmal",
+  "Retry": "Erneut versuchen",
   "Retry chat": "Chat erneut versuchen",
   "Review Declined": "Prüfung abgelehnt",
   "Review Details": "Details ansehen",
@@ -1477,7 +1477,7 @@
   "Request access, correction or deletion": "Auskunft, Berichtigung oder Löschung anfordern",
   "Use your browser site settings to manage permissions.": "Verwalten Sie Berechtigungen in den Website-Einstellungen Ihres Browsers.",
   "Open device settings manually, or email privacy@transpo24.ch for privacy requests.": "Öffnen Sie die Geräteeinstellungen manuell oder senden Sie Datenschutzanfragen an privacy@transpo24.ch.",
-  "Agree to Terms of Service": "Den Nutzungsbedingungen zustimmen",
+  "Agree to Terms of Service": "Nutzungsbedingungen zustimmen",
   "Please accept the Terms of Service to create an account.": "Bitte stimmen Sie den Nutzungsbedingungen zu, um ein Konto zu erstellen.",
   "Read our": "Lesen Sie unsere",
   "Location during your trip": "Standort während Ihrer Fahrt",
@@ -1717,5 +1717,9 @@
   "Back to Earnings History": "Zurück zum Verdienstverlauf",
   "Load more": "Mehr laden",
   "Payment failed": "Zahlung fehlgeschlagen",
-  "Refunded": "Erstattet"
+  "Refunded": "Erstattet",
+  "Terms of Service": "Nutzungsbedingungen",
+  "I agree to the Terms of Service": "Ich stimme den Nutzungsbedingungen zu",
+  "Unable to load Terms of Service. Please try again.": "Die Nutzungsbedingungen konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+  "Continue": "Weiter"
 }

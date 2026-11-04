@@ -24,6 +24,7 @@ export type ChatSocketEvent =
   | 'chat.typing';
 
 export interface ChatMessage {
+  operationId?: string | null;
   id: string;
   chatRoomId: string;
   senderId: string;
