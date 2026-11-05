@@ -1,0 +1,9 @@
+PASS scripts/staging-config.test.js
+  ✓ staging keeps separate identities, disables OTA and does not inherit production Firebase (127 ms)
+  ✓ staging accepts only Firebase files registering its own package (39 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        0.916 s
+Ran all test suites within paths "scripts/staging-config.test.js".

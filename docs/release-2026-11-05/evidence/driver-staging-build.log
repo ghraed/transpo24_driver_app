@@ -1,0 +1,1391 @@
+- Clearing android
+✔ Cleared android code
+- Creating native directory (./android)
+✔ Created native directory
+- Updating package.json
+› Using expo@~56.0.24 instead of recommended expo@~57.0.7.
+- Updating package.json
+› Using react-native@0.85.3 instead of recommended react-native@0.86.0.
+- Updating package.json
+✔ Updated package.json | no changes
+- Running prebuild
+✔ Finished prebuild
+Controlled staging source: /tmp/transpo24-staging-driver_mobile-SNThUz/source ; loopback API; no Maps/FCM credentials; OTA disabled; local test signing only.
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :gradle-plugin:settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:compileKotlin UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:processResources NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:classes UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin-shared:jar
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:shared:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:shared:compileJava NO-SOURCE
+> Task :gradle-plugin:shared:processResources NO-SOURCE
+> Task :gradle-plugin:shared:classes UP-TO-DATE
+> Task :gradle-plugin:shared:jar
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:compileKotlin UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:processResources
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:classes
+> Task :expo-gradle-plugin:expo-autolinking-settings-plugin:jar
+> Task :gradle-plugin:settings-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:settings-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:processResources
+> Task :gradle-plugin:settings-plugin:classes
+> Task :gradle-plugin:settings-plugin:jar
+> Task :gradle-plugin:react-native-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-module-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-module-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-module-gradle-plugin:processResources
+> Task :expo-gradle-plugin:expo-autolinking-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-gradle-plugin:expo-autolinking-plugin:compileKotlin UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-gradle-plugin:expo-autolinking-plugin:processResources
+> Task :expo-gradle-plugin:expo-autolinking-plugin:classes
+> Task :expo-gradle-plugin:expo-autolinking-plugin:jar
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:compileKotlin UP-TO-DATE
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:compileJava NO-SOURCE
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:processResources
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:classes
+> Task :expo-gradle-plugin:expo-max-sdk-override-plugin:jar
+> Task :gradle-plugin:react-native-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:react-native-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:processResources
+> Task :gradle-plugin:react-native-gradle-plugin:classes
+> Task :gradle-plugin:react-native-gradle-plugin:jar
+> Task :expo-updates-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-module-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :expo-module-gradle-plugin:compileJava NO-SOURCE
+> Task :expo-module-gradle-plugin:classes
+> Task :expo-module-gradle-plugin:jar
+> Task :expo-updates-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :expo-updates-gradle-plugin:compileJava NO-SOURCE
+> Task :expo-updates-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :expo-updates-gradle-plugin:processResources
+> Task :expo-updates-gradle-plugin:classes
+> Task :expo-updates-gradle-plugin:jar
+
+> Configure project :
+[32m[ExpoRootProject][0m Using the following versions:
+  - buildTools:  [32m36.0.0[0m
+  - minSdk:      [32m24[0m
+  - compileSdk:  [32m36[0m
+  - targetSdk:   [32m36[0m
+  - ndk:         [32m27.1.12297006[0m
+  - kotlin:      [32m2.1.20[0m
+  - ksp:         [32m2.1.20-2.0.1[0m
+
+> Configure project :app
+ ??  [33mApplying gradle plugin[0m '[32mexpo-max-sdk-override-plugin[0m'
+  [expo-max-sdk-override-plugin] This plugin will find all permissions declared with `android:maxSdkVersion`. If there exists a declaration with the `android:maxSdkVersion` annotation and another one without, the plugin will remove the annotation from the final merged manifest. In order to see a log with the changes run a clean build of the app.
+ ??  [33mApplying gradle plugin[0m '[32mexpo-updates-gradle-plugin[0m'
+
+> Configure project :expo
+
+Using expo modules
+  - [32mexpo-log-box[0m (56.0.14)
+  - [32mexpo-constants[0m (56.0.27)
+  - [32mexpo-eas-client[0m (56.0.1)
+  - [32mexpo-json-utils[0m (56.0.0)
+  - [32mexpo-manifests[0m (56.0.4)
+
+> Configure project :expo-modules-core
+Linking react-native-worklets native libs into expo-modules-core build tasks
+task ':react-native-worklets:mergeDebugNativeLibs'
+task ':react-native-worklets:mergeReleaseNativeLibs'
+
+> Configure project :expo
+  - [32mexpo-modules-core[0m (56.0.27)
+  - [32mexpo-structured-headers[0m (56.0.0)
+  - [32mexpo-updates[0m (56.0.28)
+  - [32mexpo-updates-interface[0m (56.0.2)
+  - [33m[?][0m [32mexpo-dom-webview[0m (56.0.6)
+  - [33m[?][0m [32mexpo-ui[0m (56.0.26)
+  - [33m[?][0m [32mexpo-application[0m (56.0.3)
+  - [33m[?][0m [32mexpo-asset[0m (56.0.25)
+  - [33m[?][0m [32mexpo-device[0m (56.0.4)
+  - [33m[?][0m [32mexpo-document-picker[0m (56.0.4)
+  - [33m[?][0m [32mexpo-file-system[0m (56.0.11)
+  - [33m[?][0m [32mexpo-font[0m (56.0.7)
+  - [33m[?][0m [32mexpo-image[0m (56.0.13)
+  - [33m[?][0m [32mexpo-image-loader[0m (56.0.3)
+  - [33m[?][0m [32mexpo-image-manipulator[0m (56.0.26)
+  - [33m[?][0m [32mexpo-image-picker[0m (56.0.25)
+  - [33m[?][0m [32mexpo-keep-awake[0m (56.0.3)
+  - [33m[?][0m [32mexpo-linking[0m (56.0.19)
+  - [33m[?][0m [32mexpo-localization[0m (56.0.6)
+  - [33m[?][0m [32mexpo-location[0m (56.0.26)
+  - [33m[?][0m [32mexpo-notifications[0m (56.0.26)
+  - [33m[?][0m [32mexpo-router[0m (56.2.22)
+  - [33m[?][0m [32mexpo-secure-store[0m (56.0.4)
+  - [33m[?][0m [32mexpo-sharing[0m (56.0.27)
+  - [33m[?][0m [32mexpo-splash-screen[0m (56.0.16)
+  - [33m[?][0m [32mexpo-status-bar[0m (56.0.4)
+  - [33m[?][0m [32mexpo-system-ui[0m (56.0.5)
+  - [33m[?][0m [32mexpo-task-manager[0m (56.0.27)
+  - [33m[?][0m [32mexpo-web-browser[0m (56.0.6)
+  - [33m[?][0m [32munimodules-app-loader[0m (56.0.1)
+
+
+> Task :app:generateAutolinkingNewArchitectureFiles
+> Task :app:generateAutolinkingPackageList
+> Task :app:generateCodegenSchemaFromJavaScript SKIPPED
+> Task :app:generateCodegenArtifactsFromSchema SKIPPED
+> Task :app:generateReactNativeEntryPoint
+> Task :expo:generatePackagesList
+> Task :expo:preBuild
+> Task :expo-constants:createExpoConfig
+> Task :expo-constants:preBuild
+> Task :expo-eas-client:preBuild UP-TO-DATE
+> Task :expo-json-utils:preBuild UP-TO-DATE
+> Task :expo-log-box:preBuild UP-TO-DATE
+> Task :expo-manifests:preBuild UP-TO-DATE
+> Task :expo-modules-core:preBuild UP-TO-DATE
+> Task :expo-structured-headers:preBuild UP-TO-DATE
+> Task :expo-updates:preBuild UP-TO-DATE
+> Task :expo-updates-interface:preBuild UP-TO-DATE
+> Task :react-native-community_datetimepicker:generateCodegenSchemaFromJavaScript
+> Task :react-native-community_datetimepicker:generateCodegenArtifactsFromSchema
+> Task :react-native-community_datetimepicker:preBuild
+> Task :react-native-documents_viewer:generateCodegenSchemaFromJavaScript
+> Task :react-native-documents_viewer:generateCodegenArtifactsFromSchema
+> Task :react-native-documents_viewer:preBuild
+> Task :react-native-gesture-handler:generateCodegenSchemaFromJavaScript
+> Task :react-native-gesture-handler:generateCodegenArtifactsFromSchema
+> Task :react-native-gesture-handler:preBuild
+> Task :react-native-maps:generateCodegenSchemaFromJavaScript SKIPPED
+> Task :react-native-maps:generateCodegenArtifactsFromSchema SKIPPED
+> Task :react-native-maps:preBuild UP-TO-DATE
+> Task :react-native-masked-view_masked-view:preBuild UP-TO-DATE
+> Task :react-native-reanimated:assertMinimalReactNativeVersionTask
+> Task :react-native-reanimated:assertNewArchitectureEnabledTask SKIPPED
+> Task :react-native-reanimated:assertWorkletsVersionTask
+> Task :react-native-reanimated:generateCodegenSchemaFromJavaScript
+> Task :react-native-reanimated:generateCodegenArtifactsFromSchema
+> Task :react-native-reanimated:prepareReanimatedHeadersForPrefabs
+> Task :react-native-reanimated:preBuild
+> Task :react-native-safe-area-context:generateCodegenSchemaFromJavaScript
+> Task :react-native-safe-area-context:generateCodegenArtifactsFromSchema
+> Task :react-native-safe-area-context:preBuild
+> Task :react-native-screens:generateCodegenSchemaFromJavaScript
+> Task :react-native-screens:generateCodegenArtifactsFromSchema
+> Task :react-native-screens:preBuild
+> Task :react-native-svg:generateCodegenSchemaFromJavaScript
+> Task :react-native-svg:generateCodegenArtifactsFromSchema
+> Task :react-native-svg:preBuild
+> Task :react-native-worklets:assertMinimalReactNativeVersionTask
+> Task :react-native-worklets:assertNewArchitectureEnabledTask SKIPPED
+> Task :react-native-worklets:generateCodegenSchemaFromJavaScript
+> Task :react-native-worklets:generateCodegenArtifactsFromSchema
+> Task :react-native-worklets:prepareWorkletsHeadersForPrefabs
+> Task :react-native-worklets:preBuild
+> Task :app:preBuild
+> Task :app:preReleaseBuild
+> Task :react-native-reanimated:preReleaseBuild
+> Task :react-native-worklets:preReleaseBuild
+> Task :react-native-worklets:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-worklets:buildCMakeRelWithDebInfo[arm64-v8a][worklets]
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/build/intermediates/cxx/RelWithDebInfo/194t356e/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/build/intermediates/cxx/RelWithDebInfo/194t356e/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :react-native-worklets:externalNativeBuildRelease
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/build/intermediates/cmake/release/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/build/intermediates/cmake/release/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :react-native-worklets:generateJsonModelRelease
+> Task :react-native-worklets:prefabReleaseConfigurePackage
+> Task :react-native-reanimated:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-reanimated:generateJsonModelRelease
+> Task :react-native-reanimated:prefabReleaseConfigurePackage
+> Task :app:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :react-native-worklets:prefabReleasePackage
+> Task :react-native-reanimated:buildCMakeRelWithDebInfo[arm64-v8a][reanimated]
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/4d5e3021/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated/android/build/intermediates/cxx/RelWithDebInfo/4d5e3021/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :react-native-worklets:mergeReleaseJniLibFolders
+> Task :react-native-worklets:mergeReleaseNativeLibs
+> Task :react-native-worklets:copyReleaseJniLibsProjectOnly
+
+> Task :react-native-reanimated:externalNativeBuildRelease
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated/android/build/intermediates/cmake/release/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated/android/build/intermediates/cmake/release/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :react-native-reanimated:prefabReleasePackage
+> Task :app:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :app:mergeReleaseJniLibFolders
+> Task :expo:preReleaseBuild
+> Task :expo:mergeReleaseJniLibFolders
+> Task :expo:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo:copyReleaseJniLibsProjectOnly
+> Task :expo-constants:preReleaseBuild
+> Task :expo-constants:mergeReleaseJniLibFolders
+> Task :expo-constants:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-constants:copyReleaseJniLibsProjectOnly
+> Task :expo-eas-client:preReleaseBuild UP-TO-DATE
+> Task :expo-eas-client:mergeReleaseJniLibFolders
+> Task :expo-eas-client:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-eas-client:copyReleaseJniLibsProjectOnly
+> Task :expo-json-utils:preReleaseBuild UP-TO-DATE
+> Task :expo-json-utils:mergeReleaseJniLibFolders
+> Task :expo-json-utils:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-json-utils:copyReleaseJniLibsProjectOnly
+> Task :expo-log-box:preReleaseBuild UP-TO-DATE
+> Task :expo-log-box:mergeReleaseJniLibFolders
+> Task :expo-log-box:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-log-box:copyReleaseJniLibsProjectOnly
+> Task :expo-manifests:preReleaseBuild UP-TO-DATE
+> Task :expo-manifests:mergeReleaseJniLibFolders
+> Task :expo-manifests:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-manifests:copyReleaseJniLibsProjectOnly
+> Task :expo-modules-core:preReleaseBuild UP-TO-DATE
+> Task :expo-modules-core:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :expo-modules-core:buildCMakeRelWithDebInfo[arm64-v8a]
+C/C++: ninja: Entering directory `/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android/.cxx/RelWithDebInfo/546m345f/arm64-v8a'
+C/C++: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp:17:5: warning: 'RawPropsParser' is deprecated [-Wdeprecated-declarations]
+C/C++:    17 |     react::RawPropsParser(/*useRawPropsJsiValue=*/true)
+C/C++:       |     ^
+C/C++: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native/ReactCommon/react/renderer/core/RawPropsParser.h:31:5: note: 'RawPropsParser' has been explicitly marked deprecated here
+C/C++:    31 |   [[deprecated]] explicit RawPropsParser(bool /* ignored */) : RawPropsParser() {}
+C/C++:       |     ^
+C/C++: 1 warning generated.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android/build/intermediates/cxx/RelWithDebInfo/546m345f/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android/build/intermediates/cxx/RelWithDebInfo/546m345f/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :expo-modules-core:mergeReleaseJniLibFolders
+> Task :expo-modules-core:mergeReleaseNativeLibs
+> Task :expo-modules-core:copyReleaseJniLibsProjectOnly
+> Task :expo-structured-headers:preReleaseBuild UP-TO-DATE
+> Task :expo-structured-headers:mergeReleaseJniLibFolders
+> Task :expo-structured-headers:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-structured-headers:copyReleaseJniLibsProjectOnly
+> Task :expo-updates:preReleaseBuild UP-TO-DATE
+> Task :expo-updates:configureCMakeRelWithDebInfo[arm64-v8a]
+> Task :expo-updates:buildCMakeRelWithDebInfo[arm64-v8a]
+> Task :expo-updates:configureCMakeRelWithDebInfo[armeabi-v7a]
+> Task :expo-updates:buildCMakeRelWithDebInfo[armeabi-v7a]
+> Task :expo-updates:configureCMakeRelWithDebInfo[x86]
+> Task :expo-updates:buildCMakeRelWithDebInfo[x86]
+> Task :expo-updates:configureCMakeRelWithDebInfo[x86_64]
+> Task :expo-updates:buildCMakeRelWithDebInfo[x86_64]
+> Task :expo-updates:mergeReleaseJniLibFolders
+> Task :expo-updates:mergeReleaseNativeLibs
+> Task :expo-updates:copyReleaseJniLibsProjectOnly
+> Task :expo-updates-interface:preReleaseBuild UP-TO-DATE
+> Task :expo-updates-interface:mergeReleaseJniLibFolders
+> Task :expo-updates-interface:mergeReleaseNativeLibs NO-SOURCE
+> Task :expo-updates-interface:copyReleaseJniLibsProjectOnly
+> Task :react-native-community_datetimepicker:preReleaseBuild
+> Task :react-native-community_datetimepicker:mergeReleaseJniLibFolders
+> Task :react-native-community_datetimepicker:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-community_datetimepicker:copyReleaseJniLibsProjectOnly
+> Task :react-native-documents_viewer:preReleaseBuild
+> Task :react-native-documents_viewer:mergeReleaseJniLibFolders
+> Task :react-native-documents_viewer:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-documents_viewer:copyReleaseJniLibsProjectOnly
+> Task :react-native-gesture-handler:preReleaseBuild
+> Task :react-native-gesture-handler:configureCMakeRelWithDebInfo[arm64-v8a]
+
+> Task :react-native-gesture-handler:buildCMakeRelWithDebInfo[arm64-v8a]
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-gesture-handler/android/build/intermediates/cxx/RelWithDebInfo/4523s3l6/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-gesture-handler/android/build/intermediates/cxx/RelWithDebInfo/4523s3l6/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :react-native-gesture-handler:mergeReleaseJniLibFolders
+> Task :react-native-gesture-handler:mergeReleaseNativeLibs
+> Task :react-native-gesture-handler:copyReleaseJniLibsProjectOnly
+> Task :react-native-maps:preReleaseBuild UP-TO-DATE
+> Task :react-native-maps:mergeReleaseJniLibFolders
+> Task :react-native-maps:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-maps:copyReleaseJniLibsProjectOnly
+> Task :react-native-masked-view_masked-view:preReleaseBuild UP-TO-DATE
+> Task :react-native-masked-view_masked-view:mergeReleaseJniLibFolders
+> Task :react-native-masked-view_masked-view:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-masked-view_masked-view:copyReleaseJniLibsProjectOnly
+> Task :react-native-reanimated:mergeReleaseJniLibFolders
+> Task :react-native-reanimated:mergeReleaseNativeLibs
+> Task :react-native-reanimated:copyReleaseJniLibsProjectOnly
+> Task :react-native-safe-area-context:preReleaseBuild
+> Task :react-native-safe-area-context:mergeReleaseJniLibFolders
+> Task :react-native-safe-area-context:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-safe-area-context:copyReleaseJniLibsProjectOnly
+> Task :react-native-screens:preReleaseBuild
+> Task :react-native-screens:configureCMakeRelWithDebInfo[arm64-v8a]
+
+> Task :react-native-screens:buildCMakeRelWithDebInfo[arm64-v8a]
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-screens/android/build/intermediates/cxx/RelWithDebInfo/382e222m/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from '/home/raed/.gradle/caches/9.3.1/transforms/3a9a05fff90298ab095fd8938d0d94a5/transformed/react-android-0.85.3-release/prefab/modules/reactnative/libs/android.arm64-v8a/libreactnative.so' to '/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-screens/android/build/intermediates/cxx/RelWithDebInfo/382e222m/obj/arm64-v8a/libreactnative.so' failed. Doing a slower copy instead.
+
+> Task :react-native-screens:mergeReleaseJniLibFolders
+> Task :react-native-screens:mergeReleaseNativeLibs
+> Task :react-native-screens:copyReleaseJniLibsProjectOnly
+> Task :react-native-svg:preReleaseBuild
+> Task :react-native-svg:mergeReleaseJniLibFolders
+> Task :react-native-svg:mergeReleaseNativeLibs NO-SOURCE
+> Task :react-native-svg:copyReleaseJniLibsProjectOnly
+> Task :app:mergeReleaseNativeLibs
+> Task :app:stripReleaseDebugSymbols
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata
+> Task :react-native-community_datetimepicker:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-community_datetimepicker:generateReleaseBuildConfig
+> Task :react-native-community_datetimepicker:generateReleaseResValues
+> Task :react-native-community_datetimepicker:generateReleaseResources
+> Task :react-native-community_datetimepicker:packageReleaseResources
+> Task :react-native-community_datetimepicker:parseReleaseLocalResources
+> Task :react-native-community_datetimepicker:generateReleaseRFile
+> Task :react-native-community_datetimepicker:compileReleaseKotlin
+> Task :react-native-community_datetimepicker:javaPreCompileRelease
+
+> Task :react-native-community_datetimepicker:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :react-native-community_datetimepicker:bundleLibRuntimeToDirRelease
+> Task :react-native-documents_viewer:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-documents_viewer:generateReleaseBuildConfig
+> Task :react-native-documents_viewer:generateReleaseResValues
+> Task :react-native-documents_viewer:generateReleaseResources
+> Task :react-native-documents_viewer:packageReleaseResources
+> Task :react-native-documents_viewer:parseReleaseLocalResources
+> Task :react-native-documents_viewer:generateReleaseRFile
+> Task :react-native-documents_viewer:compileReleaseKotlin
+> Task :react-native-documents_viewer:javaPreCompileRelease
+> Task :react-native-documents_viewer:compileReleaseJavaWithJavac
+> Task :react-native-documents_viewer:bundleLibRuntimeToDirRelease
+> Task :react-native-gesture-handler:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-gesture-handler:generateReleaseBuildConfig
+> Task :react-native-gesture-handler:generateReleaseResValues
+> Task :react-native-gesture-handler:generateReleaseResources
+> Task :react-native-gesture-handler:packageReleaseResources
+> Task :react-native-gesture-handler:parseReleaseLocalResources
+> Task :react-native-gesture-handler:generateReleaseRFile
+> Task :react-native-reanimated:generateReleaseBuildConfig
+> Task :react-native-reanimated:generateReleaseResValues
+> Task :react-native-reanimated:generateReleaseResources
+> Task :react-native-reanimated:packageReleaseResources
+> Task :react-native-reanimated:parseReleaseLocalResources
+> Task :react-native-reanimated:generateReleaseRFile
+> Task :react-native-reanimated:javaPreCompileRelease
+> Task :react-native-worklets:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-worklets:generateReleaseBuildConfig
+> Task :react-native-worklets:generateReleaseResValues
+> Task :react-native-worklets:generateReleaseResources
+> Task :react-native-worklets:packageReleaseResources
+> Task :react-native-worklets:parseReleaseLocalResources
+> Task :react-native-worklets:generateReleaseRFile
+> Task :react-native-worklets:compileReleaseKotlin NO-SOURCE
+> Task :react-native-worklets:javaPreCompileRelease
+
+> Task :react-native-worklets:compileReleaseJavaWithJavac
+Note: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/src/main/java/com/swmansion/worklets/WorkletsMessageQueueThreadBase.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/src/main/java/com/swmansion/worklets/WorkletsPackage.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-worklets:bundleLibCompileToJarRelease
+
+> Task :react-native-reanimated:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-reanimated:bundleLibCompileToJarRelease
+> Task :react-native-svg:generateReleaseBuildConfig
+> Task :react-native-svg:generateReleaseResValues
+> Task :react-native-svg:generateReleaseResources
+> Task :react-native-svg:packageReleaseResources
+> Task :react-native-svg:parseReleaseLocalResources
+> Task :react-native-svg:generateReleaseRFile
+> Task :react-native-svg:javaPreCompileRelease
+
+> Task :react-native-svg:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-svg:bundleLibCompileToJarRelease
+
+> Task :react-native-gesture-handler:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/Extensions.kt:8:8 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/Extensions.kt:13:29 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/Extensions.kt:14:32 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+
+> Task :react-native-gesture-handler:javaPreCompileRelease
+> Task :react-native-gesture-handler:compileReleaseJavaWithJavac
+> Task :react-native-gesture-handler:bundleLibRuntimeToDirRelease
+> Task :react-native-maps:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-maps:generateReleaseBuildConfig
+> Task :react-native-maps:generateReleaseResValues
+> Task :react-native-maps:generateReleaseResources
+> Task :react-native-maps:packageReleaseResources
+> Task :react-native-maps:parseReleaseLocalResources
+> Task :react-native-maps:generateReleaseRFile
+> Task :react-native-maps:compileReleaseKotlin NO-SOURCE
+> Task :react-native-maps:javaPreCompileRelease
+
+> Task :react-native-maps:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-maps:bundleLibRuntimeToDirRelease
+> Task :react-native-safe-area-context:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-safe-area-context:generateReleaseBuildConfig
+> Task :react-native-safe-area-context:generateReleaseResValues
+> Task :react-native-safe-area-context:generateReleaseResources
+> Task :react-native-safe-area-context:packageReleaseResources
+> Task :react-native-safe-area-context:parseReleaseLocalResources
+> Task :react-native-safe-area-context:generateReleaseRFile
+
+> Task :react-native-safe-area-context:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaProviderManager.kt:39:19 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:9:8 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:50:54 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:59:23 'val uiImplementation: UIImplementation!' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt:9:32 'class LayoutShadowNode : ReactShadowNodeImpl' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaViewShadowNode.kt:110:61 'class NativeViewHierarchyOptimizer : Any' is deprecated. This class is part of Legacy Architecture and will be removed in a future release.
+
+> Task :react-native-safe-area-context:javaPreCompileRelease
+> Task :react-native-safe-area-context:compileReleaseJavaWithJavac
+> Task :react-native-safe-area-context:bundleLibRuntimeToDirRelease
+> Task :react-native-screens:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :react-native-screens:generateReleaseBuildConfig
+> Task :react-native-screens:generateReleaseResValues
+> Task :react-native-screens:generateReleaseResources
+> Task :react-native-screens:packageReleaseResources
+> Task :react-native-screens:parseReleaseLocalResources
+> Task :react-native-screens:generateReleaseRFile
+
+> Task :react-native-screens:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/RNScreensPackage.kt:70:9 The corresponding parameter in the supertype 'BaseReactPackage' is named 'name'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/RNScreensPackage.kt:71:9 The corresponding parameter in the supertype 'BaseReactPackage' is named 'reactContext'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/RNScreensPackage.kt:83:17 'constructor(name: String, className: String, canOverrideExistingModule: Boolean, needsEagerInit: Boolean, hasConstants: Boolean, isCxxModule: Boolean, isTurboModule: Boolean): ReactModuleInfo' is deprecated. This constructor is deprecated and will be removed in the future. Use ReactModuleInfo(String, String, boolean, boolean, boolean, boolean)].
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:54:77 Unchecked cast of '(CoordinatorLayout.Behavior<View!>?..CoordinatorLayout.Behavior<*>?)' to 'BottomSheetBehavior<Screen>'.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:59:33 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:516:14 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenContainer.kt:250:18 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenContainer.kt:260:18 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt:225:37 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt:242:14 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt:258:22 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt:327:22 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenModalFragment.kt:180:22 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStack.kt:120:14 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:173:18 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:230:31 'var targetElevation: Float' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:233:13 'fun setHasOptionsMenu(p0: Boolean): Unit' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:443:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:450:22 'fun onPrepareOptionsMenu(p0: Menu): Unit' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:453:18 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:458:22 'fun onCreateOptionsMenu(p0: Menu, p1: MenuInflater): Unit' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt:199:14 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt:209:14 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:48:42 'fun replaceSystemWindowInsets(p0: Int, p1: Int, p2: Int, p3: Int): @NonNull() WindowInsetsCompat' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:49:39 'val systemWindowInsetLeft: Int' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:51:39 'val systemWindowInsetRight: Int' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:52:39 'val systemWindowInsetBottom: Int' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreensModule.kt:100:14 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/SearchBarView.kt:137:29 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:7:8 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:25:13 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:32:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'left'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:33:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'top'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:34:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'right'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:35:9 The corresponding parameter in the supertype 'ReactViewGroup' is named 'bottom'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:71:9 The corresponding parameter in the supertype 'RootView' is named 'childView'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:72:9 The corresponding parameter in the supertype 'RootView' is named 'ev'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:79:46 The corresponding parameter in the supertype 'RootView' is named 'ev'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:83:9 The corresponding parameter in the supertype 'RootView' is named 'childView'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:84:9 The corresponding parameter in the supertype 'RootView' is named 'ev'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/BottomSheetDialogRootView.kt:95:34 The corresponding parameter in the supertype 'RootView' is named 't'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:64:9 The corresponding parameter in the supertype 'ReactCompoundView' is named 'touchX'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:65:9 The corresponding parameter in the supertype 'ReactCompoundView' is named 'touchY'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:69:9 The corresponding parameter in the supertype 'ReactCompoundViewGroup' is named 'touchX'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/bottomsheet/DimmingView.kt:70:9 The corresponding parameter in the supertype 'ReactCompoundViewGroup' is named 'touchY'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/common/event/BaseEventEmitter.kt:12:38 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/dimmingview/DimmingView.kt:64:9 The corresponding parameter in the supertype 'ReactCompoundView' is named 'touchX'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/dimmingview/DimmingView.kt:65:9 The corresponding parameter in the supertype 'ReactCompoundView' is named 'touchY'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/dimmingview/DimmingView.kt:69:9 The corresponding parameter in the supertype 'ReactCompoundViewGroup' is named 'touchX'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/dimmingview/DimmingView.kt:70:9 The corresponding parameter in the supertype 'ReactCompoundViewGroup' is named 'touchY'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/formsheet/FormSheetContentView.kt:11:8 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/formsheet/FormSheetContentView.kt:39:33 'fun getEventDispatcher(context: ReactContext, uiManagerType: Int): EventDispatcher?' is deprecated. UIManagerType is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/formsheet/FormSheetContentView.kt:44:13 'object ReactFeatureFlags : Any' is deprecated. Use com.facebook.react.internal.featureflags.ReactNativeFeatureFlags instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/modals/formsheet/FormSheetHostViewManager.kt:38:9 The corresponding parameter in the supertype 'FormSheetHostViewManager' is named 'view'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/gamma/tabs/host/TabsHostViewManager.kt:44:9 The corresponding parameter in the supertype 'TabsHostViewManager' is named 'view'. This may cause problems when calling this function with named arguments.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/safearea/SafeAreaView.kt:143:45 'fun consumeDisplayCutout(): @NonNull() WindowInsetsCompat' is deprecated. Deprecated in Java.
+
+> Task :react-native-screens:javaPreCompileRelease
+> Task :react-native-screens:compileReleaseJavaWithJavac
+> Task :react-native-screens:bundleLibRuntimeToDirRelease
+> Task :react-native-reanimated:bundleLibRuntimeToDirRelease
+> Task :expo:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo:generateReleaseBuildConfig
+> Task :expo:generateReleaseResValues
+> Task :expo:generateReleaseResources
+> Task :expo:packageReleaseResources
+> Task :expo:parseReleaseLocalResources
+> Task :expo:generateReleaseRFile
+> Task :expo-constants:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-constants:generateReleaseBuildConfig
+> Task :expo-constants:generateReleaseResValues
+> Task :expo-constants:generateReleaseResources
+> Task :expo-constants:packageReleaseResources
+> Task :expo-constants:parseReleaseLocalResources
+> Task :expo-constants:generateReleaseRFile
+> Task :expo-modules-core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-modules-core:generateReleaseBuildConfig
+> Task :expo-modules-core:generateReleaseResValues
+> Task :expo-modules-core:generateReleaseResources
+> Task :expo-modules-core:packageReleaseResources
+> Task :expo-modules-core:parseReleaseLocalResources
+> Task :expo-modules-core:generateReleaseRFile
+
+> Task :expo-modules-core:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/apploader/AppLoaderProvider.kt:34:52 Unchecked cast of 'Class<*>!' to 'Class<out HeadlessAppLoader>'.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:14:8 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:22:8 'typealias ErrorManagerModule = JSLoggerModule' is deprecated. Use JSLoggerModule instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:61:13 'val hostingRuntimeContext: MainRuntime' is deprecated. Use AppContext.runtimeContext instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:271:21 'typealias ErrorManagerModule = JSLoggerModule' is deprecated. Use JSLoggerModule instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:380:21 'val DEFAULT: Int' is deprecated. UIManagerType.DEFAULT will be deleted in the next release of React Native. Use [LEGACY] instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/AppContext.kt:381:10 'class UIManagerModule : ReactContextBaseJavaModule, LifecycleEventListener, UIManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/defaultmodules/NativeModulesProxyModule.kt:16:5 'fun Constants(legacyConstantsProvider: () -> Map<String, Any?>): Unit' is deprecated. Use `Constant` or `Property` instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/events/KModuleEventEmitterWrapper.kt:99:21 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/events/KModuleEventEmitterWrapper.kt:108:21 'fun getEventDispatcherForReactTag(context: ReactContext, reactTag: Int): EventDispatcher?' is deprecated. reactTag is no longer needed.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewDefinitionBuilder.kt:470:16 'val errorManager: JSLoggerModule?' is deprecated. Use AppContext.jsLogger instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewDefinitionBuilder.kt:470:30 'fun reportExceptionToLogBox(codedException: CodedException): Unit' is deprecated. Use appContext.jsLogger.error(...) instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewManagerDefinition.kt:41:16 'val errorManager: JSLoggerModule?' is deprecated. Use AppContext.jsLogger instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/views/ViewManagerDefinition.kt:41:30 'fun reportExceptionToLogBox(codedException: CodedException): Unit' is deprecated. Use appContext.jsLogger.error(...) instead.
+
+> Task :expo-modules-core:javaPreCompileRelease
+
+> Task :expo-modules-core:compileReleaseJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :expo-modules-core:bundleLibCompileToJarRelease
+
+> Task :expo-constants:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-constants/android/src/main/java/expo/modules/constants/ConstantsModule.kt:13:5 'fun Constants(legacyConstantsProvider: () -> Map<String, Any?>): Unit' is deprecated. Use `Constant` or `Property` instead.
+
+> Task :expo-constants:javaPreCompileRelease
+> Task :expo-constants:compileReleaseJavaWithJavac
+> Task :expo-constants:bundleLibCompileToJarRelease
+> Task :expo-eas-client:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-eas-client:generateReleaseBuildConfig
+> Task :expo-eas-client:generateReleaseResValues
+> Task :expo-eas-client:generateReleaseResources
+> Task :expo-eas-client:packageReleaseResources
+> Task :expo-eas-client:parseReleaseLocalResources
+> Task :expo-eas-client:generateReleaseRFile
+> Task :expo-eas-client:compileReleaseKotlin
+> Task :expo-eas-client:javaPreCompileRelease
+> Task :expo-eas-client:compileReleaseJavaWithJavac
+> Task :expo-eas-client:bundleLibCompileToJarRelease
+> Task :expo-json-utils:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-json-utils:generateReleaseBuildConfig
+> Task :expo-json-utils:generateReleaseResValues
+> Task :expo-json-utils:generateReleaseResources
+> Task :expo-json-utils:packageReleaseResources
+> Task :expo-json-utils:parseReleaseLocalResources
+> Task :expo-json-utils:generateReleaseRFile
+> Task :expo-json-utils:compileReleaseKotlin
+> Task :expo-json-utils:javaPreCompileRelease
+> Task :expo-json-utils:compileReleaseJavaWithJavac
+> Task :expo-json-utils:bundleLibCompileToJarRelease
+> Task :expo-log-box:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-log-box:generateReleaseBuildConfig
+> Task :expo-log-box:generateReleaseResValues
+> Task :expo-log-box:generateReleaseResources
+> Task :expo-log-box:packageReleaseResources
+> Task :expo-log-box:parseReleaseLocalResources
+> Task :expo-log-box:generateReleaseRFile
+> Task :expo-log-box:compileReleaseKotlin
+> Task :expo-log-box:javaPreCompileRelease
+> Task :expo-log-box:compileReleaseJavaWithJavac
+> Task :expo-log-box:bundleLibCompileToJarRelease
+> Task :expo-manifests:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-manifests:generateReleaseBuildConfig
+> Task :expo-manifests:generateReleaseResValues
+> Task :expo-manifests:generateReleaseResources
+> Task :expo-manifests:packageReleaseResources
+> Task :expo-manifests:parseReleaseLocalResources
+> Task :expo-manifests:generateReleaseRFile
+
+> Task :expo-manifests:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/EmbeddedManifest.kt:19:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/EmbeddedManifest.kt:19:86 'fun getLegacyID(): String' is deprecated. Prefer scopeKey or projectId depending on use case.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/ExpoUpdatesManifest.kt:16:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/Manifest.kt:13:3 Deprecations and opt-ins on a method overridden from 'Any' may not be reported.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/Manifest.kt:15:12 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+
+> Task :expo-manifests:javaPreCompileRelease
+> Task :expo-manifests:compileReleaseJavaWithJavac
+> Task :expo-manifests:bundleLibCompileToJarRelease
+> Task :expo-structured-headers:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-structured-headers:generateReleaseBuildConfig
+> Task :expo-structured-headers:generateReleaseResValues
+> Task :expo-structured-headers:generateReleaseResources
+> Task :expo-structured-headers:packageReleaseResources
+> Task :expo-structured-headers:parseReleaseLocalResources
+> Task :expo-structured-headers:generateReleaseRFile
+> Task :expo-structured-headers:compileReleaseKotlin NO-SOURCE
+> Task :expo-structured-headers:javaPreCompileRelease
+> Task :expo-structured-headers:compileReleaseJavaWithJavac
+> Task :expo-structured-headers:bundleLibCompileToJarRelease
+> Task :expo-updates:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-updates:generateReleaseBuildConfig
+> Task :expo-updates:generateReleaseResValues
+> Task :expo-updates:generateReleaseResources
+> Task :expo-updates:packageReleaseResources
+> Task :expo-updates:parseReleaseLocalResources
+> Task :expo-updates:generateReleaseRFile
+> Task :expo-updates-interface:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :expo-updates-interface:generateReleaseBuildConfig
+> Task :expo-updates-interface:generateReleaseResValues
+> Task :expo-updates-interface:generateReleaseResources
+> Task :expo-updates-interface:packageReleaseResources
+> Task :expo-updates-interface:parseReleaseLocalResources
+> Task :expo-updates-interface:generateReleaseRFile
+> Task :expo-updates-interface:compileReleaseKotlin
+> Task :expo-updates-interface:javaPreCompileRelease
+> Task :expo-updates-interface:compileReleaseJavaWithJavac
+> Task :expo-updates-interface:bundleLibCompileToJarRelease
+> Task :expo-updates:kspReleaseKotlin
+
+> Task :expo-updates:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/UpdatesConfiguration.kt:322:13 'fun get(p0: String!): Any?' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/UpdatesDevLauncherController.kt:215:133 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/UpdatesModule.kt:47:5 'fun Constants(legacyConstantsProvider: () -> Map<String, Any?>): Unit' is deprecated. Use `Constant` or `Property` instead.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/UpdatesModule.kt:96:38 'fun toString(): String' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/db/Converters.kt:56:30 Java type mismatch: inferred type is 'ByteArray?', but 'ByteArray' was expected.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/db/DatabaseIntegrityCheck.kt:38:39 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/db/Reaper.kt:83:41 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/loader/Loader.kt:265:65 Java type mismatch: inferred type is 'String?', but 'String' was expected.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/loader/LoaderTask.kt:372:101 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/manifest/EmbeddedUpdate.kt:33:89 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/manifest/ExpoUpdatesUpdate.kt:38:92 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/procedures/CheckForUpdateProcedure.kt:143:100 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/procedures/CheckForUpdateProcedure.kt:176:100 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/procedures/StartupProcedure.kt:162:36 'fun getCurrentState(): UpdatesStateValue' is deprecated. Avoid needing to access current state to know how to transition to next state.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/procedures/StartupProcedure.kt:196:34 'fun getCurrentState(): UpdatesStateValue' is deprecated. Avoid needing to access current state to know how to transition to next state.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo-updates/android/src/main/java/expo/modules/updates/procedures/StateMachineSerialExecutorQueue.kt:64:45 'fun getCurrentState(): UpdatesStateValue' is deprecated. Avoid needing to access current state to know how to transition to next state.
+
+> Task :expo-updates:javaPreCompileRelease
+> Task :expo-updates:compileReleaseJavaWithJavac
+> Task :expo-updates:bundleLibCompileToJarRelease
+
+> Task :expo:compileReleaseKotlin
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/ExpoModulesPackage.kt:34:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:22:8 'class ReactInstanceManager : Any' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:102:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:102:43 'class ReactInstanceManager : Any' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:103:21 'val reactInstanceManager: ReactInstanceManager' is deprecated. Deprecated in Java.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/fetch/ExpoFetchModule.kt:33:39 'constructor(reactContext: ReactContext): ForwardingCookieHandler' is deprecated. Use the default constructor.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:44:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///media/raed/Data/from%20ubuntu/Transpo_24%20workspace/driver_mobile/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:46:11 'fun deallocate(): Unit' is deprecated. Use sharedObjectDidRelease() instead.
+
+> Task :expo:javaPreCompileRelease
+> Task :expo:compileReleaseJavaWithJavac
+> Task :expo:bundleLibRuntimeToDirRelease
+> Task :expo-modules-core:bundleLibRuntimeToDirRelease
+> Task :react-native-worklets:bundleLibRuntimeToDirRelease
+> Task :react-native-masked-view_masked-view:generateReleaseBuildConfig
+> Task :react-native-masked-view_masked-view:generateReleaseResValues
+> Task :react-native-masked-view_masked-view:generateReleaseResources
+> Task :react-native-masked-view_masked-view:packageReleaseResources
+> Task :react-native-masked-view_masked-view:parseReleaseLocalResources
+> Task :react-native-masked-view_masked-view:generateReleaseRFile
+> Task :react-native-masked-view_masked-view:javaPreCompileRelease
+
+> Task :react-native-masked-view_masked-view:compileReleaseJavaWithJavac
+Note: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-masked-view/masked-view/android/src/main/java/org/reactnative/maskedview/RNCMaskedViewPackage.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :react-native-masked-view_masked-view:bundleLibRuntimeToDirRelease
+> Task :react-native-svg:bundleLibRuntimeToDirRelease
+> Task :expo-log-box:bundleLibRuntimeToDirRelease
+> Task :expo-updates:bundleLibRuntimeToDirRelease
+> Task :expo-constants:bundleLibRuntimeToDirRelease
+> Task :expo-eas-client:bundleLibRuntimeToDirRelease
+> Task :expo-manifests:bundleLibRuntimeToDirRelease
+> Task :expo-json-utils:bundleLibRuntimeToDirRelease
+> Task :expo-structured-headers:bundleLibRuntimeToDirRelease
+> Task :expo-updates-interface:bundleLibRuntimeToDirRelease
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:buildKotlinToolingMetadata
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateReleaseBuildConfig
+> Task :expo:writeReleaseAarMetadata
+> Task :expo-constants:writeReleaseAarMetadata
+> Task :expo-eas-client:writeReleaseAarMetadata
+> Task :expo-json-utils:writeReleaseAarMetadata
+> Task :expo-log-box:writeReleaseAarMetadata
+> Task :expo-manifests:writeReleaseAarMetadata
+> Task :expo-modules-core:writeReleaseAarMetadata
+> Task :expo-structured-headers:writeReleaseAarMetadata
+> Task :expo-updates:writeReleaseAarMetadata
+> Task :expo-updates-interface:writeReleaseAarMetadata
+> Task :react-native-community_datetimepicker:writeReleaseAarMetadata
+> Task :react-native-documents_viewer:writeReleaseAarMetadata
+> Task :react-native-gesture-handler:writeReleaseAarMetadata
+> Task :react-native-maps:writeReleaseAarMetadata
+> Task :react-native-masked-view_masked-view:writeReleaseAarMetadata
+> Task :react-native-reanimated:writeReleaseAarMetadata
+> Task :react-native-safe-area-context:writeReleaseAarMetadata
+> Task :react-native-screens:writeReleaseAarMetadata
+> Task :react-native-svg:writeReleaseAarMetadata
+> Task :react-native-worklets:writeReleaseAarMetadata
+> Task :app:checkReleaseAarMetadata
+
+> Task :app:createBundleReleaseJsAndAssets
+Using src/app as the root directory for Expo Router.
+React Compiler enabled
+Starting Metro Bundler
+
+Android Bundled 13898ms ../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-router/entry.js (2055 modules)
+Writing bundle output to: /tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/build/generated/assets/react/release/index.android.bundle
+Writing sourcemap output to: /tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/build/intermediates/sourcemaps/react/release/index.android.bundle.packager.map
+Copying 45 asset files
+Done writing bundle output
+Done writing sourcemap output
+
+> Task :app:generateReleaseResValues
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:mergeReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:parseReleaseLocalResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :expo:extractDeepLinksRelease
+> Task :expo:processReleaseManifest
+> Task :expo-constants:extractDeepLinksRelease
+> Task :expo-constants:processReleaseManifest
+> Task :expo-eas-client:extractDeepLinksRelease
+> Task :expo-eas-client:processReleaseManifest
+> Task :expo-json-utils:extractDeepLinksRelease
+> Task :expo-json-utils:processReleaseManifest
+> Task :expo-log-box:extractDeepLinksRelease
+> Task :expo-log-box:processReleaseManifest
+> Task :expo-manifests:extractDeepLinksRelease
+> Task :expo-manifests:processReleaseManifest
+> Task :expo-modules-core:extractDeepLinksRelease
+
+> Task :expo-modules-core:processReleaseManifest
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android/src/main/AndroidManifest.xml:8:9-11:45 Warning:
+	meta-data#com.facebook.soloader.enabled@android:value was tagged at AndroidManifest.xml:8 to replace other declarations but no other declaration present
+
+> Task :expo-structured-headers:extractDeepLinksRelease
+> Task :expo-structured-headers:processReleaseManifest
+> Task :expo-updates:extractDeepLinksRelease
+> Task :expo-updates:processReleaseManifest
+> Task :expo-updates-interface:extractDeepLinksRelease
+> Task :expo-updates-interface:processReleaseManifest
+> Task :react-native-community_datetimepicker:extractDeepLinksRelease
+> Task :react-native-community_datetimepicker:processReleaseManifest
+> Task :react-native-documents_viewer:extractDeepLinksRelease
+> Task :react-native-documents_viewer:processReleaseManifest
+> Task :react-native-gesture-handler:extractDeepLinksRelease
+> Task :react-native-gesture-handler:processReleaseManifest
+> Task :react-native-maps:extractDeepLinksRelease
+> Task :react-native-maps:processReleaseManifest
+> Task :react-native-masked-view_masked-view:extractDeepLinksRelease
+> Task :react-native-masked-view_masked-view:processReleaseManifest
+> Task :react-native-reanimated:extractDeepLinksRelease
+> Task :react-native-reanimated:processReleaseManifest
+> Task :react-native-safe-area-context:extractDeepLinksRelease
+
+> Task :react-native-safe-area-context:processReleaseManifest
+package="com.th3rdwave.safeareacontext" found in source AndroidManifest.xml: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.th3rdwave.safeareacontext" from the source AndroidManifest.xml: /media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/AndroidManifest.xml.
+
+> Task :react-native-screens:extractDeepLinksRelease
+> Task :react-native-screens:processReleaseManifest
+> Task :react-native-svg:extractDeepLinksRelease
+> Task :react-native-svg:processReleaseManifest
+> Task :react-native-worklets:extractDeepLinksRelease
+> Task :react-native-worklets:processReleaseManifest
+
+> Task :app:processReleaseMainManifest
+/tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/src/main/AndroidManifest.xml:9:3-88 Warning:
+	uses-permission#android.permission.RECORD_AUDIO was tagged at AndroidManifest.xml:9 to remove other declarations but no other declaration present
+/tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/src/main/AndroidManifest.xml:10:3-95 Warning:
+	uses-permission#android.permission.SYSTEM_ALERT_WINDOW was tagged at AndroidManifest.xml:10 to remove other declarations but no other declaration present
+/tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/src/main/AndroidManifest.xml:13:3-96 Warning:
+	uses-permission#com.google.android.gms.permission.AD_ID was tagged at AndroidManifest.xml:13 to remove other declarations but no other declaration present
+/tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/src/main/AndroidManifest.xml Warning:
+	provider#expo.modules.filesystem.FileSystemFileProvider@android:authorities was tagged at AndroidManifest.xml:0 to replace other declarations but no other declaration present
+/tmp/transpo24-staging-driver_mobile-SNThUz/source/android/app/src/main/AndroidManifest.xml Warning:
+	activity#expo.modules.imagepicker.ExpoCropImageActivity@android:exported was tagged at AndroidManifest.xml:0 to replace other declarations but no other declaration present
+
+> Task :app:expoReleaseOverrideMaxSdkConflicts
+[33m---------- Expo Max Sdk Override Plugin ----------[0m
+[32m>>> No 'android:maxSdkVersion' conflicts found[0m
+[33m--------------------------------------------------[0m
+
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :expo:compileReleaseLibraryResources
+> Task :expo-constants:compileReleaseLibraryResources
+> Task :expo-eas-client:compileReleaseLibraryResources
+> Task :expo-json-utils:compileReleaseLibraryResources
+> Task :expo-log-box:compileReleaseLibraryResources
+> Task :expo-manifests:compileReleaseLibraryResources
+> Task :expo-modules-core:compileReleaseLibraryResources
+> Task :expo-structured-headers:compileReleaseLibraryResources
+> Task :expo-updates:compileReleaseLibraryResources
+> Task :expo-updates-interface:compileReleaseLibraryResources
+> Task :react-native-community_datetimepicker:compileReleaseLibraryResources
+> Task :react-native-documents_viewer:compileReleaseLibraryResources
+> Task :react-native-gesture-handler:compileReleaseLibraryResources
+> Task :react-native-maps:compileReleaseLibraryResources
+> Task :react-native-masked-view_masked-view:compileReleaseLibraryResources
+> Task :react-native-reanimated:compileReleaseLibraryResources
+> Task :react-native-safe-area-context:compileReleaseLibraryResources
+> Task :react-native-screens:compileReleaseLibraryResources
+> Task :react-native-svg:compileReleaseLibraryResources
+> Task :react-native-worklets:compileReleaseLibraryResources
+> Task :app:processReleaseResources
+> Task :expo:bundleLibCompileToJarRelease
+> Task :react-native-community_datetimepicker:bundleLibCompileToJarRelease
+> Task :react-native-documents_viewer:bundleLibCompileToJarRelease
+> Task :react-native-gesture-handler:bundleLibCompileToJarRelease
+> Task :react-native-maps:bundleLibCompileToJarRelease
+> Task :react-native-masked-view_masked-view:bundleLibCompileToJarRelease
+> Task :react-native-safe-area-context:bundleLibCompileToJarRelease
+> Task :react-native-screens:bundleLibCompileToJarRelease
+> Task :app:compileReleaseKotlin
+> Task :app:javaPreCompileRelease
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:dexBuilderRelease
+> Task :app:desugarReleaseFileDependencies
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeExtDexRelease
+> Task :app:mergeDexRelease
+> Task :expo:prepareReleaseArtProfile
+> Task :expo-constants:prepareReleaseArtProfile
+> Task :expo-eas-client:prepareReleaseArtProfile
+> Task :expo-json-utils:prepareReleaseArtProfile
+> Task :expo-log-box:prepareReleaseArtProfile
+> Task :expo-manifests:prepareReleaseArtProfile
+> Task :expo-modules-core:prepareReleaseArtProfile
+> Task :expo-structured-headers:prepareReleaseArtProfile
+> Task :expo-updates:prepareReleaseArtProfile
+> Task :expo-updates-interface:prepareReleaseArtProfile
+> Task :react-native-community_datetimepicker:prepareReleaseArtProfile
+> Task :react-native-documents_viewer:prepareReleaseArtProfile
+> Task :react-native-gesture-handler:prepareReleaseArtProfile
+> Task :react-native-maps:prepareReleaseArtProfile
+> Task :react-native-masked-view_masked-view:prepareReleaseArtProfile
+> Task :react-native-reanimated:prepareReleaseArtProfile
+> Task :react-native-safe-area-context:prepareReleaseArtProfile
+> Task :react-native-screens:prepareReleaseArtProfile
+> Task :react-native-svg:prepareReleaseArtProfile
+> Task :react-native-worklets:prepareReleaseArtProfile
+> Task :app:mergeReleaseArtProfile
+> Task :react-native-community_datetimepicker:bundleLibRuntimeToJarRelease
+> Task :react-native-documents_viewer:bundleLibRuntimeToJarRelease
+> Task :react-native-gesture-handler:bundleLibRuntimeToJarRelease
+> Task :react-native-maps:bundleLibRuntimeToJarRelease
+> Task :react-native-safe-area-context:bundleLibRuntimeToJarRelease
+> Task :react-native-screens:bundleLibRuntimeToJarRelease
+> Task :react-native-reanimated:bundleLibRuntimeToJarRelease
+> Task :expo:bundleLibRuntimeToJarRelease
+> Task :expo-modules-core:bundleLibRuntimeToJarRelease
+> Task :react-native-worklets:bundleLibRuntimeToJarRelease
+> Task :react-native-masked-view_masked-view:bundleLibRuntimeToJarRelease
+> Task :react-native-svg:bundleLibRuntimeToJarRelease
+> Task :expo-log-box:bundleLibRuntimeToJarRelease
+> Task :expo-updates:bundleLibRuntimeToJarRelease
+> Task :expo-constants:bundleLibRuntimeToJarRelease
+> Task :expo-eas-client:bundleLibRuntimeToJarRelease
+> Task :expo-manifests:bundleLibRuntimeToJarRelease
+> Task :expo-json-utils:bundleLibRuntimeToJarRelease
+> Task :expo-structured-headers:bundleLibRuntimeToJarRelease
+> Task :expo-updates-interface:bundleLibRuntimeToJarRelease
+> Task :app:mergeReleaseGlobalSynthetics
+> Task :app:compileReleaseArtProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+
+> Task :app:createReleaseUpdatesResources
+React Compiler enabled
+Using src/app as the root directory for Expo Router.
+{"sources":[{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/conventions.js","reasons":["expoConfigPlugins"],"hash":"45022b669e24c246381b59aea189ed2ebc4b37b6"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/dom-parser.js","reasons":["expoConfigPlugins"],"hash":"03af80fada5738c969fd46b8898f0019bc1af1d1"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/dom.js","reasons":["expoConfigPlugins"],"hash":"5af6f7d2e34a7dcf2b9dabb5510ce15f72e10b8f"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/entities.js","reasons":["expoConfigPlugins"],"hash":"e60c91bc425c58a2c8af9d85f8c0de52af2f7288"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/errors.js","reasons":["expoConfigPlugins"],"hash":"b7d2211af8597e764dbf84a821e6bd4e9033175d"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/grammar.js","reasons":["expoConfigPlugins"],"hash":"eb95b19bd95872a6d31e0ffc3e0f143e6bbd3f16"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/index.js","reasons":["expoConfigPlugins"],"hash":"f889e6cbb00c4928c078133b6cf77eebad0e4ec3"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@xmldom/xmldom/lib/sax.js","reasons":["expoConfigPlugins"],"hash":"0d8efd5f10e822be99729b3c74aaac4c8866896b"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/bplist-parser/bplistParser.js","reasons":["expoConfigPlugins"],"hash":"c1e95333be94a8420cdf10e66f9f6ce7bdceff93"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-picker/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"c073fb427a043a1b45a74e07e25ce9d03f27a0de"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-picker/package.json","reasons":["expoConfigPlugins"],"hash":"008b85e2eecdfa4eb9a73eeb0517668e5e7f257b"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-picker/plugin/build/withImagePicker.js","reasons":["expoConfigPlugins"],"hash":"7fcd42931c28bc07f22b19d0e07cab49cc8d1834"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"877b5d26e325699de339200ffaa336311d1cda29"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image/package.json","reasons":["expoConfigPlugins"],"hash":"9981d8f6bf4ec7217779e23e665ece07295f6533"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image/plugin/build/withExpoImage.js","reasons":["expoConfigPlugins"],"hash":"8dde7024f9ad52d4f0c68b3a7b60306e67f334ca"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-location/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"c34f5838d7198cfc6d3408e547aa9dbcea2537c8"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-location/package.json","reasons":["expoConfigPlugins"],"hash":"23e90dde3bab3a7f16af465a1ab45e86ccc17948"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-location/plugin/build/withLocation.js","reasons":["expoConfigPlugins"],"hash":"01fe3341a9f69ead81607e0105806966afbe0f6f"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"69c5237da1b08ca20ef03f222acff8024d73f93c"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/package.json","reasons":["expoConfigPlugins"],"hash":"a56f2c8b0c2e566b192f1f0aa39c3c20746ccfc9"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/plugin/build/withNotifications.js","reasons":["expoConfigPlugins"],"hash":"009f6344581aa77d8eb252e3824d6441021ce197"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/plugin/build/withNotificationsAndroid.js","reasons":["expoConfigPlugins"],"hash":"b9ba2bd6297257ee83437846f35e9508baca5976"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/plugin/build/withNotificationsIOS.js","reasons":["expoConfigPlugins"],"hash":"8b043a42455c540a8718e9fd83b5b24ecea719e8"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-router/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"94d2a78cd11a7d7e3a2f62ddac4062e7f620c476"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-router/plugin/build/withRouter.js","reasons":["expoConfigPlugins"],"hash":"be4dd04f11885d27e2d2297587b7de68bd3b428e"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-router/plugin/options.json","reasons":["expoConfigPlugins"],"hash":"140d48a5f5bfd20c423ff22679407e85fa91139d"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-secure-store/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"c04a907e49099df7825e6b3d9b0f9cd8a817861f"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-secure-store/package.json","reasons":["expoConfigPlugins"],"hash":"77dd77deba9cc68747395e584af47ae4d994507f"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-secure-store/plugin/build/withSecureStore.js","reasons":["expoConfigPlugins"],"hash":"9b1069511fcba425f4de1621595666286e89fb32"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"eee15395748c51e88c97d263864f9d21ae008bd0"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/package.json","reasons":["expoConfigPlugins"],"hash":"45af8937443443eee6c5e5a1695af322352dcb0a"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/android/parseIntentFilters.js","reasons":["expoConfigPlugins"],"hash":"e078e1dda98acc79faa350d869e1840e2a895965"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/android/withAndroidIntentFilters.js","reasons":["expoConfigPlugins"],"hash":"6a1fbf08af7ce05fd4c405cdb6692be2669cb555"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/android/withShareIntoSchemeString.js","reasons":["expoConfigPlugins"],"hash":"35e428d898c6e0186b36151b8b54b3e5c2e0e9fa"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/conflictingExtensionExists.js","reasons":["expoConfigPlugins"],"hash":"0718da57c9f7592989810b3d657e462db7d8dc24"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/createEntitlements.js","reasons":["expoConfigPlugins"],"hash":"4346101171cea88192fbb75cd19366dd4a544262"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/createInfoPlistFile.js","reasons":["expoConfigPlugins"],"hash":"f828f760af6839a97014ead8b5dcd9e8ca80fb7c"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/setupShareExtensionFiles.js","reasons":["expoConfigPlugins"],"hash":"b7ccdd006ac855999e9d0cbfdeeb27024157e943"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/withAppGroupId.js","reasons":["expoConfigPlugins"],"hash":"c0b2c23b5d14711cacd06ca03f92e5077c9a865c"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/withIosWarning.js","reasons":["expoConfigPlugins"],"hash":"154d862f5845414f365bc6689243aa7838daf5f1"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/withShareExtensionFiles.js","reasons":["expoConfigPlugins"],"hash":"1786a487cdf6633400de56c0a3b816bf08141791"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/withShareExtensionXcodeProject.js","reasons":["expoConfigPlugins"],"hash":"7de8585af8aa3c7c140c462e09e3f7a9b06929ce"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/xcode/addBuildPhases.js","reasons":["expoConfigPlugins"],"hash":"4d73d39e0ddff59cf3009c9c2fe8eadfbedeaaf4"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/xcode/addPbxGroup.js","reasons":["expoConfigPlugins"],"hash":"d2fa6dbbb55fb56e61bd36ff4ecc348b988a8aa8"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/xcode/addProductFile.js","reasons":["expoConfigPlugins"],"hash":"2d92bb3fba9cb951888a20dd22c36ba838fa67b9"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/xcode/addToPbxNativeTargetSection.js","reasons":["expoConfigPlugins"],"hash":"e812407bc500c339aa0b29433010a24b7d3a8cbd"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/xcode/addToPbxProjectSection.js","reasons":["expoConfigPlugins"],"hash":"933056ef82d6c48d5ca5360c3ec4cd643a25a059"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/ios/xcode/addXCConfigurationList.js","reasons":["expoConfigPlugins"],"hash":"54ffcbeef1f44185243efd6594e56f035f7fa772"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/utils.js","reasons":["expoConfigPlugins"],"hash":"b903d1097a64cbbe16880fccaa328c7ac5104b86"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/withConfig.js","reasons":["expoConfigPlugins"],"hash":"5b079f7904fb6b4496896bc5b936cd7018b0faff"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/plugin/build/withShareExtension.js","reasons":["expoConfigPlugins"],"hash":"90d8c851123ac5d2ec0da9751237ac745d7ff4dd"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"a1ee5d63c270f7ea390eebdf723274d81e921353"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/package.json","reasons":["expoConfigPlugins"],"hash":"f3386efbca3d693ce18b41275e3e0abefdb24d30"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/getAndroidSplashConfig.js","reasons":["expoConfigPlugins"],"hash":"b792b053b075a67a02a8babfdaa4586d730cafdf"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/getIosSplashConfig.js","reasons":["expoConfigPlugins"],"hash":"53b499c7282d4cb1af5de9b4999664aaabd45db6"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/InterfaceBuilder.js","reasons":["expoConfigPlugins"],"hash":"1bb0d4f3779a219cfc3ba343469302d3098c0897"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withAndroidSplashDrawables.js","reasons":["expoConfigPlugins"],"hash":"df56688bede02033dfbf5c6168b057f84ef54f4b"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withAndroidSplashImages.js","reasons":["expoConfigPlugins"],"hash":"576605c31519fa9684cbaf683cd77869452217c0"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withAndroidSplashMainActivity.js","reasons":["expoConfigPlugins"],"hash":"886a7a34b57f747cee430a6aeae799df9e5b6d30"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withAndroidSplashScreen.js","reasons":["expoConfigPlugins"],"hash":"33a4f27e1e094dc71ee25eb65e5d31e14ad6e1da"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withAndroidSplashStrings.js","reasons":["expoConfigPlugins"],"hash":"2eedd53a73f663e0be991844a799fe4071f117cb"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withAndroidSplashStyles.js","reasons":["expoConfigPlugins"],"hash":"29204aa086a120532217058d983d0934d4b4d26c"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashAssets.js","reasons":["expoConfigPlugins"],"hash":"c4d6dab378daff931874430ca3b0fa4f623d7dc5"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashColors.js","reasons":["expoConfigPlugins"],"hash":"e72c45ca432f4e3981f16d7f7a4e0c998546df9b"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashInfoPlist.js","reasons":["expoConfigPlugins"],"hash":"93014a3e849ed679114e8ec762150fb91904a61f"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashScreen.js","reasons":["expoConfigPlugins"],"hash":"b6edbaca48a48f2443d2a1e5887320b483c1a1ef"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashScreenStoryboard.js","reasons":["expoConfigPlugins"],"hash":"c953ed41705bb503420d49d7b09869ffb57ec6fb"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashScreenStoryboardImage.js","reasons":["expoConfigPlugins"],"hash":"42e7e241dd5f9104062ea9460c03cea520c2639e"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withIosSplashXcodeProject.js","reasons":["expoConfigPlugins"],"hash":"1607dc9bbccda4228d19f73ddda036dd064dc885"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/plugin/build/withSplashScreen.js","reasons":["expoConfigPlugins"],"hash":"2cb462984089719de1adaad8d7c35f522b190640"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-web-browser/app.plugin.js","reasons":["expoConfigPlugins"],"hash":"0c8af681b310549785ac9718a9253025244de42e"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-web-browser/package.json","reasons":["expoConfigPlugins"],"hash":"3e192b1397f17fef65595c85354074e166b3eec3"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-web-browser/plugin/build/withWebBrowser.js","reasons":["expoConfigPlugins"],"hash":"2b3a552c4350e4d4ba6f848cd018a129d8e21ffb"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-web-browser/plugin/build/withWebBrowserAndroid.js","reasons":["expoConfigPlugins"],"hash":"60e898fb0b8be70a0832f911da71cf81856ddbe9"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps/plugin/build/android.js","reasons":["expoConfigPlugins"],"hash":"85db6ef17888528ec22a4046bad1e9c8a1707e56"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps/plugin/build/index.js","reasons":["expoConfigPlugins"],"hash":"b2428fc00b01fc243223b74c88be4dc3e670ed1d"},{"type":"file","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps/plugin/build/ios.js","reasons":["expoConfigPlugins"],"hash":"a0cbc833deaf7ab4add7060241b556f114ac3d3b"},{"type":"file","filePath":".easignore","reasons":["easBuild"],"hash":"8a1e2cf250c34fe8dba01763892877ae4e4c0937"},{"type":"file","filePath":".gitignore","reasons":["bareGitIgnore"],"hash":"555e75bccb2dde5928d4223bf358a856521af360"},{"type":"file","filePath":"eas.json","reasons":["easBuild"],"hash":"774b4f1dcad6f62f76c4e6c72296fa24be621a20"},{"type":"file","filePath":"assets/images/icon.png","reasons":["expoConfigExternalFile"],"overrideHashKey":"expoConfigExternalFile:contentsOnly","hash":"b2750262e8c443a9eed3bdc527c4bf89fec0a60b"},{"type":"file","filePath":"assets/images/android-icon-foreground.png","reasons":["expoConfigExternalFile"],"overrideHashKey":"expoConfigExternalFile:contentsOnly","hash":"b2750262e8c443a9eed3bdc527c4bf89fec0a60b"},{"type":"file","filePath":"assets/images/driver-startup-logo.png","reasons":["expoConfigExternalFile","expoConfigExternalFile"],"overrideHashKey":"expoConfigExternalFile:contentsOnly","hash":"f29b9cafb8f47c0925d4193bc8f8bd9bec3f5718"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@expo/dom-webview/android","reasons":["expoAutolinkingAndroid"],"hash":"20396ae41df7a10a72029d6952c5dac649e0f87b"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@expo/log-box/android","reasons":["expoAutolinkingAndroid"],"hash":"6dd5af43b400a13c8dfcfd51f36661ff324057c4"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@expo/ui/android","reasons":["expoAutolinkingAndroid"],"hash":"d4683c0effc99432aa10532a8ea7cd782e93a190"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-community/datetimepicker","reasons":["rncoreAutolinkingAndroid"],"hash":"e7b3cfbd06b775667b9591f408fac3518784865f"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-documents/viewer","reasons":["rncoreAutolinkingAndroid"],"hash":"9bea1e954b31fdd31e0de29cc4d81c13a438c8ad"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-masked-view/masked-view","reasons":["rncoreAutolinkingAndroid"],"hash":"3a41284e9e268b82d53a5f8e9c3e14079dcd4925"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo","reasons":["rncoreAutolinkingAndroid","expoAutolinkingAndroid"],"hash":"de6142bd8f636ffc26ee2178e730c5f02dd84ba6"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-application/android","reasons":["expoAutolinkingAndroid"],"hash":"7eed23ef938457a5f4eba55884025719aa3cbcec"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-asset/android","reasons":["expoAutolinkingAndroid"],"hash":"5f9725f9848f6b6467abbdcebea0d38530c233c6"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-constants/android","reasons":["expoAutolinkingAndroid"],"hash":"85aae3a089b0226705c4a5039eeede3113437ef2"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-device/android","reasons":["expoAutolinkingAndroid"],"hash":"bab379c5444ae9684939e7001c2b598a9df26a60"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-document-picker/android","reasons":["expoAutolinkingAndroid"],"hash":"d940759b2d0d10d6d0f99516b4ff5b59d8465ada"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-eas-client/android","reasons":["expoAutolinkingAndroid"],"hash":"3527fe886b5162cf56bbdf922f41dbfdaf2592ea"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-file-system/android","reasons":["expoAutolinkingAndroid"],"hash":"a71627dfb05b02c82979cfd6097eedba91e8382a"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-font/android","reasons":["expoAutolinkingAndroid"],"hash":"d8b48d3655b33048bc5a5d3ddfeae76e77552f82"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-loader/android","reasons":["expoAutolinkingAndroid"],"hash":"942697910709718b6e9a04b5b5893beedbcdee3f"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-manipulator/android","reasons":["expoAutolinkingAndroid"],"hash":"a2bb418a1f4b6d456ea7263605978076e5d6c974"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-picker/android","reasons":["expoAutolinkingAndroid"],"hash":"6046c66e93c27ffa16eed0bb3b917b801fb3f5b1"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image/android","reasons":["expoAutolinkingAndroid"],"hash":"7da9600708409aa6ca53fb7c7612b66268932254"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-json-utils/android","reasons":["expoAutolinkingAndroid"],"hash":"8e772090db68d2424bb036b9bae01e40cf439ad4"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-keep-awake/android","reasons":["expoAutolinkingAndroid"],"hash":"cbf7cad47e7cacd9154159575f1a905a10c4253b"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-linking/android","reasons":["expoAutolinkingAndroid"],"hash":"1075c45203245a9a2d87599ecb525e6993b575ee"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-localization/android","reasons":["expoAutolinkingAndroid"],"hash":"08b19622c6f81f63d32127f96afa6e08bfb25e99"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-location/android","reasons":["expoAutolinkingAndroid"],"hash":"f74497c89b77c81b37ff7fa701b5dd0717c632b7"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-manifests/android","reasons":["expoAutolinkingAndroid"],"hash":"2d4d2ce2ade0f3ef7bf355c616c5b5ff8d53de46"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android","reasons":["expoAutolinkingAndroid"],"hash":"c353c405a808b178f8aea42be756db5ff2ccb9ed"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/expo-module-gradle-plugin","reasons":["expoAutolinkingAndroid"],"hash":"8273051227e342bc917f73636a383a687ffe6e17"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/android","reasons":["expoAutolinkingAndroid"],"hash":"d1051850722d8ca749f665d624a929004b702d11"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-router/android","reasons":["expoAutolinkingAndroid"],"hash":"aa292a94c07a805777b6c7bcb46d90749739dc4a"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-secure-store/android","reasons":["expoAutolinkingAndroid"],"hash":"804c1ecd870b90711b49d5de49c1a3e2472390cf"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/android","reasons":["expoAutolinkingAndroid"],"hash":"8006cabff3947b7e0b16d9435827a08f31d5366b"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/android","reasons":["expoAutolinkingAndroid"],"hash":"0d6f10f936c4cc89c39b6b85ae3a3b196974618b"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-status-bar/android","reasons":["expoAutolinkingAndroid"],"hash":"fff04fbe4acd151736368d7781e4cb75a431ca3b"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-structured-headers/android","reasons":["expoAutolinkingAndroid"],"hash":"21bae550f1c7ae88a338b2ae635c305623979202"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-system-ui/android","reasons":["expoAutolinkingAndroid"],"hash":"6ece124c909683e558c775955aeea01c224bc91b"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-task-manager/android","reasons":["expoAutolinkingAndroid"],"hash":"f0da7de4a7cef83d858db4125b7f8d41085f8bf7"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-updates-interface/android","reasons":["expoAutolinkingAndroid"],"hash":"223b7e762ce5460ab43683789267bcf065747ff9"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-updates/android","reasons":["expoAutolinkingAndroid"],"hash":"805f65a704471b830ff166794085e31c654c21b2"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-updates/expo-updates-gradle-plugin","reasons":["expoAutolinkingAndroid"],"hash":"13cd9e0f7b2fd4f22cda555bbf540ed937820fba"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-web-browser/android","reasons":["expoAutolinkingAndroid"],"hash":"c5fbc7ceb97f5d45371a375eba88105a625b4977"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-gesture-handler","reasons":["rncoreAutolinkingAndroid"],"hash":"40ad197d7619343ddb96b34ed149d65c52ba842f"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps","reasons":["rncoreAutolinkingAndroid","expoConfigPlugins"],"hash":"cfe44a4a89636abd23c0585e2fa049d63e1e3bbd"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated","reasons":["rncoreAutolinkingAndroid"],"hash":"f7f7ffc44161e0beec9250ad78b56989015d1ab5"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-safe-area-context","reasons":["rncoreAutolinkingAndroid"],"hash":"2e9be4e57b8e5d2338ed47dbf61ca473a5d5d2cf"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-screens","reasons":["rncoreAutolinkingAndroid"],"hash":"dc5b68555b6040ebd401c2bf175cb1fd608f10cd"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-svg","reasons":["rncoreAutolinkingAndroid"],"hash":"cc3eb6577e0c66b97861f2c383c37f4cfaa17552"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets","reasons":["rncoreAutolinkingAndroid"],"hash":"608dcccf43450b1839e05003931778c6addb1fcd"},{"type":"dir","filePath":"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/unimodules-app-loader/android","reasons":["expoAutolinkingAndroid"],"hash":"af13266ccd282ab1f8de42b3eb3f8e2fe4fc63a6"},{"type":"dir","filePath":"android","reasons":["bareNativeDir"],"hash":null},{"type":"contents","id":"expoAutolinkingConfig:android","contents":"{\"extraDependencies\":[],\"coreFeatures\":[\"swiftui\",\"compose\"],\"modules\":[{\"packageName\":\"@expo/dom-webview\",\"projects\":[{\"name\":\"expo-dom-webview\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@expo/dom-webview/android\",\"modules\":[{\"classifier\":\"expo.modules.webview.DomWebViewModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"expo.modules.webview\",\"artifactId\":\"expo.modules.webview\",\"version\":\"56.0.6\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.6\"},{\"packageName\":\"@expo/log-box\",\"projects\":[{\"name\":\"expo-log-box\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@expo/log-box/android\",\"modules\":[],\"services\":[],\"packages\":[\"expo.modules.logbox.ExpoLogBoxPackage\"]}],\"packageVersion\":\"56.0.14\"},{\"packageName\":\"@expo/ui\",\"projects\":[{\"name\":\"expo-ui\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@expo/ui/android\",\"modules\":[{\"classifier\":\"expo.modules.ui.ExpoUIModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"expo.modules.ui\",\"artifactId\":\"expo.modules.ui\",\"version\":\"56.0.26\",\"repository\":\"local-maven-repo\"}}],\"coreFeatures\":[\"swiftui\",\"compose\"],\"packageVersion\":\"56.0.26\"},{\"packageName\":\"expo\",\"projects\":[{\"name\":\"expo\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo/android\",\"modules\":[{\"classifier\":\"expo.modules.fetch.ExpoFetchModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.ExpoModulesPackage\"]}],\"packageVersion\":\"56.0.24\"},{\"packageName\":\"expo-application\",\"projects\":[{\"name\":\"expo-application\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-application/android\",\"modules\":[{\"classifier\":\"expo.modules.application.ApplicationModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.application\",\"version\":\"56.0.3\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.3\"},{\"packageName\":\"expo-asset\",\"projects\":[{\"name\":\"expo-asset\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-asset/android\",\"modules\":[{\"classifier\":\"expo.modules.asset.AssetModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"expo.modules.asset\",\"artifactId\":\"expo.modules.asset\",\"version\":\"56.0.25\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.25\"},{\"packageName\":\"expo-constants\",\"projects\":[{\"name\":\"expo-constants\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-constants/android\",\"modules\":[{\"classifier\":\"expo.modules.constants.ConstantsModule\",\"name\":null}],\"services\":[\"expo.modules.constants.ConstantsService\"],\"packages\":[]}],\"packageVersion\":\"56.0.27\"},{\"packageName\":\"expo-device\",\"projects\":[{\"name\":\"expo-device\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-device/android\",\"modules\":[{\"classifier\":\"expo.modules.device.DeviceModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.device\",\"version\":\"56.0.4\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.4\"},{\"packageName\":\"expo-document-picker\",\"projects\":[{\"name\":\"expo-document-picker\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-document-picker/android\",\"modules\":[{\"classifier\":\"expo.modules.documentpicker.DocumentPickerModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.documentpicker\",\"version\":\"56.0.4\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.4\"},{\"packageName\":\"expo-eas-client\",\"projects\":[{\"name\":\"expo-eas-client\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-eas-client/android\",\"modules\":[{\"classifier\":\"expo.modules.easclient.EASClientModule\",\"name\":null}],\"services\":[],\"packages\":[]}],\"packageVersion\":\"56.0.1\"},{\"packageName\":\"expo-file-system\",\"projects\":[{\"name\":\"expo-file-system\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-file-system/android\",\"modules\":[{\"classifier\":\"expo.modules.filesystem.FileSystemModule\",\"name\":null},{\"classifier\":\"expo.modules.filesystem.legacy.FileSystemLegacyModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.filesystem\",\"version\":\"56.0.11\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.11\"},{\"packageName\":\"expo-font\",\"projects\":[{\"name\":\"expo-font\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-font/android\",\"modules\":[{\"classifier\":\"expo.modules.font.FontLoaderModule\",\"name\":null},{\"classifier\":\"expo.modules.font.FontUtilsModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.font\",\"version\":\"56.0.7\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.7\"},{\"packageName\":\"expo-image\",\"projects\":[{\"name\":\"expo-image\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image/android\",\"modules\":[{\"classifier\":\"expo.modules.image.ExpoImageModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"expo.modules.image\",\"artifactId\":\"expo.modules.image\",\"version\":\"56.0.13\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.13\"},{\"packageName\":\"expo-image-loader\",\"projects\":[{\"name\":\"expo-image-loader\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-loader/android\",\"modules\":[],\"services\":[\"expo.modules.imageloader.ImageLoaderService\"],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.imageloader\",\"version\":\"56.0.3\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.3\"},{\"packageName\":\"expo-image-manipulator\",\"projects\":[{\"name\":\"expo-image-manipulator\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-manipulator/android\",\"modules\":[{\"classifier\":\"expo.modules.imagemanipulator.ImageManipulatorModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.imagemanipulator\",\"version\":\"56.0.26\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.26\"},{\"packageName\":\"expo-image-picker\",\"projects\":[{\"name\":\"expo-image-picker\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-image-picker/android\",\"modules\":[{\"classifier\":\"expo.modules.imagepicker.ImagePickerModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.imagepicker\",\"version\":\"56.0.25\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.25\"},{\"packageName\":\"expo-json-utils\",\"projects\":[{\"name\":\"expo-json-utils\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-json-utils/android\",\"modules\":[],\"services\":[],\"packages\":[]}],\"packageVersion\":\"56.0.0\"},{\"packageName\":\"expo-keep-awake\",\"projects\":[{\"name\":\"expo-keep-awake\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-keep-awake/android\",\"modules\":[{\"classifier\":\"expo.modules.keepawake.KeepAwakeModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.keepawake\",\"version\":\"56.0.3\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.3\"},{\"packageName\":\"expo-linking\",\"projects\":[{\"name\":\"expo-linking\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-linking/android\",\"modules\":[{\"classifier\":\"expo.modules.linking.ExpoLinkingModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.linking.ExpoLinkingPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.linking\",\"version\":\"56.0.19\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.19\"},{\"packageName\":\"expo-localization\",\"projects\":[{\"name\":\"expo-localization\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-localization/android\",\"modules\":[{\"classifier\":\"expo.modules.localization.LocalizationModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.localization.LocalizationPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.localization\",\"version\":\"56.0.6\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.6\"},{\"packageName\":\"expo-location\",\"projects\":[{\"name\":\"expo-location\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-location/android\",\"modules\":[{\"classifier\":\"expo.modules.location.LocationModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.location\",\"version\":\"56.0.26\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.26\"},{\"packageName\":\"expo-manifests\",\"projects\":[{\"name\":\"expo-manifests\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-manifests/android\",\"modules\":[],\"services\":[],\"packages\":[]}],\"packageVersion\":\"56.0.4\"},{\"packageName\":\"expo-modules-core\",\"projects\":[{\"name\":\"expo-modules-core\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/android\",\"modules\":[],\"services\":[],\"packages\":[\"expo.modules.adapters.react.ReactAdapterPackage\",\"expo.modules.core.BasePackage\",\"expo.modules.kotlin.edgeToEdge.EdgeToEdgePackage\"]}],\"plugins\":[{\"id\":\"expo-module-gradle-plugin\",\"group\":\"expo.modules\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-modules-core/expo-module-gradle-plugin\",\"applyToRootProject\":false}],\"packageVersion\":\"56.0.27\"},{\"packageName\":\"expo-notifications\",\"projects\":[{\"name\":\"expo-notifications\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-notifications/android\",\"modules\":[{\"classifier\":\"expo.modules.notifications.badge.BadgeModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.background.ExpoBackgroundNotificationTasksModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.categories.ExpoNotificationCategoriesModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.channels.NotificationChannelGroupManagerModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.channels.NotificationChannelManagerModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.emitting.NotificationsEmitter\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.handling.NotificationsHandler\",\"name\":null},{\"classifier\":\"expo.modules.notifications.permissions.NotificationPermissionsModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.presentation.ExpoNotificationPresentationModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.scheduling.NotificationScheduler\",\"name\":null},{\"classifier\":\"expo.modules.notifications.serverregistration.ServerRegistrationModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.tokens.PushTokenModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.topics.TopicSubscriptionModule\",\"name\":null},{\"classifier\":\"expo.modules.notifications.notifications.channels.AndroidXNotificationsChannelsProvider\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.notifications.NotificationsPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.notifications\",\"version\":\"56.0.26\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.26\"},{\"packageName\":\"expo-router\",\"projects\":[{\"name\":\"expo-router\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-router/android\",\"modules\":[{\"classifier\":\"expo.modules.router.ExpoRouterModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"expo.modules.router\",\"artifactId\":\"expo.modules.router\",\"version\":\"56.2.22\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.2.22\"},{\"packageName\":\"expo-secure-store\",\"projects\":[{\"name\":\"expo-secure-store\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-secure-store/android\",\"modules\":[{\"classifier\":\"expo.modules.securestore.SecureStoreModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.securestore\",\"version\":\"56.0.4\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.4\"},{\"packageName\":\"expo-sharing\",\"projects\":[{\"name\":\"expo-sharing\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-sharing/android\",\"modules\":[{\"classifier\":\"expo.modules.sharing.SharingModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.sharing.SharingPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.sharing\",\"version\":\"56.0.27\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.27\"},{\"packageName\":\"expo-splash-screen\",\"projects\":[{\"name\":\"expo-splash-screen\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-splash-screen/android\",\"modules\":[{\"classifier\":\"expo.modules.splashscreen.SplashScreenModule\",\"name\":null}],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.splashscreen\",\"version\":\"56.0.16\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.16\"},{\"packageName\":\"expo-status-bar\",\"projects\":[{\"name\":\"expo-status-bar\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-status-bar/android\",\"modules\":[],\"services\":[],\"packages\":[\"expo.modules.statusbar.StatusBarPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.statusbar\",\"version\":\"56.0.4\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.4\"},{\"packageName\":\"expo-structured-headers\",\"projects\":[{\"name\":\"expo-structured-headers\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-structured-headers/android\",\"modules\":[],\"services\":[],\"packages\":[]}],\"packageVersion\":\"56.0.0\"},{\"packageName\":\"expo-system-ui\",\"projects\":[{\"name\":\"expo-system-ui\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-system-ui/android\",\"modules\":[{\"classifier\":\"expo.modules.systemui.SystemUIModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.systemui.SystemUIPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.systemui\",\"version\":\"56.0.5\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.5\"},{\"packageName\":\"expo-task-manager\",\"projects\":[{\"name\":\"expo-task-manager\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-task-manager/android\",\"modules\":[{\"classifier\":\"expo.modules.taskManager.TaskManagerModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.taskManager.TaskManagerPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.taskmanager\",\"version\":\"56.0.27\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.27\"},{\"packageName\":\"expo-updates\",\"projects\":[{\"name\":\"expo-updates\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-updates/android\",\"modules\":[{\"classifier\":\"expo.modules.updates.UpdatesModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.updates.UpdatesPackage\"]}],\"plugins\":[{\"id\":\"expo-updates-gradle-plugin\",\"group\":\"expo.modules\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-updates/expo-updates-gradle-plugin\",\"applyToRootProject\":true}],\"packageVersion\":\"56.0.28\"},{\"packageName\":\"expo-updates-interface\",\"projects\":[{\"name\":\"expo-updates-interface\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-updates-interface/android\",\"modules\":[],\"services\":[],\"packages\":[]}],\"packageVersion\":\"56.0.2\"},{\"packageName\":\"expo-web-browser\",\"projects\":[{\"name\":\"expo-web-browser\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo-web-browser/android\",\"modules\":[{\"classifier\":\"expo.modules.webbrowser.WebBrowserModule\",\"name\":null}],\"services\":[],\"packages\":[\"expo.modules.webbrowser.WebBrowserPackage\"],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"expo.modules.webbrowser\",\"version\":\"56.0.6\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.6\"},{\"packageName\":\"unimodules-app-loader\",\"projects\":[{\"name\":\"unimodules-app-loader\",\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/unimodules-app-loader/android\",\"modules\":[],\"services\":[],\"packages\":[],\"publication\":{\"groupId\":\"host.exp.exponent\",\"artifactId\":\"org.unimodules.apploader\",\"version\":\"56.0.1\",\"repository\":\"local-maven-repo\"}}],\"packageVersion\":\"56.0.1\"}]}","reasons":["expoAutolinkingAndroid"],"hash":"69241cbafe3fd1dd96326910cd51a44573f91303"},{"type":"contents","id":"expoConfig","contents":"{\"android\":{\"adaptiveIcon\":{\"backgroundColor\":\"#FFBE09\",\"foregroundImage\":\"./assets/images/android-icon-foreground.png\"},\"blockedPermissions\":[\"android.permission.RECORD_AUDIO\",\"android.permission.SYSTEM_ALERT_WINDOW\",\"com.google.android.gms.permission.AD_ID\"],\"config\":{\"googleMaps\":{\"apiKey\":\"\"}},\"package\":\"com.transpo24.driver.staging\",\"permissions\":[\"android.permission.ACCESS_BACKGROUND_LOCATION\",\"android.permission.ACCESS_COARSE_LOCATION\",\"android.permission.ACCESS_FINE_LOCATION\",\"android.permission.FOREGROUND_SERVICE\",\"android.permission.FOREGROUND_SERVICE_LOCATION\"],\"predictiveBackGestureEnabled\":false},\"experiments\":{\"reactCompiler\":true,\"typedRoutes\":true},\"extra\":{\"eas\":{\"projectId\":\"9adb6313-42fb-4399-b3ea-6e040805a8a4\"},\"router\":{}},\"icon\":\"./assets/images/icon.png\",\"ios\":{\"appleTeamId\":\"GQ79L2HQU5\",\"bundleIdentifier\":\"com.transpo24.driver.staging\",\"config\":{\"googleMapsApiKey\":\"\",\"usesNonExemptEncryption\":false},\"icon\":\"./assets/images/icon.png\"},\"name\":\"Transpo24 Driver Staging\",\"orientation\":\"portrait\",\"platforms\":[\"android\",\"ios\",\"web\"],\"plugins\":[\"expo-image\",\"expo-router\",\"expo-secure-store\",\"expo-sharing\",\"expo-web-browser\",[\"expo-image-picker\",{\"cameraPermission\":\"Allow Transpo24 - Driver to access your camera so you can take clear driver document photos.\",\"microphonePermission\":false,\"photosPermission\":\"Allow Transpo24 - Driver to access your photos so you can select driver documents.\"}],[\"expo-location\",{\"isAndroidBackgroundLocationEnabled\":true,\"isAndroidForegroundServiceEnabled\":true,\"isIosBackgroundLocationEnabled\":true,\"locationAlwaysAndWhenInUsePermission\":\"Allow Transpo24 - Driver to share your location with the customer during an active pickup or delivery, even when the app is in the background.\",\"locationWhenInUsePermission\":\"Allow Transpo24 - Driver to use your location to center the map and share your live position with the customer during pickup and delivery.\"}],[\"expo-notifications\",{\"color\":\"#FFBE09\",\"defaultChannel\":\"transport_jobs\",\"icon\":\"./assets/images/android-icon-monochrome.png\"}],[\"expo-splash-screen\",{\"backgroundColor\":\"#FFFFFF\",\"dark\":{\"backgroundColor\":\"#FFFFFF\",\"image\":\"./assets/images/driver-startup-logo.png\"},\"image\":\"./assets/images/driver-startup-logo.png\",\"imageWidth\":180,\"resizeMode\":\"contain\"}],[\"react-native-maps\",{\"androidGoogleMapsApiKey\":\"\",\"iosGoogleMapsApiKey\":\"\"}]],\"runtimeVersion\":{\"policy\":\"fingerprint\"},\"scheme\":\"transpo24-driver-staging\",\"sdkVersion\":\"56.0.0\",\"slug\":\"driver_mobile\",\"updates\":{\"checkAutomatically\":\"ON_LOAD\",\"enabled\":false,\"fallbackToCacheTimeout\":0,\"url\":\"https://u.expo.dev/9adb6313-42fb-4399-b3ea-6e040805a8a4\"},\"userInterfaceStyle\":\"light\",\"version\":\"1.0.10\",\"web\":{\"favicon\":\"./assets/images/favicon.png\",\"output\":\"static\"}}","reasons":["expoConfig"],"hash":"b230637d4ab170e4f39469680e6ba6f50e153a74"},{"type":"contents","id":"package:react-native","contents":"{\"name\":\"react-native\",\"version\":\"0.85.3\",\"description\":\"A framework for building native apps using React\",\"license\":\"MIT\",\"repository\":{\"type\":\"git\",\"url\":\"git+https://github.com/facebook/react-native.git\",\"directory\":\"packages/react-native\"},\"homepage\":\"https://reactnative.dev/\",\"keywords\":[\"react\",\"react-native\",\"android\",\"ios\",\"mobile\",\"cross-platform\",\"app-framework\",\"mobile-development\"],\"bugs\":\"https://github.com/facebook/react-native/issues\",\"engines\":{\"node\":\"^20.19.4 || ^22.13.0 || ^24.3.0 || >= 25.0.0\"},\"bin\":{\"react-native\":\"cli.js\"},\"main\":\"./index.js\",\"types\":\"types\",\"exports\":{\".\":{\"react-native-strict-api\":\"./types_generated/index.d.ts\",\"types\":\"./types/index.d.ts\",\"default\":\"./index.js\"},\"./*\":{\"react-native-strict-api\":null,\"types\":\"./*.d.ts\",\"default\":\"./*.js\"},\"./*.js\":{\"react-native-strict-api\":null,\"default\":\"./*.js\"},\"./Libraries/*.d.ts\":{\"react-native-strict-api\":null,\"default\":\"./Libraries/*.d.ts\"},\"./scripts/*\":\"./scripts/*\",\"./src/*\":{\"react-native-strict-api\":null,\"default\":\"./src/*.js\"},\"./types/*.d.ts\":{\"react-native-strict-api\":null,\"default\":\"./types/*.d.ts\"},\"./gradle/*\":null,\"./React/*\":null,\"./ReactAndroid/*\":null,\"./ReactApple/*\":null,\"./ReactCommon/*\":null,\"./sdks/*\":null,\"./src/fb_internal/*\":\"./src/fb_internal/*\",\"./third-party-podspecs/*\":null,\"./types/*\":null,\"./types_generated/*\":null,\"./package.json\":\"./package.json\"},\"jest-junit\":{\"outputDirectory\":\"reports/junit\",\"outputName\":\"js-test-results.xml\"},\"files\":[\"build.gradle.kts\",\"cli.js\",\"flow\",\"gradle.properties\",\"gradle/libs.versions.toml\",\"index.js\",\"index.js.flow\",\"interface.js\",\"jest-preset.js\",\"Libraries\",\"LICENSE\",\"React-Core.podspec\",\"React-Core-prebuilt.podspec\",\"react-native.config.js\",\"React.podspec\",\"React\",\"!React/Fabric/RCTThirdPartyFabricComponentsProvider.*\",\"ReactAndroid\",\"!ReactAndroid/.cxx\",\"!ReactAndroid/build\",\"!ReactAndroid/external-artifacts/artifacts\",\"!ReactAndroid/external-artifacts/build\",\"!ReactAndroid/hermes-engine/.cxx\",\"!ReactAndroid/hermes-engine/build\",\"!ReactAndroid/src/main/third-party\",\"!ReactAndroid/src/test\",\"ReactApple\",\"ReactCommon\",\"README.md\",\"rn-get-polyfills.js\",\"scripts/replace-rncore-version.js\",\"scripts/bundle.js\",\"scripts/cocoapods\",\"scripts/codegen\",\"scripts/compose-source-maps.js\",\"scripts/find-node-for-xcode.sh\",\"scripts/generate-codegen-artifacts.js\",\"scripts/generate-provider-cli.js\",\"scripts/generate-specs-cli.js\",\"scripts/hermes/hermes-utils.js\",\"scripts/hermes/prepare-hermes-for-build.js\",\"scripts/ios-configure-glog.sh\",\"scripts/native_modules.rb\",\"scripts/node-binary.sh\",\"scripts/packager-reporter.js\",\"scripts/packager.sh\",\"scripts/react_native_pods_utils/script_phases.rb\",\"scripts/react_native_pods_utils/script_phases.sh\",\"scripts/react_native_pods.rb\",\"scripts/react-native-xcode.sh\",\"scripts/xcode/ccache-clang.sh\",\"scripts/xcode/ccache-clang++.sh\",\"scripts/xcode/ccache.conf\",\"scripts/xcode/with-environment.sh\",\"sdks/.hermesversion\",\"sdks/.hermesv1version\",\"sdks/hermes-engine\",\"sdks/hermesc\",\"settings.gradle.kts\",\"src\",\"!src/private/testing\",\"third-party-podspecs\",\"types\",\"types_generated\",\"!**/__docs__/**\",\"!**/__fixtures__/**\",\"!**/__flowtests__/**\",\"!**/__mocks__/**\",\"!**/__tests__/**\",\"!**/__typetests__/**\"],\"scripts\":{\"prepack\":\"node ./scripts/prepack.js\",\"featureflags\":\"node ./scripts/featureflags/index.js\"},\"peerDependencies\":{\"@react-native/jest-preset\":\"0.85.3\",\"@types/react\":\"^19.1.1\",\"react\":\"^19.2.3\"},\"peerDependenciesMeta\":{\"@types/react\":{\"optional\":true},\"@react-native/jest-preset\":{\"optional\":true}},\"dependencies\":{\"@react-native/assets-registry\":\"0.85.3\",\"@react-native/codegen\":\"0.85.3\",\"@react-native/community-cli-plugin\":\"0.85.3\",\"@react-native/gradle-plugin\":\"0.85.3\",\"@react-native/js-polyfills\":\"0.85.3\",\"@react-native/normalize-colors\":\"0.85.3\",\"@react-native/virtualized-lists\":\"0.85.3\",\"abort-controller\":\"^3.0.0\",\"anser\":\"^1.4.9\",\"ansi-regex\":\"^5.0.0\",\"babel-plugin-syntax-hermes-parser\":\"0.33.3\",\"base64-js\":\"^1.5.1\",\"commander\":\"^12.0.0\",\"flow-enums-runtime\":\"^0.0.6\",\"hermes-compiler\":\"250829098.0.10\",\"invariant\":\"^2.2.4\",\"memoize-one\":\"^5.0.0\",\"metro-runtime\":\"^0.84.3\",\"metro-source-map\":\"^0.84.3\",\"nullthrows\":\"^1.1.1\",\"pretty-format\":\"^29.7.0\",\"promise\":\"^8.3.0\",\"react-devtools-core\":\"^6.1.5\",\"react-refresh\":\"^0.14.0\",\"regenerator-runtime\":\"^0.13.2\",\"scheduler\":\"0.27.0\",\"semver\":\"^7.1.3\",\"stacktrace-parser\":\"^0.1.10\",\"tinyglobby\":\"^0.2.15\",\"whatwg-fetch\":\"^3.0.0\",\"ws\":\"^7.5.10\",\"yargs\":\"^17.6.2\"},\"codegenConfig\":{\"libraries\":[{\"name\":\"FBReactNativeSpec\",\"type\":\"all\",\"ios\":{\"modules\":{\"AccessibilityManager\":{\"unstableRequiresMainQueueSetup\":true},\"Appearance\":{\"unstableRequiresMainQueueSetup\":true},\"AppState\":{\"unstableRequiresMainQueueSetup\":true},\"DeviceInfo\":{\"unstableRequiresMainQueueSetup\":true},\"PlatformConstants\":{\"unstableRequiresMainQueueSetup\":true},\"StatusBarManager\":{\"unstableRequiresMainQueueSetup\":true}}},\"android\":{},\"jsSrcsDir\":\"src\"}]}}","reasons":["package:react-native"],"hash":"7c57f9e97283cadf3893b64537dc8562e98df0e4"},{"type":"contents","id":"packageJson:scripts","contents":"{\"start\":\"node ./scripts/local-expo.js start --port 8082 --scheme transpo24-driver-dev\",\"start:android:usb\":\"node ./scripts/start-android-usb.js\",\"adb:reverse\":\"node ./scripts/setup-adb-reverse.js\",\"reset-project\":\"node ./scripts/reset-project.js\",\"android\":\"node ./scripts/run-android.js\",\"android:usb\":\"node ./scripts/run-android.js --port=8082 --clear\",\"build:production:ios\":\"NODE_OPTIONS='--dns-result-order=ipv4first --no-network-family-autoselection' eas build --platform ios --profile production\",\"ios:release:check\":\"eas env:exec production \\\"node scripts/check-ios-release.cjs\\\" --non-interactive\",\"web\":\"expo start --web\",\"lint\":\"expo lint\",\"typecheck\":\"tsc --noEmit\",\"build:production\":\"NODE_OPTIONS='--dns-result-order=ipv4first --no-network-family-autoselection' npx eas-cli@24.3.0 build --platform android --profile production\",\"update:production\":\"eas update --channel production --environment production\",\"update:production:ios\":\"eas update --platform ios --channel production-ios --environment production\",\"update:preview\":\"eas update --channel preview --environment preview\",\"update:play-test\":\"eas update --channel play-test --environment preview\",\"update:production-apk\":\"eas update --channel production-apk --environment production\",\"test\":\"jest --runInBand\",\"privacy:check\":\"node scripts/check-privacy.mjs\",\"pretypecheck\":\"npm run privacy:check\",\"postinstall\":\"node scripts/security/apply-backports.cjs\",\"security:backports\":\"node scripts/security/verify-backports.cjs\",\"translations:check\":\"node scripts/check-catalog-parity.cjs\"}","reasons":["packageJson:scripts"],"hash":"aa1e7db88ab5d2636963608d34363b97e3dabdf0"},{"type":"contents","id":"rncoreAutolinkingConfig:android","contents":"{\"@react-native-community/datetimepicker\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-community/datetimepicker\",\"name\":\"@react-native-community/datetimepicker\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-community/datetimepicker/android\",\"packageImportPath\":\"import com.reactcommunity.rndatetimepicker.RNDateTimePickerPackage;\",\"packageInstance\":\"new RNDateTimePickerPackage()\",\"buildTypes\":[],\"libraryName\":\"RNDateTimePickerCGen\",\"componentDescriptors\":[],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-community/datetimepicker/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"@react-native-documents/viewer\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-documents/viewer\",\"name\":\"@react-native-documents/viewer\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-documents/viewer/android\",\"packageImportPath\":\"import com.reactnativedocumentviewer.RNDocumentViewerPackage;\",\"packageInstance\":\"new RNDocumentViewerPackage()\",\"buildTypes\":[],\"libraryName\":\"rndocumentviewerCGen\",\"componentDescriptors\":[],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-documents/viewer/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"@react-native-masked-view/masked-view\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-masked-view/masked-view\",\"name\":\"@react-native-masked-view/masked-view\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-masked-view/masked-view/android\",\"packageImportPath\":\"import org.reactnative.maskedview.RNCMaskedViewPackage;\",\"packageInstance\":\"new RNCMaskedViewPackage()\",\"buildTypes\":[],\"componentDescriptors\":[],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/@react-native-masked-view/masked-view/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"expo\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo\",\"name\":\"expo\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo/android\",\"packageImportPath\":\"import expo.modules.ExpoModulesPackage;\",\"packageInstance\":\"new ExpoModulesPackage()\",\"buildTypes\":[],\"componentDescriptors\":[],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/expo/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-gesture-handler\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-gesture-handler\",\"name\":\"react-native-gesture-handler\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-gesture-handler/android\",\"packageImportPath\":\"import com.swmansion.gesturehandler.RNGestureHandlerPackage;\",\"packageInstance\":\"new RNGestureHandlerPackage()\",\"buildTypes\":[],\"libraryName\":\"rngesturehandler_codegen\",\"componentDescriptors\":[\"RNGestureHandlerButtonComponentDescriptor\",\"RNGestureHandlerRootViewComponentDescriptor\"],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-gesture-handler/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-maps\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps\",\"name\":\"react-native-maps\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps/android\",\"packageImportPath\":\"import com.rnmaps.maps.MapsPackage;\",\"packageInstance\":\"new MapsPackage()\",\"buildTypes\":[],\"libraryName\":\"RNMapsSpecs\",\"componentDescriptors\":[\"RNMapsCalloutComponentDescriptor\",\"RNMapsCircleComponentDescriptor\",\"RNMapsGoogleMapViewComponentDescriptor\",\"RNMapsGooglePolygonComponentDescriptor\",\"RNMapsMapViewComponentDescriptor\",\"RNMapsMarkerComponentDescriptor\",\"RNMapsOverlayComponentDescriptor\",\"RNMapsPolylineComponentDescriptor\",\"RNMapsUrlTileComponentDescriptor\",\"RNMapsWMSTileComponentDescriptor\"],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-maps/android/src/main/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-reanimated\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated\",\"name\":\"react-native-reanimated\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated/android\",\"packageImportPath\":\"import com.swmansion.reanimated.ReanimatedPackage;\",\"packageInstance\":\"new ReanimatedPackage()\",\"buildTypes\":[],\"libraryName\":\"rnreanimated\",\"componentDescriptors\":[],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-reanimated/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-safe-area-context\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-safe-area-context\",\"name\":\"react-native-safe-area-context\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-safe-area-context/android\",\"packageImportPath\":\"import com.th3rdwave.safeareacontext.SafeAreaContextPackage;\",\"packageInstance\":\"new SafeAreaContextPackage()\",\"buildTypes\":[],\"libraryName\":\"safeareacontext\",\"componentDescriptors\":[\"RNCSafeAreaProviderComponentDescriptor\",\"RNCSafeAreaViewComponentDescriptor\"],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-safe-area-context/android/src/main/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-screens\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-screens\",\"name\":\"react-native-screens\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-screens/android\",\"packageImportPath\":\"import com.swmansion.rnscreens.RNScreensPackage;\",\"packageInstance\":\"new RNScreensPackage()\",\"buildTypes\":[],\"libraryName\":\"rnscreens\",\"componentDescriptors\":[\"RNSFullWindowOverlayComponentDescriptor\",\"RNSScreenContainerComponentDescriptor\",\"RNSScreenNavigationContainerComponentDescriptor\",\"RNSScreenStackHeaderConfigComponentDescriptor\",\"RNSScreenStackHeaderSubviewComponentDescriptor\",\"RNSScreenStackComponentDescriptor\",\"RNSSearchBarComponentDescriptor\",\"RNSScreenComponentDescriptor\",\"RNSScreenFooterComponentDescriptor\",\"RNSScreenContentWrapperComponentDescriptor\",\"RNSModalScreenComponentDescriptor\",\"RNSTabsHostComponentDescriptor\",\"RNSSafeAreaViewComponentDescriptor\",\"RNSStackScreenComponentDescriptor\",\"RNSStackHeaderConfigComponentDescriptor\",\"RNSStackHeaderSubviewComponentDescriptor\",\"RNSFormSheetHostComponentDescriptor\"],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-screens/android/src/main/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-svg\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-svg\",\"name\":\"react-native-svg\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-svg/android\",\"packageImportPath\":\"import com.horcrux.svg.SvgPackage;\",\"packageInstance\":\"new SvgPackage()\",\"buildTypes\":[],\"libraryName\":\"rnsvg\",\"componentDescriptors\":[\"RNSVGCircleComponentDescriptor\",\"RNSVGClipPathComponentDescriptor\",\"RNSVGDefsComponentDescriptor\",\"RNSVGFeBlendComponentDescriptor\",\"RNSVGFeColorMatrixComponentDescriptor\",\"RNSVGFeCompositeComponentDescriptor\",\"RNSVGFeFloodComponentDescriptor\",\"RNSVGFeGaussianBlurComponentDescriptor\",\"RNSVGFeMergeComponentDescriptor\",\"RNSVGFeOffsetComponentDescriptor\",\"RNSVGFilterComponentDescriptor\",\"RNSVGEllipseComponentDescriptor\",\"RNSVGForeignObjectComponentDescriptor\",\"RNSVGGroupComponentDescriptor\",\"RNSVGImageComponentDescriptor\",\"RNSVGLinearGradientComponentDescriptor\",\"RNSVGLineComponentDescriptor\",\"RNSVGMarkerComponentDescriptor\",\"RNSVGMaskComponentDescriptor\",\"RNSVGPathComponentDescriptor\",\"RNSVGPatternComponentDescriptor\",\"RNSVGRadialGradientComponentDescriptor\",\"RNSVGRectComponentDescriptor\",\"RNSVGSvgViewAndroidComponentDescriptor\",\"RNSVGSymbolComponentDescriptor\",\"RNSVGTextComponentDescriptor\",\"RNSVGTextPathComponentDescriptor\",\"RNSVGTSpanComponentDescriptor\",\"RNSVGUseComponentDescriptor\"],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-svg/android/src/main/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}},\"react-native-worklets\":{\"root\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets\",\"name\":\"react-native-worklets\",\"platforms\":{\"android\":{\"sourceDir\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android\",\"packageImportPath\":\"import com.swmansion.worklets.WorkletsPackage;\",\"packageInstance\":\"new WorkletsPackage()\",\"buildTypes\":[],\"libraryName\":\"rnworklets\",\"componentDescriptors\":[],\"cmakeListsPath\":\"../../../media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/node_modules/react-native-worklets/android/build/generated/source/codegen/jni/CMakeLists.txt\",\"cxxModuleCMakeListsModuleName\":null,\"cxxModuleCMakeListsPath\":null,\"cxxModuleHeaderName\":null,\"isPureCxxDependency\":false}}}}","reasons":["rncoreAutolinkingAndroid"],"hash":"b783cb128b9e3547d56b63029a81161be691b93d"}],"hash":"345609213fb555985eaa1ad090bd4f5f980e5e2a"}
+
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :expo:mergeReleaseShaders
+> Task :expo:compileReleaseShaders NO-SOURCE
+> Task :expo:generateReleaseAssets UP-TO-DATE
+> Task :expo:mergeReleaseAssets
+> Task :expo-constants:mergeReleaseShaders
+> Task :expo-constants:compileReleaseShaders NO-SOURCE
+> Task :expo-constants:generateReleaseAssets UP-TO-DATE
+> Task :expo-constants:mergeReleaseAssets
+> Task :expo-eas-client:mergeReleaseShaders
+> Task :expo-eas-client:compileReleaseShaders NO-SOURCE
+> Task :expo-eas-client:generateReleaseAssets UP-TO-DATE
+> Task :expo-eas-client:mergeReleaseAssets
+> Task :expo-json-utils:mergeReleaseShaders
+> Task :expo-json-utils:compileReleaseShaders NO-SOURCE
+> Task :expo-json-utils:generateReleaseAssets UP-TO-DATE
+> Task :expo-json-utils:mergeReleaseAssets
+> Task :expo-log-box:mergeReleaseShaders
+> Task :expo-log-box:compileReleaseShaders NO-SOURCE
+> Task :expo-log-box:generateReleaseAssets UP-TO-DATE
+> Task :expo-log-box:mergeReleaseAssets
+> Task :expo-manifests:mergeReleaseShaders
+> Task :expo-manifests:compileReleaseShaders NO-SOURCE
+> Task :expo-manifests:generateReleaseAssets UP-TO-DATE
+> Task :expo-manifests:mergeReleaseAssets
+> Task :expo-modules-core:mergeReleaseShaders
+> Task :expo-modules-core:compileReleaseShaders NO-SOURCE
+> Task :expo-modules-core:generateReleaseAssets UP-TO-DATE
+> Task :expo-modules-core:mergeReleaseAssets
+> Task :expo-structured-headers:mergeReleaseShaders
+> Task :expo-structured-headers:compileReleaseShaders NO-SOURCE
+> Task :expo-structured-headers:generateReleaseAssets UP-TO-DATE
+> Task :expo-structured-headers:mergeReleaseAssets
+> Task :expo-updates:mergeReleaseShaders
+> Task :expo-updates:compileReleaseShaders NO-SOURCE
+> Task :expo-updates:generateReleaseAssets UP-TO-DATE
+> Task :expo-updates:mergeReleaseAssets
+> Task :expo-updates-interface:mergeReleaseShaders
+> Task :expo-updates-interface:compileReleaseShaders NO-SOURCE
+> Task :expo-updates-interface:generateReleaseAssets UP-TO-DATE
+> Task :expo-updates-interface:mergeReleaseAssets
+> Task :react-native-community_datetimepicker:mergeReleaseShaders
+> Task :react-native-community_datetimepicker:compileReleaseShaders NO-SOURCE
+> Task :react-native-community_datetimepicker:generateReleaseAssets UP-TO-DATE
+> Task :react-native-community_datetimepicker:mergeReleaseAssets
+> Task :react-native-documents_viewer:mergeReleaseShaders
+> Task :react-native-documents_viewer:compileReleaseShaders NO-SOURCE
+> Task :react-native-documents_viewer:generateReleaseAssets UP-TO-DATE
+> Task :react-native-documents_viewer:mergeReleaseAssets
+> Task :react-native-gesture-handler:mergeReleaseShaders
+> Task :react-native-gesture-handler:compileReleaseShaders NO-SOURCE
+> Task :react-native-gesture-handler:generateReleaseAssets UP-TO-DATE
+> Task :react-native-gesture-handler:mergeReleaseAssets
+> Task :react-native-maps:mergeReleaseShaders
+> Task :react-native-maps:compileReleaseShaders NO-SOURCE
+> Task :react-native-maps:generateReleaseAssets UP-TO-DATE
+> Task :react-native-maps:mergeReleaseAssets
+> Task :react-native-masked-view_masked-view:mergeReleaseShaders
+> Task :react-native-masked-view_masked-view:compileReleaseShaders NO-SOURCE
+> Task :react-native-masked-view_masked-view:generateReleaseAssets UP-TO-DATE
+> Task :react-native-masked-view_masked-view:mergeReleaseAssets
+> Task :react-native-reanimated:mergeReleaseShaders
+> Task :react-native-reanimated:compileReleaseShaders NO-SOURCE
+> Task :react-native-reanimated:generateReleaseAssets UP-TO-DATE
+> Task :react-native-reanimated:mergeReleaseAssets
+> Task :react-native-safe-area-context:mergeReleaseShaders
+> Task :react-native-safe-area-context:compileReleaseShaders NO-SOURCE
+> Task :react-native-safe-area-context:generateReleaseAssets UP-TO-DATE
+> Task :react-native-safe-area-context:mergeReleaseAssets
+> Task :react-native-screens:mergeReleaseShaders
+> Task :react-native-screens:compileReleaseShaders NO-SOURCE
+> Task :react-native-screens:generateReleaseAssets UP-TO-DATE
+> Task :react-native-screens:mergeReleaseAssets
+> Task :react-native-svg:mergeReleaseShaders
+> Task :react-native-svg:compileReleaseShaders NO-SOURCE
+> Task :react-native-svg:generateReleaseAssets UP-TO-DATE
+> Task :react-native-svg:mergeReleaseAssets
+> Task :react-native-worklets:mergeReleaseShaders
+> Task :react-native-worklets:compileReleaseShaders NO-SOURCE
+> Task :react-native-worklets:generateReleaseAssets UP-TO-DATE
+> Task :react-native-worklets:mergeReleaseAssets
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:extractProguardFiles
+> Task :expo:processReleaseJavaRes
+> Task :expo:createFullJarRelease
+> Task :expo:extractProguardFiles
+> Task :expo-constants:processReleaseJavaRes
+> Task :expo-constants:createFullJarRelease
+> Task :expo-constants:extractProguardFiles
+> Task :expo-modules-core:processReleaseJavaRes
+> Task :expo-modules-core:createFullJarRelease
+> Task :expo-modules-core:extractProguardFiles
+> Task :react-native-worklets:processReleaseJavaRes NO-SOURCE
+> Task :react-native-worklets:createFullJarRelease
+> Task :react-native-worklets:extractProguardFiles
+> Task :react-native-worklets:generateReleaseLintModel
+> Task :react-native-worklets:prepareLintJarForPublish
+> Task :expo-modules-core:generateReleaseLintModel
+> Task :expo-modules-core:prepareLintJarForPublish
+> Task :expo-constants:generateReleaseLintModel
+> Task :expo-constants:prepareLintJarForPublish
+> Task :expo-eas-client:processReleaseJavaRes
+> Task :expo-eas-client:createFullJarRelease
+> Task :expo-eas-client:extractProguardFiles
+> Task :expo-eas-client:generateReleaseLintModel
+> Task :expo-eas-client:prepareLintJarForPublish
+> Task :expo-json-utils:processReleaseJavaRes
+> Task :expo-json-utils:createFullJarRelease
+> Task :expo-json-utils:extractProguardFiles
+> Task :expo-json-utils:generateReleaseLintModel
+> Task :expo-json-utils:prepareLintJarForPublish
+> Task :expo-log-box:processReleaseJavaRes
+> Task :expo-log-box:createFullJarRelease
+> Task :expo-log-box:extractProguardFiles
+> Task :expo-log-box:generateReleaseLintModel
+> Task :expo-log-box:prepareLintJarForPublish
+> Task :expo-manifests:processReleaseJavaRes
+> Task :expo-manifests:createFullJarRelease
+> Task :expo-manifests:extractProguardFiles
+> Task :expo-manifests:generateReleaseLintModel
+> Task :expo-manifests:prepareLintJarForPublish
+> Task :expo-structured-headers:processReleaseJavaRes NO-SOURCE
+> Task :expo-structured-headers:createFullJarRelease
+> Task :expo-structured-headers:extractProguardFiles
+> Task :expo-structured-headers:generateReleaseLintModel
+> Task :expo-structured-headers:prepareLintJarForPublish
+> Task :expo-updates:processReleaseJavaRes
+> Task :expo-updates:createFullJarRelease
+> Task :expo-updates:extractProguardFiles
+> Task :expo-updates-interface:processReleaseJavaRes
+> Task :expo-updates-interface:createFullJarRelease
+> Task :expo-updates-interface:extractProguardFiles
+> Task :expo-updates-interface:generateReleaseLintModel
+> Task :expo-updates-interface:prepareLintJarForPublish
+> Task :expo-updates:generateReleaseLintModel
+> Task :expo-updates:prepareLintJarForPublish
+> Task :expo:generateReleaseLintModel
+> Task :expo:prepareLintJarForPublish
+> Task :react-native-community_datetimepicker:processReleaseJavaRes
+> Task :react-native-community_datetimepicker:createFullJarRelease
+> Task :react-native-community_datetimepicker:extractProguardFiles
+> Task :react-native-community_datetimepicker:generateReleaseLintModel
+> Task :react-native-community_datetimepicker:prepareLintJarForPublish
+> Task :react-native-documents_viewer:processReleaseJavaRes
+> Task :react-native-documents_viewer:createFullJarRelease
+> Task :react-native-documents_viewer:extractProguardFiles
+> Task :react-native-documents_viewer:generateReleaseLintModel
+> Task :react-native-documents_viewer:prepareLintJarForPublish
+> Task :react-native-gesture-handler:processReleaseJavaRes
+> Task :react-native-gesture-handler:createFullJarRelease
+> Task :react-native-gesture-handler:extractProguardFiles
+> Task :react-native-reanimated:processReleaseJavaRes NO-SOURCE
+> Task :react-native-reanimated:createFullJarRelease
+> Task :react-native-reanimated:extractProguardFiles
+> Task :react-native-reanimated:generateReleaseLintModel
+> Task :react-native-reanimated:prepareLintJarForPublish
+> Task :react-native-svg:processReleaseJavaRes NO-SOURCE
+> Task :react-native-svg:createFullJarRelease
+> Task :react-native-svg:extractProguardFiles
+> Task :react-native-svg:generateReleaseLintModel
+> Task :react-native-svg:prepareLintJarForPublish
+> Task :react-native-gesture-handler:generateReleaseLintModel
+> Task :react-native-gesture-handler:prepareLintJarForPublish
+> Task :react-native-maps:processReleaseJavaRes NO-SOURCE
+> Task :react-native-maps:createFullJarRelease
+> Task :react-native-maps:extractProguardFiles
+> Task :react-native-maps:generateReleaseLintModel
+> Task :react-native-maps:prepareLintJarForPublish
+> Task :react-native-masked-view_masked-view:processReleaseJavaRes NO-SOURCE
+> Task :react-native-masked-view_masked-view:createFullJarRelease
+> Task :react-native-masked-view_masked-view:extractProguardFiles
+> Task :react-native-masked-view_masked-view:generateReleaseLintModel
+> Task :react-native-masked-view_masked-view:prepareLintJarForPublish
+> Task :react-native-safe-area-context:processReleaseJavaRes
+> Task :react-native-safe-area-context:createFullJarRelease
+> Task :react-native-safe-area-context:extractProguardFiles
+> Task :react-native-safe-area-context:generateReleaseLintModel
+> Task :react-native-safe-area-context:prepareLintJarForPublish
+> Task :react-native-screens:processReleaseJavaRes
+> Task :react-native-screens:createFullJarRelease
+> Task :react-native-screens:extractProguardFiles
+> Task :react-native-screens:generateReleaseLintModel
+> Task :react-native-screens:prepareLintJarForPublish
+> Task :app:generateReleaseLintVitalReportModel
+> Task :react-native-community_datetimepicker:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-community_datetimepicker:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-community_datetimepicker:extractDeepLinksForAarRelease
+> Task :react-native-community_datetimepicker:extractReleaseAnnotations
+> Task :react-native-community_datetimepicker:mergeReleaseGeneratedProguardFiles
+> Task :react-native-community_datetimepicker:mergeReleaseConsumerProguardFiles
+> Task :react-native-community_datetimepicker:mergeReleaseJavaResource
+> Task :react-native-community_datetimepicker:syncReleaseLibJars
+> Task :react-native-community_datetimepicker:bundleReleaseLocalLintAar
+> Task :react-native-documents_viewer:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-documents_viewer:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-documents_viewer:extractDeepLinksForAarRelease
+> Task :react-native-documents_viewer:extractReleaseAnnotations
+> Task :react-native-documents_viewer:mergeReleaseGeneratedProguardFiles
+> Task :react-native-documents_viewer:mergeReleaseConsumerProguardFiles
+> Task :react-native-documents_viewer:mergeReleaseJavaResource
+> Task :react-native-documents_viewer:syncReleaseLibJars
+> Task :react-native-documents_viewer:bundleReleaseLocalLintAar
+> Task :react-native-gesture-handler:stripReleaseDebugSymbols
+> Task :react-native-gesture-handler:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-gesture-handler:extractDeepLinksForAarRelease
+> Task :react-native-gesture-handler:extractReleaseAnnotations
+> Task :react-native-gesture-handler:mergeReleaseGeneratedProguardFiles
+> Task :react-native-gesture-handler:mergeReleaseConsumerProguardFiles
+> Task :react-native-gesture-handler:mergeReleaseJavaResource
+> Task :react-native-gesture-handler:syncReleaseLibJars
+> Task :react-native-gesture-handler:bundleReleaseLocalLintAar
+> Task :react-native-maps:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-maps:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-maps:extractDeepLinksForAarRelease
+> Task :react-native-maps:extractReleaseAnnotations
+> Task :react-native-maps:mergeReleaseGeneratedProguardFiles
+> Task :react-native-maps:mergeReleaseConsumerProguardFiles
+> Task :react-native-maps:mergeReleaseJavaResource
+> Task :react-native-maps:syncReleaseLibJars
+> Task :react-native-maps:bundleReleaseLocalLintAar
+> Task :react-native-safe-area-context:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-safe-area-context:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-safe-area-context:extractDeepLinksForAarRelease
+> Task :react-native-safe-area-context:extractReleaseAnnotations
+> Task :react-native-safe-area-context:mergeReleaseGeneratedProguardFiles
+> Task :react-native-safe-area-context:mergeReleaseConsumerProguardFiles
+> Task :react-native-safe-area-context:mergeReleaseJavaResource
+> Task :react-native-safe-area-context:syncReleaseLibJars
+> Task :react-native-safe-area-context:bundleReleaseLocalLintAar
+> Task :react-native-screens:stripReleaseDebugSymbols
+> Task :react-native-screens:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-screens:extractDeepLinksForAarRelease
+> Task :react-native-screens:extractReleaseAnnotations
+> Task :react-native-screens:mergeReleaseGeneratedProguardFiles
+> Task :react-native-screens:mergeReleaseConsumerProguardFiles
+> Task :react-native-screens:mergeReleaseJavaResource
+> Task :react-native-screens:syncReleaseLibJars
+> Task :react-native-screens:bundleReleaseLocalLintAar
+> Task :react-native-reanimated:stripReleaseDebugSymbols
+> Task :react-native-reanimated:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-reanimated:extractDeepLinksForAarRelease
+> Task :react-native-reanimated:extractReleaseAnnotations
+> Task :react-native-reanimated:mergeReleaseGeneratedProguardFiles
+> Task :react-native-reanimated:mergeReleaseConsumerProguardFiles
+> Task :react-native-reanimated:mergeReleaseJavaResource
+> Task :react-native-reanimated:syncReleaseLibJars
+> Task :react-native-reanimated:bundleReleaseLocalLintAar
+> Task :expo:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo:extractDeepLinksForAarRelease
+> Task :expo:extractReleaseAnnotations
+> Task :expo:mergeReleaseGeneratedProguardFiles
+> Task :expo:mergeReleaseConsumerProguardFiles
+> Task :expo:mergeReleaseJavaResource
+> Task :expo:syncReleaseLibJars
+> Task :expo:bundleReleaseLocalLintAar
+> Task :expo-modules-core:stripReleaseDebugSymbols
+> Task :expo-modules-core:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-modules-core:extractDeepLinksForAarRelease
+> Task :expo-modules-core:extractReleaseAnnotations
+> Task :expo-modules-core:mergeReleaseGeneratedProguardFiles
+> Task :expo-modules-core:mergeReleaseConsumerProguardFiles
+> Task :expo-modules-core:mergeReleaseJavaResource
+> Task :expo-modules-core:syncReleaseLibJars
+> Task :expo-modules-core:bundleReleaseLocalLintAar
+> Task :react-native-worklets:stripReleaseDebugSymbols
+> Task :react-native-worklets:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-worklets:extractDeepLinksForAarRelease
+> Task :react-native-worklets:extractReleaseAnnotations
+> Task :react-native-worklets:mergeReleaseGeneratedProguardFiles
+> Task :react-native-worklets:mergeReleaseConsumerProguardFiles
+> Task :react-native-worklets:mergeReleaseJavaResource
+> Task :react-native-worklets:syncReleaseLibJars
+> Task :react-native-worklets:bundleReleaseLocalLintAar
+> Task :react-native-masked-view_masked-view:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-masked-view_masked-view:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-masked-view_masked-view:extractDeepLinksForAarRelease
+> Task :react-native-masked-view_masked-view:extractReleaseAnnotations
+> Task :react-native-masked-view_masked-view:mergeReleaseGeneratedProguardFiles
+> Task :react-native-masked-view_masked-view:mergeReleaseConsumerProguardFiles
+> Task :react-native-masked-view_masked-view:mergeReleaseJavaResource
+> Task :react-native-masked-view_masked-view:syncReleaseLibJars
+> Task :react-native-masked-view_masked-view:bundleReleaseLocalLintAar
+> Task :react-native-svg:stripReleaseDebugSymbols NO-SOURCE
+> Task :react-native-svg:copyReleaseJniLibsProjectAndLocalJars
+> Task :react-native-svg:extractDeepLinksForAarRelease
+> Task :react-native-svg:extractReleaseAnnotations
+> Task :react-native-svg:mergeReleaseGeneratedProguardFiles
+> Task :react-native-svg:mergeReleaseConsumerProguardFiles
+> Task :react-native-svg:mergeReleaseJavaResource
+> Task :react-native-svg:syncReleaseLibJars
+> Task :react-native-svg:bundleReleaseLocalLintAar
+> Task :expo-log-box:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-log-box:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-log-box:extractDeepLinksForAarRelease
+> Task :expo-log-box:extractReleaseAnnotations
+> Task :expo-log-box:mergeReleaseGeneratedProguardFiles
+> Task :expo-log-box:mergeReleaseConsumerProguardFiles
+> Task :expo-log-box:mergeReleaseJavaResource
+> Task :expo-log-box:syncReleaseLibJars
+> Task :expo-log-box:bundleReleaseLocalLintAar
+> Task :expo-updates:stripReleaseDebugSymbols
+> Task :expo-updates:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-updates:extractDeepLinksForAarRelease
+> Task :expo-updates:extractReleaseAnnotations
+> Task :expo-updates:mergeReleaseGeneratedProguardFiles
+> Task :expo-updates:mergeReleaseConsumerProguardFiles
+> Task :expo-updates:mergeReleaseJavaResource
+> Task :expo-updates:syncReleaseLibJars
+> Task :expo-updates:bundleReleaseLocalLintAar
+> Task :expo-constants:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-constants:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-constants:extractDeepLinksForAarRelease
+> Task :expo-constants:extractReleaseAnnotations
+> Task :expo-constants:mergeReleaseGeneratedProguardFiles
+> Task :expo-constants:mergeReleaseConsumerProguardFiles
+> Task :expo-constants:mergeReleaseJavaResource
+> Task :expo-constants:syncReleaseLibJars
+> Task :expo-constants:bundleReleaseLocalLintAar
+> Task :expo-eas-client:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-eas-client:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-eas-client:extractDeepLinksForAarRelease
+> Task :expo-eas-client:extractReleaseAnnotations
+> Task :expo-eas-client:mergeReleaseGeneratedProguardFiles
+> Task :expo-eas-client:mergeReleaseConsumerProguardFiles
+> Task :expo-eas-client:mergeReleaseJavaResource
+> Task :expo-eas-client:syncReleaseLibJars
+> Task :expo-eas-client:bundleReleaseLocalLintAar
+> Task :expo-manifests:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-manifests:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-manifests:extractDeepLinksForAarRelease
+> Task :expo-manifests:extractReleaseAnnotations
+> Task :expo-manifests:mergeReleaseGeneratedProguardFiles
+> Task :expo-manifests:mergeReleaseConsumerProguardFiles
+> Task :expo-manifests:mergeReleaseJavaResource
+> Task :expo-manifests:syncReleaseLibJars
+> Task :expo-manifests:bundleReleaseLocalLintAar
+> Task :expo-json-utils:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-json-utils:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-json-utils:extractDeepLinksForAarRelease
+> Task :expo-json-utils:extractReleaseAnnotations
+> Task :expo-json-utils:mergeReleaseGeneratedProguardFiles
+> Task :expo-json-utils:mergeReleaseConsumerProguardFiles
+> Task :expo-json-utils:mergeReleaseJavaResource
+> Task :expo-json-utils:syncReleaseLibJars
+> Task :expo-json-utils:bundleReleaseLocalLintAar
+> Task :expo-structured-headers:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-structured-headers:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-structured-headers:extractDeepLinksForAarRelease
+> Task :expo-structured-headers:extractReleaseAnnotations
+> Task :expo-structured-headers:mergeReleaseGeneratedProguardFiles
+> Task :expo-structured-headers:mergeReleaseConsumerProguardFiles
+> Task :expo-structured-headers:mergeReleaseJavaResource
+> Task :expo-structured-headers:syncReleaseLibJars
+> Task :expo-structured-headers:bundleReleaseLocalLintAar
+> Task :expo-updates-interface:stripReleaseDebugSymbols NO-SOURCE
+> Task :expo-updates-interface:copyReleaseJniLibsProjectAndLocalJars
+> Task :expo-updates-interface:extractDeepLinksForAarRelease
+> Task :expo-updates-interface:extractReleaseAnnotations
+> Task :expo-updates-interface:mergeReleaseGeneratedProguardFiles
+> Task :expo-updates-interface:mergeReleaseConsumerProguardFiles
+> Task :expo-updates-interface:mergeReleaseJavaResource
+> Task :expo-updates-interface:syncReleaseLibJars
+> Task :expo-updates-interface:bundleReleaseLocalLintAar
+> Task :expo-constants:writeReleaseLintModelMetadata
+> Task :expo-eas-client:writeReleaseLintModelMetadata
+> Task :expo-json-utils:writeReleaseLintModelMetadata
+> Task :expo-log-box:writeReleaseLintModelMetadata
+> Task :expo-manifests:writeReleaseLintModelMetadata
+> Task :expo-modules-core:writeReleaseLintModelMetadata
+> Task :expo-structured-headers:writeReleaseLintModelMetadata
+> Task :expo-updates:writeReleaseLintModelMetadata
+> Task :expo-updates-interface:writeReleaseLintModelMetadata
+> Task :react-native-worklets:writeReleaseLintModelMetadata
+> Task :expo:lintVitalAnalyzeRelease
+> Task :expo:writeReleaseLintModelMetadata
+> Task :expo-constants:lintVitalAnalyzeRelease
+> Task :expo-eas-client:lintVitalAnalyzeRelease
+> Task :expo-json-utils:lintVitalAnalyzeRelease
+> Task :expo-log-box:lintVitalAnalyzeRelease
+> Task :expo-manifests:lintVitalAnalyzeRelease
+> Task :expo-modules-core:lintVitalAnalyzeRelease
+> Task :expo-structured-headers:lintVitalAnalyzeRelease
+> Task :expo-updates:lintVitalAnalyzeRelease
+> Task :expo-updates-interface:lintVitalAnalyzeRelease
+> Task :react-native-community_datetimepicker:lintVitalAnalyzeRelease
+> Task :react-native-community_datetimepicker:writeReleaseLintModelMetadata
+> Task :react-native-documents_viewer:lintVitalAnalyzeRelease
+> Task :react-native-documents_viewer:writeReleaseLintModelMetadata
+> Task :react-native-reanimated:writeReleaseLintModelMetadata
+> Task :react-native-svg:writeReleaseLintModelMetadata
+> Task :react-native-gesture-handler:lintVitalAnalyzeRelease
+> Task :react-native-gesture-handler:writeReleaseLintModelMetadata
+> Task :react-native-maps:lintVitalAnalyzeRelease
+> Task :react-native-maps:writeReleaseLintModelMetadata
+> Task :react-native-masked-view_masked-view:lintVitalAnalyzeRelease
+> Task :react-native-masked-view_masked-view:writeReleaseLintModelMetadata
+> Task :react-native-reanimated:lintVitalAnalyzeRelease
+> Task :react-native-safe-area-context:lintVitalAnalyzeRelease
+> Task :react-native-safe-area-context:writeReleaseLintModelMetadata
+> Task :react-native-screens:lintVitalAnalyzeRelease
+> Task :react-native-screens:writeReleaseLintModelMetadata
+> Task :react-native-svg:lintVitalAnalyzeRelease
+> Task :react-native-worklets:lintVitalAnalyzeRelease
+> Task :app:lintVitalAnalyzeRelease
+> Task :expo:generateReleaseLintVitalModel
+> Task :expo-constants:generateReleaseLintVitalModel
+> Task :expo-eas-client:generateReleaseLintVitalModel
+> Task :expo-json-utils:generateReleaseLintVitalModel
+> Task :expo-log-box:generateReleaseLintVitalModel
+> Task :expo-manifests:generateReleaseLintVitalModel
+> Task :expo-modules-core:generateReleaseLintVitalModel
+> Task :expo-structured-headers:generateReleaseLintVitalModel
+> Task :expo-updates:generateReleaseLintVitalModel
+> Task :expo-updates-interface:generateReleaseLintVitalModel
+> Task :react-native-community_datetimepicker:generateReleaseLintVitalModel
+> Task :react-native-documents_viewer:generateReleaseLintVitalModel
+> Task :react-native-gesture-handler:generateReleaseLintVitalModel
+> Task :react-native-maps:generateReleaseLintVitalModel
+> Task :react-native-masked-view_masked-view:generateReleaseLintVitalModel
+> Task :react-native-reanimated:generateReleaseLintVitalModel
+> Task :react-native-safe-area-context:generateReleaseLintVitalModel
+> Task :react-native-screens:generateReleaseLintVitalModel
+> Task :react-native-svg:generateReleaseLintVitalModel
+> Task :react-native-worklets:generateReleaseLintVitalModel
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:processReleaseJavaRes
+> Task :app:mergeReleaseJavaResource
+> Task :app:optimizeReleaseResources
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+
+[Incubating] Problems report is available at: file:///tmp/transpo24-staging-driver_mobile-SNThUz/source/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 14m
+879 actionable tasks: 863 executed, 16 up-to-date
+{
+  "repository": "driver_mobile",
+  "apk": "/tmp/transpo24-staging-driver_mobile-SNThUz/driver_mobile-staging.apk",
+  "sha256": "f1ceb35cd4548498d9e832a405bf255747b69f4b9bc1aa559da25a4f94bf0cd8",
+  "api": "http://127.0.0.1:57431",
+  "maps": false,
+  "firebase": false,
+  "ota": false,
+  "storeArtifact": false,
+  "source": "/tmp/transpo24-staging-driver_mobile-SNThUz/source"
+}

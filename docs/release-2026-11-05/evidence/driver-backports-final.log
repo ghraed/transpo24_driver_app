@@ -1,0 +1,3 @@
+Security backports verified; 0 files patched. Advisory versions remain unchanged.
+PASS: pristine-byte replay, idempotent install, and unexpected-source fail-closed rejection.
+PASS: CJS/ESM Zod3 bounded-array/set sync+async; image-size malformed ICNS/JXL/HEIF termination and valid PNG/ICNS. Unbounded Zod remains open.

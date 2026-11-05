@@ -1,0 +1,7 @@
+{
+  "sha256": "23bcafcc8b02e85f43e1c0d3b1050a07c33fd5763c9a5ad439283ec7d55c08eb",
+  "containsLoopbackStagingApi": true,
+  "secretKeyPatternsFound": false,
+  "googleApiKeyPatternsFound": false,
+  "storeArtifact": false
+}

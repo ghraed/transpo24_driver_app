@@ -1,0 +1,42 @@
+
+> transpo24-driver@1.0.0 lint
+> expo lint
+
+env: load .env.local .env.development .env
+env: export EXPO_PUBLIC_ANDROID_API_URL EXPO_PUBLIC_ANDROID_SOCKET_URL EXPO_PUBLIC_API_URL EXPO_PUBLIC_APP_ENV EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY EXPO_PUBLIC_SOCKET_URL EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY EXPO_PUBLIC_GOOGLE_MAPS_IOS_API_KEY
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment-group.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment-picker.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/lib/request-files.test.ts
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+  8:1  warning  Import in body of module; reorder to top  import/first
+
+✖ 24 problems (0 errors, 24 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+

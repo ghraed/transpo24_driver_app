@@ -1,0 +1,11 @@
+
+> transpo24-driver@1.0.0 translations:check
+> node scripts/check-catalog-parity.cjs
+
+{"locale":"en","sourceLeaves":1715,"translatedLeaves":1715,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"ar","sourceLeaves":1715,"translatedLeaves":1715,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"de","sourceLeaves":1715,"translatedLeaves":1715,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"es","sourceLeaves":1715,"translatedLeaves":1715,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"fr","sourceLeaves":1715,"translatedLeaves":1715,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"it","sourceLeaves":1715,"translatedLeaves":2514,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":799}
+PASS automated structure only. Human translation, contextual meaning, truncation, RTL and accessibility review remain required.

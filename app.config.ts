@@ -29,15 +29,17 @@ export default ({ config }: ConfigContext) => {
     }
   }
   const androidPackage = IS_STAGING ? 'com.transpo24.driver.staging' : IS_DEV ? 'com.transpo24.driver.dev' : config.android?.package;
-  const androidGoogleServicesFile = IS_DEV
+  const androidGoogleServicesFile = IS_STAGING
+    ? process.env.EXPO_ANDROID_STAGING_GOOGLE_SERVICES_FILE?.trim() || ''
+    : IS_DEV
     ? process.env.EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE?.trim() || ''
     : ANDROID_GOOGLE_SERVICES_FILE;
-  if (IS_DEV && androidGoogleServicesFile) {
+  if ((IS_DEV || IS_STAGING) && androidGoogleServicesFile) {
     const services = JSON.parse(readFileSync(androidGoogleServicesFile, 'utf8'));
     if (!services.client?.some((client: { client_info?: { android_client_info?: { package_name?: string } } }) =>
       client.client_info?.android_client_info?.package_name === androidPackage,
     )) {
-      throw new Error('Dev Firebase configuration must register com.transpo24.driver.dev.');
+      throw new Error(`Firebase configuration must register ${androidPackage}.`);
     }
   }
   // Validate on the Android build worker, where EAS file variables exist.

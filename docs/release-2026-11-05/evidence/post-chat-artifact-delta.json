@@ -1,0 +1,12 @@
+{
+  "changedAppInputsSinceNativeChatAcceptance": [
+    "src/localization/locales/ar.json",
+    "src/localization/locales/de.json",
+    "src/localization/locales/en.json",
+    "src/localization/locales/es.json",
+    "src/localization/locales/fr.json",
+    "src/localization/locales/it.json"
+  ],
+  "chatAndOutboxSourcesUnchanged": true,
+  "note": "Final artifact adds the 39 source-used language keys. Native chat evidence is tied to the retained chat-tested APK, not silently reassigned."
+}

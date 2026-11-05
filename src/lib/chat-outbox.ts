@@ -45,3 +45,14 @@ export function pendingChatOperations(roomId: string) { return read().filter(op 
 export function reconcileChatOperations(messages: { operationId?: string | null }[]) {
   for (const message of messages) if (message.operationId && read().some(op => op.id === message.operationId)) finishChatOperation(message.operationId);
 }
+
+// Read the uncertain operations before removing committed ones so an automatically
+// restored composer cannot remain populated and resend the committed text as a new operation.
+export function reconcileChatComposer(roomId: string, messages: { operationId?: string | null }[]) {
+  const known = new Set(messages.map(message => message.operationId).filter(Boolean));
+  const pending = pendingChatOperations(roomId);
+  const confirmedPayloads = pending.filter(op => op.kind === 'TEXT' && known.has(op.id)).map(op => op.payload);
+  reconcileChatOperations(messages);
+  const pendingPayload = pendingChatOperations(roomId).filter(op => op.kind === 'TEXT').at(-1)?.payload;
+  return (current: string) => confirmedPayloads.includes(current) ? '' : current || pendingPayload || '';
+}

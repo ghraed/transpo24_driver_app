@@ -1,0 +1,11 @@
+PASS scripts/staging-firebase-config.test.js
+  ✓ accepts separate staging clients and returns only public metadata (2 ms)
+  ✓ rejects a matching package on the production Firebase project (3 ms)
+  ✓ rejects wrong-stage or mixed production/development clients (1 ms)
+  ✓ rejects missing Firebase client metadata
+
+Test Suites: 1 passed, 1 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        0.513 s, estimated 1 s
+Ran all test suites matching /scripts\/staging-firebase-config.test.js/i.

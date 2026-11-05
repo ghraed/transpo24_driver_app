@@ -44,3 +44,6 @@ example
 /android
 
 *.aab
+
+# Local test-signed acceptance APKs; never store artifacts
+/.staging-artifacts/

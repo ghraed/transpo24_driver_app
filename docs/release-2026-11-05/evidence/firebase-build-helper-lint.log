@@ -1,0 +1,7 @@
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/scripts/staging-firebase-config.test.js
+   3:74  error  'Buffer' is not defined  no-undef
+  15:39  error  'Buffer' is not defined  no-undef
+
+✖ 2 problems (2 errors, 0 warnings)
+

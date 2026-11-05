@@ -1,0 +1,8 @@
+{"locale":"en","sourceLeaves":1754,"translatedLeaves":1754,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"ar","sourceLeaves":1754,"translatedLeaves":1754,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"de","sourceLeaves":1754,"translatedLeaves":1754,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"es","sourceLeaves":1754,"translatedLeaves":1754,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"fr","sourceLeaves":1754,"translatedLeaves":1754,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":0}
+{"locale":"it","sourceLeaves":1754,"translatedLeaves":2548,"missing":0,"placeholderMismatches":0,"legacyExtraKeys":794}
+PASS automated structure only. Human translation, contextual meaning, truncation, RTL and accessibility review remain required.
+PASS source literal/conditional translation key coverage. Dynamically constructed keys and linguistic quality still require review.

@@ -1,0 +1,201 @@
+
+> transpo24-driver@1.0.0 test
+> jest --runInBand --watch=false
+
+PASS src/components/deliver-item.test.js
+PASS src/localization/consent-translations.test.ts
+PASS src/components/chat-socket-lifecycle.test.js
+PASS src/components/send-price-offer.test.js
+PASS src/components/go-to-pickup.test.js
+PASS scripts/staging-config.test.js
+PASS src/omw/screen.test.js
+PASS src/components/onboarding-document-photos.test.js
+PASS src/components/driver-phone-auth-screen.test.js
+PASS src/components/chat-attachment-group.test.js
+PASS src/components/chat-wallpaper.test.js
+PASS tests/offer-request-version.test.js
+PASS src/components/driver-business-registration.test.js
+PASS tests/driver-map-coverage.test.js
+PASS src/components/request-route-card.test.js
+PASS tests/review-request-eligibility.test.js
+PASS tests/job-lists.test.js
+PASS scripts/ios-production-config.test.js
+PASS src/components/chat-attachment-picker.test.js
+PASS src/omw/route-requests.test.js
+PASS src/omw/place-field.test.js
+PASS src/components/chat-attachment.test.js
+PASS tests/city-coverage-editor.test.js
+PASS src/components/city-coverage-editor.test.js
+PASS src/omw/context.test.js
+PASS src/lib/stripe-connect-screen.test.js
+PASS src/components/background-location-prompt.test.js
+PASS src/components/date-time-picker-dialog.test.js
+PASS src/omw/map-picker.test.js
+PASS src/lib/payment-release-history-screen.test.js
+PASS src/components/driver-profile-completion-card.test.js
+PASS src/lib/routes-api.test.js
+PASS src/components/request-documents.test.js
+PASS src/components/driver-phone-verification.test.js
+PASS src/lib/document-photo-native-compat.test.js
+PASS src/lib/earnings-history-screen.test.js
+PASS src/lib/chat-outbox.test.ts
+  ● Console
+
+    console.warn
+      An error occurred while requiring the 'ExpoModulesCoreJSLogger' module: Cannot read properties of undefined (reading 'get')
+
+      1 |
+    > 2 | import { Directory, File, Paths } from 'expo-file-system';
+        | ^
+      3 | import { Platform } from 'react-native';
+      4 | import { getCurrentAccessToken as readToken } from './auth-storage';
+      5 | export type PendingChatOperation = { id: string; roomId: string; kind: 'TEXT' | 'FILE'; payload: string; file?: { uri: string; name: string; mimeType?: string; size?: number; operationId?: string } };
+
+      at warn (node_modules/expo-modules-core/src/requireNativeModule.ts:46:13)
+      at Object.<anonymous> (node_modules/expo-modules-core/src/sweet/setUpJsLogger.fx.ts:14:53)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:2:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo-file-system/src/ExpoFileSystem.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Directory.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Paths.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/index.ts:1:1)
+      at Object.require (src/lib/chat-outbox.ts:2:1)
+      at requireActual (src/lib/chat-outbox.test.ts:14:31)
+      at Object.load (src/lib/chat-outbox.test.ts:16:17)
+
+    console.warn
+      An error occurred while requiring the 'ExpoModulesCoreJSLogger' module: Cannot read properties of undefined (reading 'get')
+
+      1 |
+    > 2 | import { Directory, File, Paths } from 'expo-file-system';
+        | ^
+      3 | import { Platform } from 'react-native';
+      4 | import { getCurrentAccessToken as readToken } from './auth-storage';
+      5 | export type PendingChatOperation = { id: string; roomId: string; kind: 'TEXT' | 'FILE'; payload: string; file?: { uri: string; name: string; mimeType?: string; size?: number; operationId?: string } };
+
+      at warn (node_modules/expo-modules-core/src/requireNativeModule.ts:46:13)
+      at Object.<anonymous> (node_modules/expo-modules-core/src/sweet/setUpJsLogger.fx.ts:14:53)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:2:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo-file-system/src/ExpoFileSystem.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Directory.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Paths.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/index.ts:1:1)
+      at Object.require (src/lib/chat-outbox.ts:2:1)
+      at requireActual (src/lib/chat-outbox.test.ts:14:31)
+      at Object.load (src/lib/chat-outbox.test.ts:19:10)
+
+    console.warn
+      An error occurred while requiring the 'ExpoModulesCoreJSLogger' module: Cannot read properties of undefined (reading 'get')
+
+      1 |
+    > 2 | import { Directory, File, Paths } from 'expo-file-system';
+        | ^
+      3 | import { Platform } from 'react-native';
+      4 | import { getCurrentAccessToken as readToken } from './auth-storage';
+      5 | export type PendingChatOperation = { id: string; roomId: string; kind: 'TEXT' | 'FILE'; payload: string; file?: { uri: string; name: string; mimeType?: string; size?: number; operationId?: string } };
+
+      at warn (node_modules/expo-modules-core/src/requireNativeModule.ts:46:13)
+      at Object.<anonymous> (node_modules/expo-modules-core/src/sweet/setUpJsLogger.fx.ts:14:53)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:2:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo-file-system/src/ExpoFileSystem.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Directory.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Paths.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/index.ts:1:1)
+      at Object.require (src/lib/chat-outbox.ts:2:1)
+      at requireActual (src/lib/chat-outbox.test.ts:14:31)
+      at Object.load (src/lib/chat-outbox.test.ts:24:17)
+
+    console.warn
+      An error occurred while requiring the 'ExpoModulesCoreJSLogger' module: Cannot read properties of undefined (reading 'get')
+
+      1 |
+    > 2 | import { Directory, File, Paths } from 'expo-file-system';
+        | ^
+      3 | import { Platform } from 'react-native';
+      4 | import { getCurrentAccessToken as readToken } from './auth-storage';
+      5 | export type PendingChatOperation = { id: string; roomId: string; kind: 'TEXT' | 'FILE'; payload: string; file?: { uri: string; name: string; mimeType?: string; size?: number; operationId?: string } };
+
+      at warn (node_modules/expo-modules-core/src/requireNativeModule.ts:46:13)
+      at Object.<anonymous> (node_modules/expo-modules-core/src/sweet/setUpJsLogger.fx.ts:14:53)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:2:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo-file-system/src/ExpoFileSystem.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Directory.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Paths.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/index.ts:1:1)
+      at Object.require (src/lib/chat-outbox.ts:2:1)
+      at requireActual (src/lib/chat-outbox.test.ts:14:31)
+      at Object.load (src/lib/chat-outbox.test.ts:30:17)
+
+    console.warn
+      An error occurred while requiring the 'ExpoModulesCoreJSLogger' module: Cannot read properties of undefined (reading 'get')
+
+      1 |
+    > 2 | import { Directory, File, Paths } from 'expo-file-system';
+        | ^
+      3 | import { Platform } from 'react-native';
+      4 | import { getCurrentAccessToken as readToken } from './auth-storage';
+      5 | export type PendingChatOperation = { id: string; roomId: string; kind: 'TEXT' | 'FILE'; payload: string; file?: { uri: string; name: string; mimeType?: string; size?: number; operationId?: string } };
+
+      at warn (node_modules/expo-modules-core/src/requireNativeModule.ts:46:13)
+      at Object.<anonymous> (node_modules/expo-modules-core/src/sweet/setUpJsLogger.fx.ts:14:53)
+      at Object.require (node_modules/expo-modules-core/src/index.ts:2:1)
+      at node_modules/jest-expo/src/preset/setup.js:234:32
+      at Object.require (node_modules/expo-file-system/src/ExpoFileSystem.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Directory.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/Paths.ts:1:1)
+      at Object.require (node_modules/expo-file-system/src/index.ts:1:1)
+      at Object.require (src/lib/chat-outbox.ts:2:1)
+      at requireActual (src/lib/chat-outbox.test.ts:14:31)
+      at Object.load (src/lib/chat-outbox.test.ts:36:17)
+
+PASS src/notifications/usePushRegistration.test.js
+PASS src/lib/chat-room-api.test.js
+PASS src/notifications/useNotificationNavigation.test.js
+PASS src/components/driver-route-polyline.test.js
+PASS src/components/legal-consent-boundary.test.js
+PASS src/lib/request-files.test.ts
+PASS src/lib/places-api.test.js
+PASS src/lib/request-files-native-compat.test.ts
+PASS scripts/driver-release.test.js
+PASS src/lib/chat-outbox-native.test.ts
+PASS src/components/native-maps.test.js
+PASS src/lib/places.test.js
+PASS src/services/tripService.test.js
+PASS src/components/ota-update-banner.test.js
+PASS src/components/map-location-marker.test.js
+PASS src/hooks/use-chat-auto-scroll.test.js
+PASS src/components/driver-chat-button.test.js
+PASS src/utils/trip-validation.test.ts
+PASS src/components/driver-interaction-boundary.test.js
+PASS src/components/privacy-controls.test.js
+PASS src/hooks/useDriverChatRoom.test.js
+PASS src/services/translation-service.test.ts
+PASS src/components/test-notification-button.test.js
+PASS src/lib/driver-rules.test.ts
+PASS src/location/background-trip-tracking.test.js
+PASS src/config/backend.test.ts
+PASS src/lib/document-photo.test.js
+PASS src/config/maps.test.ts
+PASS src/omw/arrival-notification.test.js
+PASS src/notifications/assertPushBackend.test.js
+PASS scripts/fingerprint-config.test.js
+PASS src/location/request-matching-location.test.js
+PASS src/lib/auth-storage.test.ts
+PASS src/omw/routes.test.js
+PASS src/config/trip-confirmation.test.ts
+PASS src/omw/storage.test.js
+PASS src/lib/driver-access.test.ts
+PASS src/omw/current-location.test.js
+PASS src/location/trip-location-cache.test.ts
+PASS src/lib/date-only.test.js
+PASS src/lib/chat-attachment-groups.test.ts
+PASS src/lib/private-asset.test.ts
+
+Test Suites: 79 passed, 79 total
+Tests:       532 passed, 532 total
+Snapshots:   0 total
+Time:        9.749 s, estimated 22 s
+Ran all test suites.

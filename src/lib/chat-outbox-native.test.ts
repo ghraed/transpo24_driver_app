@@ -28,3 +28,14 @@ test('recovers the fully written replacement if the process dies between journal
  mockFiles.set(journal.replace('pending.json','pending.next.json'),mockFiles.get(journal)!);mockFiles.delete(journal);
  jest.resetModules();expect(load().pendingChatOperations('room-native')[0].id).toBe(op.id);
 });
+
+test('a restored draft is cleared when delayed history confirms its uncertain operation, while an edited draft survives',()=>{
+ const operation=load().beginChatOperation('room-native','TEXT','Synthetic restart message');
+ jest.resetModules();
+ const restore=load().reconcileChatComposer('room-native',[]);
+ expect(restore('')).toBe(operation.payload);
+ const recover=load().reconcileChatComposer('room-native',[{operationId:operation.id}]);
+ expect(recover(operation.payload)).toBe('');
+ expect(recover('A separately edited draft')).toBe('A separately edited draft');
+ expect(load().pendingChatOperations('room-native')).toEqual([]);
+});
