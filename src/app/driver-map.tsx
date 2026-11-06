@@ -27,6 +27,7 @@ const MAP_ICON_SIZE = 24;
 type Coordinate = { latitude: number; longitude: number };
 
 const DRIVER_LOCATION_REGION_DELTA = 0.02;
+const COUNTRY_OVERVIEW_REGION_DELTA = 5;
 
 const SOFT_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#CDE9CE' }] },
@@ -44,12 +45,12 @@ function hasCoordinate(location: { latitude: number | null; longitude: number | 
   return typeof location.latitude === 'number' && typeof location.longitude === 'number';
 }
 
-function asRegion(coordinate: Coordinate) {
+function asRegion(coordinate: Coordinate, delta = DRIVER_LOCATION_REGION_DELTA) {
   return {
     latitude: coordinate.latitude,
     longitude: coordinate.longitude,
-    latitudeDelta: DRIVER_LOCATION_REGION_DELTA,
-    longitudeDelta: DRIVER_LOCATION_REGION_DELTA,
+    latitudeDelta: delta,
+    longitudeDelta: delta,
   };
 }
 
@@ -62,6 +63,7 @@ export default function DriverMapScreen() {
   const mapRef = useRef<any>(null);
   const loadVersion = useRef(0);
   const locationVersion = useRef(0);
+  const hasCenteredOverview = useRef(false);
   const [requestType, setRequestType] = useState<RequestType>('immediate');
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
@@ -73,10 +75,13 @@ export default function DriverMapScreen() {
 
   const { isNavigationView, isNavigationEnabled, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
 
-  const centerOnDriver = useCallback((coordinate: NavigationLocation, duration = 350) => {
+  const centerOnDriver = useCallback((coordinate: NavigationLocation, explicit = false) => {
     setDriverLocation(coordinate);
-    if (requestType === 'immediate' && !isNavigationEnabled()) mapRef.current?.animateToRegion?.(asRegion(coordinate), duration);
-  }, [requestType, isNavigationEnabled]);
+    if (!isNavigationEnabled() && (explicit || !hasCenteredOverview.current)) {
+      mapRef.current?.animateToRegion?.(asRegion(coordinate, explicit ? DRIVER_LOCATION_REGION_DELTA : COUNTRY_OVERVIEW_REGION_DELTA), 350);
+      hasCenteredOverview.current = true;
+    }
+  }, [isNavigationEnabled]);
 
   const loadMap = useCallback(async () => {
     const version = ++loadVersion.current;
@@ -113,14 +118,14 @@ export default function DriverMapScreen() {
       });
       if (version !== locationVersion.current) return undefined;
       if (lastKnownLocation) {
-        centerOnDriver(lastKnownLocation.coords);
+        centerOnDriver(lastKnownLocation.coords, !watch);
       }
 
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
       if (version !== locationVersion.current) return undefined;
-      centerOnDriver(currentLocation.coords);
+      centerOnDriver(currentLocation.coords, !watch);
       void loadMap();
       if (!watch) return undefined;
 
@@ -162,6 +167,7 @@ export default function DriverMapScreen() {
         isFocused = false;
         ++loadVersion.current;
         ++locationVersion.current;
+      hasCenteredOverview.current = false;
         clearInterval(timer);
         stopLocationTracking?.();
       };
@@ -183,8 +189,8 @@ export default function DriverMapScreen() {
     }
   };
 
-  const initialRegion = driverLocation ? asRegion(driverLocation) : alerts.find(alert => hasCoordinate(alert.pickup))?.pickup;
-  const mapRegion = initialRegion && hasCoordinate(initialRegion) ? asRegion(initialRegion) : undefined;
+  const initialRegion = driverLocation ?? alerts.find(alert => hasCoordinate(alert.pickup))?.pickup;
+  const mapRegion = initialRegion && hasCoordinate(initialRegion) ? asRegion(initialRegion, COUNTRY_OVERVIEW_REGION_DELTA) : undefined;
 
   // Browse every open request independently of notification eligibility.
   const jobMarkers = alerts.filter(
@@ -275,7 +281,6 @@ export default function DriverMapScreen() {
           }} onChange={(type) => {
             setRequestType(type);
             if (isNavigationEnabled()) followDriver();
-            else if (driverLocation) mapRef.current?.animateToRegion?.(asRegion(driverLocation), 350);
           }} />
           <Text style={{ color: colors.text, backgroundColor: colors.surface, padding: 10, borderRadius: 10, fontSize: 12, textAlign: 'center' }}>{t('Map shows all open requests. Radius applies to notifications only.')}</Text>
         </View>
