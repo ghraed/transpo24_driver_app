@@ -1,6 +1,6 @@
 import { getBackendApiBaseUrl } from '@/config/backend';
 import { stopBackgroundTripTracking } from '@/location/background-trip-tracking';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   getDriverAvailability,
@@ -60,6 +60,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const sessionRevision = useRef(0);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [driver, setDriver] = useState<DriverProfile | null>(null);
@@ -72,17 +73,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restoreSession = useCallback(async (): Promise<void> => {
+    const revision = sessionRevision.current;
     setIsRestoringSession(true);
     try {
       const token = await readAccessToken();
+      if (revision !== sessionRevision.current) return;
       setHasRestoredStoredSession(Boolean(token));
       setAccessToken(token);
 
       if (token) {
         try {
           const me = await getDriverMe();
+          if (revision !== sessionRevision.current) return;
           applyDriverMeResponse(me);
         } catch {
+          if (revision !== sessionRevision.current) return;
           const trustedSession = await readTrustedDriverSession();
           if (trustedSession) {
             try {
@@ -133,7 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authenticateWithPhone = useCallback(async (
     payload: VerifyPhoneCodePayload,
   ): Promise<DriverNextStep> => {
+    const revision = ++sessionRevision.current;
     const response = await verifyDriverPhoneVerificationCode(payload);
+    if (revision !== sessionRevision.current) throw new Error('The signed-in account changed.');
 
     await Promise.all([
       persistAccessToken(response.accessToken),
@@ -197,13 +204,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshDriverMe = useCallback(async (): Promise<DriverMeResponse> => {
+    const revision = sessionRevision.current;
     const me = await getDriverMe();
+    if (revision !== sessionRevision.current) throw new Error('The signed-in account changed.');
     applyDriverMeResponse(me);
     return me;
   }, [applyDriverMeResponse]);
 
   const saveDriverProfile = useCallback(async (payload: UpdateDriverProfilePayload): Promise<DriverMeResponse> => {
+    const revision = sessionRevision.current;
     const updated = await updateDriverProfile(payload);
+    if (revision !== sessionRevision.current) throw new Error('The signed-in account changed.');
     applyDriverMeResponse(updated);
     return updated;
   }, [applyDriverMeResponse]);
@@ -220,6 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signOut = useCallback(async (): Promise<void> => {
+    ++sessionRevision.current;
     const credential = await readAccessToken();
     if (credential) {
       const controller = new AbortController();

@@ -1,3 +1,4 @@
+jest.mock('expo-file-system', () => ({ Paths: { document: 'file:///test/' }, Directory: class {}, File: class {} }));
 import { jest, test, expect, beforeEach } from '@jest/globals';
 jest.mock('react-native', () => ({ Platform: { OS: 'web' } }));
 let mockOwner = 'customer-1';

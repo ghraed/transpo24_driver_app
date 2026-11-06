@@ -1,0 +1,45 @@
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment-group.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/context/auth-context.test.js
+  18:20  error  Error: Cannot reassign variables declared outside of the component/hook
+
+Variable `current` is declared outside of the component/hook. Reassigning this value during render is a form of side effect, which can cause unpredictable behavior depending on when the component happens to re-render. If this variable is used in rendering, use useState instead. Otherwise, consider updating it in an effect. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#side-effects-must-run-outside-of-render).
+
+  16 | const response = id => ({ accessToken: 'token-' + id, user: { id, role: 'DRIVER' }, driver: { id: 'profile-' + id, phone: '+12025550111' }, nextStep: 'HOME' });
+  17 | let current;
+> 18 | function Probe() { current = useAuth(); return null; }
+     |                    ^^^^^^^ `current` cannot be reassigned
+  19 | beforeEach(() => { jest.clearAllMocks(); mockToken = null; Object.defineProperty(globalThis, 'fetch', { configurable: true, writable: true, value: jest.fn(async () => ({ ok: true })) }); });
+  20 | it.each(['refreshDriverMe', 'saveDriverProfile'])('discards %s completed after logout and another synthetic login', async method => {
+  21 |  let tree;  react-hooks/globals
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/lib/chat-outbox.test.ts
+  2:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/lib/request-files.test.ts
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+  8:1  warning  Import in body of module; reorder to top  import/first
+
+✖ 21 problems (1 error, 20 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+

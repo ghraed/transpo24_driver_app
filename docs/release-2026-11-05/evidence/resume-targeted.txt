@@ -1,0 +1,9 @@
+PASS src/lib/pending-request-link.test.ts
+PASS src/notifications/usePendingRequestLink.test.tsx
+PASS src/localization/provider.test.tsx
+
+Test Suites: 3 passed, 3 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        0.884 s, estimated 1 s
+Ran all test suites matching /src\/localization\/provider.test.tsx|src\/lib\/pending-request-link.test.ts|src\/notifications\/usePendingRequestLink.test.tsx/i.

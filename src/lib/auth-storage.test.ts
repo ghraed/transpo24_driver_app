@@ -48,3 +48,12 @@ test('clears all onboarding drafts from secure storage', async () => {
     'transpo24.driver.loadCapacityDraft',
   ]));
 });
+
+test('a delayed credential read cannot replace a newer login', async () => {
+  let release!: (value: string | null) => void;
+  get.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+  const pending = readAccessToken();
+  await persistAccessToken('new-synthetic-account');
+  release('old-synthetic-account');
+  await expect(pending).resolves.toBe('new-synthetic-account');
+});

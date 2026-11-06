@@ -25,7 +25,23 @@ if(firebaseInput) {
  firebaseMetadata=require('./staging-firebase-config.cjs').validateStagingFirebase(firebaseBytes,
   name==='client_mobile'?'com.transpo24.app.staging':'com.transpo24.driver.staging',forbiddenProjects);
 }
-if(reuse && fs.existsSync(path.join(reuse,'android/app/google-services.json'))) throw new Error('Provider-enabled artifacts require a fresh native build');
+if(reuse && fs.existsSync(path.join(reuse,'android/app/google-services.json'))) {
+ // A JS-only refresh may retain an already-built, unchanged staging Firebase input.
+ // It must match both the private input and the successful artifact's recorded hash.
+ const previous=JSON.parse(fs.readFileSync(path.join(path.dirname(path.resolve(reuse)),'artifact.json'),'utf8'));
+ firebaseBytes=fs.readFileSync(path.join(reuse,'android/app/google-services.json'));
+ const retained=fs.readFileSync(path.join(path.dirname(path.resolve(reuse)),'staging-google-services.json'));
+ if(previous.source!==path.resolve(reuse) || !previous.firebase || !firebaseBytes.equals(retained) ||
+    previous.firebaseConfigSha256!==crypto.createHash('sha256').update(firebaseBytes).digest('hex')) {
+  throw new Error('Firebase native inputs changed; use a fresh build');
+ }
+ const forbiddenProjects=new Set();
+ for(const file of ['google-services.json','google-services.dev.json']) {
+  const full=path.join(root,file);if(fs.existsSync(full))forbiddenProjects.add(JSON.parse(fs.readFileSync(full,'utf8')).project_info?.project_id);
+ }
+ firebaseMetadata=require('./staging-firebase-config.cjs').validateStagingFirebase(firebaseBytes,
+  name==='client_mobile'?'com.transpo24.app.staging':'com.transpo24.driver.staging',forbiddenProjects);
+}
 if (reuse && (!path.resolve(reuse).startsWith('/tmp/transpo24-staging-' + name + '-') || path.basename(reuse) !== 'source')) throw new Error('Invalid isolated build path');
 const workspace = reuse ? path.dirname(path.resolve(reuse)) : fs.mkdtempSync('/tmp/transpo24-staging-' + name + '-');
 const source = path.join(workspace,'source');

@@ -1,0 +1,9 @@
+PASS src/context/auth-context.test.js
+  ✓ discards refreshDriverMe completed after logout and another synthetic login (29 ms)
+  ✓ discards saveDriverProfile completed after logout and another synthetic login (14 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        1.056 s
+Ran all test suites matching /src\/context\/auth-context.test.js/i.

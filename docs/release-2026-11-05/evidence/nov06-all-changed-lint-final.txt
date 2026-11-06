@@ -1,0 +1,32 @@
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment-group.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/components/chat-attachment.test.js
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/lib/chat-outbox.test.ts
+  2:1  warning  Import in body of module; reorder to top  import/first
+
+/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/src/lib/request-files.test.ts
+  2:1  warning  Import in body of module; reorder to top  import/first
+  3:1  warning  Import in body of module; reorder to top  import/first
+  4:1  warning  Import in body of module; reorder to top  import/first
+  5:1  warning  Import in body of module; reorder to top  import/first
+  6:1  warning  Import in body of module; reorder to top  import/first
+  7:1  warning  Import in body of module; reorder to top  import/first
+  8:1  warning  Import in body of module; reorder to top  import/first
+
+✖ 20 problems (0 errors, 20 warnings)
+  0 errors and 4 warnings potentially fixable with the `--fix` option.
+

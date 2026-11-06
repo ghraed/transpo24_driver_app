@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 let currentAccessToken: string | null = null;
+let credentialRevision = 0;
 export const getCurrentAccessToken = () => currentAccessToken;
 
 const ACCESS_TOKEN_KEY = 'transpo24.driver.accessToken';
@@ -14,6 +15,7 @@ const VEHICLE_INFORMATION_DRAFT_KEY = 'transpo24.driver.vehicleInformationDraft'
 const LOAD_CAPACITY_DRAFT_KEY = 'transpo24.driver.loadCapacityDraft';
 
 export async function persistAccessToken(token: string): Promise<void> {
+  ++credentialRevision;
   currentAccessToken = token;
   // Active-trip location tasks must authenticate while an iPhone is locked.
   // Keep the token on this device and require its first unlock after a reboot.
@@ -23,11 +25,14 @@ export async function persistAccessToken(token: string): Promise<void> {
 }
 
 export async function readAccessToken(): Promise<string | null> {
-  currentAccessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  const revision = credentialRevision;
+  const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  if (revision === credentialRevision) currentAccessToken = token;
   return currentAccessToken;
 }
 
 export async function clearAccessToken(): Promise<void> {
+  ++credentialRevision;
   currentAccessToken = null;
   await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
 }

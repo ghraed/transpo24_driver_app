@@ -1,0 +1,9 @@
+PASS scripts/build-refresh.test.js
+  ✓ a changed retained Firebase file is refused before source copying or Gradle (45 ms)
+  ✓ a native config that no longer matches the successful artifact hash is refused (40 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        0.971 s, estimated 1 s
+Ran all test suites matching /scripts\/build-refresh.test.js/i.

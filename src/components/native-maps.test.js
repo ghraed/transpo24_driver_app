@@ -6,3 +6,6 @@ test('missing staging Maps configuration provides the existing unavailable-map p
  mockConfigured=false;jest.isolateModules(()=>expect(require('./native-maps').isNativeMapRuntimeAvailable).toBe(false));
  mockConfigured=true;jest.isolateModules(()=>{const maps=require('./native-maps');expect(maps.isNativeMapRuntimeAvailable).toBe(true);expect(maps.NativeMapView).toBe('Map');});
 });
+
+// No HTTP is used here. Keep Jest teardown from activating Expo's lazy native fetch after mocks are released.
+afterAll(() => { Object.defineProperty(globalThis, 'fetch', { configurable: true, writable: true, value: jest.fn() }); });

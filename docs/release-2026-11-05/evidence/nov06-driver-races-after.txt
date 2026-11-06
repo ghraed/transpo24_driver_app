@@ -1,0 +1,9 @@
+PASS src/context/auth-context.test.js
+PASS src/lib/request-files.test.ts
+PASS src/components/chat-attachment.test.js
+
+Test Suites: 3 passed, 3 total
+Tests:       30 passed, 30 total
+Snapshots:   0 total
+Time:        1.202 s, estimated 2 s
+Ran all test suites matching /src\/context\/auth-context.test.js|src\/components\/chat-attachment.test.js|src\/lib\/request-files.test.ts/i.

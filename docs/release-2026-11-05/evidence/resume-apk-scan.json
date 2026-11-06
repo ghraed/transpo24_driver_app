@@ -1,0 +1,16 @@
+{
+  "sha256": "8a3c737a2bed200425fdf92440cf812d36bd75c34da004e5e904a048f7e289df",
+  "package": "com.transpo24.driver.staging",
+  "signatureVerified": true,
+  "nativeAbis": [
+    "arm64-v8a"
+  ],
+  "loopbackApiPresent": true,
+  "serverSecretOrLivePublishablePatterns": [],
+  "otaEnabled": false,
+  "firebaseProjectId": "transpo24-staging",
+  "mapsConfigured": false,
+  "currentRecordedSourceInputsMatch": true,
+  "installed": false,
+  "scope": "APK assets/resources pattern scan and manifest/signature inspection; not comprehensive security or provider acceptance"
+}

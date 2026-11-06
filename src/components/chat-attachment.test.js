@@ -1,4 +1,4 @@
-jest.mock('@/lib/chat-outbox', () => ({ pendingChatOperations: () => [] }));
+jest.mock('@/lib/chat-outbox', () => ({ pendingChatOperations: () => [], chatAccountId: jest.fn(() => 'owner-a') }));
 import React from 'react';
 import { expect, it, jest } from '@jest/globals';
 import { Alert } from 'react-native';
@@ -30,5 +30,21 @@ it('opens thumbnails directly but waits for confirmation before downloading', as
   await act(async () => { actions[1].onPress(); });
   expect(downloadRequestFile).toHaveBeenCalledWith('/request-files/file/content', 'proof.pdf');
   await act(async () => tree.unmount());
+  alert.mockRestore();
+});
+
+it('does not show a delayed private-file error after the account changes', async () => {
+  const { chatAccountId } = jest.requireMock('@/lib/chat-outbox');
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  let rejectFile;
+  openRequestFile.mockImplementationOnce(() => new Promise((_, reject) => { rejectFile = reject; }));
+  let tree;
+  await act(async () => { tree = create(<ChatAttachment url="/request-files/file/content" name="proof.pdf" />); });
+  await act(async () => { tree.root.findAll(node => typeof node.props.onPress === 'function')[0].props.onPress(); });
+  chatAccountId.mockReturnValue('owner-b');
+  await act(async () => { rejectFile(new Error('account changed')); });
+  expect(alert).not.toHaveBeenCalled();
+  await act(async () => tree.unmount());
+  chatAccountId.mockReturnValue('owner-a');
   alert.mockRestore();
 });

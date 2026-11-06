@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { chatAccountId } from '@/lib/chat-outbox';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +18,8 @@ export { ChatAttachmentButton } from './chat-attachment-picker';
 export function ChatAttachment({ url, name, metadata, tileSize, onOpen, openLabel, overlay }: { url: string; name: string; metadata?: React.ReactNode; tileSize?: number; onOpen?: () => void; openLabel?: string; overlay?: React.ReactNode }) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const { width } = useWindowDimensions();
   const thumbnailWidth = tileSize ?? Math.min(280, (width - 32) * 0.8);
   const [preview, setPreview] = useState<{ url: string; uri: string } | null>(null);
@@ -37,16 +40,18 @@ export function ChatAttachment({ url, name, metadata, tileSize, onOpen, openLabe
     return () => { active = false; cleanup?.(); };
   }, [url, name, isImage]);
   const run = (download: boolean) => {
+    const owner = chatAccountId();
+    const isCurrent = () => { try { return mounted.current && chatAccountId() === owner; } catch { return false; } };
     setBusy(true);
     void (download ? downloadRequestFile(url, name) : openRequestFile(url, name))
       .then((saved) => {
-        if (saved) Alert.alert(t('documents.title'), t('documents.saved'));
+        if (isCurrent() && saved) Alert.alert(t('documents.title'), t('documents.saved'));
       })
-      .catch((error) => Alert.alert(t('documents.title'), t(
+      .catch((error) => { if (isCurrent()) Alert.alert(t('documents.title'), t(
         error instanceof Error ? error.message : 'documents.failed',
         { defaultValue: t('documents.failed') },
-      )))
-      .finally(() => setBusy(false));
+      )); })
+      .finally(() => { if (isCurrent()) setBusy(false); });
   };
   const confirmDownload = () => {
     const message = t('documents.confirmDownload');

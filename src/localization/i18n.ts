@@ -35,6 +35,7 @@ export function initializeI18n(): Promise<typeof i18n> {
         fallbackLng: DEFAULT_LANGUAGE,
         supportedLngs: Object.keys(resources),
         defaultNS: 'translation',
+        nsSeparator: false,
         interpolation: {
           escapeValue: false,
         },

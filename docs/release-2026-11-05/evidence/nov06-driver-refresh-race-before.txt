@@ -1,0 +1,47 @@
+FAIL src/context/auth-context.test.js
+  ✕ discards refreshDriverMe completed after logout and another synthetic login (23 ms)
+  ✕ discards saveDriverProfile completed after logout and another synthetic login (13 ms)
+
+  ● discards refreshDriverMe completed after logout and another synthetic login
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "b"
+    Received: "a"
+
+      31 |  await act(async () => { await current.authenticateWithPhone({}); });
+      32 |  await act(async () => { release(response('a')); await pending; });
+    > 33 |  expect(current.user.id).toBe('b');
+         |                          ^
+      34 |  expect(await pending).toBeInstanceOf(Error);
+      35 |  await act(async () => tree.unmount());
+      36 | });
+
+      at toBe (src/context/auth-context.test.js:33:26)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  ● discards saveDriverProfile completed after logout and another synthetic login
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "b"
+    Received: "a"
+
+      31 |  await act(async () => { await current.authenticateWithPhone({}); });
+      32 |  await act(async () => { release(response('a')); await pending; });
+    > 33 |  expect(current.user.id).toBe('b');
+         |                          ^
+      34 |  expect(await pending).toBeInstanceOf(Error);
+      35 |  await act(async () => tree.unmount());
+      36 | });
+
+      at toBe (src/context/auth-context.test.js:33:26)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 total
+Snapshots:   0 total
+Time:        0.695 s
+Ran all test suites matching /src\/context\/auth-context.test.js/i.

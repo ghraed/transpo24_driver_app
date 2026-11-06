@@ -1,0 +1,5 @@
+
+> transpo24-driver@1.0.0 privacy:check
+> node scripts/check-privacy.mjs
+
+Privacy source checks passed. Release SDK/network and operational reviews remain required.

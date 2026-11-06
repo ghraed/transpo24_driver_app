@@ -1,0 +1,32 @@
+PASS src/lib/request-files.test.ts
+  ✓ never sends credentials to a URL supplied by another host (5 ms)
+  ✓ opens an authenticated attachment in a viewer and keeps it readable after launch (1 ms)
+  ✓ does not open an unauthorized response and still cleans up
+  ✓ does not send anything when picking an attachment is cancelled (1 ms)
+  ✓ uploads image/png native URI parts without Expo fetch serialization (2 ms)
+  ✓ uploads image/jpeg native URI parts without Expo fetch serialization
+  ✓ uploads application/pdf native URI parts without Expo fetch serialization (1 ms)
+  ✓ includes the official document type when using the native upload transport (1 ms)
+  ✓ rejects a native upload error instead of reporting success (1 ms)
+  ✓ rejects a native upload timeout instead of reporting success
+  ✓ rejects a native upload abort instead of reporting success (1 ms)
+  ✓ reports an oversized upload rejected by the server
+  ✓ cleans up a failed viewer launch without opening the share menu (1 ms)
+  ✓ saves an Android attachment to the folder the driver chooses
+  ✓ does not save or report success when the folder picker is cancelled
+  ✓ offers the iOS export sheet only for an explicit download
+  ✓ rejects untrusted download URLs before contacting them (2 ms)
+  ✓ removes a partial saved file when writing fails (1 ms)
+  ✓ prunes old previews while leaving recent and unrelated cache files alone (1 ms)
+  ✓ enables multi-select and retains all selected files
+  ✓ does not create a selection when the picker is cancelled (1 ms)
+  ✓ validates all files before uploading any part of the selection
+  ✓ sends each selected file in order and reports progress (1 ms)
+  ✓ keeps only failed uploads for retry and still delivers subsequent files (1 ms)
+  ✓ discards and deletes a private download completed after account change instead of launching a viewer
+
+Test Suites: 1 passed, 1 total
+Tests:       25 passed, 25 total
+Snapshots:   0 total
+Time:        0.788 s, estimated 1 s
+Ran all test suites matching /src\/lib\/request-files.test.ts/i.

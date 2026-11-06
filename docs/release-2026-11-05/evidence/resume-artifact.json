@@ -1,0 +1,17 @@
+{
+  "sourceHash": "097959fa66b22da40489d8a4efead3d945693416dbc4984016d9361eaed8ed6c",
+  "repository": "driver_mobile",
+  "apk": "/media/raed/Data/from ubuntu/Transpo_24 workspace/driver_mobile/.staging-artifacts/2026-11-05/resume/driver_mobile-staging.apk",
+  "sha256": "8a3c737a2bed200425fdf92440cf812d36bd75c34da004e5e904a048f7e289df",
+  "api": "http://127.0.0.1:57431",
+  "maps": false,
+  "firebase": true,
+  "firebaseProjectId": "transpo24-staging",
+  "firebaseConfigSha256": "b43bdd650b1b4373a20c399f681c724c4c1b8005c1640f577e4955315fdb2fa6",
+  "ota": false,
+  "storeArtifact": false,
+  "source": "/tmp/transpo24-staging-driver_mobile-eCH35c/source",
+  "installedOnDevice": false,
+  "deviceAcceptance": "BLOCKED: disconnected Android; no affected flow retest",
+  "gitRevision": "ce9305372656997aeb820cecd92d8979e96e01bb"
+}

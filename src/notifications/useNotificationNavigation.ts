@@ -96,11 +96,12 @@ function resolveNotificationRoute(data: PushNotificationData): Href | null {
 
 // Keep the response pending while startup/login redirects settle. Expo also retains
 // the response when a notification launches a terminated app.
-export function useNotificationNavigation(ready: boolean): void {
+export function useNotificationNavigation(ready: boolean, owner: string | null = null): void {
   const router = useRouter();
   const navigationState = useRootNavigationState();
   const pathname = usePathname();
   const response = Notifications.useLastNotificationResponse();
+  const responseOwnerRef = useRef<{ identifier: string; owner: string | null } | null>(null);
   const lastHandledIdentifierRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -109,6 +110,8 @@ export function useNotificationNavigation(ready: boolean): void {
     if (response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) return;
 
     const identifier = response.notification.request.identifier;
+    if (responseOwnerRef.current?.identifier !== identifier) responseOwnerRef.current = { identifier, owner };
+    if (responseOwnerRef.current.owner !== owner) return;
     if (lastHandledIdentifierRef.current === identifier) return;
 
     const route = resolveNotificationRoute(
@@ -118,5 +121,5 @@ export function useNotificationNavigation(ready: boolean): void {
     router.push(route);
     lastHandledIdentifierRef.current = identifier;
     Notifications.clearLastNotificationResponse();
-  }, [ready, navigationState?.key, pathname, response, router]);
+  }, [ready, owner, navigationState?.key, pathname, response, router]);
 }

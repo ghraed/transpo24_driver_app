@@ -305,3 +305,33 @@ it('keeps only failed uploads for retry and still delivers subsequent files', as
   expect(onSent).toHaveBeenCalledTimes(2);
   expect(xhr.send).toHaveBeenCalledTimes(3);
 });
+
+it('discards and deletes a private download completed after account change instead of launching a viewer', async () => {
+  const { assertChatAccount } = jest.requireMock('@/lib/chat-outbox') as { assertChatAccount: jest.Mock };
+  let changed = false;
+  assertChatAccount.mockImplementation(() => { if (changed) throw new Error('account changed'); });
+  let release!: (value: unknown) => void;
+  jest.mocked(FileSystem.downloadAsync).mockImplementation(() => new Promise(resolve => { release = resolve as typeof release; }));
+  const opening = openRequestFile('/request-files/file/content', 'file.pdf');
+  while (!release) await Promise.resolve();
+  changed = true;
+  release({ status: 200, uri: 'file:///cache/file.pdf', headers: {}, mimeType: 'application/pdf' });
+  await expect(opening).rejects.toThrow();
+  expect(viewDocument).not.toHaveBeenCalled();
+  expect(FileSystem.deleteAsync).toHaveBeenCalled();
+  assertChatAccount.mockReset();
+});
+
+it('does not upload a document picked after the initiating account changed', async () => {
+  const { assertChatAccount } = jest.requireMock('@/lib/chat-outbox') as { assertChatAccount: jest.Mock };
+  let changed = false;
+  assertChatAccount.mockImplementation(() => { if (changed) throw new Error('account changed'); });
+  let release!: (value: unknown) => void;
+  jest.mocked(getDocumentAsync).mockImplementation(() => new Promise(resolve => { release = resolve as typeof release; }));
+  const sending = uploadRequestDocument('owned-request', 'OTHER');
+  while (!release) await Promise.resolve();
+  changed = true;
+  release({ canceled: false, assets: [{ uri: 'file:///synthetic.pdf', name: 'synthetic.pdf', mimeType: 'application/pdf', size: 601 }] });
+  await expect(sending).rejects.toThrow('account changed');
+  assertChatAccount.mockReset();
+});

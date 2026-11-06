@@ -1,0 +1,2 @@
+src/localization/literal-labels.test.ts(9,1): error TS2593: Cannot find name 'test'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha` and then add 'jest' or 'mocha' to the types field in your tsconfig.
+src/localization/literal-labels.test.ts(14,7): error TS2304: Cannot find name 'expect'.

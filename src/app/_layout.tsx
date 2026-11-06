@@ -1,3 +1,4 @@
+import { usePendingRequestLink } from '@/notifications/usePendingRequestLink';
 import { LegalConsentBoundary } from '@/components/legal-consent-boundary';
 import { OmwProvider } from '@/omw/context';
 import { driverType, useDriverColors } from '@/theme/driver-theme';
@@ -34,6 +35,7 @@ function AppNavigator() {
   const {
     accessToken,
     driver,
+    user,
     isRestoringSession,
     hasRestoredStoredSession,
     refreshDriverMe,
@@ -45,7 +47,10 @@ function AppNavigator() {
   const pathname = usePathname();
   const hasResolvedInitialRouteRef = useRef(false);
 
-  useNotificationNavigation(!isRestoringSession && localizationReady && Boolean(accessToken));
+
+
+  useNotificationNavigation(!isRestoringSession && localizationReady && Boolean(accessToken), user?.id ?? null);
+  usePendingRequestLink(!isRestoringSession && localizationReady && Boolean(accessToken));
   useRequestMatchingLocation(Boolean(accessToken && driver?.status === 'APPROVED'));
 
   useEffect(() => {
@@ -69,18 +74,22 @@ function AppNavigator() {
     if (hasResolvedInitialRouteRef.current) return;
     hasResolvedInitialRouteRef.current = true;
 
+    let active = true;
     const resolveEntryRoute = async (): Promise<void> => {
       try {
         const response = await refreshDriverMe();
+        if (!active) return;
         const savedRoute = await readLastOnboardingRoute();
+        if (!active) return;
         const targetRoute = resolveDriverEntryRoute(response.nextStep, savedRoute);
 
         if (response.nextStep === 'HOME') {
           await clearLastOnboardingRoute();
         }
 
-        router.replace(targetRoute as Href);
+        if (active) router.replace(targetRoute as Href);
       } catch (error) {
+        if (!active) return;
         // A temporary USB/backend connection issue is not a logout. Preserve
         // the saved session so the driver can continue as soon as it is back.
         if (!isAuthenticationFailure(error)) {
@@ -88,11 +97,12 @@ function AppNavigator() {
           return;
         }
         await signOut();
-        router.replace('/');
+        if (active) router.replace('/');
       }
     };
 
     void resolveEntryRoute();
+    return () => { active = false; };
   }, [
     accessToken,
     hasRestoredStoredSession,

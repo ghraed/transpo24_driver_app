@@ -277,9 +277,6 @@ export default function TripExpensesScreen() {
               <Text style={styles.uploadButtonText}>{t('Take Photo')}</Text>
             </Pressable>
           </View>
-          <Text style={styles.walletMessage}>
-            {t('This amount will be deducted from the customer&apos;s wallet.')}
-          </Text>
         </View>
 
         {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
