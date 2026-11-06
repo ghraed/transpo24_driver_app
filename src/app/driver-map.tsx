@@ -1,25 +1,26 @@
-import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
-import { useNavigationCamera, type NavigationLocation } from '@/hooks/use-navigation-camera';
-import { MapRequestMarker } from '@/components/map-request-marker';
-import { MapLocationMarker, MapLocationIcon } from '@/components/map-location-marker';
-import { useDriverAccess } from '@/hooks/use-driver-access';
 import { DriverRegistrationNotice } from '@/components/driver-registration-notice';
-import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
+import { MapLocationIcon, MapLocationMarker } from '@/components/map-location-marker';
+import { MapRequestMarker } from '@/components/map-request-marker';
+import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
+import { useDriverAccess } from '@/hooks/use-driver-access';
+import { useNavigationCamera, type NavigationLocation } from '@/hooks/use-navigation-camera';
 import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DriverBottomNav } from '@/components/driver-bottom-nav';
 import { DriverIcon } from '@/components/driver-icon';
 import { NativeMapView, NativeMarker, isNativeMapRuntimeAvailable } from '@/components/native-maps';
+import { getBackendApiBaseUrl } from '@/config/backend';
+import { isLocalBackendUrl } from '@/config/environment';
 import { getDriverAvailability, getDriverMapRequests, updateDriverOnlineStatus } from '@/lib/api';
-import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/types/auth';
 import { driverRadius, driverThemes } from '@/theme/driver-theme';
+import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/types/auth';
 
 const colors = driverThemes.light;
 const MAP_ICON_SIZE = 24;
@@ -64,7 +65,6 @@ export default function DriverMapScreen() {
   const loadVersion = useRef(0);
   const locationVersion = useRef(0);
   const hasCenteredOverview = useRef(false);
-  const [requestType, setRequestType] = useState<RequestType>('immediate');
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
@@ -167,7 +167,7 @@ export default function DriverMapScreen() {
         isFocused = false;
         ++loadVersion.current;
         ++locationVersion.current;
-      hasCenteredOverview.current = false;
+        hasCenteredOverview.current = false;
         clearInterval(timer);
         stopLocationTracking?.();
       };
@@ -193,14 +193,27 @@ export default function DriverMapScreen() {
   const mapRegion = initialRegion && hasCoordinate(initialRegion) ? asRegion(initialRegion, COUNTRY_OVERVIEW_REGION_DELTA) : undefined;
 
   // Browse every open request independently of notification eligibility.
-  const jobMarkers = alerts.filter(
-    (alert) => alert.schedule.isImmediate === (requestType === 'immediate') && hasCoordinate(alert.pickup),
-  );
+  const jobMarkers = alerts.filter((alert) => hasCoordinate(alert.pickup));
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={isLocalBackendUrl(getBackendApiBaseUrl()) ? [] : ['top']}>
       <DriverRegistrationNotice />
       <StatusBar style="dark" />
+
+      <View style={styles.jobNav}>
+        {([
+          { label: 'Immediate', icon: 'immediate', onPress: () => router.push({ pathname: '/receive-requests', params: { requestType: 'immediate' } }) },
+          { label: 'Scheduled', icon: 'calendar', onPress: () => router.push({ pathname: '/receive-requests', params: { requestType: 'scheduled' } }) },
+          { label: 'Pending', icon: 'clock', onPress: () => router.push('/pending-requests') },
+          { label: 'Accepted', icon: 'check', onPress: () => router.push('/accepted-jobs') },
+        ] as const).map((item) => (
+          <Pressable key={item.label} accessibilityRole="button" accessibilityLabel={t(item.label)} onPress={item.onPress}
+            style={({ pressed }) => [styles.jobNavItem, pressed && styles.iconButtonPressed]}>
+            <DriverIcon name={item.icon} size={20} color={colors.text} />
+            <Text style={styles.jobNavLabel}>{t(item.label)}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <View style={styles.mapArea}>
         {isNativeMapRuntimeAvailable && !mapRegion ? (
@@ -254,48 +267,20 @@ export default function DriverMapScreen() {
           </View>
         )}
 
-        <View style={styles.topOverlay} pointerEvents="box-none">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('Profile')}
-            style={({ pressed }) => [styles.roundButton, pressed && styles.iconButtonPressed]}
-            onPress={() => router.push('/driver-profile')}
-          >
-            <DriverIcon name="profile-circle" size={MAP_ICON_SIZE} color={colors.text} />
-          </Pressable>
-          <Text style={styles.title}>{t('Available Jobs')}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('Jobs')}
-            style={({ pressed }) => [styles.roundButton, pressed && styles.iconButtonPressed]}
-            onPress={() => router.push('/receive-requests')}
-          >
-            <DriverIcon name="sliders" size={MAP_ICON_SIZE} color={colors.text} />
-          </Pressable>
-        </View>
-
-        <View style={styles.coverageOverlay}>
-          <RequestTypeTabs value={requestType} counts={{
-            immediate: alerts.filter(alert => alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
-            scheduled: alerts.filter(alert => !alert.schedule.isImmediate && hasCoordinate(alert.pickup)).length,
-          }} onChange={(type) => {
-            setRequestType(type);
-            if (isNavigationEnabled()) followDriver();
-          }} />
-          <Text style={{ color: colors.text, backgroundColor: colors.surface, padding: 10, borderRadius: 10, fontSize: 12, textAlign: 'center' }}>{t('Map shows all open requests. Radius applies to notifications only.')}</Text>
-        </View>
-
         <Pressable
-          style={[styles.onlinePill, availability && !availability.isOnline && styles.offlinePill]}
+          accessibilityRole="switch"
+          accessibilityLabel={t(availability?.isOnline ? 'Online' : 'Offline')}
+          accessibilityState={{ checked: !!availability?.isOnline, disabled: !availability || isUpdating, busy: isUpdating }}
+          style={({ pressed }) => [styles.onlineButton, pressed && styles.iconButtonPressed]}
           disabled={!availability || isUpdating}
           onPress={() => void toggleOnline()}
         >
           {isUpdating || isLoading ? (
-            <ActivityIndicator size="small" color="#222222" />
+            <ActivityIndicator size="small" color={colors.success} />
           ) : (
-            <View style={[styles.onlineDot, !availability?.isOnline && styles.offlineDot]} />
+            <DriverIcon name="power" size={MAP_ICON_SIZE} color={availability?.isOnline ? colors.success : colors.text} />
           )}
-          <Text style={styles.onlineText}>{availability?.isOnline ? t('Online') : t('Offline')}</Text>
+          {availability?.isOnline ? <View style={styles.onlineDot} /> : null}
         </Pressable>
 
         {locationMessage ? <Text style={styles.locationMessage}>{locationMessage}</Text> : null}
@@ -331,28 +316,17 @@ export default function DriverMapScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F7F8F9' },
+  jobNav: { flexDirection: 'row', backgroundColor: colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  jobNavItem: { flex: 1, minHeight: 52, paddingVertical: 3, paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  jobNavLabel: { color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center', flexShrink: 1 },
   mapArea: { flex: 1, marginBottom: 76, overflow: 'hidden', backgroundColor: '#CDE9CE' },
-  coverageOverlay: { position: 'absolute', top: 138, left: 22, right: 22 },
-  topOverlay: {
-    position: 'absolute', top: 0, right: 0, left: 0, height: 94, paddingHorizontal: 28,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  onlineButton: {
+    position: 'absolute', left: 29, bottom: 25, width: 52, height: 52, borderRadius: driverRadius.md,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border, shadowColor: colors.shadow,
+    shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
-  roundButton: {
-    width: 52, height: 52, borderRadius: driverRadius.md, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    shadowColor: colors.shadow, shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 3,
-  },
-  title: { color: '#181818', fontSize: 23, fontWeight: '800' },
-  onlinePill: {
-    position: 'absolute', top: 76, alignSelf: 'center', minWidth: 146, height: 58, paddingHorizontal: 25,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, borderRadius: 29,
-    backgroundColor: '#FFC515', shadowColor: '#1B1B1B', shadowOpacity: 0.12, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 7 }, elevation: 5,
-  },
-  offlinePill: { backgroundColor: '#FFFFFF' },
-  onlineDot: { width: 15, height: 15, borderRadius: 8, backgroundColor: '#54A84F' },
-  offlineDot: { backgroundColor: '#9CA6B5' },
-  onlineText: { color: '#111111', fontSize: 19, fontWeight: '800' },
+  onlineDot: { position: 'absolute', right: 7, bottom: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
   locationMessage: {
     position: 'absolute', right: 22, bottom: 153, left: 22, paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: 14, color: '#707A8C', fontSize: 13, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.94)',

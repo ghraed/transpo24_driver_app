@@ -7,8 +7,10 @@ const mockPush = jest.fn();
 const mockGetAlerts = jest.fn();
 const mockT = key => key;
 const mockLocale = { language: 'en', locale: 'en', isRTL: false };
+let mockRequestType;
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
+  useLocalSearchParams: () => ({ requestType: mockRequestType }),
   useFocusEffect: callback => require('react').useEffect(callback, [callback]),
 }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT }) }));
@@ -39,6 +41,14 @@ beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
   mockLocale.isRTL = false;
+  mockRequestType = undefined;
+});
+
+test('opens the scheduled list when requested by the map shortcut', async () => {
+  mockRequestType = 'scheduled';
+  mockGetAlerts.mockResolvedValue({ alerts: [] });
+  await render();
+  expect(labels()).toContain('No scheduled requests');
 });
 afterEach(async () => { await act(async () => tree?.unmount()); jest.useRealTimers(); });
 

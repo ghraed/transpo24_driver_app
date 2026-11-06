@@ -14,9 +14,11 @@ export type DriverIconName =
   | 'filter'
   | 'grid'
   | 'help'
+  | 'immediate'
   | 'location'
   | 'locate'
   | 'pickup'
+  | 'power'
   | 'profile-circle'
   | 'logout'
   | 'map'
@@ -52,9 +54,11 @@ const symbols: Record<DriverIconName, SymbolViewProps['name']> = {
   filter: { ios: 'line.3.horizontal.decrease', android: 'filter_alt', web: 'filter_alt' },
   grid: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' },
   help: { ios: 'questionmark.circle', android: 'help', web: 'help' },
+  immediate: { ios: 'bolt.fill', android: 'bolt', web: 'bolt' },
   location: { ios: 'location', android: 'location_on', web: 'location_on' },
   locate: { ios: 'location.viewfinder', android: 'my_location', web: 'my_location' },
   pickup: { ios: 'mappin', android: 'location_on', web: 'location_on' },
+  power: { ios: 'power', android: 'power_settings_new', web: 'power_settings_new' },
   'profile-circle': { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout', web: 'logout' },
   map: { ios: 'map', android: 'map', web: 'map' },

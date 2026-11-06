@@ -4,7 +4,7 @@ import { DriverRegistrationNotice } from '@/components/driver-registration-notic
 import { RequestTypeTabs, type RequestType } from '@/components/request-type-tabs';
 import { RequestCoverageNotice } from '@/components/request-coverage-notice';
 import { syncRequestMatchingLocation } from '@/location/request-matching-location';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -96,6 +96,7 @@ function formatRouteDistance(alert: DriverRequestAlertSummary): string {
 
 export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pendingOnly?: boolean }) {
   const router = useRouter();
+  const { requestType: initialRequestType } = useLocalSearchParams<{ requestType?: string }>();
   const { canInteract } = useDriverAccess();
   const { t } = useTranslation();
   const { language, locale } = useAppLanguage();
@@ -105,7 +106,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [profileRequired, setProfileRequired] = useState(false);
-  const [requestType, setRequestType] = useState<RequestType>('immediate');
+  const [requestType, setRequestType] = useState<RequestType>(initialRequestType === 'scheduled' ? 'scheduled' : 'immediate');
   const [locationReference, setLocationReference] = useState<'GPS' | 'BASE' | 'NONE'>('NONE');
   const [translatedTitles, setTranslatedTitles] = useState<Record<string, string>>({});
 
