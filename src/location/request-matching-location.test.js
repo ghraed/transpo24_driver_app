@@ -48,7 +48,7 @@ test.each(['stale', 'inaccurate', 'future'])('does not publish a %s fix', async 
   if (kind === 'inaccurate') location.coords.accuracy = 300;
   Location.getLastKnownPositionAsync.mockResolvedValue(location);
   await syncRequestMatchingLocation();
-  expect(updateDriverMatchingLocation).toHaveBeenCalledWith(null, 'driver-token');
+  expect(updateDriverMatchingLocation).not.toHaveBeenCalled();
 });
 test('uses a fresh reading if no recent cached fix is available', async () => {
   Location.getLastKnownPositionAsync.mockResolvedValue(null);
@@ -65,10 +65,10 @@ test('falls back after GPS timeout and does not publish a late result', async ()
   const work = syncRequestMatchingLocation();
   await jest.advanceTimersByTimeAsync(6001);
   await work;
-  expect(updateDriverMatchingLocation).toHaveBeenCalledWith(null, 'driver-token');
+  expect(updateDriverMatchingLocation).not.toHaveBeenCalled();
   resolve(fix());
   await Promise.resolve();
-  expect(updateDriverMatchingLocation).toHaveBeenCalledTimes(1);
+  expect(updateDriverMatchingLocation).not.toHaveBeenCalled();
 });
 test('shares simultaneous refreshes from the map, Jobs and heartbeat', async () => {
   await Promise.all([syncRequestMatchingLocation(), syncRequestMatchingLocation(), syncRequestMatchingLocation()]);

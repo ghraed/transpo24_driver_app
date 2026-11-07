@@ -39,7 +39,11 @@ async function sync(): Promise<void> {
   }
   if (AppState.currentState !== 'active') return;
   const age = location ? Date.now() - location.timestamp : Infinity;
-  await updateDriverMatchingLocation(location && age >= 0 && age <= 120_000 && location.coords.accuracy != null && location.coords.accuracy <= 200 ? {
+  if (!location || age < 0 || age > 120_000 || location.coords.accuracy == null || location.coords.accuracy > 200) {
+    // A temporary GPS failure must not erase a recent fix; the API expires it after two minutes.
+    return;
+  }
+  await updateDriverMatchingLocation({
     latitude: location.coords.latitude, longitude: location.coords.longitude, recordedAt: location.timestamp,
-  } : null, accessToken);
+  }, accessToken);
 }
