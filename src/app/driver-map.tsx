@@ -32,6 +32,7 @@ const COUNTRY_OVERVIEW_REGION_DELTA = 5;
 
 const SOFT_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#CDE9CE' }] },
+  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#9DB8A0' }, { weight: 1 }] },
   { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#7D927E' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#E9F5E9' }] },

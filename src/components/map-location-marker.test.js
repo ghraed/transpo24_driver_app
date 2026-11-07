@@ -10,12 +10,12 @@ let tree;
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; jest.restoreAllMocks(); });
 const coordinate = { latitude: 33.89, longitude: 35.5 };
 
-test('driver uses a blue dot with a small halo centered on its coordinate', async () => {
+test('driver uses a black car centered on its coordinate', async () => {
   await act(async () => { tree = create(<><MapLocationMarker kind="driver" coordinate={coordinate} title="Driver" /><MapLocationIcon kind="driver" /></>); });
   expect(tree.root.findByType('Marker').props).toMatchObject({ coordinate, anchor: { x: 0.5, y: 0.5 } });
-  expect(tree.root.findAllByType('Circle').map(node => ({ r: node.props.r, fill: node.props.fill }))).toEqual([
-    { r: 18, fill: 'rgba(66, 133, 244, 0.16)' }, { r: 8, fill: '#4285F4' },
-  ]);
+  expect(tree.root.findAllByType('Circle')).toHaveLength(0);
+  expect(tree.root.findAllByType('Rect')).toHaveLength(7);
+  expect(tree.root.findAllByType('Rect')[4].props).toMatchObject({ width: 18, height: 38, fill: '#111111' });
 });
 
 test('pickup and dropoff use consistent pins with distinct colors and center symbols', async () => {
