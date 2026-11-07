@@ -23,6 +23,7 @@ import { useAndroidKeyboardInset } from '@/hooks/use-android-keyboard-inset';
 import { ApiResponseError, sendDriverPriceOffer } from '@/lib/api';
 import { currencyForCountryCode, getCountryLabel } from '@/lib/country-currency';
 import { minimumOfferAmount } from '@/lib/offer-minimum';
+import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 import { formatDateTime, formatCurrency } from '@/localization/format';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { getSourceErrorMessage } from '@/localization/response-message';
@@ -329,6 +330,7 @@ export default function SendPriceOfferScreen() {
 
     setIsSubmitting(true);
     try {
+      await syncRequestMatchingLocation().catch(() => undefined);
       const response = await sendDriverPriceOffer(requestId, payload);
       router.replace({
         pathname: '/offer-waiting-response',

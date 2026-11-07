@@ -4,6 +4,7 @@ import { Alert, Platform, Text, TextInput } from 'react-native';
 import SendPriceOfferScreen from '@/app/send-price-offer';
 import { OfferDateTimeField } from './offer-date-time-field';
 import { sendDriverPriceOffer } from '@/lib/api';
+import { syncRequestMatchingLocation } from '@/location/request-matching-location';
 
 let mockCountryCode = 'LB';
 const mockCurrencyForCountry = (code) => ({ CH: 'CHF', DE: 'EUR', AE: 'AED', SA: 'SAR', QA: 'QAR' }[code] || 'USD');
@@ -16,6 +17,7 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { l
 jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ driver: { countryCode: mockCountryCode }, signOut: jest.fn() }) }));
 jest.mock('@/hooks/use-android-keyboard-inset', () => ({ useAndroidKeyboardInset: () => 0 }));
 jest.mock('@/lib/api', () => ({ sendDriverPriceOffer: jest.fn(), ApiResponseError: class extends Error {} }));
+jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: jest.fn(async () => {}) }));
 jest.mock('@/lib/country-currency', () => ({ currencyForCountryCode: code => mockCurrencyForCountry(code), getCountryLabel: () => 'Lebanon' }));
 jest.mock('@/localization/format', () => ({ formatDateTime: value => value, formatCurrency: (amount, currency) => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount) }));
 jest.mock('@/services/translation-service', () => ({ translateDynamicBatch: jest.fn(async () => ({})) }));
@@ -68,6 +70,8 @@ test('submits the original offer and request version, with optional fields omitt
   await enter('Price *', '450');
   await enter('Message (optional)', '  Call at the gate  ');
   await press('Submit Offer');
+  expect(syncRequestMatchingLocation).toHaveBeenCalledTimes(1);
+  expect(syncRequestMatchingLocation.mock.invocationCallOrder[0]).toBeLessThan(sendDriverPriceOffer.mock.invocationCallOrder[0]);
   expect(sendDriverPriceOffer).toHaveBeenCalledWith('request-1', { price: 450, currency: 'USD', requestVersion: 'version-1', message: 'Call at the gate' });
   expect(mockRouter.replace).toHaveBeenCalledWith({ pathname: '/offer-waiting-response', params: { requestId: 'request-1', status: 'QUOTED', offerId: 'offer-1' } });
 });
