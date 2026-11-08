@@ -4,9 +4,9 @@ import { beforeEach, afterEach, expect, it, jest } from '@jest/globals';
 import * as Location from 'expo-location';
 import { getDriverAvailability, getDriverMapRequests } from '@/lib/api';
 import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
-import { RequestTypeTabs } from '@/components/request-type-tabs';
 import DriverMap from '../src/app/driver-map';
 
+jest.mock('@/config/backend', () => ({ getBackendApiBaseUrl: () => 'https://api.transpo24.com' }));
 jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ driver: { status: 'APPROVED', isProfileCompleted: true } }) }));
 
 const mockT = key => key;
@@ -48,21 +48,21 @@ beforeEach(() => {
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; jest.useRealTimers(); });
 async function render() { await act(async () => { tree = create(<DriverMap />); }); }
 const pickupMarkers = () => tree.root.findAllByType('Marker').filter(marker => marker.props.title === 'Pickup');
-it('opens at local zoom and shows all open immediate jobs regardless of notification eligibility', async () => {
+it('opens at country overview and shows all open jobs regardless of notification eligibility', async () => {
   await render();
   const map = tree.root.findByType('MapView');
-  expect(map.props.initialRegion).toEqual({ latitude: 47.38, longitude: 8.54, latitudeDelta: 0.02, longitudeDelta: 0.02 });
-  expect(pickupMarkers()).toHaveLength(2);
+  expect(map.props.initialRegion).toEqual({ latitude: 47.38, longitude: 8.54, latitudeDelta: 5, longitudeDelta: 5 });
+  expect(pickupMarkers()).toHaveLength(3);
   await act(async () => pickupMarkers()[0].props.onPress());
   expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ params: { requestId: 'immediate' } }));
 });
-it('switches to scheduled pickups', async () => {
+it('opens scheduled jobs from the map shortcut', async () => {
   await render();
-  await act(async () => tree.root.findByType(RequestTypeTabs).props.onChange('scheduled'));
-  expect(pickupMarkers()).toHaveLength(1);
-  await act(async () => pickupMarkers()[0].props.onPress());
+  const shortcut = tree.root.findAll(node => node.props.accessibilityLabel === 'Scheduled' && typeof node.props.onPress === 'function')[0];
+  await act(async () => shortcut.props.onPress());
+  expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/receive-requests', params: { requestType: 'scheduled' } });
+  await act(async () => pickupMarkers()[1].props.onPress());
   expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ params: { requestId: 'scheduled' } }));
-  expect(mockAnimate).toHaveBeenCalledWith(expect.objectContaining({ latitude: 47.38 }), 350);
 });
 it('never mounts a world map while location and base are unavailable', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
@@ -71,10 +71,10 @@ it('never mounts a world map while location and base are unavailable', async () 
   await render();
   expect(tree.root.findAllByType('MapView')).toHaveLength(0);
 });
-it('uses an open pickup at local zoom when GPS permission is denied', async () => {
+it('uses an open pickup at country overview when GPS permission is denied', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
   await render();
-  expect(tree.root.findByType('MapView').props.initialRegion.latitudeDelta).toBe(0.02);
+  expect(tree.root.findByType('MapView').props.initialRegion.latitudeDelta).toBe(5);
 });
 it('does not create an additional location subscription when recentering', async () => {
   await render();
@@ -105,7 +105,6 @@ it('switches to a heading-following camera and restores the overview without res
   }), expect.any(Object));
   await act(async () => onPosition({ coords: { ...moved, heading: -1 } }));
   expect(mockAnimateCamera).toHaveBeenLastCalledWith(expect.objectContaining({ heading: 120 }), expect.any(Object));
-  await act(async () => tree.root.findByType(RequestTypeTabs).props.onChange('scheduled'));
   expect(mockAnimate).not.toHaveBeenCalled();
   await act(async () => toggle().props.onPress());
   expect(toggle().props.active).toBe(false);
@@ -113,8 +112,8 @@ it('switches to a heading-following camera and restores the overview without res
   const count = mockAnimateCamera.mock.calls.length;
   await act(async () => onPosition({ coords: moved }));
   expect(mockAnimateCamera).toHaveBeenCalledTimes(count);
-  // Changing job tabs already restarts tracking; camera toggles must not add subscriptions.
-  expect(Location.watchPositionAsync).toHaveBeenCalledTimes(2);
+  // Camera toggles must not add location subscriptions.
+  expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1);
 });
 it('disables the navigation toggle until a driver location is available', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });

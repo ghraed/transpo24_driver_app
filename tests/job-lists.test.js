@@ -10,7 +10,7 @@ import { getDriverAcceptedJobs, getDriverChatRooms, getDriverRequestAlerts } fro
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
 const mockSignOut = jest.fn();
 const mockT = key => key;
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useFocusEffect: callback => { require('react').useEffect(callback, [callback]); } }));
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useLocalSearchParams: () => ({}), useFocusEffect: callback => { require('react').useEffect(callback, [callback]); } }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT, i18n: { language: 'en' } }) }));
 jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ signOut: mockSignOut, driver: { status: 'APPROVED', isProfileCompleted: true } }) }));
 jest.mock('@/localization/provider', () => ({ useAppLanguage: () => ({ language: 'en', locale: 'en-GB' }) }));
