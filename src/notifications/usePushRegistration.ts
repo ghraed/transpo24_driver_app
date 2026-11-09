@@ -28,8 +28,11 @@ export function usePushRegistration(sessionKey: string | null): void {
           return;
         }
         console.warn('Push registration failed; will retry.', error);
-        if (!disposed && retryCount < 3) {
-          retryTimer = setTimeout(() => { void register(); }, 5000 * 2 ** retryCount++);
+        if (!disposed) {
+          // Keep trying while signed in: a temporary outage must not leave this
+          // device without a token until the driver opens the app again.
+          const retryDelay = Math.min(5000 * 2 ** Math.min(retryCount++, 6), 300000);
+          retryTimer = setTimeout(() => { void register(); }, retryDelay);
         }
       } finally {
         inFlight = false;

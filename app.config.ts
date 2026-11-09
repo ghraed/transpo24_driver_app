@@ -34,6 +34,9 @@ export default ({ config }: ConfigContext) => {
     : IS_DEV
     ? process.env.EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE?.trim() || ''
     : ANDROID_GOOGLE_SERVICES_FILE;
+  if (process.env.EAS_BUILD_PLATFORM === 'android' && IS_DEV && !androidGoogleServicesFile) {
+    throw new Error('Driver development builds require Firebase configuration for com.transpo24.driver.dev.');
+  }
   if ((IS_DEV || IS_STAGING) && androidGoogleServicesFile) {
     const services = JSON.parse(readFileSync(androidGoogleServicesFile, 'utf8'));
     if (!services.client?.some((client: { client_info?: { android_client_info?: { package_name?: string } } }) =>

@@ -7,6 +7,12 @@ const { projectRoot } = require('./local-env');
 
 function prepareAndroid() {
   const { exp } = getConfig(projectRoot);
+  if (exp.android.package === 'com.transpo24.driver.dev' && !exp.android.googleServicesFile) {
+    throw new Error(
+      'Driver Dev push requires a Firebase config for com.transpo24.driver.dev. ' +
+      'Save it as google-services.dev.json, set EXPO_ANDROID_DEV_GOOGLE_SERVICES_FILE=./google-services.dev.json in .env.local, then rebuild.',
+    );
+  }
   const androidDir = path.join(projectRoot, 'android');
   const autolinkingPath = path.join(androidDir, 'build/generated/autolinking/autolinking.json');
   if (fs.existsSync(autolinkingPath)) {

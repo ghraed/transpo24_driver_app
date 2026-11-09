@@ -51,6 +51,15 @@ test('retries temporary failures without requesting permission again', async () 
   expect(register).toHaveBeenLastCalledWith(false);
   expect(register).toHaveBeenCalledTimes(2);
 });
+test('continues retrying after the initial backoff attempts', async () => {
+  register.mockRejectedValue(new Error('offline'));
+  await mount();
+  for (const delay of [5000, 10000, 20000, 40000]) {
+    await act(async () => { jest.advanceTimersByTime(delay); });
+  }
+  expect(register).toHaveBeenCalledTimes(5);
+  expect(register).toHaveBeenLastCalledWith(false);
+});
 test('refreshes on foreground and token rotation and removes listeners on logout', async () => {
   await mount();
   await act(async () => { onState('background'); });
