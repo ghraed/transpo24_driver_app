@@ -11,9 +11,9 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DriverBottomNav } from '@/components/driver-bottom-nav';
+import { DRIVER_BOTTOM_NAV_HEIGHT, DriverBottomNav } from '@/components/driver-bottom-nav';
 import { DriverIcon } from '@/components/driver-icon';
 import { NativeMapView, NativeMarker, isNativeMapRuntimeAvailable } from '@/components/native-maps';
 import { getBackendApiBaseUrl } from '@/config/backend';
@@ -58,6 +58,7 @@ function asRegion(coordinate: Coordinate, delta = DRIVER_LOCATION_REGION_DELTA) 
 
 export default function DriverMapScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { canInteract, continueRegistration } = useDriverAccess();
   const { t } = useTranslation();
   const MapView = NativeMapView;
@@ -216,7 +217,7 @@ export default function DriverMapScreen() {
         ))}
       </View>
 
-      <View style={styles.mapArea}>
+      <View style={[styles.mapArea, { marginBottom: DRIVER_BOTTOM_NAV_HEIGHT + insets.bottom }]}>
         {isNativeMapRuntimeAvailable && !mapRegion ? (
           <View style={styles.mapFallback}>
             {isLoading || isLocating ? <ActivityIndicator size="large" color="#087FFF" /> : null}
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
   jobNav: { flexDirection: 'row', backgroundColor: colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   jobNavItem: { flex: 1, minHeight: 52, paddingVertical: 3, paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center', gap: 2 },
   jobNavLabel: { color: colors.text, fontSize: 11, fontWeight: '600', textAlign: 'center', flexShrink: 1 },
-  mapArea: { flex: 1, marginBottom: 76, overflow: 'hidden', backgroundColor: '#CDE9CE' },
+  mapArea: { flex: 1, overflow: 'hidden', backgroundColor: '#CDE9CE' },
   onlineButton: {
     position: 'absolute', left: 29, bottom: 25, width: 52, height: 52, borderRadius: driverRadius.md,
     alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
