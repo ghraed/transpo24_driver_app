@@ -157,6 +157,7 @@ export default function ReviewRequestDetailsScreen() {
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
+  const [showOutsideHoursConfirmation, setShowOutsideHoursConfirmation] = useState(false);
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
 
   const loadDetails = useCallback(async (): Promise<void> => {
@@ -269,19 +270,20 @@ export default function ReviewRequestDetailsScreen() {
     return true;
   }, [details]);
 
-  const onAccept = async (): Promise<void> => {
+  const onAccept = async (acknowledgeOutsideWorkingHours = false): Promise<void> => {
     if (!requestId || !canAccept || isBusy) return;
 
     setIsBusy(true);
     setError('');
     try {
       await syncRequestMatchingLocation().catch(() => undefined);
-      const response = await acceptDriverRequestAlert(requestId);
+      const response = await acceptDriverRequestAlert(requestId, acknowledgeOutsideWorkingHours);
       router.replace({
         pathname: '/send-price-offer',
         params: {
           requestId: response.requestId,
           requestVersion: details?.requestVersion || '',
+          acknowledgeOutsideWorkingHours: acknowledgeOutsideWorkingHours ? 'true' : 'false',
           alertId: response.alertId,
           serviceName: details?.service?.nameEn || details?.service?.key || '',
           pickupAddress: details?.pickup?.address || '',
@@ -352,6 +354,14 @@ export default function ReviewRequestDetailsScreen() {
 
         {error ? <DriverNotice title={error} tone="danger" /> : null}
         {requestUnavailableMessage ? <DriverNotice title={t(requestUnavailableMessage)} tone="warning" /> : null}
+        {details.outsideWorkingHours && !requestUnavailableMessage ? (
+          <DriverCard>
+            <DriverStatus label={t('Outside your available hours')} tone="warning" />
+            <DriverText>{t('This pickup is outside your weekly availability. You can make an exception for this job after confirming that you can complete it.')}</DriverText>
+            <DriverText variant="caption" secondary>{t('To change your regular hours: Profile > My Vehicles > Edit Radius > Weekly Schedule.')}</DriverText>
+            <DriverButton label={t('Change weekly schedule')} variant="secondary" onPress={() => router.push('/set-availability')} />
+          </DriverCard>
+        ) : null}
         {!details.offerStatus && !requestUnavailableMessage && details.offerEligibility?.canSendOffer === false ? (
           <DriverCard>
             <DriverStatus label={t('requestEligibility.unavailable')} tone="warning" />
@@ -489,6 +499,19 @@ export default function ReviewRequestDetailsScreen() {
         </Pressable>
       </Modal>
 
+      <Modal visible={showOutsideHoursConfirmation} transparent animationType="fade" onRequestClose={() => setShowOutsideHoursConfirmation(false)}>
+        <View style={styles.confirmationBackdrop}>
+          <View style={styles.confirmationCard}>
+            <DriverStatus label={t('Outside your available hours')} tone="warning" />
+            <DriverText variant="title">{t('Confirm this availability exception')}</DriverText>
+            <DriverText>{t('This pickup is outside your available day or time. Confirm that you can complete this job before sending an offer.')}</DriverText>
+            <DriverText variant="caption" secondary>{t('To change your regular hours: Profile > My Vehicles > Edit Radius > Weekly Schedule.')}</DriverText>
+            <DriverButton label={t('Confirm and continue')} onPress={() => { setShowOutsideHoursConfirmation(false); void onAccept(true); }} />
+            <DriverButton label={t('Cancel')} variant="secondary" onPress={() => setShowOutsideHoursConfirmation(false)} />
+          </View>
+        </View>
+      </Modal>
+
       {details.offerStatus === 'PENDING' && !requestUnavailableMessage ? (
         <View style={styles.actionsContainer}>
           <Text style={styles.metaText}>
@@ -506,7 +529,9 @@ export default function ReviewRequestDetailsScreen() {
           />
           <DriverButton
             label={t('Accept & Send Offer')}
-            onPress={() => void onAccept()}
+            onPress={() => details.offerEligibility?.requiresOutsideWorkingHoursConfirmation
+              ? setShowOutsideHoursConfirmation(true)
+              : void onAccept()}
             disabled={!canAccept}
             loading={isBusy}
             style={{ flex: 1 }}
@@ -617,6 +642,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+  },
+  confirmationBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'center',
+    padding: driverSpace.xl,
+  },
+  confirmationCard: {
+    backgroundColor: driverThemes.light.surface,
+    borderRadius: 20,
+    padding: driverSpace.xl,
+    gap: driverSpace.lg,
+    maxWidth: 520,
+    width: '100%',
+    alignSelf: 'center',
   },
   expandedPhoto: {
     width: '100%',

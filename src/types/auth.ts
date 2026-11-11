@@ -565,6 +565,7 @@ export interface DriverRequestAlertSummary {
   requestCreatedAt?: string;
   customerName?: string;
   isCurrentlyEligible?: boolean;
+  outsideWorkingHours?: boolean;
   vehicleDetails?: TransportedVehicleDetails;
   alertId: string;
   requestId: string;
@@ -596,7 +597,7 @@ export interface RequestPhoto {
 
 export interface DriverRequestDetailsResponse extends DriverRequestAlertSummary {
   requestVersion: string;
-  offerEligibility?: { canSendOffer: boolean; reason: string | null };
+  offerEligibility?: { canSendOffer: boolean; reason: string | null; requiresOutsideWorkingHoursConfirmation?: boolean };
   offerStatus: DriverOfferStatus | null;
   customerNote: string | null;
   customer: {
@@ -650,6 +651,7 @@ export type SupportedOfferCurrency = 'CHF' | 'EUR' | 'AED' | 'SAR' | 'QAR' | 'US
 
 export interface SendDriverPriceOfferPayload {
   requestVersion: string;
+  acknowledgeOutsideWorkingHours?: boolean;
   price: number;
   currency: string;
   estimatedPickupAt?: string;

@@ -1691,6 +1691,7 @@ export async function getDriverRequestDetails(
 
 export async function acceptDriverRequestAlert(
   requestId: string,
+  acknowledgeOutsideWorkingHours = false,
 ): Promise<AcceptDriverRequestAlertResponse> {
   const endpoint = `${getApiBaseUrl()}/driver/requests/${requestId}/accept-alert`;
   let response: Response;
@@ -1698,7 +1699,7 @@ export async function acceptDriverRequestAlert(
     response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: await getAuthHeaders(),
-      body: JSON.stringify({}),
+      body: JSON.stringify({ acknowledgeOutsideWorkingHours }),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);

@@ -1760,5 +1760,12 @@
   "Enable notification permission in your phone settings, then try again.": "Enable notification permission in your phone settings, then try again.",
   "Test sent. Check for a notification on this device. Delivery may take a moment.": "Test sent. Check for a notification on this device. Delivery may take a moment.",
   "Sending test...": "Sending test...",
-  "Test Notification": "Test Notification"
+  "Test Notification": "Test Notification",
+  "Outside your available hours": "Outside your available hours",
+  "This pickup is outside your weekly availability. You can make an exception for this job after confirming that you can complete it.": "This pickup is outside your weekly availability. You can make an exception for this job after confirming that you can complete it.",
+  "To change your regular hours: Profile > My Vehicles > Edit Radius > Weekly Schedule.": "To change your regular hours: Profile > My Vehicles > Edit Radius > Weekly Schedule.",
+  "Change weekly schedule": "Change weekly schedule",
+  "Confirm this availability exception": "Confirm this availability exception",
+  "This pickup is outside your available day or time. Confirm that you can complete this job before sending an offer.": "This pickup is outside your available day or time. Confirm that you can complete this job before sending an offer.",
+  "Confirm and continue": "Confirm and continue"
 }

@@ -25,7 +25,7 @@ import { DriverJobSwitcher } from '@/components/driver-job-switcher';
 import { readAccessToken } from '@/lib/auth-storage';
 import { getDriverRequestAlerts } from '@/lib/api';
 import { getSourceErrorMessage } from '@/localization/response-message';
-import { driverSpace } from '@/theme/driver-theme';
+import { driverSpace, driverThemes } from '@/theme/driver-theme';
 import { formatDateTime } from '@/localization/format';
 import { useAppLanguage } from '@/localization/provider';
 import { translateDynamicBatch } from '@/services/translation-service';
@@ -300,6 +300,11 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
                 <Text style={styles.createdAt}>
                   {t('Created')}: {formatDateTime(alert.requestCreatedAt ?? alert.submittedAt)}
                 </Text>
+                {alert.outsideWorkingHours ? (
+                  <View style={styles.outsideHoursTag}>
+                    <Text style={styles.outsideHoursTagText}>{t('Outside your available hours')}</Text>
+                  </View>
+                ) : null}
                 <View style={styles.routeRow}>
                   <Text style={styles.routePlace} numberOfLines={1}>{pickup}</Text>
                   <Text style={styles.routeArrow}>╌╌▸</Text>
@@ -333,6 +338,18 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
 }
 
 const styles = StyleSheet.create({
+  outsideHoursTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: driverThemes.light.warningSoft,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  outsideHoursTagText: {
+    color: driverThemes.light.warning,
+    fontSize: 13,
+    fontWeight: '700',
+  },
   screen: {
     flex: 1,
     backgroundColor: '#F7F8F9',

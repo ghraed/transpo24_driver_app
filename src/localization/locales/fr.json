@@ -1760,5 +1760,12 @@
   "Enable notification permission in your phone settings, then try again.": "Activez l’autorisation des notifications dans les paramètres de votre téléphone, puis réessayez.",
   "Test sent. Check for a notification on this device. Delivery may take a moment.": "Test envoyé. Vérifiez la réception d’une notification sur cet appareil. La livraison peut prendre un instant.",
   "Sending test...": "Envoi du test...",
-  "Test Notification": "Notification de test"
+  "Test Notification": "Notification de test",
+  "Outside your available hours": "En dehors de vos disponibilités",
+  "This pickup is outside your weekly availability. You can make an exception for this job after confirming that you can complete it.": "Cette collecte est en dehors de vos disponibilités hebdomadaires. Vous pouvez faire une exception pour cette mission après avoir confirmé que vous pouvez l'effectuer.",
+  "To change your regular hours: Profile > My Vehicles > Edit Radius > Weekly Schedule.": "Pour modifier vos horaires habituels : Profil > Mes véhicules > Modifier le rayon > Planning hebdomadaire.",
+  "Change weekly schedule": "Modifier le planning hebdomadaire",
+  "Confirm this availability exception": "Confirmer cette exception de disponibilité",
+  "This pickup is outside your available day or time. Confirm that you can complete this job before sending an offer.": "Cette collecte est en dehors de vos jours ou horaires disponibles. Confirmez que vous pouvez effectuer cette mission avant d'envoyer une offre.",
+  "Confirm and continue": "Confirmer et continuer"
 }

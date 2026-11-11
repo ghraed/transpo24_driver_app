@@ -305,6 +305,7 @@ export default function SendPriceOfferScreen() {
 
     const payload: SendDriverPriceOfferPayload = {
       requestVersion,
+      acknowledgeOutsideWorkingHours: params.acknowledgeOutsideWorkingHours === 'true',
       price: Number(form.price.trim()),
       currency: offerCurrency,
     };

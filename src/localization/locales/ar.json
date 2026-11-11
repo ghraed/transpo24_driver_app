@@ -1760,5 +1760,12 @@
   "Enable notification permission in your phone settings, then try again.": "فعّل إذن الإشعارات في إعدادات هاتفك، ثم أعد المحاولة.",
   "Test sent. Check for a notification on this device. Delivery may take a moment.": "تم إرسال الاختبار. تحقّق من وصول إشعار على هذا الجهاز. قد يستغرق التسليم قليلًا.",
   "Sending test...": "جارٍ إرسال الاختبار...",
-  "Test Notification": "إشعار تجريبي"
+  "Test Notification": "إشعار تجريبي",
+  "Outside your available hours": "خارج ساعات توفرك",
+  "This pickup is outside your weekly availability. You can make an exception for this job after confirming that you can complete it.": "موعد الاستلام هذا خارج جدول توفرك الأسبوعي. يمكنك إجراء استثناء لهذه المهمة بعد تأكيد قدرتك على إتمامها.",
+  "To change your regular hours: Profile > My Vehicles > Edit Radius > Weekly Schedule.": "لتغيير ساعات عملك المعتادة: الملف الشخصي > مركباتي > تعديل نطاق الخدمة > الجدول الأسبوعي.",
+  "Change weekly schedule": "تغيير الجدول الأسبوعي",
+  "Confirm this availability exception": "تأكيد استثناء التوفر",
+  "This pickup is outside your available day or time. Confirm that you can complete this job before sending an offer.": "موعد الاستلام هذا خارج يوم أو وقت توفرك. أكّد قدرتك على إتمام هذه المهمة قبل إرسال عرض.",
+  "Confirm and continue": "تأكيد ومتابعة"
 }
