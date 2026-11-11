@@ -1699,7 +1699,9 @@ export async function acceptDriverRequestAlert(
     response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: await getAuthHeaders(),
-      body: JSON.stringify({ acknowledgeOutsideWorkingHours }),
+      body: JSON.stringify(
+        acknowledgeOutsideWorkingHours ? { acknowledgeOutsideWorkingHours: true } : {},
+      ),
     });
   } catch (error) {
     throw toNetworkError(endpoint, error);

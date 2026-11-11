@@ -20,6 +20,10 @@ const mockRemove = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useFocusEffect: fn => require('react').useEffect(fn, [fn]) }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT }) }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }) => children,
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
 jest.mock('@/components/driver-icon', () => ({ DriverIcon: () => null }));
 jest.mock('@/components/driver-bottom-nav', () => ({ DriverBottomNav: () => null }));
 jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: async () => {} }));
