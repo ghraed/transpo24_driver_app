@@ -1112,7 +1112,7 @@ export default function GoToPickupScreen() {
             </View>
           </View>
           <DriverButton
-            variant="secondary"
+            variant="navigation"
             label={t('pickupUi.navigateToPickup')}
             icon={{ ios: 'location.north.fill', android: 'navigation', web: 'navigation' }}
             loading={isOpeningNavigation}

@@ -82,7 +82,7 @@ export function DriverButton({
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'quiet' | 'contact';
+  variant?: 'primary' | 'secondary' | 'quiet' | 'contact' | 'navigation';
   disabled?: boolean;
   loading?: boolean;
   icon?: IconName;
@@ -94,9 +94,11 @@ export function DriverButton({
     ? colors.onDisabled
     : variant === 'contact'
       ? colors.onContact
-      : variant === 'primary'
-        ? colors.onPrimary
-        : colors.text;
+      : variant === 'navigation'
+        ? colors.onNavigation
+        : variant === 'primary'
+          ? colors.onPrimary
+          : colors.text;
   return (
     <Pressable
       accessibilityRole="button"
@@ -111,11 +113,13 @@ export function DriverButton({
             ? colors.disabled
             : variant === 'contact'
               ? colors.contact
-              : variant === 'primary'
-                ? colors.primary
-                : variant === 'secondary'
-                  ? colors.surface
-                  : 'transparent',
+              : variant === 'navigation'
+                ? colors.navigation
+                : variant === 'primary'
+                  ? colors.primary
+                  : variant === 'secondary'
+                    ? colors.surface
+                    : 'transparent',
           borderColor: variant === 'secondary' ? colors.border : 'transparent',
           opacity: pressed ? 0.75 : 1,
         },

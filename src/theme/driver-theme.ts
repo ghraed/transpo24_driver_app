@@ -32,6 +32,8 @@ const light = {
   accentSoft: palette.yellowSoft,
   contact: '#0F766E',
   onContact: palette.white,
+  navigation: '#2563EB',
+  onNavigation: palette.white,
   pickupMarker: MAP_COLORS.pickup,
   dropoffMarker: MAP_COLORS.dropoff,
   currentLocation: MAP_COLORS.driver,
