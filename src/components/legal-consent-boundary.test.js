@@ -5,7 +5,10 @@ import { LegalConsentBoundary } from './legal-consent-boundary';
 let mockToken='account-a';
 let mockOwnerId='account-a';
 const mockLogout=jest.fn(async()=>{});
-jest.mock('@/context/auth-context',()=>({useAuth:()=>({accessToken:mockToken,signOut:mockLogout,user:{id:mockOwnerId}})}));
+const mockRenew=jest.fn(async()=>({status:'restored'}));
+let mockCurrentToken='account-a';
+jest.mock('@/context/auth-context',()=>({useAuth:()=>({accessToken:mockToken,signOut:mockLogout,continueWithTrustedSession:mockRenew,user:{id:mockOwnerId}})}));
+jest.mock('@/lib/auth-storage',()=>({getCurrentAccessToken:()=>mockCurrentToken}));
 jest.mock('@/config/backend',()=>({getBackendApiBaseUrl:()=> 'http://synthetic.test'}));
 jest.mock('react-i18next',()=>({useTranslation:()=>({t:key=>key})}));
 jest.mock('expo-splash-screen',()=>({hideAsync:async()=>{}}));
@@ -13,11 +16,11 @@ jest.mock('react-native-safe-area-context',()=>({SafeAreaView:'SafeAreaView'}));
 jest.mock('@/theme/driver-theme',()=>({useDriverColors:()=>({primary:'#8CDD00'})}));
 let tree;
 const realFetch=global.fetch;
-const response=(body,status=200)=>({ok:status<400,json:async()=>body});
+const response=(body,status=200)=>({ok:status<400,status,json:async()=>body});
 const policy={version:'2026-08-25',text:'Synthetic terms',accepted:false};
 const find=role=>tree.root.findAll(n=>typeof n.props.onPress==='function').find(n=>n.props.accessibilityRole===role);
 const business=()=>tree.root.findAllByType(Text).some(n=>n.props.children==='business');
-beforeEach(()=>{mockToken='account-a';mockOwnerId='account-a';jest.clearAllMocks();global.fetch=jest.fn(async()=>response(policy));});
+beforeEach(()=>{mockToken='account-a';mockOwnerId='account-a';mockCurrentToken='account-a';jest.clearAllMocks();global.fetch=jest.fn(async()=>response(policy));});
 afterEach(async()=>{await act(async()=>tree?.unmount());global.fetch=realFetch;});
 test('existing account without evidence is withheld until explicit checkbox and user-bound POST',async()=>{
  await act(async()=>{tree=create(<LegalConsentBoundary><Text>business</Text></LegalConsentBoundary>);});
@@ -36,6 +39,33 @@ test('failed acceptance does not admit the account',async()=>{
  await act(async()=>tree.root.findAll(n=>typeof n.props.onPress==='function').find(n=>n.props.disabled===false).props.onPress());
  expect(business()).toBe(false);
  expect(tree.root.findAllByType(Text).some(n=>n.props.accessibilityRole==='alert')).toBe(true);
+});
+test('renews an expired token and retries acceptance',async()=>{
+ await act(async()=>{tree=create(<LegalConsentBoundary><Text>business</Text></LegalConsentBoundary>);});
+ await act(async()=>find('checkbox').props.onPress());
+ global.fetch.mockResolvedValueOnce(response({},401));
+ mockRenew.mockImplementationOnce(async()=>{mockCurrentToken='renewed-token';return {status:'restored'};});
+ global.fetch.mockResolvedValueOnce(response({}));
+ await act(async()=>tree.root.findAll(n=>typeof n.props.onPress==='function').find(n=>n.props.disabled===false).props.onPress());
+ expect(mockRenew).toHaveBeenCalledTimes(1);
+ expect(global.fetch).toHaveBeenLastCalledWith('http://synthetic.test/auth/legal',expect.objectContaining({headers:expect.objectContaining({Authorization:'Bearer renewed-token'})}));
+ expect(business()).toBe(true);
+});
+test('checks server state when acceptance succeeds but its response is lost',async()=>{
+ await act(async()=>{tree=create(<LegalConsentBoundary><Text>business</Text></LegalConsentBoundary>);});
+ await act(async()=>find('checkbox').props.onPress());
+ global.fetch.mockRejectedValueOnce(new Error('response lost'));
+ global.fetch.mockResolvedValueOnce(response({...policy,accepted:true}));
+ await act(async()=>tree.root.findAll(n=>typeof n.props.onPress==='function').find(n=>n.props.disabled===false).props.onPress());
+ expect(business()).toBe(true);
+});
+test('successful retry clears a previous terms loading error',async()=>{
+ global.fetch.mockRejectedValueOnce(new Error('offline'));
+ await act(async()=>{tree=create(<LegalConsentBoundary><Text>business</Text></LegalConsentBoundary>);});
+ expect(tree.root.findAllByType(Text).some(n=>n.props.accessibilityRole==='alert')).toBe(true);
+ global.fetch.mockResolvedValueOnce(response({...policy,accepted:true}));
+ await act(async()=>find('button').props.onPress());
+ expect(business()).toBe(true);
 });
 test('account switch discards a delayed policy response from the previous account',async()=>{
  let finish;

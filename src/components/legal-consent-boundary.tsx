@@ -1,5 +1,6 @@
 import { useAuth } from '@/context/auth-context';
 import { getBackendApiBaseUrl as apiBase } from '@/config/backend';
+import { getCurrentAccessToken } from '@/lib/auth-storage';
 
 import { useDriverColors } from '@/theme/driver-theme';
 import React, { useEffect, useState } from 'react';
@@ -9,11 +10,33 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useTranslation } from 'react-i18next';
 
 type Policy = { version: string; text: string; accepted: boolean };
-export function LegalConsentBoundary({ children }: { children: React.ReactNode }) {
-  const { accessToken: token, signOut: logout, user } = useAuth();
-  return token ? <AccountConsent key={user?.id} token={token} logout={logout}>{children}</AccountConsent> : <>{children}</>;
+type RenewSession = () => Promise<{ status: string }>;
+async function legalRequest(token: string, renewSession: RenewSession, init: RequestInit): Promise<Response> {
+  const endpoint = apiBase() + '/auth/legal';
+  const send = (credential: string) => fetch(endpoint, {
+    ...init,
+    headers: { ...init.headers, Authorization: 'Bearer ' + credential },
+  });
+  const response = await send(token);
+  if (response.status !== 401) return response;
+  const renewed = await renewSession();
+  const currentToken = getCurrentAccessToken();
+  return renewed.status === 'restored' && currentToken ? send(currentToken) : response;
 }
-function AccountConsent({ token, logout, children }: { token: string; logout: () => Promise<void>; children: React.ReactNode }) {
+async function loadPolicy(token: string, renewSession: RenewSession): Promise<Policy> {
+  const response = await legalRequest(token, renewSession, { method: 'GET' });
+  if (!response.ok) throw new Error('Unable to load terms');
+  const value = await response.json();
+  if (typeof value.version !== 'string' || typeof value.text !== 'string' || typeof value.accepted !== 'boolean') {
+    throw new Error('Invalid terms response');
+  }
+  return value as Policy;
+}
+export function LegalConsentBoundary({ children }: { children: React.ReactNode }) {
+  const { accessToken: token, signOut: logout, continueWithTrustedSession, user } = useAuth();
+  return token ? <AccountConsent key={user?.id} token={token} logout={logout} renewSession={continueWithTrustedSession}>{children}</AccountConsent> : <>{children}</>;
+}
+function AccountConsent({ token, logout, renewSession, children }: { token: string; logout: () => Promise<void>; renewSession: RenewSession; children: React.ReactNode }) {
   const { t } = useTranslation();
   const colors = useDriverColors();
   const [policy, setPolicy] = useState<Policy | null>(null);
@@ -23,22 +46,28 @@ function AccountConsent({ token, logout, children }: { token: string; logout: ()
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     let active = true;
-    void fetch(apiBase() + '/auth/legal', { headers: { Authorization: 'Bearer ' + token } })
-      .then(async response => { if (!response.ok) throw Error(); const value = await response.json(); if (typeof value.version !== 'string' || typeof value.text !== 'string' || typeof value.accepted !== 'boolean') throw Error(); return value as Policy; })
-      .then(value => { if (active) setPolicy(value); })
+    void loadPolicy(token, renewSession)
+      .then(value => { if (active) { setPolicy(value); setError(false); } })
       .catch(() => { if (active) setError(true); });
     void SplashScreen.hideAsync();
     return () => { active = false; };
-  }, [token, retry]);
+  }, [token, renewSession, retry]);
   if (policy?.accepted) return <>{children}</>;
   async function accept() {
     if (!policy || !checked || busy) return;
     setBusy(true); setError(false);
     try {
-      const response = await fetch(apiBase() + '/auth/legal', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ version: policy.version }) });
+      const response = await legalRequest(token, renewSession, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: policy.version }) });
       if (!response.ok) throw Error();
       setPolicy({ ...policy, accepted: true });
-    } catch { setError(true); } finally { setBusy(false); }
+    } catch {
+      try {
+        const current = await loadPolicy(getCurrentAccessToken() ?? token, renewSession);
+        setPolicy(current);
+        if (current.version !== policy.version) setChecked(false);
+        setError(!current.accepted);
+      } catch { setError(true); }
+    } finally { setBusy(false); }
   }
   return <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
     <ScrollView contentContainerStyle={{ padding: 24, gap: 16, flexGrow: 1 }}>
