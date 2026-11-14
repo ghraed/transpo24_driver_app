@@ -31,8 +31,8 @@ export default function OfferWaitingResponseScreen() {
           {t('Request Status: {{value}}', { value: statusLabel || t('N/A') })}
         </Text>
 
-        <Pressable style={styles.primaryButton} onPress={() => router.replace('/receive-requests')}>
-          <Text style={styles.primaryButtonText}>{t('Back to Available Requests')}</Text>
+        <Pressable style={styles.primaryButton} onPress={() => router.replace('/pending-requests')}>
+          <Text style={styles.primaryButtonText}>{t('Pending requests')}</Text>
         </Pressable>
         <Pressable style={styles.primaryButton} onPress={() => router.replace('/accepted-jobs')}>
           <Text style={styles.primaryButtonText}>{t('Check Accepted Jobs')}</Text>

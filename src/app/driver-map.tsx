@@ -19,6 +19,8 @@ import { NativeMapView, NativeMarker, isNativeMapRuntimeAvailable } from '@/comp
 import { getBackendApiBaseUrl } from '@/config/backend';
 import { isLocalBackendUrl } from '@/config/environment';
 import { getDriverAvailability, getDriverMapRequests, updateDriverOnlineStatus } from '@/lib/api';
+import { readAccessToken } from '@/lib/auth-storage';
+import { connectSocket, onRequestDeleted, onRequestNew } from '@/services/socketService';
 import { driverRadius, driverThemes } from '@/theme/driver-theme';
 import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/types/auth';
 
@@ -65,6 +67,7 @@ export default function DriverMapScreen() {
   const MapMarker = NativeMarker;
   const mapRef = useRef<any>(null);
   const loadVersion = useRef(0);
+  const closedRequestIds = useRef(new Set<string>());
   const locationVersion = useRef(0);
   const hasCenteredOverview = useRef(false);
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
@@ -96,7 +99,7 @@ export default function DriverMapScreen() {
     if (version !== loadVersion.current) return;
     if (availabilityResult.status === 'fulfilled') setAvailability(availabilityResult.value);
     if (alertsResult.status === 'fulfilled') {
-      setAlerts(alertsResult.value.alerts ?? []);
+      setAlerts((alertsResult.value.alerts ?? []).filter((alert) => !closedRequestIds.current.has(alert.requestId)));
     }
     setIsLoading(false);
   }, [canInteract]);
@@ -157,6 +160,17 @@ export default function DriverMapScreen() {
       const timer = setInterval(() => void loadMap(), 20_000);
       let isFocused = true;
       let stopLocationTracking: (() => void) | undefined;
+      let unsubscribeNew: (() => void) | undefined;
+      let unsubscribeDeleted: (() => void) | undefined;
+      void readAccessToken().then((token) => {
+        if (!isFocused || !token || !canInteract) return;
+        connectSocket(token);
+        unsubscribeNew = onRequestNew(() => void loadMap());
+        unsubscribeDeleted = onRequestDeleted(({ requestId }) => {
+          closedRequestIds.current.add(requestId);
+          setAlerts((current) => current.filter((alert) => alert.requestId !== requestId));
+        });
+      }).catch(() => { /* Polling refreshes the map when realtime is unavailable. */ });
       void startLocationTracking().then((stop) => {
         if (isFocused) {
           stopLocationTracking = stop;
@@ -171,9 +185,11 @@ export default function DriverMapScreen() {
         ++locationVersion.current;
         hasCenteredOverview.current = false;
         clearInterval(timer);
+        unsubscribeNew?.();
+        unsubscribeDeleted?.();
         stopLocationTracking?.();
       };
-    }, [loadMap, startLocationTracking]),
+    }, [canInteract, loadMap, startLocationTracking]),
   );
 
   const toggleOnline = async () => {

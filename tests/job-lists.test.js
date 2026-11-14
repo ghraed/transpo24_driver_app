@@ -2,9 +2,10 @@ import { RequestTypeTabs } from '@/components/request-type-tabs';
 import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { afterEach, beforeEach, expect, it, jest } from '@jest/globals';
-import { onRequestNew } from '@/services/socketService';
+import { onRequestDeleted, onRequestNew } from '@/services/socketService';
 import AcceptedJobs from '../src/app/accepted-jobs';
 import Jobs from '../src/app/receive-requests';
+import PendingRequests from '../src/app/pending-requests';
 import { getDriverAcceptedJobs, getDriverChatRooms, getDriverRequestAlerts } from '@/lib/api';
 
 const mockRouter = { push: jest.fn(), replace: jest.fn() };
@@ -98,6 +99,33 @@ it('keeps available jobs on a refresh failure, then removes them when another dr
   getDriverRequestAlerts.mockResolvedValue({ alerts: [] });
   await act(async () => jest.advanceTimersByTime(20000));
   expect(contains('Test pickup')).toBe(false);
+});
+
+it('moves a sent offer from Jobs to Pending and removes it after any offer is accepted', async () => {
+  getDriverRequestAlerts.mockResolvedValue({ alerts: [{ ...alert, offerStatus: 'PENDING' }] });
+  await render(Jobs);
+  await selectType('scheduled');
+  expect(contains('Test pickup')).toBe(false);
+  await act(async () => tree.unmount()); tree = null;
+  await render(PendingRequests);
+  expect(contains('Test pickup')).toBe(true);
+  getDriverRequestAlerts.mockResolvedValue({ alerts: [] });
+  await act(async () => jest.advanceTimersByTime(20000));
+  expect(contains('Test pickup')).toBe(false);
+});
+
+it('removes a pending offer immediately when the job closes for all drivers', async () => {
+  getDriverRequestAlerts.mockResolvedValue({ alerts: [{ ...alert, offerStatus: 'PENDING' }] });
+  await render(PendingRequests);
+  expect(contains('Test pickup')).toBe(true);
+  await act(async () => onRequestDeleted.mock.calls[0][0]({ requestId: alert.requestId }));
+  expect(contains('Test pickup')).toBe(false);
+});
+
+it('keeps a job available to drivers who have not offered', async () => {
+  await render(Jobs);
+  await selectType('scheduled');
+  expect(contains('Test pickup')).toBe(true);
 });
 
 async function selectType(value) { await act(async () => tree.root.findByType(RequestTypeTabs).props.onChange(value)); }

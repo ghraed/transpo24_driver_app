@@ -570,6 +570,7 @@ export interface DriverRequestAlertSummary {
   alertId: string;
   requestId: string;
   alertStatus: DriverRequestAlertStatus;
+  offerStatus?: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'EXPIRED' | null;
   requestStatus: RequestStatus;
   service: RequestServiceSummary | null;
   pickup: RequestLocationSummary;

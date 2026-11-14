@@ -101,6 +101,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
   const { t } = useTranslation();
   const { language, locale } = useAppLanguage();
   const loadVersion = useRef(0);
+  const closedRequestIds = useRef(new Set<string>());
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -124,7 +125,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
       const response = await getDriverRequestAlerts();
       if (version === loadVersion.current) setLocationReference(response.locationReference ?? 'NONE');
       if (version !== loadVersion.current) return;
-      const nextAlerts = response.alerts ?? [];
+      const nextAlerts = (response.alerts ?? []).filter((alert) => !closedRequestIds.current.has(alert.requestId));
       setAlerts(nextAlerts);
       setProfileRequired(false);
 
@@ -170,6 +171,7 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
         connectSocket(token);
         unsubscribeNew = onRequestNew(() => void loadAlerts(true));
         unsubscribeDeleted = onRequestDeleted((payload) => {
+          closedRequestIds.current.add(payload.requestId);
           setAlerts((current) => current.filter((alert) => alert.requestId !== payload.requestId));
         });
       })().catch(() => { /* Polling covers an unavailable realtime connection. */ });
@@ -186,7 +188,12 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
   );
 
   const visibleAlerts = useMemo(
-    () => alerts.filter(alert => pendingOnly ? alert.requestStatus === 'RESERVED' : alert.requestStatus !== 'RESERVED' && alert.schedule.isImmediate === (requestType === 'immediate')),
+    () => alerts.filter(alert =>
+      ['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) &&
+      (pendingOnly
+        ? alert.offerStatus === 'PENDING'
+        : !alert.offerStatus && alert.schedule.isImmediate === (requestType === 'immediate')),
+    ),
     [alerts, requestType, pendingOnly],
   );
 
@@ -204,10 +211,10 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
         </View>
         <DriverJobSwitcher active={pendingOnly ? "pending" : "jobs"} />
         {!pendingOnly && <RequestTypeTabs value={requestType} onChange={setRequestType} counts={{
-          immediate: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && alert.schedule.isImmediate).length,
-          scheduled: alerts.filter(alert => alert.requestStatus !== 'RESERVED' && !alert.schedule.isImmediate).length,
+          immediate: alerts.filter(alert => ['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) && !alert.offerStatus && alert.schedule.isImmediate).length,
+          scheduled: alerts.filter(alert => ['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) && !alert.offerStatus && !alert.schedule.isImmediate).length,
         }} />}
-        {pendingOnly ? <Text style={styles.emptyText}>{t('Waiting for client payment. New offers are closed.')}</Text> : <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />}
+        {pendingOnly ? <Text style={styles.emptyText}>{t('Your offer is pending customer review. We will notify you when the customer chooses.')}</Text> : <RequestCoverageNotice source={locationReference} scheduled={requestType === 'scheduled'} />}
       </View>
 
       {showProfileCompletion ? (
@@ -317,13 +324,13 @@ export default function ReceiveRequestAlertsScreen({ pendingOnly = false }: { pe
                   <View style={styles.onWayRow}>
                     <DriverIcon name="location" size={18} color="#F6B900" strokeWidth={1.8} />
                     <Text style={styles.onWayText}>
-                      {alert.requestStatus === 'RESERVED' ? t('Pending payment') : !['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) ? t('Booked — offers closed') : alert.isCurrentlyEligible === false ? t('Previously received') : alert.schedule?.isImmediate ? t('Nearby pickup') : t('Scheduled')}
+                      {alert.offerStatus === 'PENDING' ? t('Pending') : alert.isCurrentlyEligible === false ? t('Previously received') : alert.schedule?.isImmediate ? t('Nearby pickup') : t('Scheduled')}
                     </Text>
                   </View>
                   <Text style={styles.matchText}>
                     {typeof alert.matchPercent === 'number'
                       ? t('{{percentage}}% match', { percentage: Math.round(alert.matchPercent) })
-                      : t(alert.requestStatus === 'RESERVED' ? 'Pending' : !['PENDING_QUOTES', 'QUOTED'].includes(alert.requestStatus) ? 'Booked' : 'Available')}
+                      : t(alert.offerStatus === 'PENDING' ? 'Pending' : 'Available')}
                   </Text>
                 </View>
               </Pressable>
