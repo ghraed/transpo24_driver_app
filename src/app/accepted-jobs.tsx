@@ -88,10 +88,6 @@ function getAcceptedJobRoute(job: DriverAcceptedJobSummary): {
     dropoffAddress: job.dropoff.address ?? '',
   };
 
-  if (job.requestStatus === 'DRIVER_ARRIVED_PICKUP') {
-    return { pathname: '/go-to-pickup', params: sharedParams };
-  }
-
   if (isDeliveryPhaseRequestStatus(job.requestStatus)) {
     return { pathname: '/deliver-item', params: sharedParams };
   }
@@ -99,9 +95,10 @@ function getAcceptedJobRoute(job: DriverAcceptedJobSummary): {
   if (
     job.requestStatus === 'ACCEPTED' ||
     job.requestStatus === 'DRIVER_ASSIGNED' ||
-    job.requestStatus === 'DRIVER_GOING_TO_PICKUP'
+    job.requestStatus === 'DRIVER_GOING_TO_PICKUP' ||
+    job.requestStatus === 'DRIVER_ARRIVED_PICKUP'
   ) {
-    return { pathname: '/go-to-pickup', params: sharedParams };
+    return { pathname: '/accepted-job-details', params: { requestId: job.requestId } };
   }
 
   return {
@@ -114,20 +111,8 @@ function getAcceptedJobActionLabel(
   job: DriverAcceptedJobSummary,
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
-  if (job.requestStatus === 'DRIVER_ARRIVED_PICKUP') {
-    return t('Go To Pickup Confirmation');
-  }
-
   if (isDeliveryPhaseRequestStatus(job.requestStatus)) {
     return t('Go to Dropoff Location');
-  }
-
-  if (
-    job.requestStatus === 'ACCEPTED' ||
-    job.requestStatus === 'DRIVER_ASSIGNED' ||
-    job.requestStatus === 'DRIVER_GOING_TO_PICKUP'
-  ) {
-    return t('Go to Pickup Location');
   }
 
   return t('View Job');
