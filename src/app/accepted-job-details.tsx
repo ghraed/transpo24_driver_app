@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Pressable,
@@ -25,10 +26,11 @@ import {
   isNativeMapRuntimeAvailable,
 } from '@/components/native-maps';
 import { DriverPayoutStatusCard } from '@/components/driver-payout-status-card';
+import { DriverButton, DriverNotice } from '@/components/ui/driver-ui';
 import { resolveBackendAssetUrl } from '@/config/backend';
 import { useAuth } from '@/context/auth-context';
 import { isDeliveryPhaseRequestStatus, isTerminalRequestStatus } from '@/lib/request-status';
-import { getDriverAcceptedJobDetails } from '@/lib/api';
+import { cancelDriverJob, getDriverAcceptedJobDetails } from '@/lib/api';
 import { isSupportedLanguage, type AppLanguage } from '@/localization/languages';
 import { translateDynamicBatch } from '@/services/translation-service';
 import { getSourceErrorMessage } from '@/localization/response-message';
@@ -158,6 +160,8 @@ export default function AcceptedJobDetailsScreen() {
   const [details, setDetails] = useState<DriverAcceptedJobDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [cancelError, setCancelError] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
   const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string>('');
   const [translatedTextByKey, setTranslatedTextByKey] = useState<Record<string, string>>({});
   const [activeMapLocation, setActiveMapLocation] = useState<{
@@ -295,6 +299,29 @@ export default function AcceptedJobDetailsScreen() {
     if (!details) return false;
     return details.requestStatus !== 'RESERVED' && !isTerminalRequestStatus(details.requestStatus);
   }, [details]);
+  const canCancelJob = Boolean(details && [
+    'RESERVED', 'ACCEPTED', 'DRIVER_ASSIGNED', 'DRIVER_GOING_TO_PICKUP',
+    'DRIVER_ARRIVED_PICKUP',
+  ].includes(details.requestStatus));
+
+  const confirmCancellation = () => {
+    if (!details || !canCancelJob || isCancelling) return;
+    Alert.alert(t('Cancel this job?'), t('The client will be notified. Any payment will be refunded in full.'), [
+      { text: t('Keep job'), style: 'cancel' },
+      { text: t('Cancel job'), style: 'destructive', onPress: async () => {
+        setIsCancelling(true);
+        setCancelError('');
+        try {
+          await cancelDriverJob(details.requestId);
+          router.replace('/accepted-jobs');
+        } catch (cancelFailure) {
+          setCancelError(cancelFailure instanceof Error ? cancelFailure.message : t('Failed to cancel this job.'));
+        } finally {
+          setIsCancelling(false);
+        }
+      } },
+    ]);
+  };
 
   const openMap = (
     kind: 'pickup' | 'dropoff',
@@ -564,6 +591,8 @@ export default function AcceptedJobDetailsScreen() {
       </Modal>
 
       <View style={styles.footer}>
+        {cancelError ? <DriverNotice tone="danger" title={t('Failed to cancel this job.')} description={cancelError} /> : null}
+        {canCancelJob ? <DriverButton label={t('Cancel job')} variant="quiet" loading={isCancelling} disabled={isCancelling} onPress={confirmCancellation} /> : null}
         <DriverChatButton
           transportRequestId={details.requestId}
           initialChatRoom={details.chatRoom}

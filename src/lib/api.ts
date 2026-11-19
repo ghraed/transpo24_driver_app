@@ -1815,6 +1815,18 @@ export async function getDriverAcceptedJobDetails(
   );
 }
 
+export async function cancelDriverJob(requestId: string): Promise<{ requestStatus: 'CANCELLED'; refundedAmount: number; currency: string | null }> {
+  const endpoint = `${getApiBaseUrl()}/driver/jobs/${encodeURIComponent(requestId)}/cancel`;
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(endpoint, { method: 'POST', headers: await getAuthHeaders() });
+  } catch (error) {
+    throw toNetworkError(endpoint, error);
+  }
+  if (!response.ok) throw await parseError(response, 'Failed to cancel this job.');
+  return parseJsonResponse(response, 'Failed to parse the cancellation response.');
+}
+
 export async function getDriverChatRoomByTransportRequestId(
   transportRequestId: string,
 ): Promise<ChatRoom> {
