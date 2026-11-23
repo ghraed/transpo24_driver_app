@@ -73,6 +73,7 @@ export default function DriverMapScreen() {
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
+  const [mapFocusVersion, setMapFocusVersion] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -156,6 +157,9 @@ export default function DriverMapScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // Android can discard a native marker image while its map screen is covered.
+      // Recreate the car marker when returning from request details so it is drawn again.
+      setMapFocusVersion((version) => version + 1);
       void loadMap();
       const timer = setInterval(() => void loadMap(), 20_000);
       let isFocused = true;
@@ -267,6 +271,7 @@ export default function DriverMapScreen() {
             ))}
             {driverLocation ? (
               <MapLocationMarker
+                key={`driver-${mapFocusVersion}`}
                 kind="driver"
                 coordinate={driverLocation}
                 title={t('Your current location')}

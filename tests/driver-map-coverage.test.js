@@ -17,7 +17,10 @@ const mockAnimateCamera = jest.fn();
 const mockOverviewCamera = { center: { latitude: 47.38, longitude: 8.54 }, pitch: 0, heading: 0, zoom: 14, altitude: 4000 };
 const mockGetCamera = jest.fn();
 const mockRemove = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useFocusEffect: fn => require('react').useEffect(fn, [fn]) }));
+let mockFocused = true;
+const mockDriverMarkerMounted = jest.fn();
+const mockDriverMarkerUnmounted = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => mockRouter, useFocusEffect: fn => require('react').useEffect(() => mockFocused ? fn() : undefined, [fn, mockFocused]) }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: mockT }) }));
 jest.mock('expo-symbols', () => ({ SymbolView: () => null }));
 jest.mock('react-native-safe-area-context', () => ({
@@ -27,11 +30,19 @@ jest.mock('react-native-safe-area-context', () => ({
 jest.mock('@/components/driver-icon', () => ({ DriverIcon: () => null }));
 jest.mock('@/components/driver-bottom-nav', () => ({ DriverBottomNav: () => null }));
 jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: async () => {} }));
+jest.mock('@/services/socketService', () => ({ connectSocket: jest.fn(), onRequestNew: () => () => {}, onRequestDeleted: () => () => {} }));
 jest.mock('@/lib/api', () => ({ getDriverAvailability: jest.fn(), getDriverMapRequests: jest.fn(), updateDriverOnlineStatus: jest.fn() }));
 jest.mock('expo-location', () => ({ PermissionStatus: { GRANTED: 'granted' }, Accuracy: { High: 4 }, requestForegroundPermissionsAsync: jest.fn(), getLastKnownPositionAsync: jest.fn(), getCurrentPositionAsync: jest.fn(), watchPositionAsync: jest.fn() }));
 jest.mock('@/components/native-maps', () => {
   const React = require('react');
-  return { isNativeMapRuntimeAvailable: true, NativeMarker: 'Marker', NativeMapView: React.forwardRef(function MockMapView(props, ref) {
+  return { isNativeMapRuntimeAvailable: true, NativeMarker: function MockMarker(props) {
+    React.useEffect(() => {
+      if (props.title !== 'Your current location') return;
+      mockDriverMarkerMounted();
+      return () => mockDriverMarkerUnmounted();
+    }, [props.title]);
+    return React.createElement('Marker', props, props.children);
+  }, NativeMapView: React.forwardRef(function MockMapView(props, ref) {
     React.useImperativeHandle(ref, () => ({ animateToRegion: mockAnimate, fitToCoordinates: mockFit, animateCamera: mockAnimateCamera, getCamera: mockGetCamera }));
     return React.createElement('MapView', props, props.children);
   }) };
@@ -40,7 +51,7 @@ const fix = { coords: { latitude: 47.38, longitude: 8.54 } };
 const alert = (id, immediate, eligible = true) => ({ requestId: id, alertId: id, isCurrentlyEligible: eligible, schedule: { isImmediate: immediate }, pickup: { latitude: 47.38, longitude: 8.54 }, dropoff: { latitude: null, longitude: null } });
 let tree;
 beforeEach(() => {
-  jest.useFakeTimers(); jest.clearAllMocks();
+  jest.useFakeTimers(); jest.clearAllMocks(); mockFocused = true;
   mockGetCamera.mockResolvedValue(mockOverviewCamera);
   getDriverAvailability.mockResolvedValue({ isOnline: true, baseLatitude: 47.38, baseLongitude: 8.54, cityCoverage: [{ city: 'Zurich', latitude: 47.38, longitude: 8.54 }] });
   getDriverMapRequests.mockResolvedValue({ alerts: [alert('immediate', true), alert('scheduled', false), alert('outside-notification-radius', true, false)] });
@@ -67,6 +78,19 @@ it('opens scheduled jobs from the map shortcut', async () => {
   expect(mockRouter.push).toHaveBeenCalledWith({ pathname: '/receive-requests', params: { requestType: 'scheduled' } });
   await act(async () => pickupMarkers()[1].props.onPress());
   expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ params: { requestId: 'scheduled' } }));
+});
+it('recreates the car pin when the map regains focus after request details', async () => {
+  await render();
+  expect(mockDriverMarkerMounted).toHaveBeenCalledTimes(1);
+  await act(async () => pickupMarkers()[0].props.onPress());
+  expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/review-request-details' }));
+  mockFocused = false;
+  await act(async () => tree.update(<DriverMap />));
+  mockFocused = true;
+  await act(async () => tree.update(<DriverMap />));
+  expect(mockDriverMarkerUnmounted).toHaveBeenCalledTimes(1);
+  expect(mockDriverMarkerMounted).toHaveBeenCalledTimes(2);
+  expect(tree.root.findAllByType('Marker').find(marker => marker.props.title === 'Your current location').props.coordinate).toEqual(fix.coords);
 });
 it('never mounts a world map while location and base are unavailable', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
