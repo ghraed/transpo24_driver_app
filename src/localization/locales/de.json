@@ -705,6 +705,7 @@
   "Location permission denied. You can still confirm without coordinates.": "Standortberechtigung verweigert. Sie können weiterhin ohne Koordinaten bestätigen.",
   "Location permission denied. You can still select a location on the map.": "Standortberechtigung verweigert. Sie können weiterhin einen Ort auf der Karte auswählen.",
   "Location permission is needed to center the map on you.": "Die Standortberechtigung wird benötigt, um die Karte auf Sie zu zentrieren.",
+  "Location is back on.": "Die Ortungsdienste sind wieder aktiviert.",
   "Location services are off. Turn GPS on to use your current location, or select a location on the map.": "Die Ortungsdienste sind deaktiviert. Schalten Sie GPS ein, um Ihren aktuellen Standort zu verwenden, oder wählen Sie einen Standort auf der Karte aus.",
   "Location unavailable": "Standort nicht verfügbar",
   "Log Out": "Abmelden",

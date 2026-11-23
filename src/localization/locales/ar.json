@@ -705,6 +705,7 @@
   "Location permission denied. You can still confirm without coordinates.": "تم رفض إذن تحديد الموقع. لا يزال بإمكانك التأكيد بدون إحداثيات.",
   "Location permission denied. You can still select a location on the map.": "تم رفض إذن تحديد الموقع. لا يزال بإمكانك تحديد موقع على الخريطة.",
   "Location permission is needed to center the map on you.": "يلزم منح إذن الموقع لتوسيط الخريطة عليك.",
+  "Location is back on.": "تم تفعيل خدمات الموقع مجددًا.",
   "Location services are off. Turn GPS on to use your current location, or select a location on the map.": "خدمات الموقع معطلة. قم بتشغيل GPS لاستخدام موقعك الحالي، أو حدد موقعًا على الخريطة.",
   "Location unavailable": "الموقع غير متاح",
   "Log Out": "تسجيل الخروج",

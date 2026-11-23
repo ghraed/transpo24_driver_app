@@ -10,16 +10,19 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DRIVER_BOTTOM_NAV_HEIGHT, DriverBottomNav } from '@/components/driver-bottom-nav';
 import { DriverIcon } from '@/components/driver-icon';
 import { NativeMapView, NativeMarker, isNativeMapRuntimeAvailable } from '@/components/native-maps';
 import { getBackendApiBaseUrl } from '@/config/backend';
+import { getCountryBounds, type CountryBounds } from '@/config/country-bounds';
+import { useAuth } from '@/context/auth-context';
 import { isLocalBackendUrl } from '@/config/environment';
 import { getDriverAvailability, getDriverMapRequests, updateDriverOnlineStatus } from '@/lib/api';
 import { readAccessToken } from '@/lib/auth-storage';
+import { normalizeCountryCode } from '@/lib/country-currency';
 import { connectSocket, onRequestDeleted, onRequestNew } from '@/services/socketService';
 import { driverRadius, driverThemes } from '@/theme/driver-theme';
 import type { DriverAvailabilityResponse, DriverRequestAlertSummary } from '@/types/auth';
@@ -30,7 +33,7 @@ const MAP_ICON_SIZE = 24;
 type Coordinate = { latitude: number; longitude: number };
 
 const DRIVER_LOCATION_REGION_DELTA = 0.02;
-const COUNTRY_OVERVIEW_REGION_DELTA = 5;
+const FALLBACK_OVERVIEW_REGION_DELTA = 5;
 
 const SOFT_MAP_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#CDE9CE' }] },
@@ -58,8 +61,21 @@ function asRegion(coordinate: Coordinate, delta = DRIVER_LOCATION_REGION_DELTA) 
   };
 }
 
+function asCountryRegion(bounds: CountryBounds) {
+  const longitudeSpan = (bounds.northeast.longitude - bounds.southwest.longitude + 360) % 360;
+  const longitude = ((bounds.southwest.longitude + longitudeSpan / 2 + 540) % 360) - 180;
+  return {
+    latitude: (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+    longitude,
+    latitudeDelta: Math.max((bounds.northeast.latitude - bounds.southwest.latitude) * 1.25, 0.01),
+    longitudeDelta: Math.max(longitudeSpan * 1.25, 0.01),
+  };
+}
+
 export default function DriverMapScreen() {
   const router = useRouter();
+  const { driver } = useAuth();
+  const profileCountryCode = normalizeCountryCode(driver?.countryCode ?? driver?.countryCodes?.[0]);
   const insets = useSafeAreaInsets();
   const { canInteract, continueRegistration } = useDriverAccess();
   const { t } = useTranslation();
@@ -69,25 +85,66 @@ export default function DriverMapScreen() {
   const loadVersion = useRef(0);
   const closedRequestIds = useRef(new Set<string>());
   const locationVersion = useRef(0);
-  const hasCenteredOverview = useRef(false);
+  const locationServicesUnavailable = useRef(false);
+  const locationRestoredToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countryBounds = useRef<{ code: string; bounds: CountryBounds } | null>(null);
+  const requestedCountryCode = useRef<string | null>(null);
+  const mapReady = useRef(false);
+  const mapFocused = useRef(false);
+  const mapSize = useRef({ width: 0, height: 0 });
+  const userMovedMap = useRef(false);
+  const appliedCountryCode = useRef<string | null>(null);
   const [availability, setAvailability] = useState<DriverAvailabilityResponse | null>(null);
   const [alerts, setAlerts] = useState<DriverRequestAlertSummary[]>([]);
   const [driverLocation, setDriverLocation] = useState<NavigationLocation | null>(null);
+  const [countryOverviewRegion, setCountryOverviewRegion] = useState<ReturnType<typeof asCountryRegion> | null>(null);
   const [mapFocusVersion, setMapFocusVersion] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLocating, setIsLocating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
+  const [showLocationRestoredToast, setShowLocationRestoredToast] = useState(false);
 
   const { isNavigationView, isNavigationEnabled, toggleNavigationView, followDriver } = useNavigationCamera(mapRef, driverLocation);
 
   const centerOnDriver = useCallback((coordinate: NavigationLocation, explicit = false) => {
     setDriverLocation(coordinate);
-    if (!isNavigationEnabled() && (explicit || !hasCenteredOverview.current)) {
-      mapRef.current?.animateToRegion?.(asRegion(coordinate, explicit ? DRIVER_LOCATION_REGION_DELTA : COUNTRY_OVERVIEW_REGION_DELTA), 350);
-      hasCenteredOverview.current = true;
+    if (explicit && !isNavigationEnabled()) {
+      userMovedMap.current = true;
+      mapRef.current?.animateToRegion?.(asRegion(coordinate), 350);
     }
   }, [isNavigationEnabled]);
+
+  const fitCountry = useCallback(() => {
+    const selected = countryBounds.current;
+    const { width, height } = mapSize.current;
+    if (!selected || !mapReady.current || !mapFocused.current || !width || !height ||
+      userMovedMap.current || appliedCountryCode.current === selected.code || isNavigationEnabled()) return;
+    mapRef.current?.fitToCoordinates?.([selected.bounds.southwest, selected.bounds.northeast], {
+      edgePadding: {
+        top: Math.round(height * 0.1), bottom: Math.round(height * 0.1),
+        left: Math.round(width * 0.1), right: Math.round(width * 0.1),
+      },
+      animated: true,
+    });
+    appliedCountryCode.current = selected.code;
+  }, [isNavigationEnabled]);
+
+  const loadCountryBounds = useCallback((code: string | null) => {
+    if (!code || requestedCountryCode.current === code) return;
+    requestedCountryCode.current = code;
+    const bounds = getCountryBounds(code);
+    if (!bounds) return;
+    countryBounds.current = { code, bounds };
+    setCountryOverviewRegion(asCountryRegion(bounds));
+    fitCountry();
+  }, [fitCountry]);
+
+  const locateCountry = useCallback((coordinate: Coordinate) => {
+    void Location.reverseGeocodeAsync(coordinate).then((addresses) => {
+      loadCountryBounds(normalizeCountryCode(addresses[0]?.isoCountryCode) ?? profileCountryCode);
+    }).catch(() => loadCountryBounds(profileCountryCode));
+  }, [loadCountryBounds, profileCountryCode]);
 
   const loadMap = useCallback(async () => {
     const version = ++loadVersion.current;
@@ -105,7 +162,7 @@ export default function DriverMapScreen() {
     setIsLoading(false);
   }, [canInteract]);
 
-  const startLocationTracking = useCallback(async (watch = true): Promise<(() => void) | undefined> => {
+  const startLocationTracking = useCallback(async (watch = true, recovering = false): Promise<(() => void) | undefined> => {
     const version = locationVersion.current;
     setIsLocating(true);
     setLocationMessage('');
@@ -114,9 +171,21 @@ export default function DriverMapScreen() {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (version !== locationVersion.current) return undefined;
       if (permission.status !== Location.PermissionStatus.GRANTED) {
+        loadCountryBounds(profileCountryCode);
+        locationServicesUnavailable.current = false;
         setLocationMessage(t('Location permission is needed to center the map on you.'));
         return undefined;
       }
+
+      if (!(await Location.hasServicesEnabledAsync())) {
+        if (version !== locationVersion.current) return undefined;
+        loadCountryBounds(profileCountryCode);
+        locationServicesUnavailable.current = true;
+        setLocationMessage(t('Unable to get your current location. Check that location services are enabled.'));
+        return undefined;
+      }
+      if (version !== locationVersion.current) return undefined;
+      locationServicesUnavailable.current = false;
 
       const lastKnownLocation = await Location.getLastKnownPositionAsync({
         maxAge: 60_000,
@@ -132,6 +201,15 @@ export default function DriverMapScreen() {
       });
       if (version !== locationVersion.current) return undefined;
       centerOnDriver(currentLocation.coords, !watch);
+      if (watch) locateCountry(currentLocation.coords);
+      if (recovering) {
+        setShowLocationRestoredToast(true);
+        if (locationRestoredToastTimer.current) clearTimeout(locationRestoredToastTimer.current);
+        locationRestoredToastTimer.current = setTimeout(() => {
+          setShowLocationRestoredToast(false);
+          locationRestoredToastTimer.current = null;
+        }, 3_000);
+      }
       void loadMap();
       if (!watch) return undefined;
 
@@ -148,15 +226,20 @@ export default function DriverMapScreen() {
       return () => subscription.remove();
     } catch {
       if (version !== locationVersion.current) return undefined;
+      locationServicesUnavailable.current = await Location.hasServicesEnabledAsync().then(enabled => !enabled).catch(() => false);
+      if (version !== locationVersion.current) return undefined;
+      loadCountryBounds(profileCountryCode);
       setLocationMessage(t('Unable to get your current location. Check that location services are enabled.'));
       return undefined;
     } finally {
       if (version === locationVersion.current) setIsLocating(false);
     }
-  }, [centerOnDriver, loadMap, t]);
+  }, [centerOnDriver, loadCountryBounds, loadMap, locateCountry, profileCountryCode, t]);
 
   useFocusEffect(
     useCallback(() => {
+      mapFocused.current = true;
+      fitCountry();
       // Android can discard a native marker image while its map screen is covered.
       // Recreate the car marker when returning from request details so it is drawn again.
       setMapFocusVersion((version) => version + 1);
@@ -164,6 +247,30 @@ export default function DriverMapScreen() {
       const timer = setInterval(() => void loadMap(), 20_000);
       let isFocused = true;
       let stopLocationTracking: (() => void) | undefined;
+      let trackingInProgress = false;
+      const beginTracking = (recovering = false) => {
+        if (!isFocused || trackingInProgress || stopLocationTracking) return;
+        trackingInProgress = true;
+        void startLocationTracking(true, recovering).then((stop) => {
+          if (isFocused) stopLocationTracking = stop;
+          else stop?.();
+        }).finally(() => { trackingInProgress = false; });
+      };
+      const retryWhenServicesReturn = (justBecameActive = false) => {
+        if (!isFocused || !locationServicesUnavailable.current || trackingInProgress || (!justBecameActive && AppState.currentState !== 'active')) return;
+        trackingInProgress = true;
+        let shouldRestart = false;
+        void Location.hasServicesEnabledAsync().then((enabled) => {
+          shouldRestart = isFocused && enabled;
+        }).catch(() => { /* Try again at the next check. */ }).finally(() => {
+          trackingInProgress = false;
+          if (shouldRestart) beginTracking(true);
+        });
+      };
+      const appStateSubscription = AppState.addEventListener('change', state => {
+        if (state === 'active') retryWhenServicesReturn(true);
+      });
+      const locationRetryTimer = setInterval(() => retryWhenServicesReturn(), 5_000);
       let unsubscribeNew: (() => void) | undefined;
       let unsubscribeDeleted: (() => void) | undefined;
       void readAccessToken().then((token) => {
@@ -175,25 +282,25 @@ export default function DriverMapScreen() {
           setAlerts((current) => current.filter((alert) => alert.requestId !== requestId));
         });
       }).catch(() => { /* Polling refreshes the map when realtime is unavailable. */ });
-      void startLocationTracking().then((stop) => {
-        if (isFocused) {
-          stopLocationTracking = stop;
-        } else {
-          stop?.();
-        }
-      });
+      beginTracking();
 
       return () => {
         isFocused = false;
         ++loadVersion.current;
         ++locationVersion.current;
-        hasCenteredOverview.current = false;
+        locationServicesUnavailable.current = false;
+        mapFocused.current = false;
+        if (locationRestoredToastTimer.current) clearTimeout(locationRestoredToastTimer.current);
+        locationRestoredToastTimer.current = null;
+        setShowLocationRestoredToast(false);
         clearInterval(timer);
+        clearInterval(locationRetryTimer);
+        appStateSubscription.remove();
         unsubscribeNew?.();
         unsubscribeDeleted?.();
         stopLocationTracking?.();
       };
-    }, [canInteract, loadMap, startLocationTracking]),
+    }, [canInteract, fitCountry, loadMap, startLocationTracking]),
   );
 
   const toggleOnline = async () => {
@@ -211,8 +318,11 @@ export default function DriverMapScreen() {
     }
   };
 
-  const initialRegion = driverLocation ?? alerts.find(alert => hasCoordinate(alert.pickup))?.pickup;
-  const mapRegion = initialRegion && hasCoordinate(initialRegion) ? asRegion(initialRegion, COUNTRY_OVERVIEW_REGION_DELTA) : undefined;
+  const baseLocation = availability && hasCoordinate({ latitude: availability.baseLatitude, longitude: availability.baseLongitude })
+    ? { latitude: availability.baseLatitude, longitude: availability.baseLongitude } : null;
+  const initialRegion = driverLocation ?? baseLocation ?? alerts.find(alert => hasCoordinate(alert.pickup))?.pickup;
+  const mapRegion = countryOverviewRegion ?? (initialRegion && hasCoordinate(initialRegion)
+    ? asRegion(initialRegion, FALLBACK_OVERVIEW_REGION_DELTA) : undefined);
 
   // Browse every open request independently of notification eligibility.
   const jobMarkers = alerts.filter((alert) => hasCoordinate(alert.pickup));
@@ -247,9 +357,18 @@ export default function DriverMapScreen() {
             ref={mapRef}
             style={StyleSheet.absoluteFill}
             initialRegion={mapRegion}
+            onLayout={(event: LayoutChangeEvent) => {
+              mapSize.current = event.nativeEvent.layout;
+              fitCountry();
+            }}
             onMapReady={() => {
+              mapReady.current = true;
               if (isNavigationEnabled()) followDriver(0);
-              else if (mapRegion) mapRef.current?.animateToRegion?.(mapRegion, 0);
+              else fitCountry();
+            }}
+            onPanDrag={() => { userMovedMap.current = true; }}
+            onRegionChangeComplete={(_region: unknown, details?: { isGesture?: boolean }) => {
+              if (details?.isGesture) userMovedMap.current = true;
             }}
             customMapStyle={SOFT_MAP_STYLE}
             showsCompass={false}
@@ -289,6 +408,12 @@ export default function DriverMapScreen() {
             ) : null}
           </View>
         )}
+
+        {showLocationRestoredToast ? (
+          <View style={styles.locationRestoredToast} accessibilityRole="alert">
+            <Text style={styles.locationRestoredToastText}>{t('Location is back on.')}</Text>
+          </View>
+        ) : null}
 
         <Pressable
           accessibilityRole="switch"
@@ -354,6 +479,14 @@ const styles = StyleSheet.create({
     position: 'absolute', right: 22, bottom: 153, left: 22, paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: 14, color: '#707A8C', fontSize: 13, textAlign: 'center', backgroundColor: 'rgba(255,255,255,0.94)',
   },
+  locationRestoredToast: {
+    position: 'absolute', top: 16, alignSelf: 'center', zIndex: 2,
+    maxWidth: '90%', paddingHorizontal: 16, paddingVertical: 10, borderRadius: driverRadius.md,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.success,
+    shadowColor: colors.shadow, shadowOpacity: 0.12, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 }, elevation: 4,
+  },
+  locationRestoredToastText: { color: colors.success, fontSize: 14, fontWeight: '600', textAlign: 'center' },
   locationButton: {
     position: 'absolute', right: 29, bottom: 25, width: 52, height: 52, borderRadius: driverRadius.md,
     alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,

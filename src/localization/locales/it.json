@@ -1922,6 +1922,7 @@
   "Location permission denied. Please enable location permission for driver tracking.": "Permesso di localizzazione negato. Abilitalo per il tracciamento dell’autista.",
   "Location permission denied. You can still confirm without coordinates.": "Permesso di localizzazione negato. Puoi comunque confermare senza coordinate.",
   "Location permission is needed to center the map on you.": "È necessario il permesso di localizzazione per centrare la mappa su di te.",
+  "Location is back on.": "La localizzazione è di nuovo attiva.",
   "Location unavailable": "Posizione non disponibile",
   "Log Out": "Esci",
   "Login failed.": "Accesso non riuscito.",

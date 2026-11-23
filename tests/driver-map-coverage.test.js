@@ -2,12 +2,13 @@ import React from 'react';
 import { act, create } from 'react-test-renderer';
 import { beforeEach, afterEach, expect, it, jest } from '@jest/globals';
 import * as Location from 'expo-location';
+import { AppState } from 'react-native';
 import { getDriverAvailability, getDriverMapRequests } from '@/lib/api';
 import { NavigationCameraToggle } from '@/components/navigation-camera-toggle';
 import DriverMap from '../src/app/driver-map';
 
 jest.mock('@/config/backend', () => ({ getBackendApiBaseUrl: () => 'https://api.transpo24.com' }));
-jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ driver: { status: 'APPROVED', isProfileCompleted: true } }) }));
+jest.mock('@/context/auth-context', () => ({ useAuth: () => ({ driver: { status: 'APPROVED', isProfileCompleted: true, countryCode: 'LB' } }) }));
 
 const mockT = key => key;
 const mockRouter = { push: jest.fn() };
@@ -32,7 +33,7 @@ jest.mock('@/components/driver-bottom-nav', () => ({ DriverBottomNav: () => null
 jest.mock('@/location/request-matching-location', () => ({ syncRequestMatchingLocation: async () => {} }));
 jest.mock('@/services/socketService', () => ({ connectSocket: jest.fn(), onRequestNew: () => () => {}, onRequestDeleted: () => () => {} }));
 jest.mock('@/lib/api', () => ({ getDriverAvailability: jest.fn(), getDriverMapRequests: jest.fn(), updateDriverOnlineStatus: jest.fn() }));
-jest.mock('expo-location', () => ({ PermissionStatus: { GRANTED: 'granted' }, Accuracy: { High: 4 }, requestForegroundPermissionsAsync: jest.fn(), getLastKnownPositionAsync: jest.fn(), getCurrentPositionAsync: jest.fn(), watchPositionAsync: jest.fn() }));
+jest.mock('expo-location', () => ({ PermissionStatus: { GRANTED: 'granted' }, Accuracy: { High: 4 }, requestForegroundPermissionsAsync: jest.fn(), hasServicesEnabledAsync: jest.fn(), getLastKnownPositionAsync: jest.fn(), getCurrentPositionAsync: jest.fn(), reverseGeocodeAsync: jest.fn(), watchPositionAsync: jest.fn() }));
 jest.mock('@/components/native-maps', () => {
   const React = require('react');
   return { isNativeMapRuntimeAvailable: true, NativeMarker: function MockMarker(props) {
@@ -50,26 +51,70 @@ jest.mock('@/components/native-maps', () => {
 const fix = { coords: { latitude: 47.38, longitude: 8.54 } };
 const alert = (id, immediate, eligible = true) => ({ requestId: id, alertId: id, isCurrentlyEligible: eligible, schedule: { isImmediate: immediate }, pickup: { latitude: 47.38, longitude: 8.54 }, dropoff: { latitude: null, longitude: null } });
 let tree;
+let appStateListener;
+let onAppStateChange;
 beforeEach(() => {
   jest.useFakeTimers(); jest.clearAllMocks(); mockFocused = true;
+  appStateListener = jest.spyOn(AppState, 'addEventListener').mockImplementation((event, callback) => {
+    if (event === 'change') onAppStateChange = callback;
+    return { remove: jest.fn() };
+  });
   mockGetCamera.mockResolvedValue(mockOverviewCamera);
   getDriverAvailability.mockResolvedValue({ isOnline: true, baseLatitude: 47.38, baseLongitude: 8.54, cityCoverage: [{ city: 'Zurich', latitude: 47.38, longitude: 8.54 }] });
   getDriverMapRequests.mockResolvedValue({ alerts: [alert('immediate', true), alert('scheduled', false), alert('outside-notification-radius', true, false)] });
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
+  Location.hasServicesEnabledAsync.mockResolvedValue(true);
   Location.getLastKnownPositionAsync.mockResolvedValue(fix);
   Location.getCurrentPositionAsync.mockResolvedValue(fix);
+  Location.reverseGeocodeAsync.mockResolvedValue([{ isoCountryCode: 'LB' }]);
   Location.watchPositionAsync.mockResolvedValue({ remove: mockRemove });
 });
-afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; jest.useRealTimers(); });
+afterEach(async () => { if (tree) await act(async () => tree.unmount()); tree = null; appStateListener.mockRestore(); jest.useRealTimers(); });
 async function render() { await act(async () => { tree = create(<DriverMap />); }); }
 const pickupMarkers = () => tree.root.findAllByType('Marker').filter(marker => marker.props.title === 'Pickup');
 it('opens at country overview and shows all open jobs regardless of notification eligibility', async () => {
   await render();
   const map = tree.root.findByType('MapView');
-  expect(map.props.initialRegion).toEqual({ latitude: 47.38, longitude: 8.54, latitudeDelta: 5, longitudeDelta: 5 });
+  expect(map.props.initialRegion.latitude).toBeCloseTo(33.865);
+  expect(map.props.initialRegion.longitude).toBeCloseTo(35.87);
+  expect(map.props.initialRegion.latitudeDelta).toBeCloseTo(1.9375);
   expect(pickupMarkers()).toHaveLength(3);
   await act(async () => pickupMarkers()[0].props.onPress());
   expect(mockRouter.push).toHaveBeenCalledWith(expect.objectContaining({ params: { requestId: 'immediate' } }));
+});
+it('fits the detected country into most of the map without moving it again on GPS updates', async () => {
+  await render();
+  const map = tree.root.findByType('MapView');
+  await act(async () => {
+    map.props.onLayout({ nativeEvent: { layout: { width: 400, height: 600 } } });
+    map.props.onMapReady();
+  });
+  expect(mockFit).toHaveBeenCalledWith([
+    { latitude: 33.09, longitude: 35.13 }, { latitude: 34.64, longitude: 36.61 },
+  ], { edgePadding: { top: 60, bottom: 60, left: 40, right: 40 }, animated: true });
+  expect(mockAnimate).not.toHaveBeenCalled();
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: { latitude: 33.9, longitude: 35.6 } }));
+  expect(mockFit).toHaveBeenCalledTimes(1);
+  expect(mockAnimate).not.toHaveBeenCalled();
+});
+it('uses the country at the GPS position when it differs from the profile country', async () => {
+  Location.reverseGeocodeAsync.mockResolvedValue([{ isoCountryCode: 'CH' }]);
+  await render();
+  expect(tree.root.findByType('MapView').props.initialRegion.latitude).toBeCloseTo(46.805);
+  expect(tree.root.findByType('MapView').props.initialRegion.longitude).toBeCloseTo(8.23);
+});
+it('does not move the map after the driver pans while reverse geocoding is loading', async () => {
+  let resolveCountry;
+  Location.reverseGeocodeAsync.mockReturnValue(new Promise(resolve => { resolveCountry = resolve; }));
+  await render();
+  const map = tree.root.findByType('MapView');
+  await act(async () => {
+    map.props.onLayout({ nativeEvent: { layout: { width: 400, height: 600 } } });
+    map.props.onMapReady();
+    map.props.onPanDrag();
+  });
+  await act(async () => resolveCountry([{ isoCountryCode: 'LB' }]));
+  expect(mockFit).not.toHaveBeenCalled();
 });
 it('opens scheduled jobs from the map shortcut', async () => {
   await render();
@@ -92,17 +137,42 @@ it('recreates the car pin when the map regains focus after request details', asy
   expect(mockDriverMarkerMounted).toHaveBeenCalledTimes(2);
   expect(tree.root.findAllByType('Marker').find(marker => marker.props.title === 'Your current location').props.coordinate).toEqual(fix.coords);
 });
-it('never mounts a world map while location and base are unavailable', async () => {
+it('opens the country overview when GPS, base and pickup are unavailable', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
   getDriverAvailability.mockResolvedValue({ isOnline: true, baseLatitude: null, baseLongitude: null, cityCoverage: [] });
   getDriverMapRequests.mockResolvedValue({ alerts: [] });
   await render();
-  expect(tree.root.findAllByType('MapView')).toHaveLength(0);
+  const region = tree.root.findByType('MapView').props.initialRegion;
+  expect(region.latitude).toBeCloseTo(33.865);
+  expect(region.longitude).toBeCloseTo(35.87);
+  expect(region.latitudeDelta).toBeCloseTo(1.9375);
+  expect(region.longitudeDelta).toBeCloseTo(1.85);
 });
-it('uses an open pickup at country overview when GPS permission is denied', async () => {
+it('uses the profile country overview when GPS permission is denied', async () => {
   Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'denied' });
   await render();
-  expect(tree.root.findByType('MapView').props.initialRegion.latitudeDelta).toBe(5);
+  expect(tree.root.findByType('MapView').props.initialRegion.latitudeDelta).toBeCloseTo(1.9375);
+});
+it('quietly starts tracking when location services are enabled while the map remains open', async () => {
+  Location.hasServicesEnabledAsync.mockResolvedValue(false);
+  await render();
+  expect(Location.getCurrentPositionAsync).not.toHaveBeenCalled();
+  expect(tree.root.findAllByType('Text').some(node => node.props.children === 'Unable to get your current location. Check that location services are enabled.')).toBe(true);
+
+  mockAnimate.mockClear();
+  Location.hasServicesEnabledAsync.mockResolvedValue(true);
+  await act(async () => onAppStateChange('active'));
+  expect(Location.getCurrentPositionAsync).toHaveBeenCalledTimes(1);
+  expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1);
+  expect(mockAnimate).not.toHaveBeenCalled();
+  await act(async () => Location.watchPositionAsync.mock.calls[0][1]({ coords: { latitude: 47.39, longitude: 8.55 } }));
+  expect(mockAnimate).not.toHaveBeenCalled();
+  expect(tree.root.findAllByType('Text').some(node => node.props.children === 'Unable to get your current location. Check that location services are enabled.')).toBe(false);
+  expect(tree.root.findAllByType('Text').some(node => node.props.children === 'Location is back on.')).toBe(true);
+  await act(async () => { jest.advanceTimersByTime(3_000); });
+  expect(tree.root.findAllByType('Text').some(node => node.props.children === 'Location is back on.')).toBe(false);
+  await act(async () => { jest.advanceTimersByTime(10_000); });
+  expect(Location.watchPositionAsync).toHaveBeenCalledTimes(1);
 });
 it('does not create an additional location subscription when recentering', async () => {
   await render();
